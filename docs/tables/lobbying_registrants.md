@@ -4,7 +4,7 @@
 
 **Lobbying registrants (profile as last captured)**
 
-The registrant record LDA embeds in each filing, kept once per `registrant_id`: the later `dt_updated` wins, then the later capture. Joins from `lobbying_filings.registrant_id` and `lobbying_clients.registrant_id`. The record's contact name and telephone are not published here (owner question open, 2026-10-30).
+The registrant record LDA embeds in each filing, kept once per `registrant_id`: the later `dt_updated` wins, then the later capture. Joins from `lobbying_filings.registrant_id`. The record's contact name and telephone are not published here (owner question open, 2026-10-30).
 
 **Coverage.** Not a range: one row per LDA registrant id named on any filing in `lobbying_filings`, holding the registrant record as LDA served it at the latest capture spicy-regs holds (`captured_at`). LDA serves its current record inside every filing, not the one filed, so this is never the registrant as it stood when a given filing was made; the filing's own address is on `lobbying_filings`. *(measured 2026-10-30)*
 

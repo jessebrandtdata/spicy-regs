@@ -10,6 +10,7 @@ a tied query refuses (``build_lobbying_filings._iter_filings``).
 ``run-rollup-lobbying-rebuild`` builds the whole family once from retained pages instead: the latest capture of each
 filing, no prior and no request. ``LDA_RETAINED_MANIFEST`` names the page manifest and
 ``LDA_RETAINED_MANIFEST_SHA256`` pins its bytes; the first generation under a new lobbying_filings policy is this one.
+``scripts/lobbying_retained_manifest.py`` writes that manifest from the source catalog and the central raw archive.
 """
 
 from pathlib import Path

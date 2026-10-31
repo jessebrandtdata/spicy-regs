@@ -253,7 +253,9 @@ def _shape(filing: dict) -> dict:
         "registrant_name": registrant.get("name") if isinstance(registrant, dict) else None,
         "registrant_id": str_or_none(registrant.get("id")) if isinstance(registrant, dict) else None,
         "client_name": client.get("name") if isinstance(client, dict) else None,
-        "client_id": str_or_none(client.get("id") or client.get("client_id")) if isinstance(client, dict) else None,
+        # LDA's global ``client.id``, the lobbying_clients key. The source's ``client.client_id`` is the registrant's
+        # own number for the client (lobbying_clients.registrant_client_number) and must not stand in for it.
+        "client_id": str_or_none(client.get("id")) if isinstance(client, dict) else None,
         "income": filing.get("income"),
         "expenses": filing.get("expenses"),
         "lobbying_activities_json": json.dumps(_activities(filing)),
@@ -599,8 +601,8 @@ def read_retained_manifest(manifest: Path) -> list[tuple[datetime, str, int]]:
     """The pinned retained-page manifest as ``(captured_at, sha256, bytes)``, newest capture first.
 
     A tab-separated file with a header naming at least ``sha256``, ``bytes`` and ``captured_at`` (an ISO-8601 time
-    with its offset). Which pages belong to the family and when each was captured is decided outside this module and
-    pinned by digest; this reader only refuses a manifest it cannot order exactly.
+    with its offset). Which pages belong to the family and when each was captured is decided by
+    ``scripts/lobbying_retained_manifest.py`` and pinned by digest; this reader only refuses a manifest it cannot order exactly.
     """
     import csv
 
@@ -659,15 +661,26 @@ def _iter_retained_filings(pages: list[tuple[datetime, str, int]], store) -> Ite
     from concurrent.futures import ThreadPoolExecutor
 
     seen: set[str] = set()
+    # Filings first seen at the current capture time: a later page at the same time that repeats one is a tie the
+    # manifest's digest order broke, counted rather than assumed absent (1,168 pages share one day-only time).
+    tied_run: tuple[datetime | None, set[str]] = (None, set())
+    ties = 0
     with ThreadPoolExecutor(max_workers=_READ_AHEAD) as pool:
         for window in itertools.batched(pages, _READ_AHEAD):
             batch = pool.map(lambda page: _read_retained_page(store, page[1], page[2]), window)
             for (captured_at, _, _), records in zip(window, batch, strict=True):
+                if tied_run[0] != captured_at:
+                    tied_run = (captured_at, set())
                 for record in records:
                     filing = _identified(record, captured_at=captured_at)
                     if filing["filing_uuid"] not in seen:
                         seen.add(filing["filing_uuid"])
+                        tied_run[1].add(filing["filing_uuid"])
                         yield filing
+                    elif filing["filing_uuid"] in tied_run[1]:
+                        ties += 1
+    logger.info("LDA retained: {:,} filings from {:,} pages; {:,} repeat occurrences tied on capture time with the "
+                "kept one, which the digest order chose", len(seen), len(pages), ties)
 
 
 # No native_orders: a rebuild selects no prior to merge onto, with or without R2_PUBLIC_URL.

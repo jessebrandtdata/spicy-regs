@@ -3843,7 +3843,7 @@
     {
       "table": "lobbying_registrants",
       "label": "Lobbying registrants (profile as last captured)",
-      "summary": "The registrant record LDA embeds in each filing, kept once per `registrant_id`: the later `dt_updated` wins, then the later capture. Joins from `lobbying_filings.registrant_id` and `lobbying_clients.registrant_id`. The record's contact name and telephone are not published here (owner question open, 2026-10-30).",
+      "summary": "The registrant record LDA embeds in each filing, kept once per `registrant_id`: the later `dt_updated` wins, then the later capture. Joins from `lobbying_filings.registrant_id`. The record's contact name and telephone are not published here (owner question open, 2026-10-30).",
       "coverage": "Not a range: one row per LDA registrant id named on any filing in `lobbying_filings`, holding the registrant record as LDA served it at the latest capture spicy-regs holds (`captured_at`). LDA serves its current record inside every filing, not the one filed, so this is never the registrant as it stood when a given filing was made; the filing's own address is on `lobbying_filings`.",
       "kind": "not_a_range",
       "measured_on": "2026-10-30",
@@ -3873,7 +3873,7 @@
     {
       "table": "lobbying_clients",
       "label": "Lobbying clients (profile as last captured)",
-      "summary": "The client record LDA embeds in each filing, kept once per `client_id` (the latest capture wins). An LDA client id is one registrant's record of one client, not an organization: an organization hired by several firms has one row per firm (see `lobbying_filings.client_id`). Joins from `lobbying_filings.client_id`; `registrant_id` joins to `lobbying_registrants`.",
+      "summary": "The client record LDA embeds in each filing, kept once per `client_id` (the latest capture wins). An LDA client id is one registrant's record of one client, not an organization: an organization hired by several firms has one row per firm (see `lobbying_filings.client_id`). Joins from `lobbying_filings.client_id`; `registrant_id` is the registrant of the filing the row was captured from.",
       "coverage": "Not a range: one row per LDA client id named on any filing in `lobbying_filings`, holding the client record as LDA served it at the latest capture spicy-regs holds (`captured_at`). LDA serves its current record inside every filing, not the one filed, so this is never the client as it stood when a given filing was made.",
       "kind": "not_a_range",
       "measured_on": "2026-10-30",

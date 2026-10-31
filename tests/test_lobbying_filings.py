@@ -846,3 +846,49 @@ def test_retained_rebuild_refuses_unpinned_bytes(tmp_path, monkeypatch, fault):
         bld.rebuild_lobbying_filings(out, manifest=manifest, manifest_sha256=digest, store=store,
                                      receipt_generation_id="r0")
     assert not (out / "lobbying_filings.parquet").exists()
+
+
+def test_the_rebuild_command_seals_evidence_and_admits_the_whole_family(tmp_path, monkeypatch):
+    """``run-rollup-lobbying-rebuild`` end to end: pages from the central raw archive, no prior, no request.
+
+    The tie between two pages captured at one time goes to the larger digest and is counted, not assumed absent.
+    """
+    import copy
+
+    from loguru import logger as loguru_logger
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+
+    from spicy_regs.generations import verify_generation
+    from spicy_regs.pipelines.rollups import lobbying_filings as rollup
+
+    monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
+    filing = {**copy.deepcopy(_FILING_WITH_ACTIVITIES), "dt_posted": "2026-10-01T10:00:00Z", **_FILING_V2_FIELDS,
+              "registrant": {"id": 14143, "name": "FARM CREDIT BANK OF TEXAS"},
+              "client": {"id": 119518, "client_id": 12, "name": "FARM CREDIT BANK OF TEXAS"}}
+    renamed = {**copy.deepcopy(filing), "posted_by_name": "Amy Luft, Counsel"}
+    manifest, digest, fixture = _retained(tmp_path, [("2026-09-23T00:00:00+00:00", [filing]),
+                                                     ("2026-09-23T00:00:00+00:00", [renamed])])
+    archive = CentralRawArchiveStore()  # the per-test SPICYGOV_RAW_ROOT (conftest)
+    for body in fixture.bodies.values():
+        archive.put_stream(iter([body]), max_bytes=len(body))
+    monkeypatch.setenv("LDA_RETAINED_MANIFEST", str(manifest))
+    monkeypatch.setenv("LDA_RETAINED_MANIFEST_SHA256", digest)
+    monkeypatch.setattr(bld.r2, "download", lambda *args: pytest.fail("A rebuild stages no prior"))
+    messages: list[str] = []
+    sink = loguru_logger.add(lambda message: messages.append(str(message)), level="INFO")
+    try:
+        rollup.LobbyingRetainedRebuild(output_dir=tmp_path / "out", skip_upload=True).run()
+    finally:
+        loguru_logger.remove(sink)
+
+    [generation] = (tmp_path / "out" / "generations").iterdir()
+    spec = verify_generation(generation).root["spec"]
+    assert spec["etlReceipts"]["generationId"]
+    assert set(rollup.LobbyingRetainedRebuild.outputs) <= set(spec["tables"])
+    winner = max(fixture.bodies, key=lambda sha: sha)
+    expected = json.loads(fixture.bodies[winner])["results"][0]["posted_by_name"]
+    (row,) = pq.read_table(tmp_path / "out" / "lobbying_filings.parquet").to_pylist()
+    assert row["posted_by_name"] == expected
+    assert any("1 repeat occurrences tied on capture time" in message for message in messages)
+    evidence = [path for path in (tmp_path / "out").rglob("artifact.json")]
+    assert evidence, "the rebuild seals its source evidence"

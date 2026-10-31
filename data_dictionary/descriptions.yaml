@@ -1174,8 +1174,7 @@ tables:
     summary: >-
       The registrant record LDA embeds in each filing, kept once per
       `registrant_id`: the later `dt_updated` wins, then the later capture.
-      Joins from `lobbying_filings.registrant_id` and
-      `lobbying_clients.registrant_id`. The record's contact name and telephone
+      Joins from `lobbying_filings.registrant_id`. The record's contact name and telephone
       are not published here (owner question open, 2026-10-30).
     columns:
       registrant_id: "LDA registrant id (`registrant.id`). Primary key; joins from `lobbying_filings.registrant_id`."
@@ -1213,12 +1212,12 @@ tables:
       (the latest capture wins). An LDA client id is one registrant's record of
       one client, not an organization: an organization hired by several firms
       has one row per firm (see `lobbying_filings.client_id`). Joins from
-      `lobbying_filings.client_id`; `registrant_id` joins to
-      `lobbying_registrants`.
+      `lobbying_filings.client_id`; `registrant_id` is the registrant of the
+      filing the row was captured from.
     columns:
       client_id: "LDA client id (`client.id`), the same key as `lobbying_filings.client_id`. Primary key."
       registrant_client_number: "The registrant's own number for this client (the source's `client.client_id`), unique only within one registrant."
-      registrant_id: "The registrant of the filing this row was captured from; joins to `lobbying_registrants.registrant_id`."
+      registrant_id: "The registrant (LDA `registrant.id`) of the filing this row was captured from. Its join to `lobbying_registrants` is declared once the full rebuild measures it."
       name: "Client name in LDA's record at capture."
       general_description: "The client's general description in LDA's record; often null."
       client_government_entity: "Whether LDA's record marks the client a government entity; null when the record does not say."
