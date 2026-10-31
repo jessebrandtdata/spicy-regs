@@ -259,6 +259,40 @@ def test_direct_zip_rows_preserve_header_blank_duplicate_negative_and_member_byt
     assert not (tmp_path / "bad").exists()
 
 
+def test_zip_members_read_and_hash_their_original_once_per_contiguous_run(tmp_path, monkeypatch):
+    from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+
+    buf = BytesIO()
+    with ZipFile(buf, "w") as archive:
+        archive.writestr("first.csv", b"A,1\r\n")
+        archive.writestr("second.csv", b"B,2\r\nC,3\r\n")
+    first = _positional(tmp_path, buf.getvalue(), member={"ordinal": 0, "name": "first.csv"})
+    second = {
+        **_positional(tmp_path, buf.getvalue(), member={"ordinal": 1, "name": "second.csv"}),
+        "collection_id": "second",
+    }
+    other = {**_positional(tmp_path, b"D,4\r\n"), "collection_id": "other"}
+    again = {**second, "collection_id": "again"}
+    opened = []
+    real = LocalSourceNativeBlobStore.open
+
+    def counted(self, blob_ref):
+        opened.append(blob_ref)
+        return real(self, blob_ref)
+
+    monkeypatch.setattr(LocalSourceNativeBlobStore, "open", counted)
+    together = _rows(build_fec_observations(_manifest(tmp_path, [first, second, other, again]), tmp_path / "run"))
+    zip_ref, other_ref = ("sha256:" + hashlib.sha256(raw).hexdigest() for raw in (buf.getvalue(), b"D,4\r\n"))
+    # One read per contiguous run: first+second share one; "again" follows another original.
+    assert opened == [zip_ref, other_ref, zip_ref]
+    alone = [
+        _rows(build_fec_observations(_manifest(tmp_path, [item]), tmp_path / item["collection_id"]))
+        for item in (first, second, other, again)
+    ]
+    for table in range(3):
+        assert together[table] == [row for rows in alone for row in rows[table]]
+
+
 def test_native_filing_body_remains_a_reference_and_statement_uses_header_version(tmp_path):
     header = "HDR\x1cFEC\x1c8.4\x1cTEST\x1c1\x1c\x1c\x1c\n"
     fields = [""] * 44

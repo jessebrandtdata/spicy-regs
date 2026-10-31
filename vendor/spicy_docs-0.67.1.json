@@ -1,0 +1,10 @@
+{
+  "filename": "spicy_docs-0.67.1-py3-none-any.whl",
+  "version": "0.67.1",
+  "sha256": "ed7938d6f17cc3cf5f1c1f4d10590e8761e95be40d07331b060746deba57787b",
+  "byte_size": 2744730,
+  "source_commit": "134c960165fe71e51a03d34278979517a367eb5c",
+  "source_state": "Gating build, not a release: SpicyDocs wf/fec-zip-once over fork main 3e68ec10 (v0.67.0); the version is stamped only in the build tree, the branch carries none. The landing cuts 0.67.1 and replaces this wheel.",
+  "build": "uv 0.11.21 build --wheel --offline; two builds from clean git archives of the commit (pyproject version set to 0.67.1 in the archive) are byte-identical",
+  "scope": "0.67.0 plus held_original: one verified spool per archive session serves every member of a ZIP, and selected_stream does not rehash it (ss-6fuk). Only spicy_docs/sources/fec/delimited.py differs from 0.67.0."
+}

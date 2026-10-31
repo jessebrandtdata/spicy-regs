@@ -14,7 +14,7 @@ import json
 import re
 from contextlib import ExitStack
 from pathlib import Path
-from tempfile import TemporaryDirectory, TemporaryFile
+from tempfile import TemporaryDirectory
 from time import monotonic
 
 import pyarrow as pa
@@ -354,7 +354,8 @@ def _query(item, base, profile, iterator):
 
 def _original(item, base, profile):
     """Iterate one complete retained original, refusing an ordinal that skips or repeats."""
-    from spicy_docs.storage.blobs import LocalSourceNativeBlobStore, iter_verified_blob
+    from spicy_docs.sources.fec.delimited import held_original
+    from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
     module = importlib.import_module("spicy_docs.sources.fec." + _PROFILES[item["profile"]][0])
     iterator = getattr(module, _ORIGINAL_ITERATORS[item["profile"]])
@@ -371,31 +372,30 @@ def _original(item, base, profile):
         (page,) = iterator(scope, blob_source=store)
         count = 0
         traversal = profile.traversal_check()
-        # Verify the entire original before parsing. The provider verifies ZIP
+        # The whole original is verified before parsing, once per contiguous run of
+        # its members: the session's held spool serves every member of one ZIP
+        # (manifest order keeps them together). The provider verifies ZIP
         # membership/CRC and bounds; spooling avoids holding large files in RAM.
-        with TemporaryFile() as original:
-            for chunk in iter_verified_blob(store, page.blob_ref, page.byte_size):
-                original.write(chunk)
-            original.seek(0)
-            for index, response in enumerate(
-                profile.parse_file_stream(
-                    original,
-                    query_scope=scope,
-                    request_key=page.request_key,
-                    evidence_ref=page.blob_ref,
-                    byte_size=page.byte_size,
-                    media_type=page.evidence_media_type,
-                )
-            ):
-                traversal.add(response, page_index=index)
-                for value in response["results"]:
-                    record = profile.classify_record(value)
-                    profile.validate_record_scope(record, query_scope=scope, page_window=0)
-                    if record["ordinal"] != count:
-                        raise ValueError(f"FEC {item['profile']} stream skips or repeats an ordinal")
-                    count += 1
-                    yield profile.wrap_record(record, schema_digest=profile.source_schema_digest())
-            traversal.finish()
+        original = held_original(store, page.blob_ref, page.byte_size)
+        for index, response in enumerate(
+            profile.parse_file_stream(
+                original,
+                query_scope=scope,
+                request_key=page.request_key,
+                evidence_ref=page.blob_ref,
+                byte_size=page.byte_size,
+                media_type=page.evidence_media_type,
+            )
+        ):
+            traversal.add(response, page_index=index)
+            for value in response["results"]:
+                record = profile.classify_record(value)
+                profile.validate_record_scope(record, query_scope=scope, page_window=0)
+                if record["ordinal"] != count:
+                    raise ValueError(f"FEC {item['profile']} stream skips or repeats an ordinal")
+                count += 1
+                yield profile.wrap_record(record, schema_digest=profile.source_schema_digest())
+        traversal.finish()
         outcome.update(
             recordOutcome="no-record-rejections" if count else "empty",
             publishedRecordCount=count,

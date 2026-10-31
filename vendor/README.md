@@ -5,7 +5,21 @@ The optional `source-readers` extra enables the same readers for package install
 its wheels must be supplied explicitly until they are published in a registry.
 Base CLI and MCP installs do not require them.
 
-- **Active: `spicy_docs-0.67.0+centralraw.02cc4431e606`**. The same shared raw
+- **Active: `spicy_docs-0.67.1+centralraw.02cc4431e606`**. A gating build, not a
+  release: the landing cuts SpicyDocs 0.67.1 and replaces this wheel with that
+  release's adoption. The same shared raw archive overlay over
+  `spicy_docs-0.67.1`, built from SpicyDocs `134c9601` (wf/fec-zip-once over
+  fork main `3e68ec10`; the version is stamped only in the build archive, the
+  branch carries none). SHA-256
+  `73f850a7fdd975cd46c9f1caa2247eb37056e5c924722dc9a5db59dc087acbd3`
+  ([receipt](spicy_docs-0.67.1+centralraw.02cc4431e606-py3-none-any.json)).
+  0.67.0 plus `held_original`: one verified spool per archive session serves
+  every member of a FEC ZIP, so a build reads and hashes each ZIP once per
+  contiguous run (ss-6fuk). Only `sources/fec/delimited.py` differs from 0.67.0
+  ([package receipt](spicy_docs-0.67.1.json); two builds from clean archives are
+  byte-identical, SHA-256 `ed7938d6…`).
+
+- `spicy_docs-0.67.0+centralraw.02cc4431e606`: the previous overlay. The same shared raw
   archive overlay over `spicy_docs-0.67.0`, the consolidated Layer 1 release
   (SpicyDocs fork main `3e68ec10`, tag `v0.67.0`). Only `storage/raw_archive.py`
   and the blob destination in `reading/refusals.py` differ from the base; the
