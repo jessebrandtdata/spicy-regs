@@ -67,7 +67,12 @@ def test_native_lobbying_subject_does_not_reintroduce_historical_fields(monkeypa
     assert result['schema_matches_declared'] is True
     assert result['metadata']['identity_columns'] == ['filing_uuid']
     assert 'legacy_column_descriptions' not in result['metadata']
-    assert len(json.dumps(result, separators=(',', ':'))) < 12000
+    reply = json.dumps(result, separators=(',', ':'))
+    legacy = json.loads((Path(mcp_server.__file__).parent / 'table_metadata.json').read_text())
+    assert not any(text in reply for text in legacy['lobbying_filings']['legacy_column_descriptions'].values())
+    # A compact reply, not the full detail: 14,094 characters with the 28 government-sources/2 columns (ss-hqoi,
+    # 2026-10-30); 12,000 bounded the 13 columns of /1.
+    assert len(reply) < 16000
 
 
 @pytest.mark.parametrize('layout', ['published-native', 'local-native'])

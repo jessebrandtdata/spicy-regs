@@ -3418,7 +3418,7 @@
     "lobbying_activities_json": "lobbying_activities"
    },
    "meanings": {
-    "government_entities_json": "JSON array of the government entities lobbied (`{id, name}`) — the agencies and chambers (e.g. `HOUSE OF REPRESENTATIVES`, `SENATE`) named on the filing's activities, in activity order, one entry per occurrence: an entity lobbied on two activities appears twice. Rows converted before 2026-10-03 held each entity once; a filing not re-read since keeps that form until the retained rebuild (ss-hqoi) re-reads it.",
+    "government_entities_json": "JSON array of the distinct government entities lobbied (`{id, name}`) — the agencies and chambers (e.g. `HOUSE OF REPRESENTATIVES`, `SENATE`) named across the filing's activities.",
     "lobbying_activities_json": "JSON array of lobbying activities, each `{general_issue_code, general_issue_code_display, description}` — the issue areas lobbied and their free-text descriptions.",
     "url": "URL of the filing's printable document page on lda.gov (`filing_document_url`; lda.senate.gov redirects there)."
    }

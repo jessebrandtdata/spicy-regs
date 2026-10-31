@@ -2250,7 +2250,25 @@
       "kind": "complete",
       "reason": "",
       "measured_via": null,
-      "baseline_keys": 129462,
+      "baseline_keys": 129495,
+      "baseline_missing": 0,
+      "floor_pct": 100.0,
+      "expected_cardinality": "one",
+      "measurement": null
+    },
+    {
+      "child": "lobbying_clients",
+      "child_columns": [
+        "registrant_id"
+      ],
+      "parent": "lobbying_registrants",
+      "parent_columns": [
+        "registrant_id"
+      ],
+      "kind": "complete",
+      "reason": "",
+      "measured_via": null,
+      "baseline_keys": 14881,
       "baseline_missing": 0,
       "floor_pct": 100.0,
       "expected_cardinality": "one",
@@ -9669,6 +9687,17 @@
         "parent_table": "lobbying_clients",
         "parent_columns": [
           "client_id"
+        ]
+      }
+    ],
+    "lobbying_clients": [
+      {
+        "child_columns": [
+          "registrant_id"
+        ],
+        "parent_table": "lobbying_registrants",
+        "parent_columns": [
+          "registrant_id"
         ]
       }
     ],

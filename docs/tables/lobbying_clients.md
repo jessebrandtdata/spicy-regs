@@ -4,7 +4,7 @@
 
 **Lobbying clients (profile as last captured)**
 
-The client record LDA embeds in each filing, kept once per `client_id` (the latest capture wins). An LDA client id is one registrant's record of one client, not an organization: an organization hired by several firms has one row per firm (see `lobbying_filings.client_id`). Joins from `lobbying_filings.client_id`; `registrant_id` is the registrant of the filing the row was captured from.
+The client record LDA embeds in each filing, kept once per `client_id` (the latest capture wins). An LDA client id is one registrant's record of one client, not an organization: an organization hired by several firms has one row per firm (see `lobbying_filings.client_id`). Joins from `lobbying_filings.client_id`; `registrant_id` joins to `lobbying_registrants`.
 
 **Coverage.** Not a range: one row per LDA client id named on any filing in `lobbying_filings`, holding the client record as LDA served it at the latest capture spicy-regs holds (`captured_at`). LDA serves its current record inside every filing, not the one filed, so this is never the client as it stood when a given filing was made. *(measured 2026-10-30)*
 
@@ -17,7 +17,7 @@ The client record LDA embeds in each filing, kept once per `client_id` (the late
 | --- | --- | --- |
 | `client_id` | `VARCHAR` | LDA client id (`client.id`), the same key as `lobbying_filings.client_id`. Primary key. |
 | `registrant_client_number` | `VARCHAR` | The registrant's own number for this client (the source's `client.client_id`), unique only within one registrant. |
-| `registrant_id` | `VARCHAR` | The registrant (LDA `registrant.id`) of the filing this row was captured from. Its join to `lobbying_registrants` is declared once the full rebuild measures it. |
+| `registrant_id` | `VARCHAR` | The registrant of the filing this row was captured from; joins to `lobbying_registrants.registrant_id`. |
 | `name` | `VARCHAR` | Client name in LDA's record at capture. |
 | `general_description` | `VARCHAR` | The client's general description in LDA's record; often null. |
 | `client_government_entity` | `BOOLEAN` | Whether LDA's record marks the client a government entity; null when the record does not say. |

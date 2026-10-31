@@ -463,12 +463,14 @@ JOINS: tuple[Join, ...] = (
           "lobbying_activities", ("filing_uuid", "activity_index"), 522, 0),
     _join("lobbying_activity_lobbyists", "filing_uuid", "lobbying_filings", "filing_uuid", 1_696_361, 0),
     # Profiles as last captured (ss-hqoi C3): a filing's registrant_id and client_id are the ids of the records it
-    # embeds, and the rebuild keeps one profile per embedded id, so every key resolves by construction. Keys are the
-    # live distinct counts (generation eb88eb81, 2026-10-30); missing 0 measured on the no-upload rebuild of every
-    # capture of filing years 2001 and 2026 (work/lobbying-wf-20261030/compare-sub.json), the full build pending.
+    # embeds, and the rebuild keeps one profile per embedded id, so every key resolves by construction. Measured on
+    # the no-upload rebuild of all 80,523 retained pages (2026-10-30, 1,965,568 filings; the live eb88eb81 holds
+    # 129,462 client ids, the rebuild adds the 481 filings captured 10-19): distinct keys and missing below.
     _join("lobbying_filings", "registrant_id", "lobbying_registrants", "registrant_id", 14_881, 0,
           expected_cardinality="one"),
-    _join("lobbying_filings", "client_id", "lobbying_clients", "client_id", 129_462, 0, expected_cardinality="one"),
+    _join("lobbying_filings", "client_id", "lobbying_clients", "client_id", 129_495, 0, expected_cardinality="one"),
+    _join("lobbying_clients", "registrant_id", "lobbying_registrants", "registrant_id", 14_881, 0,
+          expected_cardinality="one"),
     # Native legal references: each observation names the complete read of its input (spicy-docs 0.52.0's
     # contract reference). Measured 2026-09-28 on native-legal-references 53755e3e…: both scopes resolve.
     _join("native_legal_references", "scope_id", "native_legal_reference_reads", "scope_id", 2, 0),
