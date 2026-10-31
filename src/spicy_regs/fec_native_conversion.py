@@ -85,9 +85,8 @@ def rebind_filing_inputs(selection, proof, directory, check_resources):
             rows.append({**rebound, 'record_id': current['record_id']})
         path = directory / f'headers-{ordinal}.parquet'
         pq.write_table(pa.Table.from_pylist(rows, schema=source.schema_arrow), path, compression='zstd')
-        if _sha(item.path) != item.sha256:
-            raise ValueError('Header dependency changed during qualified rebinding')
-        headers.append(TypedInput(path, _sha(path), item.rows))
+        unchanged_input(item, 'Header dependency changed during qualified rebinding')
+        headers.append(owned_input(path, item.rows))
     return replace(selection, source_generation_pin=proof.staged_pin, header_associations=tuple(headers))
 
 
@@ -490,8 +489,7 @@ def header_subjects(selection, retained, proof, check_resources):
         originals.extend(pq.ParquetFile(path).read(use_threads=False).to_pylist())
     for item in selection.header_associations:
         check_resources()
-        if _sha(item.path) != item.sha256:
-            raise ValueError('Current header dependency changed')
+        unchanged_input(item, 'Current header dependency changed')
         candidates.extend(pq.ParquetFile(item.path).read(use_threads=False).to_pylist())
     if len(originals) != len(candidates):
         raise ValueError('Current header decisions omit or add original observations')
@@ -574,8 +572,7 @@ def filing_reference_subjects(selected, native_filings, *, filing_generation_sco
                 raise ValueError('Filing reference resolution changed selected row membership')
             for item in selected:
                 check_resources()
-                if _sha(item.path) != item.sha256:
-                    raise ValueError('Selected filing references changed during resolution')
+                unchanged_input(item, 'Selected filing references changed during resolution')
         yield subjects()
 
 
@@ -895,8 +892,9 @@ def build_retained_family(family, old, captured, retained, work, *, operation,
         with pq.ParquetFile(path) as source:
             count = source.metadata.num_rows
         if (path.parent != build / 'rebound-filing-inputs' or path.is_symlink()
-                or path.stat().st_nlink != 1 or _sha(path) != item.sha256 or count != item.rows):
+                or path.stat().st_nlink != 1 or count != item.rows):
             raise ValueError('Owned header remap changed before disposal')
+        unchanged_input(item, 'Owned header remap changed before disposal')
     for item in owned_headers:
         item.path.unlink()
     # Rebuilt members are consumed into the generation; their refusal lists stay beside it.

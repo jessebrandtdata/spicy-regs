@@ -163,10 +163,7 @@ def write_fec_subjects(
                     yield json.loads(line)
 
         paths = write_dataset(records(), directory, policy, failures=failures(), batch_size=batch_size,
-                              subject_members=subject_members)
-    validate_receipt_bundle(
-        {table: subject_files(paths[0])}, [paths[1]], [policy], generation_id=generation_id
-    )
+                              subject_members=subject_members, generation_id=generation_id)
     return paths, policy
 
 

@@ -598,6 +598,12 @@ def test_partition_flat_removed_only_after_exact_readback(tmp_path, monkeypatch)
     with pytest.raises(ValueError, match='readback mismatch'):
         module._partition_subject(flat, original, tmp_path / 'failed', lambda: None)
     assert flat.exists() and not (tmp_path / 'failed/artifact.json').exists()
+    monkeypatch.undo()
+    for name, rows, message in (('short', 0, 'lost original rows'), ('long', 2, 'exceed the declared members')):
+        pq.write_table(pa.Table.from_pylist([table.to_pylist()[0]] * rows, schema=table.schema), flat)
+        with pytest.raises(ValueError, match=message):
+            module._partition_subject(flat, original, tmp_path / name, lambda: None)
+        assert flat.exists()
 
 
 def test_receipt_consolidation_closes_recoverable_partial_on_interruption(tmp_path):

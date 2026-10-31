@@ -449,6 +449,7 @@ def write_dataset(
     validation_backend: str = "bulk",
     validate: bool = True,
     subject_members: Sequence[tuple[str, int]] | None = None,
+    generation_id: str | None = None,
 ) -> tuple[Path | None, Path]:
     """Atomically expose a new local directory with subject data and receipts.
 
@@ -460,6 +461,7 @@ def write_dataset(
     combined generation (``validate=False``) leaves the one validation to that admission.
     ``subject_members`` writes the subject once as a directory ``<dataset>/`` of those
     (relative path, rows) members in order, instead of one flat file.
+    ``generation_id`` makes the one pre-publication validation also check every receipt's generation.
     """
     if type(batch_size) is not int or batch_size <= 0:
         raise ValueError("batch_size must be positive")
@@ -501,6 +503,7 @@ def write_dataset(
                 {policy.dataset: [] if policy.receipt_only else subject_files},
                 [receipt_path],
                 [policy],
+                generation_id=generation_id,
                 bulk=validation_backend == "bulk",
             )
         from rulespec_artifacts import publish_directory_no_replace

@@ -102,3 +102,20 @@ def test_selected_collections_are_filtered_before_python_in_input_order_and_hash
     os.utime(source, ns=(1, 1))
     with pytest.raises(ValueError, match="changed during mapping"):
         next(stream)
+
+
+def test_arrow_drops_oversized_string_statistics_that_row_group_skipping_trusts(tmp_path):
+    """_may_hold trusts Arrow's string min/max as exact; an Arrow that truncates them must fail here, not skip rows."""
+    from spicy_regs.transforms.build_fec_identity_context import _input_rows, _may_hold
+
+    long_id = "c" + "x" * 5000
+    rows = [dict(collection_id=long_id, ordinal=0), dict(collection_id="d", ordinal=1)]
+    source = tmp_path / "long.parquet"
+    pq.write_table(pa.Table.from_pylist(rows), source)
+    metadata = pq.ParquetFile(source).metadata
+    assert metadata.created_by.startswith("parquet-cpp-arrow")
+    statistics = metadata.row_group(0).column(0).statistics
+    assert statistics is None or not statistics.has_min_max
+    assert _may_hold(metadata, 0, sorted({long_id}))
+    item = dict(path=str(source), rows=2, sha256="sha256:" + hashlib.sha256(source.read_bytes()).hexdigest())
+    assert list(_input_rows(item, tmp_path, collections={long_id})) == rows[:1]
