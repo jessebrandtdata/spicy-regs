@@ -56,7 +56,9 @@ def fec_bucket(monkeypatch):
     return factory(monkeypatch)
 
 
-def old_family(tmp, monkeypatch, store, family, *, populated=False, rows_by_table=None, legacy_tables=()):
+def old_family(tmp, monkeypatch, store, family, *, populated=False, rows_by_table=None, legacy_tables=(), split=()):
+    """A published captured prior; a table in ``split`` is a source_namespace member directory of its rows
+    (first row in part-000000, an empty part-000001 after it)."""
     from spicy_regs import etl_policy_registry
     if family == 'fec-observations':
         schemas = dict(zip(('fec_source_records', 'fec_collections', 'fec_relationships'),
@@ -78,14 +80,24 @@ def old_family(tmp, monkeypatch, store, family, *, populated=False, rows_by_tabl
             rows = [dict(collection_id='collection', source_record_id='record', source_sha256='sha256:' + 'a'*64,
                          source_family='fec-test', source_record_json='{"amount":"5"}')]*2
         rows = (rows_by_table or {}).get(name, rows)
-        pq.write_table(pa.Table.from_pylist(rows, schema=schema.with_metadata({'retained': 'fixture'})), path)
+        table = pa.Table.from_pylist(rows, schema=schema.with_metadata({'retained': 'fixture'}))
+        if name in split:
+            path = path.with_suffix('')
+            for part, piece in enumerate((table, table.slice(0, 0))):
+                member = path / f'source_namespace={rows[0]["source_namespace"]}' / f'part-{part:06d}.parquet'
+                member.parent.mkdir(parents=True, exist_ok=True)
+                pq.write_table(piece, member)
+        else:
+            pq.write_table(table, path)
         files.append(path)
     with monkeypatch.context() as patch:
         patch.setattr(etl_policy_registry, 'require_registered_receipts', lambda *_: None)
-        build_generation(tmp / 'old-generation', family=family, files=files, expected_keys=[p.name for p in files])
+        build_generation(tmp / 'old-generation', family=family, files=files,
+                         expected_keys=[p.with_suffix('.parquet').name for p in files],
+                         partitioned={name + '.parquet': ('source_namespace',) for name in split})
         snapshot = publication.publish_generation(tmp / 'old-generation', client=store, bucket='spicy-regs',
                                                    prior_index=publication.current_index(BASE))
-    return snapshot, {p.name: p for p in files}
+    return snapshot, {p.with_suffix('.parquet').name: p for p in files}
 
 
 def test_observations_converter_complete_family_restores_duplicate_rows_and_metadata(tmp_path, monkeypatch, bucket):
@@ -243,7 +255,8 @@ def test_query_qualification_refuses_a_rebuilt_table_whose_row_count_differs_fro
             expected_main=MAIN, expected_spicy_docs=WHEEL, state=lambda _: dict(STATE))
 
 
-def test_nonempty_complete_query_links_filing_source_and_retained_history(tmp_path, monkeypatch, bucket):
+@pytest.mark.parametrize('split', [(), ('fec_receipts',)])
+def test_nonempty_complete_query_links_filing_source_and_retained_history(tmp_path, monkeypatch, bucket, split):
     from decimal import Decimal
     from spicy_regs.transforms.assemble_fec_query import FilingAssociationInputs, TypedInput, _sha
     from spicy_regs.transforms.fec_identity_context_fields import normalize_record
@@ -279,7 +292,7 @@ def test_nonempty_complete_query_links_filing_source_and_retained_history(tmp_pa
             # Receipt-context evidence of a rebuilt table is not carried (ss-j4vz B7-B9).
             dict(target_table='fec_research_source_pages',target_record_id='old-page',role='primary',
                  endpoint_kind='collection_context',collection_id='c',witness_sha256=SHA)]},
-        legacy_tables=['fec_committee_master_observations'])
+        legacy_tables=['fec_committee_master_observations'],split=split)
     source_work=tmp_path/'prepared-source'
     source=conversion.convert('fec-observations',allowed=['fec-observations'],work=source_work,
         expected_main=MAIN,expected_spicy_docs=WHEEL,state=lambda _:dict(STATE))
@@ -301,7 +314,13 @@ def test_nonempty_complete_query_links_filing_source_and_retained_history(tmp_pa
     result=conversion.convert('fec-query',allowed=['fec-query'],work=work,staged_observations=source_work/'build/generation',
         filing_associations=selection,expected_main=MAIN,expected_spicy_docs=WHEEL,state=lambda _:dict(STATE))
     generation=work/'build/generation'
-    [money]=pq.ParquetFile(generation/'fec_receipts.parquet').read().to_pylist()
+    if split:  # ss-3bkk: assembly wrote the captured member layout, the empty member included, once
+        members=[p.relative_to(generation/'fec_receipts').as_posix() for p in sorted((generation/'fec_receipts').rglob('*.parquet'))]
+        assert members==[p.relative_to(retained['fec_receipts.parquet']).as_posix()
+                         for p in sorted(retained['fec_receipts.parquet'].rglob('*.parquet'))]
+        assert not (work/'build/partitioned').exists()
+    [money]=pa.concat_tables(pq.ParquetFile(p).read() for p in sorted(generation.glob('fec_receipts*/**/*.parquet'))
+                             ).to_pylist() if split else pq.ParquetFile(generation/'fec_receipts.parquet').read().to_pylist()
     assert money['amount']==Decimal('5') and money['filing_key']==filing()['filing_key']
     assert money['filing_association_target_generation_scope']=='self' and money['filing_association_target_generation_pin'] is None
     [header]=pq.ParquetFile(generation/'fec_filing_header_associations.parquet').read().to_pylist()
@@ -706,3 +725,30 @@ def test_captured_legacy_count_missing_field_has_explicit_diagnostics(table,fiel
     assert row[field] is None
     assert diagnostics['field_statuses'][field]=='source_missing'
     assert diagnostics['raw_values'][field] is None and field not in diagnostics['refusals']
+
+
+def test_agency_source_lookup_semi_joins_the_admitted_parent_subjects(tmp_path, monkeypatch, bucket):
+    """ss-3bkk: the DuckDB semi-join keeps the row replay's answers and refusals."""
+    from spicy_regs.fec_native_conversion import agency_source_lookup
+    a, b = 'sha256:' + 'a' * 64, 'sha256:' + 'b' * 64
+    def record(collection, source_record, digest):
+        return dict(collection_id=collection, source_record_id=source_record, source_sha256=digest,
+                    source_family='fec-test', source_record_json='{}')
+    rows = [record('c1', 'r1', a), record('c1', 'r1', a), record('c2', 'r2', b),
+            record('c3', 'r3', a), record('c3', 'r3', b)]
+    snapshot, retained = old_family(tmp_path, monkeypatch, bucket, 'fec-observations',
+                                    rows_by_table={'fec_source_records': rows})
+    with ConversionReadOperation() as operation:
+        generation = build_retained_family('fec-observations', snapshot['families']['fec-observations'],
+                                           snapshot, retained, tmp_path / 'work', operation=operation)
+        pin = operation.admit_generation(generation)[0].pin.artifact_digest
+        def lookup(coordinates, expected=pin):
+            return agency_source_lookup(generation, operation, coordinates, expected, lambda: None)
+        found = lookup({('c1', 'r1'), ('c2', 'r2')})
+        assert [found(dict(collection_id=c, source_record_id=r)) for c, r in (('c1', 'r1'), ('c2', 'r2'))] == [a, b]
+        assert lookup(set())(dict(collection_id='c1', source_record_id='r1')) is None
+        for coordinates, refusal in (({('c3', 'r3')}, 'conflicting digest'), ({('c1', 'r1'), ('c9', 'r9')}, 'absent')):
+            with pytest.raises(ValueError, match=refusal):
+                lookup(coordinates)
+        with pytest.raises(ValueError, match='differs from selected parent'):
+            lookup({('c1', 'r1')}, 'sha256:' + 'f' * 64)

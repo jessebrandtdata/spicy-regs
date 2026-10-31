@@ -22,10 +22,43 @@ from .fec_typed_batch import typed_batch
 
 @dataclass(frozen=True)
 class TypedInput:
+    """A selected input; ``signature`` is the file signature taken around the hash that proved ``sha256``."""
     path: Path
     sha256: str
     rows: int
     source_namespace: str | None = None
+    signature: tuple[int, ...] | None = None
+
+
+def owned_input(path: Path, rows: int, source_namespace: str | None = None) -> TypedInput:
+    """Pin a file by its one hash and the file signature unchanged around that hash."""
+    from spicy_regs.local_data import file_signature
+    before = tuple(file_signature(path))
+    digest = _sha(path)
+    if tuple(file_signature(path)) != before:
+        raise ValueError("FEC input changed while it was hashed")
+    return TypedInput(path, digest, rows, source_namespace, before)
+
+
+def hashed_input(item: TypedInput, message: str = "FEC input bytes differ from the qualified digest") -> TypedInput:
+    """Hash an input once per run; later checks compare its file signature instead of rehashing."""
+    if item.signature is not None:
+        unchanged_input(item, message)
+        return item
+    pinned = owned_input(item.path, item.rows, item.source_namespace)
+    if pinned.sha256 != item.sha256:
+        raise ValueError(message)
+    return pinned
+
+
+def unchanged_input(item: TypedInput, message: str) -> None:
+    """Refuse an input replaced or written since its one hash (an unhashed input is hashed here)."""
+    from spicy_regs.local_data import file_signature
+    if item.signature is None:
+        if _sha(item.path) != item.sha256:
+            raise ValueError(message)
+    elif tuple(file_signature(item.path)) != item.signature:
+        raise ValueError(message)
 
 
 @dataclass(frozen=True)
@@ -161,8 +194,7 @@ def _batches(inputs: Sequence[TypedInput], schema: pa.Schema, batch_size: int,
                 yield batch
         if count != item.rows:
             raise ValueError("FEC input body count differs from its declared membership")
-        if _sha(item.path) != item.sha256:
-            raise ValueError("FEC input bytes changed during assembly or readback")
+        unchanged_input(item, "FEC input bytes changed during assembly or readback")
 
 
 def _equal_streams(expected: Iterator[pa.RecordBatch], actual: Iterator[pa.RecordBatch]) -> int:
@@ -215,8 +247,7 @@ def assemble_table(
         if partitioned and (not isinstance(item.source_namespace, str)
                             or not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", item.source_namespace)):
             raise ValueError("FEC namespace partition requires its exact supported source value")
-        if _sha(item.path) != item.sha256:
-            raise ValueError("FEC input bytes differ from the qualified digest")
+        item = hashed_input(item)
         with pq.ParquetFile(item.path) as source:
             if source.metadata.num_rows != item.rows:
                 raise ValueError("FEC input footer differs from declared row membership")
@@ -330,16 +361,19 @@ def assemble_subject_table(
     source_digest_for=None,
     observation_rebinding=None,
     current_header_for=None,
+    subject_members: Sequence[tuple[str, int]] | None = None,
 ) -> dict:
     """Assemble this FEC family's subjects and receipts from qualified mapper files.
 
     Namespace partitions are checked on the input processing rows. Subject output
     uses ordinary Parquet members whether the table keeps source_namespace as a
     subject column or moves it to receipts; moving it never bypasses input
-    partition validation. The original assembly entry point remains available
+    partition validation. ``subject_members`` (relative path, rows) writes the
+    subject once into the captured member layout; the exact comparison below then
+    reads those members. The original assembly entry point remains available
     for legacy, unmigrated datasets.
     """
-    from .fec_subject_receipts import write_fec_subjects, read_fec_with_receipts
+    from .fec_subject_receipts import write_fec_subjects, read_fec_with_receipts, subject_files
     from .fec_native_subjects import FIELD_RULES
 
     if table not in FIELD_RULES or not inputs or read_batch_rows <= 0:
@@ -347,13 +381,14 @@ def assemble_subject_table(
     paths = [item.path.resolve() for item in inputs]
     if len(paths) != len(set(paths)):
         raise ValueError("The same FEC input file was selected twice")
+    hashed = []
     for item in inputs:
         check_resources()
         _digest(item.sha256)
         if type(item.rows) is not int or item.rows < 0 or not item.path.is_file() or item.path.is_symlink():
             raise ValueError("FEC input must be a regular file with explicit row membership")
-        if _sha(item.path) != item.sha256:
-            raise ValueError("FEC input bytes differ from the qualified digest")
+        item = hashed_input(item)
+        hashed.append(item)
         with pq.ParquetFile(item.path) as source:
             if source.metadata.num_rows != item.rows:
                 raise ValueError("FEC input footer differs from declared row membership")
@@ -363,6 +398,7 @@ def assemble_subject_table(
             raise ValueError("FEC namespace partition requires its exact supported source value")
     if source_partitioned and "source_namespace" not in schema.names:
         raise ValueError("Namespace validation requires processing rows reconstructed from receipts")
+    inputs = hashed
 
     def records():
         for batch in _batches(inputs, schema, read_batch_rows, check_resources, source_partitioned):
@@ -375,8 +411,9 @@ def assemble_subject_table(
                                       generation_id=generation_id, context_for=context_for,
                                       batch_size=read_batch_rows, associations_for=associations_for,
                                       source_digest_for=source_digest_for, observation_rebinding=observation_rebinding,
-                                      current_header_for=current_header_for)
+                                      current_header_for=current_header_for, subject_members=subject_members)
     subject, receipts = paths
+    members = subject_files(subject)
     refused = 0
     for batch in pq.ParquetFile(receipts).iter_batches(columns=["outcome"]):
         refused += sum(v in {"refused", "error", "rejected"} for v in batch.column(0).to_pylist())
@@ -386,7 +423,7 @@ def assemble_subject_table(
     if subject is not None and not refused:
         def restored():
             values = []
-            for row in read_fec_with_receipts([subject], [receipts], policy, generation_id=generation_id):
+            for row in read_fec_with_receipts(members, [receipts], policy, generation_id=generation_id):
                 values.append(row)
                 if len(values) == read_batch_rows:
                     yield pa.RecordBatch.from_pylist(values, schema=schema)
@@ -404,7 +441,7 @@ def assemble_subject_table(
                 raise ValueError("Selected filing dependency changed during subject assembly")
     return dict(dataset=table, subject_path=None if subject is None else str(subject), receipt_path=str(receipts),
                 policy=policy.descriptor(), input_rows=sum(i.rows for i in inputs),
-                subject_rows=0 if subject is None else pq.ParquetFile(subject).metadata.num_rows,
+                subject_rows=sum(pq.ParquetFile(path).metadata.num_rows for path in members),
                 refused_rows=refused, exact_mapper_rows_compared=checked,
                 source_partition_columns=["source_namespace"] if source_partitioned else [],
                 subject_partition_columns=[], full_rebuild_qualified=not refused,

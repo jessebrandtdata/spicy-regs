@@ -75,3 +75,30 @@ def test_evidence_is_attached_per_row_by_table_and_record_identity():
         ("fec_filings", "b", ["primary"]),
     ]
     assert [e[0] for e in writer.emitted[2:]] == ["fec_record_evidence"] * 4
+
+
+def test_selected_collections_are_filtered_before_python_in_input_order_and_hashed_once(tmp_path, monkeypatch):
+    """ss-3bkk: one hash per input, Arrow filtering across batches, and a change after that hash is refused."""
+    import os
+    from itertools import islice
+
+    from spicy_regs.transforms import assemble_fec_query
+    from spicy_regs.transforms.build_fec_identity_context import _input_rows
+
+    # Contiguous collections over misaligned row groups: statistics skip most groups, never a selected row.
+    rows = [dict(collection_id=None if i % 97 == 0 else f"c{i // 500}", ordinal=i) for i in range(5000)]
+    source = tmp_path / "records.parquet"
+    pq.write_table(pa.Table.from_pylist(rows), source, row_group_size=700)
+    item = dict(path=str(source), rows=len(rows), sha256="sha256:" + hashlib.sha256(source.read_bytes()).hexdigest())
+    hashed = []
+    original = assemble_fec_query._sha
+    monkeypatch.setattr(assemble_fec_query, "_sha", lambda path: hashed.append(path) or original(path))
+    selected = {"c3", "c7", "absent"}
+    assert list(_input_rows(item, tmp_path, collections=selected)) == [r for r in rows if r["collection_id"] in selected]
+    assert hashed == [source]
+    assert list(_input_rows(item, tmp_path)) == rows
+    stream = _input_rows(item, tmp_path)
+    assert len(list(islice(stream, len(rows)))) == len(rows)
+    os.utime(source, ns=(1, 1))
+    with pytest.raises(ValueError, match="changed during mapping"):
+        next(stream)

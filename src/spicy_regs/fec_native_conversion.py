@@ -18,10 +18,12 @@ import pyarrow.parquet as pq
 from spicy_regs.etl_receipts import RECEIPT_SCHEMA, ReceiptContext
 from spicy_regs.generations import build_generation
 from spicy_regs.sources import publication
-from spicy_regs.transforms.assemble_fec_query import TypedInput, assemble_subject_table, _sha, _equal_streams
+from spicy_regs.transforms.assemble_fec_query import (
+    TypedInput, assemble_subject_table, hashed_input, owned_input, unchanged_input, _sha, _equal_streams)
 from spicy_regs.transforms.build_fec_observations import OUTPUTS
 from spicy_regs.transforms.fec_identity_receipts import IdentityReceiptWriter
 from spicy_regs.transforms.fec_native_subjects import FIELD_RULES
+from spicy_regs.transforms.fec_subject_receipts import subject_files as _members
 
 FAMILIES = frozenset({'fec-observations', 'fec-query'})
 LEGACY_FIELDS = json.loads(Path(__file__).with_name('fec_retained_legacy_fields.json').read_text())
@@ -174,7 +176,7 @@ def rebuilt_inputs(table, directory, *, store=None, check_resources=lambda: None
             continue
         path = directory / f'{table}-{ordinal:04d}.parquet'
         pq.write_table(pa.Table.from_pylist(result.rows, schema=schema), path, compression='zstd')
-        members.append(TypedInput(path, _sha(path), len(result.rows)))
+        members.append(owned_input(path, len(result.rows)))
         digest = entry['source_sha256'].removeprefix('sha256:')
         witnesses.append(dict(source_id=f'raw-archive:objects/sha256/{digest[:2]}/{digest}', source_uri=entry['source_url'],
                               sha256=entry['source_sha256'], locator=None, body_version=entry['acquisition_receipt']))
@@ -213,36 +215,26 @@ def staged_snapshot(captured, generation, operation):
     return result
 
 
-def _members(path):
-    return sorted(path.rglob('*.parquet')) if path.is_dir() else [path]
-
-
 def _partition_subject(flat, original, destination, check_resources):
-    """Keep exact member names/lengths; generation admission checks partition cells."""
+    """Keep exact member names/lengths; generation admission checks partition cells.
+
+    Only an identity writer's flat output takes this second write; subject assembly
+    writes its members directly (assemble_subject_table subject_members).
+    """
+    from spicy_regs.etl_receipts import MemberWriter
+    members = _member_layout(original)
     destination.mkdir(parents=True)
     with pq.ParquetFile(flat) as source:
-        rows = iter(row for batch in source.iter_batches(batch_size=512, use_threads=False) for row in batch.to_pylist())
-        from itertools import islice
-        for member in _members(original):
-            check_resources()
-            target = destination / member.relative_to(original)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            count = pq.ParquetFile(member).metadata.num_rows
-            with pq.ParquetWriter(target, source.schema_arrow, compression='zstd') as writer:
-                remaining = count
-                while remaining:
-                    check_resources()
-                    batch = list(islice(rows, min(512, remaining)))
-                    if not batch:
-                        raise ValueError('Native FEC member lost original rows')
-                    writer.write_table(pa.Table.from_pylist(batch, schema=source.schema_arrow))
-                    remaining -= len(batch)
-        if next(rows, None) is not None:
-            raise ValueError('Native FEC member has additional rows')
+        with MemberWriter(destination, members, source.schema_arrow) as writer:
+            for batch in source.iter_batches(batch_size=8192, use_threads=False):
+                check_resources()
+                writer.write_table(pa.Table.from_batches([batch]))
+        if source.metadata.num_rows != sum(rows for _, rows in members):
+            raise ValueError('Native FEC member lost original rows')
         def batches(paths):
             for path in paths:
                 with pq.ParquetFile(path) as reader:
-                    for batch in reader.iter_batches(batch_size=512, use_threads=False):
+                    for batch in reader.iter_batches(batch_size=8192, use_threads=False):
                         check_resources()
                         yield batch
         _equal_streams(batches([flat]), batches(_members(destination)))
@@ -250,6 +242,12 @@ def _partition_subject(flat, original, destination, check_resources):
         raise ValueError('Partitioning may consume only its single-link owned flat output')
     flat.unlink()
     return destination
+
+
+def _member_layout(original):
+    """The captured partitioned original's (relative path, rows) members in publication order."""
+    return [(member.relative_to(original).as_posix(), pq.ParquetFile(member).metadata.num_rows)
+            for member in _members(original)]
 
 
 def _consume_receipt(receipt, writer, check_resources, *, coalesce=False):
@@ -582,24 +580,44 @@ def filing_reference_subjects(selected, native_filings, *, filing_generation_sco
 
 
 def agency_source_lookup(generation, operation, coordinates, expected_pin, check_resources):
-    """Qualify each disposition's exact coordinate against the admitted source."""
+    """Qualify each disposition's exact coordinate against the admitted source.
+
+    One DuckDB semi-join over the admitted fec_source_records subject members: the
+    coordinate and digest are subject columns, so replaying every parent row with its
+    receipts through Python (80.4M rows, 17.7 GB on 4cb0dffa) adds nothing here.
+    """
     if not coordinates:
         return lambda row: None
     if generation is None:
         raise ValueError('Agency source navigation requires the exact admitted observations generation')
-    artifact, reader, _ = operation.admit_generation(generation)
+    artifact, reader, source = operation.admit_generation(generation)
     if artifact.pin.artifact_digest != expected_pin:
         raise ValueError('Agency source lookup generation differs from selected parent')
+    from spicy_regs.etl_bulk import bulk_connection
+    from spicy_regs.transforms.fec_query import _digest
+    root = Path(generation).absolute()
+    paths = [str(root / key) for key in sorted(source.keys())
+             if publication.member_table(key) == 'fec_source_records.parquet']
+    wanted = pa.table({'collection_id': [key[0] for key in coordinates],
+                       'source_record_id': [key[1] for key in coordinates]})
+    reader.check()  # the admitted member bytes are still the ones on disk
+    check_resources()
+    with bulk_connection() as (connection, _):
+        connection.register('wanted', wanted)
+        # A NULL digest counts as its own witness, as the row comparison did.
+        rows = connection.execute(
+            "SELECT collection_id, source_record_id, max(source_sha256),"
+            " count(DISTINCT source_sha256) + max((source_sha256 IS NULL)::INTEGER)"
+            " FROM read_parquet(?, hive_partitioning=false) SEMI JOIN wanted USING (collection_id, source_record_id)"
+            " GROUP BY collection_id, source_record_id",
+            [paths]).fetchall()
+    reader.check()
+    check_resources()
     found = {}
-    for row in reader.read_subjects('fec_source_records'):
-        check_resources()
-        key = (row.get('collection_id'), row.get('source_record_id'))
-        if key in coordinates:
-            digest = row.get('source_sha256')
-            if key in found and found[key] != digest:
-                raise ValueError('Agency source coordinate has conflicting digest witnesses')
-            from spicy_regs.transforms.fec_query import _digest
-            found[key] = _digest(digest)
+    for collection_id, source_record_id, digest, witnesses in rows:
+        if witnesses != 1:
+            raise ValueError('Agency source coordinate has conflicting digest witnesses')
+        found[collection_id, source_record_id] = _digest(digest)
     if set(found) != coordinates:
         raise ValueError('Agency source coordinate is absent from selected observations')
     return lambda row: found[(row.get('collection_id'), row.get('source_record_id'))]
@@ -622,8 +640,12 @@ def _identity_conversion_row(table, original_row, schema, observation_rebinding,
     return rebound, source_input or None
 
 
-def _captured_inputs(captured, old, key, table, original):
-    """The captured prior's exact members for one table, checked against its publication pins."""
+def _captured_inputs(captured, old, key, table, original, *, verify=True):
+    """The captured prior's exact members for one table, checked against its publication pins.
+
+    Each member is hashed here once per run (``verify=False`` leaves that to the frozen
+    checkpoint kernel, which hashes its own inputs); later checks compare file signatures.
+    """
     published_members = publication.table_members(captured, key)
     members = [original / pin.key.removeprefix(table + '/') if original.is_dir() else original
                for pin in published_members]
@@ -644,9 +666,11 @@ def _captured_inputs(captured, old, key, table, original):
             namespace = path.relative_to(original).parts[0].removeprefix('source_namespace=')
         if pin.sha256 is None or pin.byte_size is None or pin.rows is None:
             raise ValueError('FEC conversion requires exact digest, size and row membership')
-        if _sha(path) != pin.sha256 or path.stat().st_size != pin.byte_size or pq.ParquetFile(path).metadata.num_rows != pin.rows:
-            raise ValueError('FEC retained input differs from captured member bytes or rows')
-        selected.append(TypedInput(path, pin.sha256, pin.rows, namespace))
+        message = 'FEC retained input differs from captured member bytes or rows'
+        if path.stat().st_size != pin.byte_size or pq.ParquetFile(path).metadata.num_rows != pin.rows:
+            raise ValueError(message)
+        item = TypedInput(path, pin.sha256, pin.rows, namespace)
+        selected.append(hashed_input(item, message) if verify else item)
         witnesses.append(dict(source_id=pin.path, source_uri=None, sha256=pin.sha256,
                               locator=None, body_version=old['artifactDigest']))
     return selected, witnesses, schema
@@ -738,7 +762,8 @@ def build_retained_family(family, old, captured, retained, work, *, operation,
                 rebuilt_members.extend(selected)
                 original = selected[0].path  # flat members: no captured source partitions apply
             else:
-                selected, witnesses, schema = _captured_inputs(captured, old, key, table, original)
+                selected, witnesses, schema = _captured_inputs(captured, old, key, table, original,
+                                                               verify=segments is None or table in FIELD_RULES)
             output = observation_output if observation_writer is not None else build / 'tables' / table
             if table in FIELD_RULES:
                 from bisect import bisect_right
@@ -758,7 +783,8 @@ def build_retained_family(family, old, captured, retained, work, *, operation,
                     source_partitioned=original.is_dir(), filing_associations=filing_associations if applicable else None,
                     source_digest_for=agency_digest_for if table == 'fec_agency_mapping_dispositions' else None,
                     observation_rebinding=observation_rebinding,
-                    current_header_for=current_header_for if table == 'fec_filing_header_associations' else None)
+                    current_header_for=current_header_for if table == 'fec_filing_header_associations' else None,
+                    subject_members=_member_layout(original) if original.is_dir() else None)
                 if not result['full_rebuild_qualified'] or result['exact_mapper_rows_compared'] != sum(i.rows for i in selected):
                     raise ValueError(f'{table}: retained FEC rows did not all convert exactly')
                 from spicy_regs.transforms.fec_subject_receipts import dataset_policy
@@ -830,12 +856,14 @@ def build_retained_family(family, old, captured, retained, work, *, operation,
                 _consume_receipt(receipts, receipt_writer, check_resources, coalesce=segments is not None)
             if subject is not None:
                 if original.is_dir():
-                    destination = build / 'partitioned' / table
-                    if observation_writer is not None:
-                        pending_partitions.append((subject, original, destination))
-                        subject = destination
-                    else:
-                        subject = _partition_subject(subject, original, destination, check_resources)
+                    # Assembly already wrote the captured members; an identity writer's flat output is split here.
+                    if not subject.is_dir():
+                        destination = build / 'partitioned' / table
+                        if observation_writer is not None:
+                            pending_partitions.append((subject, original, destination))
+                            subject = destination
+                        else:
+                            subject = _partition_subject(subject, original, destination, check_resources)
                     partitioned[key] = old['tables'][key]['partitionColumns']
                 subjects.append(subject)
         if segments is not None:
@@ -873,8 +901,9 @@ def build_retained_family(family, old, captured, retained, work, *, operation,
         item.path.unlink()
     # Rebuilt members are consumed into the generation; their refusal lists stay beside it.
     for item in rebuilt_members:
-        if item.path.is_symlink() or item.path.stat().st_nlink != 1 or _sha(item.path) != item.sha256:
+        if item.path.is_symlink() or item.path.stat().st_nlink != 1:
             raise ValueError('Rebuilt original member changed before disposal')
+        unchanged_input(item, 'Rebuilt original member changed before disposal')
         item.path.unlink()
     if owned_headers:
         (build / 'rebound-filing-inputs').rmdir()

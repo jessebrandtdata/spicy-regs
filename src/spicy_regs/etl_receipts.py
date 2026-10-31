@@ -387,6 +387,57 @@ def _dataset_batches(records, policy, *, failures=(), batch_size=2000):
         yield take()
 
 
+class MemberWriter:
+    """Write one ordered subject stream straight into named members of exact row counts.
+
+    Members are (relative path, rows) in publication order; every member gets its file,
+    an empty one included. More rows than declared are refused; fewer stay the caller's
+    to judge (a refused row never reaches the subject stream).
+    """
+
+    def __init__(self, root: Path, members: Sequence[tuple[str, int]], schema: pa.Schema):
+        self.root, self.members, self.schema = root, list(members), schema
+        self.paths: list[Path] = []
+        self.writer: pq.ParquetWriter | None = None
+        self.left = 0
+
+    def _open_next(self) -> None:
+        if self.writer is not None:
+            self.writer.close()
+            self.writer = None
+        if len(self.paths) == len(self.members):
+            raise ValueError("Subject rows exceed the declared members")
+        relative, rows = self.members[len(self.paths)]
+        if Path(relative).is_absolute() or ".." in Path(relative).parts:
+            raise ValueError("Subject member path must stay inside the dataset")
+        target = self.root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        self.writer = pq.ParquetWriter(target, self.schema, compression="zstd")
+        self.paths.append(target)
+        self.left = rows
+
+    def write_table(self, table: pa.Table) -> None:
+        offset = 0
+        while offset < table.num_rows:
+            while self.writer is None or not self.left:
+                self._open_next()
+            size = min(self.left, table.num_rows - offset)
+            self.writer.write_table(table.slice(offset, size))
+            offset, self.left = offset + size, self.left - size
+
+    def __enter__(self) -> MemberWriter:
+        return self
+
+    def __exit__(self, error_type, *_) -> None:
+        try:
+            if error_type is None:
+                while len(self.paths) < len(self.members):
+                    self._open_next()
+        finally:
+            if self.writer is not None:
+                self.writer.close()
+
+
 def write_dataset(
     records: Iterable[tuple[Mapping, ReceiptContext]],
     directory: Path,
@@ -397,6 +448,7 @@ def write_dataset(
     prior_receipts: Sequence[Path] = (),
     validation_backend: str = "bulk",
     validate: bool = True,
+    subject_members: Sequence[tuple[str, int]] | None = None,
 ) -> tuple[Path | None, Path]:
     """Atomically expose a new local directory with subject data and receipts.
 
@@ -406,6 +458,8 @@ def write_dataset(
     ``validation_backend="reference"`` selects the maintained row validator;
     the default retains bulk validation and its existing fallback behavior. A caller that goes on to admit the
     combined generation (``validate=False``) leaves the one validation to that admission.
+    ``subject_members`` writes the subject once as a directory ``<dataset>/`` of those
+    (relative path, rows) members in order, instead of one flat file.
     """
     if type(batch_size) is not int or batch_size <= 0:
         raise ValueError("batch_size must be positive")
@@ -418,16 +472,22 @@ def write_dataset(
     with TemporaryDirectory(dir=directory.parent, prefix=".etl-") as temporary:
         stage = Path(temporary) / "bundle"
         stage.mkdir()
-        subject_path = stage / f"{policy.dataset}.parquet"
+        subject_path = stage / (policy.dataset if subject_members is not None else f"{policy.dataset}.parquet")
         receipt_path = stage / RECEIPT_KEY
+        subject_files = [subject_path]
         from contextlib import ExitStack
 
         with ExitStack() as stack:
-            subject_writer = (
-                None
-                if policy.receipt_only
-                else stack.enter_context(pq.ParquetWriter(subject_path, policy.subject_schema, compression="zstd"))
-            )
+            subject_writer: pq.ParquetWriter | MemberWriter | None = None
+            if policy.receipt_only:
+                if subject_members is not None:
+                    raise ValueError("A receipt-only dataset has no subject members")
+            elif subject_members is not None:
+                subject_writer = stack.enter_context(MemberWriter(subject_path, subject_members, policy.subject_schema))
+                subject_files = subject_writer.paths
+            else:
+                subject_writer = stack.enter_context(
+                    pq.ParquetWriter(subject_path, policy.subject_schema, compression="zstd"))
             receipt_writer = stack.enter_context(pq.ParquetWriter(receipt_path, RECEIPT_SCHEMA, compression="zstd"))
             for subject, receipt in _dataset_batches(records, policy, failures=failures, batch_size=batch_size):
                 if subject is not None:
@@ -438,7 +498,7 @@ def write_dataset(
             carry_receipt_history(receipt_path, prior_receipts, receipt_path)
         if validate:
             validate_receipt_bundle(
-                {policy.dataset: [] if policy.receipt_only else [subject_path]},
+                {policy.dataset: [] if policy.receipt_only else subject_files},
                 [receipt_path],
                 [policy],
                 bulk=validation_backend == "bulk",

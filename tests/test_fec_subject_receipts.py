@@ -375,3 +375,43 @@ def test_real_builder_rows_publish_the_returned_values_and_restore_exactly(tmp_p
         assert stated == {"source_namespace": ["fec-openfec-admin_fines-no"]}
     else:
         assert {"exact", "excess_precision"} <= set(stated["amount_status"])
+
+
+def test_subject_assembly_writes_captured_members_once_and_hashes_each_input_once(tmp_path, monkeypatch):
+    """ss-3bkk: the subject lands in the captured member layout directly, with values equal to the flat write."""
+    from spicy_regs.transforms import assemble_fec_query
+    from spicy_regs.transforms.assemble_fec_query import TypedInput, assemble_subject_table, owned_input
+
+    rows = [{**source_row(), "record_id": "sha256:" + f"{i:x}" * 64} for i in range(5)]
+    schema = pa.Table.from_pylist(rows).schema
+    inputs = []
+    for name, part in (("a.parquet", rows[:3]), ("b.parquet", rows[3:])):
+        pq.write_table(pa.Table.from_pylist(part, schema=schema), tmp_path / name)
+        inputs.append(TypedInput(tmp_path / name, assemble_fec_query._sha(tmp_path / name), len(part),
+                                 "fec-bulk-individual-contributions"))
+    hashed = []
+    original = assemble_fec_query._sha
+    monkeypatch.setattr(assemble_fec_query, "_sha", lambda path: hashed.append(path) or original(path))
+
+    def assemble(output, members, items):
+        return assemble_subject_table(items, table="fec_receipts", schema=schema, output=tmp_path / output,
+                                      generation_id="generation-a", context_for=context, check_resources=lambda: None,
+                                      source_partitioned=True, subject_members=members, read_batch_rows=2)
+
+    flat = assemble("flat", None, inputs)
+    assert sorted(hashed) == sorted(item.path for item in inputs)
+    members = [("source_namespace=n/part-000000.parquet", 3), ("source_namespace=n/part-000001.parquet", 0),
+               ("source_namespace=n/part-000002.parquet", 2)]
+    hashed.clear()
+    signed = [owned_input(item.path, item.rows, item.source_namespace) for item in inputs]
+    hashed.clear()
+    split = assemble("split", members, signed)
+    assert hashed == []  # a signed input was hashed by its caller; assembly checks only its signature
+    root = Path(split["subject_path"])
+    assert [(p.relative_to(root).as_posix(), pq.ParquetFile(p).metadata.num_rows)
+            for p in sorted(root.rglob("*.parquet"))] == members
+    assert split["subject_rows"] == split["exact_mapper_rows_compared"] == 5
+    assert pa.concat_tables(pq.ParquetFile(p).read() for p in sorted(root.rglob("*.parquet"))).equals(
+        pq.ParquetFile(flat["subject_path"]).read())
+    with pytest.raises(ValueError, match="exceed the declared members"):
+        assemble("short", members[:2], inputs)

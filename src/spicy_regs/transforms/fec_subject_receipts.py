@@ -73,6 +73,13 @@ def mapped_record(table: str, row: dict, policy: DatasetPolicy, *, ordinal=None,
     return {**values, _CONVERSIONS: processing, _INPUT_COLUMNS: list(row)}
 
 
+def subject_files(path):
+    """The Parquet members of a written subject in publication order: a flat file, a member directory, or none."""
+    if path is None:
+        return []
+    return sorted(Path(path).rglob("*.parquet")) if Path(path).is_dir() else [Path(path)]
+
+
 def write_fec_subjects(
     rows,
     directory: Path,
@@ -86,8 +93,11 @@ def write_fec_subjects(
     source_digest_for=None,
     observation_rebinding=None,
     current_header_for=None,
+    subject_members=None,
 ):
     """Write actual mapper outputs and preserve failed conversion attempts.
+
+    ``subject_members`` (relative path, rows) writes the subject once into those members.
 
     ``context_for(row, ordinal)`` supplies a ReceiptContext with all ordered source
     witnesses. The caller owns source-generation selection and witness reachability.
@@ -152,9 +162,10 @@ def write_fec_subjects(
                 for line in stream:
                     yield json.loads(line)
 
-        paths = write_dataset(records(), directory, policy, failures=failures(), batch_size=batch_size)
+        paths = write_dataset(records(), directory, policy, failures=failures(), batch_size=batch_size,
+                              subject_members=subject_members)
     validate_receipt_bundle(
-        {table: [] if paths[0] is None else [paths[0]]}, [paths[1]], [policy], generation_id=generation_id
+        {table: subject_files(paths[0])}, [paths[1]], [policy], generation_id=generation_id
     )
     return paths, policy
 
