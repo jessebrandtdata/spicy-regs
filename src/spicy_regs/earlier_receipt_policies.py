@@ -4,11 +4,17 @@ from dataclasses import replace
 from importlib.resources import files
 import json
 
-# Exact columns promoted from receipts to subjects in government-sources/2.
+# Exact columns promoted from receipts to subjects, or added from the source, in government-sources/2.
 EARLIER_COLUMNS = {
     "gao_reports": ("major_rule_agency", "major_rule_rins", "major_rule_fr_citations"),
     "gao_decisions": ("b_numbers_truncated",),
     "gao_recommendations": ("first_seen", "last_seen"),
+    "lobbying_filings": (
+        "filing_type_display", "filing_period_display", "filing_document_content_type", "expenses_method",
+        "expenses_method_display", "termination_date", "posted_by_name", "registrant_address_1",
+        "registrant_address_2", "registrant_city", "registrant_state", "registrant_zip", "registrant_country",
+        "registrant_ppb_country", "registrant_different_address",
+    ),
 }
 
 

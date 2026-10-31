@@ -553,6 +553,8 @@ TABLES: tuple[str, ...] = (
     "lobbying_filings",
     "lobbying_activities",
     "lobbying_activity_lobbyists",
+    "lobbying_registrants",
+    "lobbying_clients",
     "fec_committees",
     "fec_source_catalog",
     "fec_collections",
@@ -634,6 +636,8 @@ MCP_QUERYABLE: frozenset[str] = frozenset(
         "lobbying_filings",
         "lobbying_activities",
         "lobbying_activity_lobbyists",
+        "lobbying_registrants",
+        "lobbying_clients",
         "fec_committees",
         "fec_source_catalog",
         "fec_collections",
@@ -901,7 +905,9 @@ def expected_schemas(*, native: bool = True) -> dict[str, list[tuple[str, str]]]
     from spicy_regs.transforms.build_lobbying_filings import (
         ACTIVITY_COLUMNS as LOBBYING_ACTIVITY_COLUMNS,
         COLUMNS as LOBBYING_COLUMNS,
+        CLIENT_COLUMNS as LOBBYING_CLIENT_COLUMNS,
         LOBBYIST_COLUMNS as LOBBYING_LOBBYIST_COLUMNS,
+        REGISTRANT_COLUMNS as LOBBYING_REGISTRANT_COLUMNS,
     )
     from spicy_regs.transforms.build_cfr_sections import COLUMNS as CFR_SECTION_COLUMNS
     from spicy_regs.transforms.build_unified_agenda import COLUMNS as UNIFIED_AGENDA_COLUMNS
@@ -944,6 +950,8 @@ def expected_schemas(*, native: bool = True) -> dict[str, list[tuple[str, str]]]
         "lobbying_filings": LOBBYING_COLUMNS,
         "lobbying_activities": LOBBYING_ACTIVITY_COLUMNS,
         "lobbying_activity_lobbyists": LOBBYING_LOBBYIST_COLUMNS,
+        "lobbying_registrants": LOBBYING_REGISTRANT_COLUMNS,
+        "lobbying_clients": LOBBYING_CLIENT_COLUMNS,
         "rule_targets": RULE_TARGET_COLUMNS,
         "proceedings": PROCEEDING_COLUMNS,
         "regulatory_agenda_items": ITEM_COLUMNS,

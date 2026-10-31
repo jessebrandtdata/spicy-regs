@@ -3354,6 +3354,31 @@
     ]
    }
   },
+  "lobbying_clients": {
+   "containers": {
+    "raw_record": [
+     "client_id",
+     "registrant_client_number",
+     "registrant_id",
+     "name",
+     "general_description",
+     "client_government_entity",
+     "client_self_select",
+     "state",
+     "state_display",
+     "country",
+     "country_display",
+     "ppb_state",
+     "ppb_state_display",
+     "ppb_country",
+     "ppb_country_display",
+     "effective_date",
+     "url",
+     "captured_at",
+     "captured_filing_uuid"
+    ]
+   }
+  },
   "lobbying_filings": {
    "containers": {
     "raw_record": [
@@ -3370,7 +3395,22 @@
      "expenses",
      "lobbying_activities_json",
      "government_entities_json",
-     "url"
+     "url",
+     "filing_type_display",
+     "filing_period_display",
+     "filing_document_content_type",
+     "expenses_method",
+     "expenses_method_display",
+     "termination_date",
+     "posted_by_name",
+     "registrant_address_1",
+     "registrant_address_2",
+     "registrant_city",
+     "registrant_state",
+     "registrant_zip",
+     "registrant_country",
+     "registrant_ppb_country",
+     "registrant_different_address"
     ]
    },
    "renamed": {
@@ -3378,9 +3418,35 @@
     "lobbying_activities_json": "lobbying_activities"
    },
    "meanings": {
-    "government_entities_json": "JSON array of the distinct government entities lobbied (`{id, name}`) — the agencies and chambers (e.g. `HOUSE OF REPRESENTATIVES`, `SENATE`) named across the filing's activities.",
+    "government_entities_json": "JSON array of the government entities lobbied (`{id, name}`) — the agencies and chambers (e.g. `HOUSE OF REPRESENTATIVES`, `SENATE`) named on the filing's activities, in activity order, one entry per occurrence: an entity lobbied on two activities appears twice. Rows converted before 2026-10-03 held each entity once; a filing not re-read since keeps that form until the retained rebuild (ss-hqoi) re-reads it.",
     "lobbying_activities_json": "JSON array of lobbying activities, each `{general_issue_code, general_issue_code_display, description}` — the issue areas lobbied and their free-text descriptions.",
     "url": "URL of the filing's printable document page on lda.gov (`filing_document_url`; lda.senate.gov redirects there)."
+   }
+  },
+  "lobbying_registrants": {
+   "containers": {
+    "raw_record": [
+     "registrant_id",
+     "house_registrant_id",
+     "name",
+     "description",
+     "address_1",
+     "address_2",
+     "address_3",
+     "address_4",
+     "city",
+     "state",
+     "state_display",
+     "zip",
+     "country",
+     "country_display",
+     "ppb_country",
+     "ppb_country_display",
+     "dt_updated",
+     "url",
+     "captured_at",
+     "captured_filing_uuid"
+    ]
    }
   },
   "member_party_affiliations": {

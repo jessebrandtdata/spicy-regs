@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 from datetime import date
 from importlib import import_module
+from typing import Any
 
 import httpx
 import pyarrow as pa
@@ -391,7 +392,7 @@ def test_each_activity_and_each_named_lobbyist_is_a_row_at_its_position(tmp_path
     _no_prior(monkeypatch)
     _mock_http(monkeypatch, lambda request, number: _json_response(
         {"count": 1, "next": None, "previous": None, "results": [_FILING_WITH_ACTIVITIES]}))
-    filings, activities, lobbyists = bld.build_lobbying_filings(tmp_path, since=date(2026, 9, 1), until=date(2026, 9, 2))
+    filings, activities, lobbyists, *_ = bld.build_lobbying_filings(tmp_path, since=date(2026, 9, 1), until=date(2026, 9, 2))
 
     assert [r["filing_uuid"] for r in pq.read_table(filings).to_pylist()] == ["f-1"]
     acts = pq.read_table(activities).to_pylist()
@@ -624,9 +625,11 @@ def test_native_nightly_receipts_only_the_window_and_equals_the_full_row_merge(t
     monkeypatch.setattr(government_bulk, "write_dataset", record_write)
     second = bld.build_lobbying_filings(night_dir, receipt_generation_id="g1", since=date(2026, 10, 1), until=date(2026, 10, 3))
     assert pq.read_table(second[0], columns=["filing_uuid"]).column(0).to_pylist() == ["c", "a", "b"]
-    assert written == {"lobbying_filings": 2, "lobbying_activities": 4, "lobbying_activity_lobbyists": 4}
+    assert written == {"lobbying_filings": 2, "lobbying_activities": 4, "lobbying_activity_lobbyists": 4,
+                       "lobbying_registrants": 0, "lobbying_clients": 0}
     orders = {"lobbying_filings": "dt_posted DESC, filing_uuid", "lobbying_activities": "filing_uuid, CAST(activity_index AS INTEGER)",
-              "lobbying_activity_lobbyists": "filing_uuid, CAST(activity_index AS INTEGER), CAST(lobbyist_index AS INTEGER)"}
+              "lobbying_activity_lobbyists": "filing_uuid, CAST(activity_index AS INTEGER), CAST(lobbyist_index AS INTEGER)",
+              "lobbying_registrants": "CAST(registrant_id AS BIGINT)", "lobbying_clients": "CAST(client_id AS BIGINT)"}
     for path in second:
         dataset = path.stem
         prior = first_dir / ".government-inputs/g0" / path.name
@@ -659,7 +662,7 @@ def test_native_nightly_receipts_only_the_window_and_equals_the_full_row_merge(t
     current_filings = []
     second_subjects = [pq.read_table(path) for path in second]
     third = bld.build_lobbying_filings(night_dir, receipt_generation_id="g2", since=date(2026, 10, 1), until=date(2026, 10, 3))
-    assert written == {"lobbying_filings": 0, "lobbying_activities": 0, "lobbying_activity_lobbyists": 0}
+    assert written == dict.fromkeys(orders, 0)
     assert all(pq.read_table(path).equals(expected) for path, expected in zip(third, second_subjects, strict=True))
     third_receipts = pq.read_table(night_dir / "etl_receipts.parquet").to_pylist()
     assert [row for row in third_receipts if row["outcome"] == "accepted"] == [row for row in receipts if row["outcome"] == "accepted"]
@@ -680,3 +683,166 @@ def test_native_nightly_receipts_only_the_window_and_equals_the_full_row_merge(t
             bld.build_lobbying_filings(night_dir, receipt_generation_id="unfinished", since=date(2026, 10, 1), until=date(2026, 10, 3))
     retried = bld.build_lobbying_filings(night_dir, receipt_generation_id="retried", since=date(2026, 10, 1), until=date(2026, 10, 3))
     assert all(pq.read_table(path).equals(expected) for path, expected in zip(retried, second_subjects, strict=True))
+
+
+# --- government-sources/2: the filing's own fields, and the retained-page rebuild (ss-hqoi) ---------------------
+
+#: Values as the retained pages spell them (visual review, work/lobbying-wf-20261030/visual_sample.json): an
+#: upper-case method whose display is the bare letter, a termination date, no second address line, no flag.
+_FILING_V2_FIELDS = {
+    "filing_type_display": "Year-End Termination",
+    "filing_period_display": "Year-End (July 1 - Dec 31)",
+    "filing_document_content_type": "text/html",
+    "expenses_method": "A",
+    "expenses_method_display": "A",
+    "termination_date": "2024-06-10",
+    "posted_by_name": "Amy Luft",
+    "registrant_address_1": "700 NE 2nd Street",
+    "registrant_address_2": None,
+    "registrant_city": "Meridian",
+    "registrant_state": "ID",
+    "registrant_zip": "83642",
+    "registrant_country": "United States of America",
+    "registrant_ppb_country": None,
+    "registrant_different_address": None,
+}
+
+
+def test_shape_keeps_the_v2_fields_as_filed():
+    row = _shape({**_RAW_FILING, **_FILING_V2_FIELDS, "registrant_address_2": "", "registrant_different_address": True})
+    assert {key: row[key] for key in _FILING_V2_FIELDS} == {
+        **_FILING_V2_FIELDS, "registrant_address_2": "", "registrant_different_address": "True"}
+    assert _shape(_RAW_FILING)["termination_date"] is None
+
+
+def test_earlier_policy_is_the_published_v1_descriptor():
+    """A live government-sources/1 prior is still read under its own exact policy; nothing is relabeled."""
+    from spicy_regs.transforms import government_receipts as gr
+
+    (earlier,) = gr.EARLIER_POLICIES["lobbying_filings"]
+    assert earlier.policy_version == "government-sources/1"
+    assert gr.POLICIES["lobbying_filings"].policy_version == "government-sources/2"
+    assert earlier.subject_schema.names == [
+        name for name in gr.POLICIES["lobbying_filings"].subject_schema.names if name not in _FILING_V2_FIELDS]
+
+
+def test_window_onto_an_earlier_policy_prior_refuses(tmp_path, monkeypatch):
+    """A /2 window merged onto a /1 native prior would publish its rows with the new columns NULL: refuse instead."""
+    from spicy_regs.transforms import government_receipts as gr
+    from spicy_regs.transforms.government_source_shapes import GovernmentShapeError
+
+    _no_prior(monkeypatch)
+    filing = {**_FILING_WITH_ACTIVITIES, "dt_posted": "2026-10-01T10:00:00Z"}
+    _mock_http(monkeypatch, lambda request, number: _json_response(
+        {"count": 1, "next": None, "previous": None, "results": [filing]}))
+    bld.build_lobbying_filings(tmp_path, receipt_generation_id="g0", since=date(2026, 10, 1), until=date(2026, 10, 2))
+    # The prior on disk is read back as one written under the earlier policy, as the live /1 generation is.
+    earlier = gr.EARLIER_POLICIES["lobbying_filings"][0]
+    monkeypatch.setattr(gr, "_prior_policy", lambda dataset, path: earlier if dataset == "lobbying_filings"
+                        else gr.POLICIES[dataset])
+    with pytest.raises(GovernmentShapeError, match="government-sources/1.*rebuild the family"):
+        bld.build_lobbying_filings(tmp_path, receipt_generation_id="g1", since=date(2026, 10, 1),
+                                   until=date(2026, 10, 2))
+    v1 = tmp_path / "v1.parquet"
+    pq.write_table(earlier.subject_schema.empty_table(), v1)
+    monkeypatch.undo()
+    assert gr._prior_policy("lobbying_filings", v1) is earlier
+
+
+class _Store:
+    """The central raw archive's ``open`` over in-memory originals, keyed by digest."""
+
+    def __init__(self, bodies: dict[str, bytes]):
+        self.bodies = bodies
+
+    def open(self, sha256):
+        import io
+        from contextlib import nullcontext
+
+        return nullcontext(io.BytesIO(self.bodies[sha256]))
+
+
+def _retained(tmp_path, captures: list[tuple[str, list[dict]]]):
+    """Pages as retained bodies plus their pinned manifest: ``(captured_at, filings)`` per page."""
+    import hashlib
+
+    bodies, lines = {}, ["sha256\tbytes\tcaptured_at\tbasis"]
+    for captured_at, results in captures:
+        body = json.dumps({"count": len(results), "next": None, "previous": None, "results": results}).encode()
+        digest = hashlib.sha256(body).hexdigest()
+        bodies[digest] = body
+        lines.append(f"{digest}\t{len(body)}\t{captured_at}\tjournal")
+    manifest = tmp_path / "pages.tsv"
+    manifest.write_text("\n".join(lines) + "\n")
+    return manifest, hashlib.sha256(manifest.read_bytes()).hexdigest(), _Store(bodies)
+
+
+def test_retained_rebuild_takes_each_filing_from_its_latest_capture(tmp_path, monkeypatch):
+    """Two captures of one filing: the later wins, and its activities and lobbyists come with it, not the earlier's."""
+    import copy
+
+    from spicy_regs.sources import publication
+
+    # Even beside a published family, a rebuild selects and stages no prior.
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://fixture.invalid")
+    monkeypatch.setattr(publication, "current_index", lambda _: pytest.fail("A rebuild selects no prior"))
+    monkeypatch.setattr(bld.r2, "download", lambda *args: pytest.fail("A rebuild stages no prior"))
+    older: dict[str, Any] = {**copy.deepcopy(_FILING_WITH_ACTIVITIES), "dt_posted": "2026-10-01T10:00:00Z", **_FILING_V2_FIELDS,
+             "registrant": {"id": 14143, "name": "FARM CREDIT BANK OF TEXAS", "contact_telephone": "+1 202-642-1416",
+                            "dt_updated": "2026-07-30T15:51:39.285204-04:00"},
+             "client": {"id": 119518, "client_id": 12, "name": "FARM CREDIT BANK OF TEXAS",
+                        "client_self_select": True, "client_government_entity": None, "effective_date": "2009-02-01"}}
+    newer = copy.deepcopy(older)
+    newer["registrant"]["name"] = "FARM CREDIT BANK OF TEXAS, ACA"
+    newer["client"]["client_self_select"] = False
+    newer["lobbying_activities"] = newer["lobbying_activities"][:1]
+    newer["lobbying_activities"][0]["lobbyists"] = newer["lobbying_activities"][0]["lobbyists"][:1]
+    newer["posted_by_name"] = "Amy Luft, Counsel"
+    other = {**copy.deepcopy(older), "filing_uuid": "f-2", "lobbying_activities": []}
+    manifest, digest, store = _retained(tmp_path, [
+        ("2026-10-19T00:00:00+00:00", [newer]),
+        ("2026-09-29T12:00:00-04:00", [older, other]),
+    ])
+    out = tmp_path / "build"
+    out.mkdir()
+    filings, activities, lobbyists, registrants, clients = bld.rebuild_lobbying_filings(
+        out, manifest=manifest, manifest_sha256=digest, store=store, receipt_generation_id="r0")
+    rows = {row["filing_uuid"]: row for row in pq.read_table(filings).to_pylist()}
+    assert set(rows) == {"f-1", "f-2"}
+    assert rows["f-1"]["posted_by_name"] == "Amy Luft, Counsel"
+    assert rows["f-1"]["termination_date"] == date(2024, 6, 10)
+    assert rows["f-1"]["expenses_method_display"] == "A"
+    assert rows["f-1"]["registrant_different_address"] is None
+    assert [(a["filing_uuid"], a["activity_index"]) for a in pq.read_table(activities).to_pylist()] == [("f-1", 0)]
+    assert [(p["filing_uuid"], p["lobbyist_index"]) for p in pq.read_table(lobbyists).to_pylist()] == [("f-1", 0)]
+    # One profile per LDA id, the one captured last: the 10-19 page's, though f-2 (captured 09-29) names it too.
+    (registrant,) = pq.read_table(registrants).to_pylist()
+    assert (registrant["registrant_id"], registrant["name"], registrant["captured_filing_uuid"]) == (
+        "14143", "FARM CREDIT BANK OF TEXAS, ACA", "f-1")
+    assert str(registrant["captured_at"]) == "2026-10-19 00:00:00+00:00"
+    assert "contact_telephone" not in registrant
+    (client,) = pq.read_table(clients).to_pylist()
+    assert (client["client_id"], client["registrant_client_number"], client["registrant_id"]) == ("119518", "12", "14143")
+    assert (client["client_self_select"], client["client_government_entity"]) == (False, None)
+    assert client["effective_date"] == date(2009, 2, 1)
+    receipts = pq.read_table(out / "etl_receipts.parquet").to_pylist()
+    assert {r["policy_version"] for r in receipts if r["dataset"] == "lobbying_filings"} == {"government-sources/2"}
+    assert not list(out.rglob(".selected-priors-*")) and not list(out.glob("_*.parquet"))
+
+
+@pytest.mark.parametrize("fault", ["page", "manifest", "offset"])
+def test_retained_rebuild_refuses_unpinned_bytes(tmp_path, monkeypatch, fault):
+    monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
+    captured = "2026-10-19T00:00:00" if fault == "offset" else "2026-10-19T00:00:00+00:00"
+    manifest, digest, store = _retained(tmp_path, [(captured, [_FILING_WITH_ACTIVITIES])])
+    if fault == "page":
+        (sha,) = store.bodies
+        store.bodies[sha] = store.bodies[sha].replace(b"f-1", b"f-9")
+    if fault == "manifest":
+        digest = "0" * 64
+    out = tmp_path / "build"
+    out.mkdir()
+    with pytest.raises(LobbyingFilingsError, match="pinned|offset"):
+        bld.rebuild_lobbying_filings(out, manifest=manifest, manifest_sha256=digest, store=store,
+                                     receipt_generation_id="r0")
+    assert not (out / "lobbying_filings.parquet").exists()

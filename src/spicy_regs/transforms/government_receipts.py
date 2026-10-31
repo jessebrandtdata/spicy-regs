@@ -68,6 +68,9 @@ POLICY_VERSIONS = {
     "gao_decisions": "government-sources/3",
     "gao_recommendations": "government-sources/2",
     "gao_reports": "government-sources/4",
+    # 2026-10-30 (ss-hqoi): fifteen native filing fields the first mapper dropped. No /1 receipt holds them, so the
+    # first /2 generation is a full rebuild from the retained pages, never a window merged onto a /1 prior.
+    "lobbying_filings": "government-sources/2",
 }
 POLICIES = {
     dataset: DatasetPolicy(
@@ -111,8 +114,8 @@ EARLIER_POLICIES: dict[str, tuple[DatasetPolicy, ...]] = {
     "gao_recommendations": (_without("gao_recommendations", "first_seen", "last_seen"),),
     "gao_reports": (_without("gao_reports", "major_rule_agency", "major_rule_rins", "major_rule_fr_citations", "citation_product_id"),),
 }
-# Exact earlier GAO and FCC proceedings policies restore private source rows without relabeling them.
-for _name in ("gao_decisions", "gao_reports", "fcc_proceedings"):
+# Exact earlier policies restore private source rows without relabeling them.
+for _name in ("gao_decisions", "gao_reports", "fcc_proceedings", "lobbying_filings"):
     EARLIER_POLICIES[_name] = earlier_policies(POLICIES[_name])
 _FCC_HISTORY = json.loads(Path(__file__).parents[1].joinpath("navigation_policy_history.json").read_text())
 EARLIER_POLICIES["fcc_filings"] = tuple(
@@ -252,6 +255,12 @@ def internal_prior(
             inherited[dataset] = selected
         policy = _prior_policy(dataset, path)
         if keep_native:
+            if policy is not POLICIES[dataset]:
+                # A window merged onto an earlier policy's rows would publish them with the current policy's added
+                # columns NULL, though no earlier receipt ever held those values. Only a full rebuild moves the policy.
+                raise GovernmentShapeError(
+                    f"{dataset}: the selected prior was written under {policy.policy_version}, not "
+                    f"{POLICIES[dataset].policy_version}; rebuild the family under the current policy before a window")
             native_priors = _NATIVE_PRIORS.get()
             if native_priors is None:
                 raise ValueError("Native priors require an active receipt builder")

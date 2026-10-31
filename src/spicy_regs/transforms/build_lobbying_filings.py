@@ -28,12 +28,14 @@ so this runs in CI with or without ``LDA_API_KEY``.
 
 from __future__ import annotations
 
+import hashlib
 import itertools
 import json
 import os
 import shutil
-from collections.abc import Iterator, Mapping
-from datetime import date, timedelta
+from collections.abc import Iterable, Iterator, Mapping
+from contextlib import ExitStack
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -46,6 +48,7 @@ from spicy_regs.sources import r2
 from spicy_regs.transforms.government_receipts import (
     BUILD_METADATA, _digest, has_native_prior, internal_prior, receipt_builder, selected_native_prior,
 )
+from spicy_regs.transforms.government_source_shapes import LEGACY_COLUMNS
 from spicy_regs.transforms.table_merge import merge_local_prior
 
 if TYPE_CHECKING:
@@ -113,12 +116,22 @@ def _filings_url(*, since: date | None, until: date | None, filing_year: int | N
     )
 
 
-def _identified(record: Mapping[str, Any]) -> dict:
-    """A copy of one raw filing, refused unless it carries a nonempty ``filing_uuid``, the merge identity."""
+#: The processing-only key carrying when the page holding a filing was captured; no table column reads it except a
+#: profile's ``captured_at``.
+CAPTURED_AT = "_captured_at"
+
+
+def _identified(record: Mapping[str, Any], *, captured_at: str | datetime) -> dict:
+    """A copy of one raw filing, refused unless it carries a nonempty ``filing_uuid``, the merge identity.
+
+    The copy carries its page's capture time (UTC) under ``CAPTURED_AT``.
+    """
     filing = dict(record)
     identity = filing.get("filing_uuid")
     if not isinstance(identity, str) or not identity.strip():
         raise LobbyingFilingsError("LDA filings page has a row without a nonempty filing_uuid")
+    moment = datetime.fromisoformat(captured_at) if isinstance(captured_at, str) else captured_at
+    filing[CAPTURED_AT] = moment.astimezone(timezone.utc)
     return filing
 
 
@@ -157,7 +170,8 @@ def _iter_filings(reader: LdaFilingsReader, url: str, *, max_records: int | None
 
     def pages():
         for page in reader.filings(url, max_pages=MAX_PAGES):
-            yield replace(page, records=tuple(_identified(record) for record in page.records))
+            observed = page.capture.observed_at
+            yield replace(page, records=tuple(_identified(record, captured_at=observed) for record in page.records))
 
     if max_records is not None:
         prefix = (filing for page in pages() for filing in page.records)
@@ -171,52 +185,27 @@ def _iter_filings(reader: LdaFilingsReader, url: str, *, max_records: int | None
     yield from cast("tuple[dict, ...]", pooled.records)  # the records _identified copied
 
 
-# Literal processing columns used by the source mapper and incremental merge.
-# The receipt writer converts the final output to the native subject schema.
-COLUMNS = (
-    "filing_uuid",
-    "filing_type",
-    "filing_year",
-    "filing_period",
-    "dt_posted",
-    "registrant_name",
-    "registrant_id",
-    "client_name",
-    "client_id",
-    "income",
-    "expenses",
-    "lobbying_activities_json",
-    "government_entities_json",
-    "url",
-)
+# Literal processing columns, owned by the family's source shapes (one list, not a second hand-kept copy). The
+# receipt writer converts the final output to the native subject schema.
+COLUMNS = LEGACY_COLUMNS["lobbying_filings"]
 _SCHEMA = pa.schema([(c, pa.string()) for c in COLUMNS])
-
 ACTIVITIES_OUTPUT = "lobbying_activities.parquet"
-ACTIVITY_COLUMNS = (
-    "filing_uuid",
-    "activity_index",
-    "general_issue_code",
-    "general_issue_code_display",
-    "description",
-    "foreign_entity_issues",
-    "government_entities_json",
-)
+ACTIVITY_COLUMNS = LEGACY_COLUMNS["lobbying_activities"]
 LOBBYISTS_OUTPUT = "lobbying_activity_lobbyists.parquet"
-LOBBYIST_COLUMNS = (
-    "filing_uuid",
-    "activity_index",
-    "lobbyist_index",
-    "lobbyist_id",
-    "prefix",
-    "first_name",
-    "nickname",
-    "middle_name",
-    "last_name",
-    "suffix",
-    "covered_position",
-    "new",
-)
-
+LOBBYIST_COLUMNS = LEGACY_COLUMNS["lobbying_activity_lobbyists"]
+REGISTRANTS_OUTPUT = "lobbying_registrants.parquet"
+REGISTRANT_COLUMNS = LEGACY_COLUMNS["lobbying_registrants"]
+CLIENTS_OUTPUT = "lobbying_clients.parquet"
+CLIENT_COLUMNS = LEGACY_COLUMNS["lobbying_clients"]
+#: Shaped rows held per table before a Parquet write: a whole history year or the full retained archive streams.
+_FLUSH_ROWS = 20_000
+NATIVE_ORDERS = {
+    "lobbying_filings": ("dt_posted DESC", "filing_uuid"),
+    "lobbying_activities": ("filing_uuid", "activity_index"),
+    "lobbying_activity_lobbyists": ("filing_uuid", "activity_index", "lobbyist_index"),
+    "lobbying_registrants": ("registrant_id",),
+    "lobbying_clients": ("client_id",),
+}
 
 
 def _source_list(value: object, field: str) -> list | None:
@@ -270,6 +259,21 @@ def _shape(filing: dict) -> dict:
         "lobbying_activities_json": json.dumps(_activities(filing)),
         "government_entities_json": json.dumps(_government_entities(filing)),
         "url": filing.get("filing_document_url"),
+        "filing_type_display": filing.get("filing_type_display"),
+        "filing_period_display": filing.get("filing_period_display"),
+        "filing_document_content_type": filing.get("filing_document_content_type"),
+        "expenses_method": filing.get("expenses_method"),
+        "expenses_method_display": filing.get("expenses_method_display"),
+        "termination_date": filing.get("termination_date"),
+        "posted_by_name": filing.get("posted_by_name"),
+        "registrant_address_1": filing.get("registrant_address_1"),
+        "registrant_address_2": filing.get("registrant_address_2"),
+        "registrant_city": filing.get("registrant_city"),
+        "registrant_state": filing.get("registrant_state"),
+        "registrant_zip": filing.get("registrant_zip"),
+        "registrant_country": filing.get("registrant_country"),
+        "registrant_ppb_country": filing.get("registrant_ppb_country"),
+        "registrant_different_address": str_or_none(filing.get("registrant_different_address")),
     }
 
 
@@ -351,11 +355,181 @@ def _stage_prior(output_dir: Path, key: str, target: Path) -> bool:
     return target.exists() or r2.download(key, target)
 
 
-@receipt_builder(native_orders={
-    "lobbying_filings": ("dt_posted DESC", "filing_uuid"),
-    "lobbying_activities": ("filing_uuid", "activity_index"),
-    "lobbying_activity_lobbyists": ("filing_uuid", "activity_index", "lobbyist_index"),
-})
+def _embedded(filing: dict, field: str) -> dict | None:
+    value = filing.get(field)
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise LobbyingFilingsError(f"{field} must be an object")
+    return value if value.get("id") is not None else None
+
+
+def _registrant_row(filing: dict) -> dict | None:
+    """The registrant record the filing embeds, as captured with it; ``contact_*`` stay out pending the owner."""
+    registrant = _embedded(filing, "registrant")
+    if registrant is None:
+        return None
+    # Every other column is the record's own key, under its source name.
+    return {
+        **{key: registrant.get(key) for key in REGISTRANT_COLUMNS},
+        "registrant_id": str_or_none(registrant["id"]),
+        "house_registrant_id": str_or_none(registrant.get("house_registrant_id")),
+        "captured_at": filing[CAPTURED_AT].isoformat(),
+        "captured_filing_uuid": filing["filing_uuid"],
+    }
+
+
+def _client_row(filing: dict) -> dict | None:
+    """The client record the filing embeds, as captured with it, beside the filing's registrant."""
+    client = _embedded(filing, "client")
+    if client is None:
+        return None
+    registrant = _embedded(filing, "registrant")
+    # Every other column is the record's own key, under its source name. The source's ``client_id`` is the
+    # registrant's own number for the client; LDA's global ``id`` is the table's ``client_id``, as on filings.
+    return {
+        **{key: client.get(key) for key in CLIENT_COLUMNS},
+        "client_id": str_or_none(client["id"]),
+        "registrant_client_number": str_or_none(client.get("client_id")),
+        "registrant_id": None if registrant is None else str_or_none(registrant["id"]),
+        "client_government_entity": str_or_none(client.get("client_government_entity")),
+        "client_self_select": str_or_none(client.get("client_self_select")),
+        "captured_at": filing[CAPTURED_AT].isoformat(),
+        "captured_filing_uuid": filing["filing_uuid"],
+    }
+
+
+_NEVER = datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _profile_rank(row: dict) -> tuple[datetime, datetime]:
+    """The publisher's later ``dt_updated`` first (clients carry none), then the later capture.
+
+    The publisher's own version outranks capture time because 1,190 of the 80,523 retained pages carry only a
+    capture day (ss-hqoi manifest bases). A nightly or year window needs no rank against its prior: LDA embeds its current record in
+    every filing it serves, so whatever a window fetches is the newest state and the native merge keeps it.
+    """
+    updated = row.get("dt_updated")
+    return (datetime.fromisoformat(updated) if updated else _NEVER, datetime.fromisoformat(row["captured_at"]))
+
+
+_TABLES = (
+    (OUTPUT, COLUMNS, lambda filing: [_shape(filing)]),
+    (ACTIVITIES_OUTPUT, ACTIVITY_COLUMNS, _activity_rows),
+    (LOBBYISTS_OUTPUT, LOBBYIST_COLUMNS, _lobbyist_rows),
+)
+#: One row per LDA id, the latest observation of it in this read (``_profile_rank``; an equal rank keeps the first
+#: seen). At most one row per registrant and client is held: 14,881 and 129,462 over the whole archive.
+_PROFILES = (
+    (REGISTRANTS_OUTPUT, REGISTRANT_COLUMNS, _registrant_row),
+    (CLIENTS_OUTPUT, CLIENT_COLUMNS, _client_row),
+)
+
+
+def _write_fresh(filings: Iterable[dict], output_dir: Path) -> dict[str, Path]:
+    """Shape ``filings`` into one source-shaped ``_<table>_new.parquet`` per table, a bounded batch at a time.
+
+    A filing's activity and lobbyist rows are shaped from the same record as the filing row, so children always come
+    from the capture their filing came from.
+    """
+    paths = {key: output_dir / f"_{key.removesuffix('.parquet')}_new.parquet" for key, _, _ in (*_TABLES, *_PROFILES)}
+    schemas = {key: pa.schema([(c, pa.string()) for c in columns]) for key, columns, _ in (*_TABLES, *_PROFILES)}
+    pending: dict[str, list[dict]] = {key: [] for key, _, _ in _TABLES}
+    latest: dict[str, dict[str, dict]] = {key: {} for key, _, _ in _PROFILES}
+    counts = dict.fromkeys(paths, 0)
+    try:
+        with ExitStack() as stack:
+            writers = {key: stack.enter_context(pq.ParquetWriter(paths[key], schemas[key], compression="zstd"))
+                       for key in paths}
+
+            def flush(key: str) -> None:
+                writers[key].write_table(pa.Table.from_pylist(pending[key], schema=schemas[key]))
+                counts[key] += len(pending[key])
+                pending[key].clear()
+
+            for filing in filings:
+                for key, _, rows in _TABLES:
+                    pending[key].extend(rows(filing))
+                    if len(pending[key]) >= _FLUSH_ROWS:
+                        flush(key)
+                for key, columns, profile in _PROFILES:
+                    row = profile(filing)
+                    if row is not None:
+                        held = latest[key].get(row[columns[0]])
+                        if held is None or _profile_rank(row) > _profile_rank(held):
+                            latest[key][row[columns[0]]] = row
+            for key, _, _ in _PROFILES:
+                pending[key] = list(latest.pop(key).values())
+            for key in paths:
+                if pending[key]:
+                    flush(key)
+    except BaseException:
+        # A refused walk leaves no partial window a later step could mistake for a complete fetch.
+        for path in paths.values():
+            path.unlink(missing_ok=True)
+        raise
+    logger.info("LDA: shaped {:,} filings ({:,} activities, {:,} lobbyist rows, {:,} registrants, {:,} clients)",
+                *(counts[key] for key in paths))
+    return paths
+
+
+def _merge_fresh(output_dir: Path, fresh: dict[str, Path], *, priors: dict[str, tuple[Path, bool]] | None,
+                 memory_limit: str) -> tuple[Path, ...]:
+    """Deduplicate and order each fresh table; a legacy prior joins here, a native one in the receipt builder.
+
+    ``priors`` None is a full replacement: no table stages or selects a prior.
+    """
+    import duckdb
+
+    spill_dir = output_dir / ".duckdb_tmp"
+    spill_dir.mkdir(exist_ok=True)
+    con = duckdb.connect()
+    con.execute(f"SET memory_limit='{memory_limit}'")
+    con.execute("SET preserve_insertion_order=false")
+    con.execute("SET threads=2")
+    con.execute(f"SET temp_directory='{spill_dir}'")
+    shapes: dict[str, tuple[str | tuple[str, ...], str]] = {
+        OUTPUT: ("filing_uuid", "dt_posted DESC, filing_uuid"),
+        ACTIVITIES_OUTPUT: (("filing_uuid", "activity_index"), "filing_uuid, CAST(activity_index AS INTEGER)"),
+        LOBBYISTS_OUTPUT: (("filing_uuid", "activity_index", "lobbyist_index"),
+                           "filing_uuid, CAST(activity_index AS INTEGER), CAST(lobbyist_index AS INTEGER)"),
+        REGISTRANTS_OUTPUT: ("registrant_id", "CAST(registrant_id AS BIGINT)"),
+        CLIENTS_OUTPUT: ("client_id", "CAST(client_id AS BIGINT)"),
+    }
+    outputs = []
+    try:
+        for key, columns, _ in (*_TABLES, *_PROFILES):
+            identity, order_by = shapes[key]
+            dataset = key.removesuffix(".parquet")
+            table_prior, table_has_prior = output_dir / f"_{dataset}_prior.parquet", False
+            if priors is not None and key in priors:
+                table_prior, table_has_prior = priors[key]
+            elif priors is not None:
+                selected = selected_native_prior(dataset)
+                table_has_prior = selected is not None or _stage_prior(output_dir, key, table_prior)
+                table_prior = selected or table_prior
+                if table_has_prior:
+                    table_prior = internal_prior(dataset, table_prior, keep_native=True)
+            new_file = fresh[key]
+            out = output_dir / key
+            # A selected native pair stays immutable until the receipt builder upserts
+            # these fetched rows. Only a legacy first run needs the full source merge.
+            native_prior = has_native_prior(dataset)
+            merge_local_prior(con, columns=columns, identity=identity, order_by=order_by,
+                              prior_file=table_prior if table_has_prior and not native_prior else None,
+                              new_file=new_file, out_file=out)
+            # Housekeeping: drop scratch files so they aren't mistaken for outputs.
+            new_file.unlink(missing_ok=True)
+            if table_has_prior and not native_prior:
+                table_prior.unlink(missing_ok=True)
+            outputs.append(out)
+            logger.info("{}: {:,} rows", key, pq.ParquetFile(out).metadata.num_rows)
+    finally:
+        con.close()
+    return tuple(outputs)
+
+
+@receipt_builder(native_orders=NATIVE_ORDERS)
 def build_lobbying_filings(
     output_dir: Path,
     *,
@@ -365,10 +539,8 @@ def build_lobbying_filings(
     filing_year: int | None = None,
     max_records: int | None = None,
     max_passes: int | None = None,
-) -> tuple[Path, Path, Path]:
-    """Build the filings, activities and lobbyists tables, each merged with its prior table."""
-    import duckdb
-
+) -> tuple[Path, ...]:
+    """Build the filings, activities, lobbyists, registrants and clients tables, each merged with its prior table."""
     prior_file = output_dir / "_lda_prior.parquet"
 
     # 1. Pull the prior table (best effort — absence just means full backfill).
@@ -393,7 +565,7 @@ def build_lobbying_filings(
     until = _bounded_until(since, until)
     logger.info("LDA: fetching filings posted {} through {}", since or "the beginning", until or "today")
 
-    # 3. Fetch + shape into a "new rows" parquet. spicy-docs' LDA reader owns
+    # 3. Fetch + shape into "new rows" parquets. spicy-docs' LDA reader owns
     # the requests, retries and walk refusals; an optional LDA_API_KEY raises
     # the keyless rate limit.
     from spicy_docs.reading.paged_json import PagedJsonBudget
@@ -413,64 +585,117 @@ def build_lobbying_filings(
         evidence.event("selection", stage="lobbying", url=url, max_records=max_records)
         transport = evidence.transport(stage="lobbying-response", max_bytes=budget.max_page_bytes)
     with LdaFilingsReader(budget=budget, api_key=api_key, transport=transport) as reader:
-        filings = list(_iter_filings(reader, url, max_records=max_records, max_passes=max_passes))
-    fresh = {
-        OUTPUT: (COLUMNS, [_shape(f) for f in filings]),
-        ACTIVITIES_OUTPUT: (ACTIVITY_COLUMNS, [row for f in filings for row in _activity_rows(f)]),
-        LOBBYISTS_OUTPUT: (LOBBYIST_COLUMNS, [row for f in filings for row in _lobbyist_rows(f)]),
-    }
-    logger.info("LDA: fetched {:,} filings ({:,} activities, {:,} lobbyist rows) this run", len(filings),
-                len(fresh[ACTIVITIES_OUTPUT][1]), len(fresh[LOBBYISTS_OUTPUT][1]))
+        fresh = _write_fresh(_iter_filings(reader, url, max_records=max_records, max_passes=max_passes), output_dir)
 
     # 4. Dedup the fetched rows. Only a legacy prior joins here; the receipt
     # builder merges a native prior after converting this window.
-    spill_dir = output_dir / ".duckdb_tmp"
-    spill_dir.mkdir(exist_ok=True)
-    con = duckdb.connect()
     # The prior grows with every backfilled year and the dedup window reads all of it: at 4GB the 2013 run
     # (36356691399, 36362663551) ran out of memory in merge_local_prior. Hosted runners have 16 GB; leave room
     # for Python and the OS, and let DuckDB spill the rest to temp_directory.
-    con.execute("SET memory_limit='12GB'")
-    con.execute("SET preserve_insertion_order=false")
-    con.execute("SET threads=2")
-    con.execute(f"SET temp_directory='{spill_dir}'")
-    shapes: dict[str, tuple[str | tuple[str, ...], str]] = {
-        OUTPUT: ("filing_uuid", "dt_posted DESC, filing_uuid"),
-        ACTIVITIES_OUTPUT: (("filing_uuid", "activity_index"), "filing_uuid, CAST(activity_index AS INTEGER)"),
-        LOBBYISTS_OUTPUT: (("filing_uuid", "activity_index", "lobbyist_index"),
-                           "filing_uuid, CAST(activity_index AS INTEGER), CAST(lobbyist_index AS INTEGER)"),
-    }
-    priors: dict[str, tuple[Path, bool]] = {OUTPUT: (prior_file, have_prior)}
-    outputs = []
-    try:
-        for key, (columns, rows) in fresh.items():
-            identity, order_by = shapes[key]
-            if key in priors:
-                table_prior, table_has_prior = priors[key]
-            else:
-                table_prior = output_dir / f"_{key.removesuffix('.parquet')}_prior.parquet"
-                selected = selected_native_prior(key.removesuffix(".parquet"))
-                table_has_prior = selected is not None or _stage_prior(output_dir, key, table_prior)
-                table_prior = selected or table_prior
-                if table_has_prior:
-                    table_prior = internal_prior(key.removesuffix(".parquet"), table_prior, keep_native=True)
-            schema = pa.schema([(c, pa.string()) for c in columns])
-            new_file = output_dir / f"_{key.removesuffix('.parquet')}_new.parquet"
-            pq.write_table(pa.Table.from_pylist(rows, schema=schema) if rows else schema.empty_table(), new_file,
-                           compression="zstd")
-            out = output_dir / key
-            # A selected native pair stays immutable until the receipt builder upserts
-            # these fetched rows. Only a legacy first run needs the full source merge.
-            native_prior = has_native_prior(key.removesuffix(".parquet"))
-            merge_local_prior(con, columns=columns, identity=identity, order_by=order_by,
-                              prior_file=table_prior if table_has_prior and not native_prior else None,
-                              new_file=new_file, out_file=out)
-            # Housekeeping: drop scratch files so they aren't mistaken for outputs.
-            for scratch in (table_prior, new_file):
-                if scratch != table_prior or not native_prior:
-                    scratch.unlink(missing_ok=True)
-            outputs.append(out)
-            logger.info("{}: {:,} rows", key, pq.ParquetFile(out).metadata.num_rows)
-    finally:
-        con.close()
-    return outputs[0], outputs[1], outputs[2]
+    return _merge_fresh(output_dir, fresh, priors={OUTPUT: (prior_file, have_prior)}, memory_limit="12GB")
+
+
+def read_retained_manifest(manifest: Path) -> list[tuple[datetime, str, int]]:
+    """The pinned retained-page manifest as ``(captured_at, sha256, bytes)``, newest capture first.
+
+    A tab-separated file with a header naming at least ``sha256``, ``bytes`` and ``captured_at`` (an ISO-8601 time
+    with its offset). Which pages belong to the family and when each was captured is decided outside this module and
+    pinned by digest; this reader only refuses a manifest it cannot order exactly.
+    """
+    import csv
+
+    pages = []
+    with manifest.open(newline="") as stream:
+        for row in csv.DictReader(stream, delimiter="\t"):
+            captured = datetime.fromisoformat(row["captured_at"])
+            if captured.tzinfo is None:
+                raise LobbyingFilingsError(f"Retained page {row['sha256']} has a capture time without an offset")
+            pages.append((captured, row["sha256"].removeprefix("sha256:"), int(row["bytes"])))
+    if not pages:
+        raise LobbyingFilingsError("Retained-page manifest lists no pages")
+    if len({sha for _, sha, _ in pages}) != len(pages):
+        raise LobbyingFilingsError("Retained-page manifest repeats a page")
+    # Newest first; equal capture times fall to the larger digest, an arbitrary but repeatable order.
+    return sorted(pages, reverse=True)
+
+
+#: Retained pages read at once. Each read is mostly the archive's descriptor-relative opens (about 15 per page,
+#: 19 of 39 s for 2,013 pages read one at a time, 2026-10-30); a bounded window overlaps them and holds at most this
+#: many pages (about 110 KB each) in memory.
+_READ_AHEAD = 32
+
+
+def _read_retained_page(store, sha256: str, size: int) -> list:
+    """One retained page's records, its original bytes hashed as read and refused on any size or digest difference.
+
+    The bytes decode as the live walk decodes a response (``load_decimal_json``), so a rebuilt row reads exactly
+    what the page served.
+    """
+    from spicy_docs.reading.json_input import load_decimal_json
+    from spicy_docs.sources.lda import FILINGS_KEY
+
+    hasher, chunks, read = hashlib.sha256(), [], 0
+    with store.open(sha256) as stream:
+        while chunk := stream.read(1 << 20):
+            hasher.update(chunk)
+            chunks.append(chunk)
+            read += len(chunk)
+    if read != size or hasher.hexdigest() != sha256:
+        raise LobbyingFilingsError(f"Retained page {sha256} differs from its pinned bytes")
+    page: Any = load_decimal_json(b"".join(chunks), source=f"LDA retained page {sha256}",
+                                  error_type=LobbyingFilingsError)
+    records = page.get(FILINGS_KEY) if isinstance(page, dict) else None
+    if not isinstance(records, list):
+        raise LobbyingFilingsError(f"Retained page {sha256} has no {FILINGS_KEY} list")
+    return records
+
+
+def _iter_retained_filings(pages: list[tuple[datetime, str, int]], store) -> Iterator[dict]:
+    """Yield each filing once, from its latest retained capture: pages newest first, the first ``filing_uuid`` seen wins.
+
+    Pages are read ``_READ_AHEAD`` at a time and consumed in manifest order, so which capture wins never depends on
+    which read finished first. The one read of each page is also its verification.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    seen: set[str] = set()
+    with ThreadPoolExecutor(max_workers=_READ_AHEAD) as pool:
+        for window in itertools.batched(pages, _READ_AHEAD):
+            batch = pool.map(lambda page: _read_retained_page(store, page[1], page[2]), window)
+            for (captured_at, _, _), records in zip(window, batch, strict=True):
+                for record in records:
+                    filing = _identified(record, captured_at=captured_at)
+                    if filing["filing_uuid"] not in seen:
+                        seen.add(filing["filing_uuid"])
+                        yield filing
+
+
+# No native_orders: a rebuild selects no prior to merge onto, with or without R2_PUBLIC_URL.
+@receipt_builder
+def rebuild_lobbying_filings(
+    output_dir: Path,
+    *,
+    manifest: Path,
+    manifest_sha256: str,
+    evidence: CaptureEvidence | None = None,
+    store=None,
+    memory_limit: str = "4GB",
+) -> tuple[Path, ...]:
+    """Rebuild the whole family from retained LDA pages: the latest capture of each filing, no prior, no request.
+
+    The first generation under a new policy is this full replacement (``POLICY_VERSIONS``): every filing, its
+    activities and its lobbyists come from one capture, the newest the archive holds. ``memory_limit`` bounds the
+    dedup connection; the default keeps a local run under 8 GB.
+    """
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+
+    if _digest(manifest) != "sha256:" + manifest_sha256.removeprefix("sha256:"):
+        raise LobbyingFilingsError("Retained-page manifest differs from its pinned digest")
+    pages = read_retained_manifest(manifest)
+    if evidence is not None:
+        evidence.retain_file(manifest, stage="lobbying-retained-manifest")
+        evidence.event("selection", stage="lobbying", mode="retained", manifest_sha256=_digest(manifest),
+                       pages=len(pages))
+    store = store or CentralRawArchiveStore(create=False)
+    fresh = _write_fresh(_iter_retained_filings(pages, store), output_dir)
+    return _merge_fresh(output_dir, fresh, priors=None, memory_limit=memory_limit)

@@ -856,7 +856,7 @@ def test_member_carries_receipts_from_original_generations_for_all_outcomes(tmp_
     assert pq.read_table(receipts).to_pylist()[0] == accepted
 
 
-@pytest.mark.parametrize("dataset", ["fcc_proceedings", "gao_decisions", "gao_recommendations", "gao_reports"])
+@pytest.mark.parametrize("dataset", ["fcc_proceedings", "gao_decisions", "gao_recommendations", "gao_reports", "lobbying_filings"])
 def test_only_declared_earlier_policies_are_admitted(tmp_path, dataset):
     from spicy_regs.etl_receipts import receipt_policies, validate_receipt_row
     from spicy_regs.transforms.government_receipts import POLICIES, EARLIER_POLICIES

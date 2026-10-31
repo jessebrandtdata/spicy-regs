@@ -28,6 +28,8 @@ RECEIPT_FIELDS = {
     # the values are the subject columns, and the readings stay with the row's receipt.
     "gao_reports": ("major_rule_letter_json", "product_page_json"),
     "lobbying_filings": ("url",),
+    "lobbying_registrants": ("url",),
+    "lobbying_clients": ("url",),
     "usaspending_recipients": ("observed_at", "source_capture_sha256"),
 }
 
@@ -43,6 +45,8 @@ BOOLEAN_FIELDS = {
     "fcc_filings": ("express_comment",),
     "gao_recommendations": ("priority", "listed_open"),
     "lobbying_activity_lobbyists": ("new",),
+    "lobbying_filings": ("registrant_different_address",),
+    "lobbying_clients": ("client_government_entity", "client_self_select"),
 }
 
 MONEY_FIELDS = {"lobbying_filings": ("income", "expenses"), "usaspending_recipients": ("total_award_amount",)}
@@ -50,13 +54,20 @@ MONEY_FIELDS = {"lobbying_filings": ("income", "expenses"), "usaspending_recipie
 DATE_FIELDS = {
     "gao_reports": ("published_date",),
     "gao_decisions": ("decision_date",),
+    "lobbying_filings": ("termination_date",),
+    "lobbying_clients": ("effective_date",),
     # first_seen and last_seen say when the open-recommendations export first and last listed the row: with
     # listed_open, they are how a reader dates a recommendation's closure (owner decision, 2026-10-05).
     "gao_recommendations": ("publication_date", "first_seen", "last_seen"),
     "sam_entities": ("registration_date", "registration_expiration_date"),
 }
 
-TIMESTAMP_FIELDS = {"crs_reports": ("published_date", "update_date"), "lobbying_filings": ("dt_posted",)}
+TIMESTAMP_FIELDS = {
+    "crs_reports": ("published_date", "update_date"),
+    "lobbying_filings": ("dt_posted",),
+    "lobbying_registrants": ("dt_updated", "captured_at"),
+    "lobbying_clients": ("captured_at",),
+}
 
 IDENTITY_FIELDS = {
     "crs_reports": ("report_id",),
@@ -68,6 +79,8 @@ IDENTITY_FIELDS = {
     "lobbying_filings": ("filing_uuid",),
     "lobbying_activities": ("filing_uuid", "activity_index"),
     "lobbying_activity_lobbyists": ("filing_uuid", "activity_index", "lobbyist_index"),
+    "lobbying_registrants": ("registrant_id",),
+    "lobbying_clients": ("client_id",),
     "sam_entities": ("uei", "entity_eft_indicator"),
     "usaspending_recipients": ("recipient_id",),
 }
@@ -210,6 +223,68 @@ LEGACY_COLUMNS = {
         "lobbying_activities_json",
         "government_entities_json",
         "url",
+        # government-sources/2: the filing's own fields the first mapper dropped, under their source names. The
+        # registrant address is as filed on this filing; registrant_country is the publisher's display name here.
+        "filing_type_display",
+        "filing_period_display",
+        "filing_document_content_type",
+        "expenses_method",
+        "expenses_method_display",
+        "termination_date",
+        "posted_by_name",
+        "registrant_address_1",
+        "registrant_address_2",
+        "registrant_city",
+        "registrant_state",
+        "registrant_zip",
+        "registrant_country",
+        "registrant_ppb_country",
+        "registrant_different_address",
+    ),
+    # The registrant and client records LDA embeds in each filing, one row per LDA id as last captured
+    # (owner decision Q12, 2026-10-30). The publisher serves its current record, not the one filed.
+    "lobbying_registrants": (
+        "registrant_id",
+        "house_registrant_id",
+        "name",
+        "description",
+        "address_1",
+        "address_2",
+        "address_3",
+        "address_4",
+        "city",
+        "state",
+        "state_display",
+        "zip",
+        "country",
+        "country_display",
+        "ppb_country",
+        "ppb_country_display",
+        "dt_updated",
+        "url",
+        "captured_at",
+        "captured_filing_uuid",
+    ),
+    "lobbying_clients": (
+        "client_id",
+        "registrant_client_number",
+        "registrant_id",
+        "name",
+        "general_description",
+        "client_government_entity",
+        "client_self_select",
+        "state",
+        "state_display",
+        "country",
+        "country_display",
+        "ppb_state",
+        "ppb_state_display",
+        "ppb_country",
+        "ppb_country_display",
+        "effective_date",
+        "url",
+        "captured_at",
+        "captured_filing_uuid",
     ),
     "sam_entities": (
         "uei",
