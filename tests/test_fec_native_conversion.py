@@ -758,3 +758,29 @@ def test_agency_source_lookup_semi_joins_the_admitted_parent_subjects(tmp_path, 
                 lookup(coordinates)
         with pytest.raises(ValueError, match='differs from selected parent'):
             lookup({('c1', 'r1')}, 'sha256:' + 'f' * 64)
+
+
+def test_query_build_refuses_a_c1_control_planted_in_a_non_text_table(tmp_path, monkeypatch, bucket, fec_originals):
+    """A latin-1 read anywhere in the assembled fec-query output refuses the build before sealing (ss-f64m)."""
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+    from spicy_regs.transforms.assemble_fec_query import FilingAssociationInputs, TypedInput, _sha
+    from spicy_regs.transforms.fec_identity_receipts import dataset_policy
+    from tests.test_fec_original_tables import admit, rss
+    feed = next(i for i, entry in enumerate(fec_originals) if entry['table'] == 'fec_reference_filing_feed_items')
+    fec_originals[feed] = admit(CentralRawArchiveStore(tmp_path / 'central-raw'), 'fec_reference_filing_feed_items',
+                                rss(('AFC PAC\x92s', '101'), ('B', '102')))
+    _, source = old_family(tmp_path / 'source', monkeypatch, bucket, 'fec-observations')
+    snapshot, retained = old_family(tmp_path / 'query', monkeypatch, bucket, 'fec-query')
+    with ConversionReadOperation() as operation:
+        native = build_retained_family('fec-observations', snapshot['families']['fec-observations'], snapshot,
+                                      source, tmp_path / 'native', operation=operation)
+        staged = staged_snapshot(snapshot, native, operation)
+        target = tmp_path / 'empty-filings.parquet'
+        pq.write_table(pa.Table.from_batches([], schema=dataset_policy('fec_filings').subject_schema), target)
+        selection = FilingAssociationInputs(staged['families']['fec-observations']['artifactDigest'], None,
+            [TypedInput(target, _sha(target), 0)], {}, filing_generation_scope='self')
+        with pytest.raises(ValueError, match=r"C1 controls \(rows by table: \{'fec_reference_filing_feed_items': 1\}\)"):
+            build_retained_family('fec-query', snapshot['families']['fec-query'], snapshot, retained,
+                tmp_path / 'query-build', operation=operation, read_snapshot=staged, filing_associations=selection,
+                observation_generation=native)
+    assert not (tmp_path / 'query-build/build/generation').exists()

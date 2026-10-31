@@ -22,7 +22,7 @@ from spicy_regs.transforms.assemble_fec_query import (
     TypedInput, assemble_subject_table, hashed_input, owned_input, unchanged_input, _sha, _equal_streams)
 from spicy_regs.transforms.build_fec_observations import OUTPUTS
 from spicy_regs.transforms.fec_identity_receipts import IdentityReceiptWriter
-from spicy_regs.transforms.fec_native_subjects import FIELD_RULES
+from spicy_regs.transforms.fec_native_subjects import FIELD_RULES, refuse_c1_controls
 from spicy_regs.transforms.fec_subject_receipts import subject_files as _members
 
 FAMILIES = frozenset({'fec-observations', 'fec-query'})
@@ -867,6 +867,8 @@ def build_retained_family(family, old, captured, retained, work, *, operation,
             segments.finish()
     for flat, original, destination in pending_partitions:
         _partition_subject(flat, original, destination, check_resources)
+    if family == 'fec-query':
+        refuse_c1_controls(subjects, check_resources=check_resources)
     if family == 'fec-observations' and observation_checkpoint is None:
         shared = observation_output / 'etl_receipts.parquet'
     if native_filings is not None:

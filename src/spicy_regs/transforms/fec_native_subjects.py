@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 
 import pyarrow as pa
+import pyarrow.parquet as pq
 
 from .fec_query import AMOUNT_TYPE
 
@@ -110,7 +111,53 @@ def _select(item, fields, allowed=None):
 
 # C1 controls in filing text mean Windows punctuation was decoded as latin-1
 # (FEC-1981885 read U+0092 for an apostrophe); cp1252 reads the intended text.
+# The class holds the literal characters, so Python re and DuckDB's RE2 read it alike.
 _C1_CONTROL = re.compile("[\x80-\x9f]")
+_C1_REMEDY = "decode the filing with spicy-docs filing_encoding (UTF-8, then cp1252), not latin-1"
+
+
+def _holds_text(dtype):
+    if pa.types.is_string(dtype) or pa.types.is_large_string(dtype) or pa.types.is_string_view(dtype):
+        return True
+    if pa.types.is_struct(dtype):
+        return any(_holds_text(field.type) for field in dtype)
+    if pa.types.is_map(dtype):
+        return _holds_text(dtype.key_type) or _holds_text(dtype.item_type)
+    if pa.types.is_dictionary(dtype):
+        return _holds_text(dtype.value_type)
+    return hasattr(dtype, "value_type") and _holds_text(dtype.value_type)
+
+
+def refuse_c1_controls(tables, *, check_resources=lambda: None, threads=6):
+    """Refuse a build whose assembled tables hold any C1 control in any text value.
+
+    One output-level pass per build: each table (a Parquet file or a partitioned
+    directory) is read once, only over columns that hold text at any depth, and
+    nested values are matched through their VARCHAR rendering. _text_fragment
+    keeps the cheap per-fragment refusal where filing text is mapped; only this
+    scan sees the other tables (ss-f64m: live fec-query 784b23da holds 3 such
+    rows, all in fec_filing_text_observations).
+    """
+    import duckdb
+
+    found = {}
+    with duckdb.connect(config={"threads": threads, "memory_limit": "1GiB",
+                                "max_temp_directory_size": "0B"}) as con:
+        for table in tables:
+            check_resources()
+            members = sorted(table.rglob("*.parquet")) if table.is_dir() else [table]
+            columns = [field.name for field in pq.read_schema(members[0]) if _holds_text(field.type)]
+            if not columns:
+                continue
+            matched = " OR ".join(
+                'regexp_matches(CAST("{}" AS VARCHAR), \'{}\')'.format(name.replace('"', '""'), _C1_CONTROL.pattern)
+                for name in columns)
+            [(rows,)] = con.execute(f"SELECT count(*) FILTER (WHERE {matched}) FROM read_parquet(?, hive_partitioning=false)",
+                                    [[str(path) for path in members]]).fetchall()
+            if rows:
+                found[table.name.removesuffix(".parquet")] = rows
+    if found:
+        raise ValueError(f"FEC output carries C1 controls (rows by table: {found}); {_C1_REMEDY}")
 
 
 def _text_fragment(item):
@@ -121,8 +168,7 @@ def _text_fragment(item):
     )
     if isinstance(fragment["text"], str) and (match := _C1_CONTROL.search(fragment["text"])):
         raise ValueError(
-            f"FEC filing text carries C1 control U+{ord(match.group()):04X} at character {match.start()};"
-            " decode the filing with spicy-docs filing_encoding (UTF-8, then cp1252), not latin-1"
+            f"FEC filing text carries C1 control U+{ord(match.group()):04X} at character {match.start()}; {_C1_REMEDY}"
         )
     return fragment
 
