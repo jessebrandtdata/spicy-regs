@@ -39,6 +39,9 @@ INTEGER_FIELDS = {
     "lobbying_filings": ("filing_year",),
     "lobbying_activities": ("activity_index",),
     "lobbying_activity_lobbyists": ("activity_index", "lobbyist_index"),
+    "lobbying_foreign_entities": ("foreign_entity_index",),
+    "lobbying_affiliated_organizations": ("affiliated_organization_index",),
+    "lobbying_conviction_disclosures": ("conviction_disclosure_index",),
 }
 
 BOOLEAN_FIELDS = {
@@ -49,13 +52,20 @@ BOOLEAN_FIELDS = {
     "lobbying_clients": ("client_government_entity", "client_self_select"),
 }
 
-MONEY_FIELDS = {"lobbying_filings": ("income", "expenses"), "usaspending_recipients": ("total_award_amount",)}
+MONEY_FIELDS = {
+    "lobbying_filings": ("income", "expenses"),
+    # ownership_percentage is a percent, not money; it shares the exact DECIMAL(38,6) reading (every retained value is
+    # a two-place decimal or null, 2026-10-31 scan of all 1,965,568 filings).
+    "lobbying_foreign_entities": ("contribution", "ownership_percentage"),
+    "usaspending_recipients": ("total_award_amount",),
+}
 
 DATE_FIELDS = {
     "gao_reports": ("published_date",),
     "gao_decisions": ("decision_date",),
     "lobbying_filings": ("termination_date",),
     "lobbying_clients": ("effective_date",),
+    "lobbying_conviction_disclosures": ("date",),
     # first_seen and last_seen say when the open-recommendations export first and last listed the row: with
     # listed_open, they are how a reader dates a recommendation's closure (owner decision, 2026-10-05).
     "gao_recommendations": ("publication_date", "first_seen", "last_seen"),
@@ -79,6 +89,9 @@ IDENTITY_FIELDS = {
     "lobbying_filings": ("filing_uuid",),
     "lobbying_activities": ("filing_uuid", "activity_index"),
     "lobbying_activity_lobbyists": ("filing_uuid", "activity_index", "lobbyist_index"),
+    "lobbying_foreign_entities": ("filing_uuid", "foreign_entity_index"),
+    "lobbying_affiliated_organizations": ("filing_uuid", "affiliated_organization_index"),
+    "lobbying_conviction_disclosures": ("filing_uuid", "conviction_disclosure_index"),
     "lobbying_registrants": ("registrant_id",),
     "lobbying_clients": ("client_id",),
     "sam_entities": ("uei", "entity_eft_indicator"),
@@ -208,6 +221,61 @@ LEGACY_COLUMNS = {
         "covered_position",
         "new",
     ),
+    # The filing's other source lists (owner round 8 Q1, 2026-10-31), one row per entry at its position in the
+    # filing's own list, under the source's own field names.
+    "lobbying_foreign_entities": (
+        "filing_uuid",
+        "foreign_entity_index",
+        "name",
+        "contribution",
+        "ownership_percentage",
+        "address",
+        "city",
+        "state",
+        "state_display",
+        "country",
+        "country_display",
+        "ppb_city",
+        "ppb_state",
+        "ppb_state_display",
+        "ppb_country",
+        "ppb_country_display",
+    ),
+    "lobbying_affiliated_organizations": (
+        "filing_uuid",
+        "affiliated_organization_index",
+        "name",
+        "url",
+        "address_1",
+        "address_2",
+        "address_3",
+        "address_4",
+        "city",
+        "state",
+        "state_display",
+        "zip",
+        "country",
+        "country_display",
+        "ppb_city",
+        "ppb_state",
+        "ppb_state_display",
+        "ppb_country",
+        "ppb_country_display",
+    ),
+    # The disclosed lobbyist is named as on lobbying_activity_lobbyists.
+    "lobbying_conviction_disclosures": (
+        "filing_uuid",
+        "conviction_disclosure_index",
+        "lobbyist_id",
+        "prefix",
+        "first_name",
+        "nickname",
+        "middle_name",
+        "last_name",
+        "suffix",
+        "date",
+        "description",
+    ),
     "lobbying_filings": (
         "filing_uuid",
         "filing_type",
@@ -260,6 +328,7 @@ LEGACY_COLUMNS = {
         "country_display",
         "ppb_country",
         "ppb_country_display",
+        "contact_telephone",
         "dt_updated",
         "url",
         "captured_at",

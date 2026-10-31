@@ -4,7 +4,7 @@
 
 **Lobbying registrants (profile as last captured)**
 
-The registrant record LDA embeds in each filing, kept once per `registrant_id`: the later `dt_updated` wins, then the later capture. Joins from `lobbying_filings.registrant_id` and `lobbying_clients.registrant_id`. The record's contact name and telephone are not published here (owner question open, 2026-10-30).
+The registrant record LDA embeds in each filing, kept once per `registrant_id`: the later `dt_updated` wins, then the later capture. Joins from `lobbying_filings.registrant_id` and `lobbying_clients.registrant_id`. The record's contact telephone is published as LDA serves it; its contact name is not.
 
 **Coverage.** Not a range: one row per LDA registrant id named on any filing in `lobbying_filings`, holding the registrant record as LDA served it at the latest capture spicy-regs holds (`captured_at`). LDA serves its current record inside every filing, not the one filed, so this is never the registrant as it stood when a given filing was made; the filing's own address is on `lobbying_filings`. *(measured 2026-10-30)*
 
@@ -31,6 +31,7 @@ The registrant record LDA embeds in each filing, kept once per `registrant_id`: 
 | `country_display` | `VARCHAR` | LDA's display name for `country` (e.g. `United States of America`). |
 | `ppb_country` | `VARCHAR` | Country code of the registrant's principal place of business. |
 | `ppb_country_display` | `VARCHAR` | LDA's display name for `ppb_country`. |
+| `contact_telephone` | `VARCHAR` | The registrant's business contact telephone as LDA served it at capture (`registrant.contact_telephone`), as filed and unnormalized (e.g. `+1 202-642-1416`); a fetch-time value, so it can postdate any given filing. Some registrants are individuals or self-employed, so this can be a person's own number. Null when the record carries none. |
 | `dt_updated` | `TIMESTAMP WITH TIME ZONE` | When LDA last updated this registrant record, as LDA states it. |
 | `captured_at` | `TIMESTAMP WITH TIME ZONE` | When spicy-regs captured the filing page this row was read from (UTC): the profile is LDA's record at that moment. |
 | `captured_filing_uuid` | `VARCHAR` | The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`. |

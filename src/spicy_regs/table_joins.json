@@ -2275,6 +2275,60 @@
       "measurement": null
     },
     {
+      "child": "lobbying_foreign_entities",
+      "child_columns": [
+        "filing_uuid"
+      ],
+      "parent": "lobbying_filings",
+      "parent_columns": [
+        "filing_uuid"
+      ],
+      "kind": "complete",
+      "reason": "",
+      "measured_via": null,
+      "baseline_keys": 11168,
+      "baseline_missing": 0,
+      "floor_pct": 100.0,
+      "expected_cardinality": "unspecified",
+      "measurement": null
+    },
+    {
+      "child": "lobbying_affiliated_organizations",
+      "child_columns": [
+        "filing_uuid"
+      ],
+      "parent": "lobbying_filings",
+      "parent_columns": [
+        "filing_uuid"
+      ],
+      "kind": "complete",
+      "reason": "",
+      "measured_via": null,
+      "baseline_keys": 12327,
+      "baseline_missing": 0,
+      "floor_pct": 100.0,
+      "expected_cardinality": "unspecified",
+      "measurement": null
+    },
+    {
+      "child": "lobbying_conviction_disclosures",
+      "child_columns": [
+        "filing_uuid"
+      ],
+      "parent": "lobbying_filings",
+      "parent_columns": [
+        "filing_uuid"
+      ],
+      "kind": "complete",
+      "reason": "",
+      "measured_via": null,
+      "baseline_keys": 1214,
+      "baseline_missing": 0,
+      "floor_pct": 100.0,
+      "expected_cardinality": "unspecified",
+      "measurement": null
+    },
+    {
       "child": "scorecards",
       "child_columns": [
         "publisher_id"
@@ -9698,6 +9752,39 @@
         "parent_table": "lobbying_registrants",
         "parent_columns": [
           "registrant_id"
+        ]
+      }
+    ],
+    "lobbying_foreign_entities": [
+      {
+        "child_columns": [
+          "filing_uuid"
+        ],
+        "parent_table": "lobbying_filings",
+        "parent_columns": [
+          "filing_uuid"
+        ]
+      }
+    ],
+    "lobbying_affiliated_organizations": [
+      {
+        "child_columns": [
+          "filing_uuid"
+        ],
+        "parent_table": "lobbying_filings",
+        "parent_columns": [
+          "filing_uuid"
+        ]
+      }
+    ],
+    "lobbying_conviction_disclosures": [
+      {
+        "child_columns": [
+          "filing_uuid"
+        ],
+        "parent_table": "lobbying_filings",
+        "parent_columns": [
+          "filing_uuid"
         ]
       }
     ],

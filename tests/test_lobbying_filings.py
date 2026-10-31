@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 from datetime import date
+from decimal import Decimal
 from importlib import import_module
 from typing import Any
 
@@ -626,9 +627,13 @@ def test_native_nightly_receipts_only_the_window_and_equals_the_full_row_merge(t
     second = bld.build_lobbying_filings(night_dir, receipt_generation_id="g1", since=date(2026, 10, 1), until=date(2026, 10, 3))
     assert pq.read_table(second[0], columns=["filing_uuid"]).column(0).to_pylist() == ["c", "a", "b"]
     assert written == {"lobbying_filings": 2, "lobbying_activities": 4, "lobbying_activity_lobbyists": 4,
-                       "lobbying_registrants": 0, "lobbying_clients": 0}
+                       "lobbying_foreign_entities": 0, "lobbying_affiliated_organizations": 0,
+                       "lobbying_conviction_disclosures": 0, "lobbying_registrants": 0, "lobbying_clients": 0}
     orders = {"lobbying_filings": "dt_posted DESC, filing_uuid", "lobbying_activities": "filing_uuid, CAST(activity_index AS INTEGER)",
               "lobbying_activity_lobbyists": "filing_uuid, CAST(activity_index AS INTEGER), CAST(lobbyist_index AS INTEGER)",
+              "lobbying_foreign_entities": "filing_uuid, CAST(foreign_entity_index AS INTEGER)",
+              "lobbying_affiliated_organizations": "filing_uuid, CAST(affiliated_organization_index AS INTEGER)",
+              "lobbying_conviction_disclosures": "filing_uuid, CAST(conviction_disclosure_index AS INTEGER)",
               "lobbying_registrants": "CAST(registrant_id AS BIGINT)", "lobbying_clients": "CAST(client_id AS BIGINT)"}
     for path in second:
         dataset = path.stem
@@ -798,14 +803,23 @@ def test_retained_rebuild_takes_each_filing_from_its_latest_capture(tmp_path, mo
     newer["lobbying_activities"] = newer["lobbying_activities"][:1]
     newer["lobbying_activities"][0]["lobbyists"] = newer["lobbying_activities"][0]["lobbyists"][:1]
     newer["posted_by_name"] = "Amy Luft, Counsel"
-    other = {**copy.deepcopy(older), "filing_uuid": "f-2", "lobbying_activities": []}
+    # The later capture's lists win with the filing, as the activities do.
+    older["foreign_entities"] = [{"name": "OLD HOLDINGS", "contribution": "1.00", "country": "KR"}]
+    newer["foreign_entities"] = [{"name": "SK HOLDINGS", "contribution": "0.00", "ownership_percentage": "100.00",
+                                  "country": "KR", "country_display": "South Korea"}, None]
+    newer["affiliated_organizations"] = [{"name": "DCP MIDSTREAM, LLC", "url": None, "state": "CO", "zip": "80202"}]
+    newer["conviction_disclosures"] = [{"lobbyist": {"id": 29268, "first_name": "C", "middle_name": "JAMES",
+                                                     "last_name": "PATTI", "prefix_display": None},
+                                        "date": "2002-05-07", "description": "Violation of 18 USC 1341"}]
+    other = {**copy.deepcopy(older), "filing_uuid": "f-2", "lobbying_activities": [], "foreign_entities": [],
+             "affiliated_organizations": None}
     manifest, digest, store = _retained(tmp_path, [
         ("2026-10-19T00:00:00+00:00", [newer]),
         ("2026-09-29T12:00:00-04:00", [older, other]),
     ])
     out = tmp_path / "build"
     out.mkdir()
-    filings, activities, lobbyists, registrants, clients = bld.rebuild_lobbying_filings(
+    filings, activities, lobbyists, foreign, affiliated, convictions, registrants, clients = bld.rebuild_lobbying_filings(
         out, manifest=manifest, manifest_sha256=digest, store=store, receipt_generation_id="r0")
     rows = {row["filing_uuid"]: row for row in pq.read_table(filings).to_pylist()}
     assert set(rows) == {"f-1", "f-2"}
@@ -815,12 +829,47 @@ def test_retained_rebuild_takes_each_filing_from_its_latest_capture(tmp_path, mo
     assert rows["f-1"]["registrant_different_address"] is None
     assert [(a["filing_uuid"], a["activity_index"]) for a in pq.read_table(activities).to_pylist()] == [("f-1", 0)]
     assert [(p["filing_uuid"], p["lobbyist_index"]) for p in pq.read_table(lobbyists).to_pylist()] == [("f-1", 0)]
+    # A null list entry keeps its position as an all-null row; an empty or null list has no rows. Whole rows are
+    # compared, so a dropped column or a repeated entry fails here.
+    def child(path, **values):
+        return {column: None for column in pq.read_schema(path).names} | values
+
+    assert pq.read_table(foreign).to_pylist() == [
+        child(foreign, filing_uuid="f-1", foreign_entity_index=0, name="SK HOLDINGS", contribution=Decimal("0"),
+              ownership_percentage=Decimal("100"), country="KR", country_display="South Korea"),
+        child(foreign, filing_uuid="f-1", foreign_entity_index=1)]
+    assert pq.read_table(affiliated).to_pylist() == [
+        child(affiliated, filing_uuid="f-1", affiliated_organization_index=0, name="DCP MIDSTREAM, LLC", state="CO",
+              zip="80202")]
+    assert pq.read_table(convictions).to_pylist() == [
+        child(convictions, filing_uuid="f-1", conviction_disclosure_index=0, lobbyist_id="29268", first_name="C",
+              middle_name="JAMES", last_name="PATTI", date=date(2002, 5, 7), description="Violation of 18 USC 1341")]
+    # The shapers emit one row per entry before the merge's identity dedup, so a repeated entry fails here too.
+    shapers = {output: shape for output, _, shape in bld._TABLES}
+    assert [(r["foreign_entity_index"], r["name"]) for r in shapers[bld.FOREIGN_ENTITIES_OUTPUT](newer)] == [
+        ("0", "SK HOLDINGS"), ("1", None)]
+    assert [(r["affiliated_organization_index"], r["name"])
+            for r in shapers[bld.AFFILIATED_ORGANIZATIONS_OUTPUT](newer)] == [("0", "DCP MIDSTREAM, LLC")]
+    assert [(r["conviction_disclosure_index"], r["last_name"])
+            for r in shapers[bld.CONVICTION_DISCLOSURES_OUTPUT](newer)] == [("0", "PATTI")]
+    # Every source field of an entry is a column (the 2026-10-31 key scan of all retained pages); the lists' keys:
+    place = ("city", "state", "state_display", "country", "country_display",
+             "ppb_city", "ppb_state", "ppb_state_display", "ppb_country", "ppb_country_display")
+    assert pq.read_schema(foreign).names == [
+        "filing_uuid", "foreign_entity_index", "name", "contribution", "ownership_percentage", "address", *place]
+    assert pq.read_schema(affiliated).names == [
+        "filing_uuid", "affiliated_organization_index", "name", "url", "address_1", "address_2", "address_3",
+        "address_4", *place[:3], "zip", *place[3:]]
+    assert pq.read_schema(convictions).names == [
+        "filing_uuid", "conviction_disclosure_index", "lobbyist_id", "prefix", "first_name", "nickname", "middle_name",
+        "last_name", "suffix", "date", "description"]
     # One profile per LDA id, the one captured last: the 10-19 page's, though f-2 (captured 09-29) names it too.
     (registrant,) = pq.read_table(registrants).to_pylist()
     assert (registrant["registrant_id"], registrant["name"], registrant["captured_filing_uuid"]) == (
         "14143", "FARM CREDIT BANK OF TEXAS, ACA", "f-1")
     assert str(registrant["captured_at"]) == "2026-10-19 00:00:00+00:00"
-    assert "contact_telephone" not in registrant
+    # The LDA publishes the registrant's business telephone on every filing (owner round 9 Q2); the contact name stays out.
+    assert registrant["contact_telephone"] == "+1 202-642-1416" and "contact_name" not in registrant
     (client,) = pq.read_table(clients).to_pylist()
     assert (client["client_id"], client["registrant_client_number"], client["registrant_id"]) == ("119518", "12", "14143")
     assert (client["client_self_select"], client["client_government_entity"]) == (False, None)

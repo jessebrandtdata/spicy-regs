@@ -30,14 +30,13 @@ class LobbyingFilingsRollup(GovernmentReceiptRollup):
     inputs: ClassVar[tuple[str, ...]] = ()
     outputs: ClassVar[tuple[str, ...]] = (
         "lobbying_filings.parquet", "lobbying_activities.parquet", "lobbying_activity_lobbyists.parquet",
-        "lobbying_registrants.parquet", "lobbying_clients.parquet",
+        "lobbying_foreign_entities.parquet", "lobbying_affiliated_organizations.parquet",
+        "lobbying_conviction_disclosures.parquet", "lobbying_registrants.parquet", "lobbying_clients.parquet",
     )
     # Decision 47: the activities and their lobbyists join the family as their own tables; Q12 (2026-10-30): the
-    # registrant and client records, one row per LDA id as last captured.
-    added_tables: ClassVar[tuple[str, ...]] = (
-        "lobbying_activities.parquet", "lobbying_activity_lobbyists.parquet",
-        "lobbying_registrants.parquet", "lobbying_clients.parquet",
-    )
+    # registrant and client records, one row per LDA id as last captured; round 8 Q1 (2026-10-31): the filing's
+    # foreign entity, affiliated organization and conviction disclosure lists.
+    added_tables: ClassVar[tuple[str, ...]] = outputs[1:]
 
     def build(self, output_dir: Path) -> tuple[Path, ...]:
         return build_lobbying_filings(

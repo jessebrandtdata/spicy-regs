@@ -3354,6 +3354,31 @@
     ]
    }
   },
+  "lobbying_affiliated_organizations": {
+   "containers": {
+    "raw_record": [
+     "filing_uuid",
+     "affiliated_organization_index",
+     "name",
+     "url",
+     "address_1",
+     "address_2",
+     "address_3",
+     "address_4",
+     "city",
+     "state",
+     "state_display",
+     "zip",
+     "country",
+     "country_display",
+     "ppb_city",
+     "ppb_state",
+     "ppb_state_display",
+     "ppb_country",
+     "ppb_country_display"
+    ]
+   }
+  },
   "lobbying_clients": {
    "containers": {
     "raw_record": [
@@ -3376,6 +3401,23 @@
      "url",
      "captured_at",
      "captured_filing_uuid"
+    ]
+   }
+  },
+  "lobbying_conviction_disclosures": {
+   "containers": {
+    "raw_record": [
+     "filing_uuid",
+     "conviction_disclosure_index",
+     "lobbyist_id",
+     "prefix",
+     "first_name",
+     "nickname",
+     "middle_name",
+     "last_name",
+     "suffix",
+     "date",
+     "description"
     ]
    }
   },
@@ -3423,6 +3465,28 @@
     "url": "URL of the filing's printable document page on lda.gov (`filing_document_url`; lda.senate.gov redirects there)."
    }
   },
+  "lobbying_foreign_entities": {
+   "containers": {
+    "raw_record": [
+     "filing_uuid",
+     "foreign_entity_index",
+     "name",
+     "contribution",
+     "ownership_percentage",
+     "address",
+     "city",
+     "state",
+     "state_display",
+     "country",
+     "country_display",
+     "ppb_city",
+     "ppb_state",
+     "ppb_state_display",
+     "ppb_country",
+     "ppb_country_display"
+    ]
+   }
+  },
   "lobbying_registrants": {
    "containers": {
     "raw_record": [
@@ -3442,6 +3506,7 @@
      "country_display",
      "ppb_country",
      "ppb_country_display",
+     "contact_telephone",
      "dt_updated",
      "url",
      "captured_at",

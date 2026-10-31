@@ -2456,6 +2456,18 @@
         ]
       },
       {
+        "dataset": "lobbying_affiliated_organizations",
+        "receipt_only": false,
+        "policy_version": "government-sources/1",
+        "identity_columns": [
+          "filing_uuid",
+          "affiliated_organization_index"
+        ],
+        "processing_fields": [
+          "raw_record"
+        ]
+      },
+      {
         "dataset": "lobbying_clients",
         "receipt_only": false,
         "policy_version": "government-sources/1",
@@ -2467,11 +2479,35 @@
         ]
       },
       {
+        "dataset": "lobbying_conviction_disclosures",
+        "receipt_only": false,
+        "policy_version": "government-sources/1",
+        "identity_columns": [
+          "filing_uuid",
+          "conviction_disclosure_index"
+        ],
+        "processing_fields": [
+          "raw_record"
+        ]
+      },
+      {
         "dataset": "lobbying_filings",
         "receipt_only": false,
         "policy_version": "government-sources/2",
         "identity_columns": [
           "filing_uuid"
+        ],
+        "processing_fields": [
+          "raw_record"
+        ]
+      },
+      {
+        "dataset": "lobbying_foreign_entities",
+        "receipt_only": false,
+        "policy_version": "government-sources/1",
+        "identity_columns": [
+          "filing_uuid",
+          "foreign_entity_index"
         ],
         "processing_fields": [
           "raw_record"
@@ -3764,10 +3800,10 @@
       "table": "lobbying_filings",
       "label": "Lobbying disclosure filings",
       "summary": "One row per federal lobbying-disclosure filing, ingested from the U.S. Senate Lobbying Disclosure Act (LDA) REST API (`lda.gov`, formerly `lda.senate.gov`) by `build_lobbying_filings`. Registrants file quarterly reports naming the clients they lobby for, the money involved, the issues raised, and the government entities (agencies/chambers) lobbied — so this table links the comment campaigns in `comments`/`dockets` to the same organizations' *direct* agency lobbying. Primary / dedup key is `filing_uuid`.",
-      "coverage": "True range: every filing of each filing year held, read whole from the LDA API, from the earliest filing year the backfill has reached to date; earlier years are added one year per dispatched run (owner decision 47). Query min(filing_year) for the current start.",
+      "coverage": "True range: every filing of each filing year held, read whole from the LDA API, from the earliest filing year the backfill has reached to date; earlier years are added one year per dispatched run (owner decision 47). Query min(filing_year) for the current start. Filing years 1999-2006 are short of the LDA's declared totals until a re-walk of those years lands; see the data-quality note for the shortfall per year.",
       "kind": "true_range",
-      "measured_on": "2026-09-28",
-      "data_quality": null,
+      "measured_on": "2026-10-30",
+      "data_quality": "Filing years 1999-2006 are short of the LDA's declared totals: offset paging over tied posting times skipped 12,853 filings in the one walk held (measured 2026-10-30, filings missing of declared): 1999 2,099 of 31,498; 2000 584 of 31,555; 2001 676 of 35,897; 2002 1,429 of 38,352; 2003 2,669 of 43,292; 2004 1,969 of 44,704; 2005 2,180 of 49,353; 2006 1,247 of 49,068. Counts for those years undercount until the re-walk lands. Filing years 2007 to 2025 matched their declared totals.",
       "columns": [
         "filing_uuid",
         "filing_type",
@@ -3841,9 +3877,88 @@
       ]
     },
     {
+      "table": "lobbying_foreign_entities",
+      "label": "Foreign entities disclosed on lobbying filings",
+      "summary": "The foreign entities an LDA filing discloses: a foreign entity that owns part of the client, controls or finances its activities, or is affiliated with it and has a direct interest in the outcome. Each row is the entity as stated on this filing, with its contribution and ownership share. Keyed `(filing_uuid, foreign_entity_index)`, the entry's position in the filing's own list; joins to `lobbying_filings` on `filing_uuid`.",
+      "coverage": "True range, the same filings as `lobbying_filings`: one row per foreign entity a filing discloses. Most filings disclose none and have no rows here.",
+      "kind": "true_range",
+      "measured_on": "2026-10-31",
+      "data_quality": null,
+      "columns": [
+        "filing_uuid",
+        "foreign_entity_index",
+        "name",
+        "contribution",
+        "ownership_percentage",
+        "address",
+        "city",
+        "state",
+        "state_display",
+        "country",
+        "country_display",
+        "ppb_city",
+        "ppb_state",
+        "ppb_state_display",
+        "ppb_country",
+        "ppb_country_display"
+      ]
+    },
+    {
+      "table": "lobbying_affiliated_organizations",
+      "label": "Affiliated organizations disclosed on lobbying filings",
+      "summary": "The affiliated organizations an LDA filing discloses: organizations other than the client that contribute to the lobbying activities and actively participate in planning, supervising or controlling them. Each row is the organization as stated on this filing. Keyed `(filing_uuid, affiliated_organization_index)`, the entry's position in the filing's own list; joins to `lobbying_filings` on `filing_uuid`.",
+      "coverage": "True range, the same filings as `lobbying_filings`: one row per affiliated organization a filing discloses. Most filings disclose none and have no rows here.",
+      "kind": "true_range",
+      "measured_on": "2026-10-31",
+      "data_quality": null,
+      "columns": [
+        "filing_uuid",
+        "affiliated_organization_index",
+        "name",
+        "url",
+        "address_1",
+        "address_2",
+        "address_3",
+        "address_4",
+        "city",
+        "state",
+        "state_display",
+        "zip",
+        "country",
+        "country_display",
+        "ppb_city",
+        "ppb_state",
+        "ppb_state_display",
+        "ppb_country",
+        "ppb_country_display"
+      ]
+    },
+    {
+      "table": "lobbying_conviction_disclosures",
+      "label": "Lobbyist conviction disclosures on lobbying filings",
+      "summary": "The convictions an LDA filing discloses for a lobbyist it names: the lobbyist, the conviction date and the description the registrant filed. A disclosure is the registrant's statement on a public filing, not a court record; the same conviction recurs on each later filing that names the lobbyist. Keyed `(filing_uuid, conviction_disclosure_index)`, the entry's position in the filing's own list; joins to `lobbying_filings` on `filing_uuid`.",
+      "coverage": "True range, the same filings as `lobbying_filings`: one row per conviction a filing discloses. Very few filings disclose one; the rest have no rows here.",
+      "kind": "true_range",
+      "measured_on": "2026-10-31",
+      "data_quality": null,
+      "columns": [
+        "filing_uuid",
+        "conviction_disclosure_index",
+        "lobbyist_id",
+        "prefix",
+        "first_name",
+        "nickname",
+        "middle_name",
+        "last_name",
+        "suffix",
+        "date",
+        "description"
+      ]
+    },
+    {
       "table": "lobbying_registrants",
       "label": "Lobbying registrants (profile as last captured)",
-      "summary": "The registrant record LDA embeds in each filing, kept once per `registrant_id`: the later `dt_updated` wins, then the later capture. Joins from `lobbying_filings.registrant_id` and `lobbying_clients.registrant_id`. The record's contact name and telephone are not published here (owner question open, 2026-10-30).",
+      "summary": "The registrant record LDA embeds in each filing, kept once per `registrant_id`: the later `dt_updated` wins, then the later capture. Joins from `lobbying_filings.registrant_id` and `lobbying_clients.registrant_id`. The record's contact telephone is published as LDA serves it; its contact name is not.",
       "coverage": "Not a range: one row per LDA registrant id named on any filing in `lobbying_filings`, holding the registrant record as LDA served it at the latest capture spicy-regs holds (`captured_at`). LDA serves its current record inside every filing, not the one filed, so this is never the registrant as it stood when a given filing was made; the filing's own address is on `lobbying_filings`.",
       "kind": "not_a_range",
       "measured_on": "2026-10-30",
@@ -3865,6 +3980,7 @@
         "country_display",
         "ppb_country",
         "ppb_country_display",
+        "contact_telephone",
         "dt_updated",
         "captured_at",
         "captured_filing_uuid"

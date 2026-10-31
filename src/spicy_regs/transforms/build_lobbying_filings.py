@@ -8,7 +8,10 @@ per lobbyist an activity names, keyed ``(filing_uuid, activity_index,
 lobbyist_index)`` (owner decision 47). An index is the position in the filing's
 own list: LDA never edits a filing, since an amendment is a new filing, so the
 positions are stable. The lobbyists were dropped before, so history is read
-once, with the shape that keeps them.
+once, with the shape that keeps them. ``lobbying_foreign_entities``,
+``lobbying_affiliated_organizations`` and ``lobbying_conviction_disclosures``
+hold the filing's other source lists the same way, keyed by ``filing_uuid``
+and the entry's position (owner round 8 Q1, 2026-10-31).
 
 Incremental by design (mirrors ``build_federal_register``): a full re-fetch of
 the multi-million-row LDA archive every run would be wasteful *and* would trip
@@ -193,6 +196,12 @@ ACTIVITIES_OUTPUT = "lobbying_activities.parquet"
 ACTIVITY_COLUMNS = LEGACY_COLUMNS["lobbying_activities"]
 LOBBYISTS_OUTPUT = "lobbying_activity_lobbyists.parquet"
 LOBBYIST_COLUMNS = LEGACY_COLUMNS["lobbying_activity_lobbyists"]
+FOREIGN_ENTITIES_OUTPUT = "lobbying_foreign_entities.parquet"
+FOREIGN_ENTITY_COLUMNS = LEGACY_COLUMNS["lobbying_foreign_entities"]
+AFFILIATED_ORGANIZATIONS_OUTPUT = "lobbying_affiliated_organizations.parquet"
+AFFILIATED_ORGANIZATION_COLUMNS = LEGACY_COLUMNS["lobbying_affiliated_organizations"]
+CONVICTION_DISCLOSURES_OUTPUT = "lobbying_conviction_disclosures.parquet"
+CONVICTION_DISCLOSURE_COLUMNS = LEGACY_COLUMNS["lobbying_conviction_disclosures"]
 REGISTRANTS_OUTPUT = "lobbying_registrants.parquet"
 REGISTRANT_COLUMNS = LEGACY_COLUMNS["lobbying_registrants"]
 CLIENTS_OUTPUT = "lobbying_clients.parquet"
@@ -203,6 +212,9 @@ NATIVE_ORDERS = {
     "lobbying_filings": ("dt_posted DESC", "filing_uuid"),
     "lobbying_activities": ("filing_uuid", "activity_index"),
     "lobbying_activity_lobbyists": ("filing_uuid", "activity_index", "lobbyist_index"),
+    "lobbying_foreign_entities": ("filing_uuid", "foreign_entity_index"),
+    "lobbying_affiliated_organizations": ("filing_uuid", "affiliated_organization_index"),
+    "lobbying_conviction_disclosures": ("filing_uuid", "conviction_disclosure_index"),
     "lobbying_registrants": ("registrant_id",),
     "lobbying_clients": ("client_id",),
 }
@@ -324,6 +336,37 @@ def _lobbyist_rows(filing: dict) -> list[dict]:
     return rows
 
 
+def _entry_rows(field: str, index_column: str, columns: tuple[str, ...]):
+    """Shape one row per entry of a filing's top-level ``field`` list, at its position, under the source's names."""
+    def rows(filing: dict) -> list[dict]:
+        shaped = []
+        for index, entry in enumerate(_source_list(filing.get(field), field) or []):
+            entry = entry or {}
+            shaped.append({"filing_uuid": filing.get("filing_uuid"), index_column: str(index),
+                           **{column: entry.get(column) for column in columns[2:]}})
+        return shaped
+    return rows
+
+
+def _conviction_rows(filing: dict) -> list[dict]:
+    """One row per conviction disclosure, its lobbyist named as on ``lobbying_activity_lobbyists``."""
+    rows = []
+    for index, entry in enumerate(_source_list(filing.get("conviction_disclosures"), "conviction_disclosures") or []):
+        entry = entry or {}
+        person = entry.get("lobbyist")
+        if not isinstance(person, dict):
+            person = {}
+        rows.append({
+            "filing_uuid": filing.get("filing_uuid"),
+            "conviction_disclosure_index": str(index),
+            "lobbyist_id": str_or_none(person.get("id")),
+            **{key: person.get(key) for key in ("prefix", "first_name", "nickname", "middle_name", "last_name", "suffix")},
+            "date": entry.get("date"),
+            "description": entry.get("description"),
+        })
+    return rows
+
+
 def _prior_max_dt_posted(prior_file: Path) -> date | None:
     """Largest ``dt_posted`` date in the prior table, or None if empty/absent."""
     if not prior_file.exists():
@@ -367,7 +410,8 @@ def _embedded(filing: dict, field: str) -> dict | None:
 
 
 def _registrant_row(filing: dict) -> dict | None:
-    """The registrant record the filing embeds, as captured with it; ``contact_*`` stay out pending the owner."""
+    """The registrant record the filing embeds, as captured with it; its contact telephone is published, its contact name
+    is not (owner round 9 Q2, reaffirmed 2026-10-31)."""
     registrant = _embedded(filing, "registrant")
     if registrant is None:
         return None
@@ -419,6 +463,11 @@ _TABLES = (
     (OUTPUT, COLUMNS, lambda filing: [_shape(filing)]),
     (ACTIVITIES_OUTPUT, ACTIVITY_COLUMNS, _activity_rows),
     (LOBBYISTS_OUTPUT, LOBBYIST_COLUMNS, _lobbyist_rows),
+    (FOREIGN_ENTITIES_OUTPUT, FOREIGN_ENTITY_COLUMNS,
+     _entry_rows("foreign_entities", "foreign_entity_index", FOREIGN_ENTITY_COLUMNS)),
+    (AFFILIATED_ORGANIZATIONS_OUTPUT, AFFILIATED_ORGANIZATION_COLUMNS,
+     _entry_rows("affiliated_organizations", "affiliated_organization_index", AFFILIATED_ORGANIZATION_COLUMNS)),
+    (CONVICTION_DISCLOSURES_OUTPUT, CONVICTION_DISCLOSURE_COLUMNS, _conviction_rows),
 )
 #: One row per LDA id, the latest observation of it in this read (``_profile_rank``; an equal rank keeps the first
 #: seen). At most one row per registrant and client is held: 14,881 and 129,462 over the whole archive.
@@ -470,8 +519,7 @@ def _write_fresh(filings: Iterable[dict], output_dir: Path) -> dict[str, Path]:
         for path in paths.values():
             path.unlink(missing_ok=True)
         raise
-    logger.info("LDA: shaped {:,} filings ({:,} activities, {:,} lobbyist rows, {:,} registrants, {:,} clients)",
-                *(counts[key] for key in paths))
+    logger.info("LDA: shaped {}", ", ".join(f"{counts[key]:,} {key.removesuffix('.parquet')}" for key in paths))
     return paths
 
 
@@ -495,6 +543,10 @@ def _merge_fresh(output_dir: Path, fresh: dict[str, Path], *, priors: dict[str, 
         ACTIVITIES_OUTPUT: (("filing_uuid", "activity_index"), "filing_uuid, CAST(activity_index AS INTEGER)"),
         LOBBYISTS_OUTPUT: (("filing_uuid", "activity_index", "lobbyist_index"),
                            "filing_uuid, CAST(activity_index AS INTEGER), CAST(lobbyist_index AS INTEGER)"),
+        **{key: (("filing_uuid", columns[1]), f"filing_uuid, CAST({columns[1]} AS INTEGER)") for key, columns in (
+            (FOREIGN_ENTITIES_OUTPUT, FOREIGN_ENTITY_COLUMNS),
+            (AFFILIATED_ORGANIZATIONS_OUTPUT, AFFILIATED_ORGANIZATION_COLUMNS),
+            (CONVICTION_DISCLOSURES_OUTPUT, CONVICTION_DISCLOSURE_COLUMNS))},
         REGISTRANTS_OUTPUT: ("registrant_id", "CAST(registrant_id AS BIGINT)"),
         CLIENTS_OUTPUT: ("client_id", "CAST(client_id AS BIGINT)"),
     }
@@ -542,7 +594,7 @@ def build_lobbying_filings(
     max_records: int | None = None,
     max_passes: int | None = None,
 ) -> tuple[Path, ...]:
-    """Build the filings, activities, lobbyists, registrants and clients tables, each merged with its prior table."""
+    """Build every lobbying table (filings, their child lists, registrants, clients), each merged with its prior table."""
     prior_file = output_dir / "_lda_prior.parquet"
 
     # 1. Pull the prior table (best effort — absence just means full backfill).

@@ -471,6 +471,11 @@ JOINS: tuple[Join, ...] = (
     _join("lobbying_filings", "client_id", "lobbying_clients", "client_id", 129_495, 0, expected_cardinality="one"),
     _join("lobbying_clients", "registrant_id", "lobbying_registrants", "registrant_id", 14_881, 0,
           expected_cardinality="one"),
+    # The filing's other source lists (round 8 Q1): every entry is shaped from its filing's record. Distinct filings
+    # holding one, counted over all 80,523 retained pages with the latest capture per filing (2026-10-31).
+    _join("lobbying_foreign_entities", "filing_uuid", "lobbying_filings", "filing_uuid", 11_168, 0),
+    _join("lobbying_affiliated_organizations", "filing_uuid", "lobbying_filings", "filing_uuid", 12_327, 0),
+    _join("lobbying_conviction_disclosures", "filing_uuid", "lobbying_filings", "filing_uuid", 1_214, 0),
     # Native legal references: each observation names the complete read of its input (spicy-docs 0.52.0's
     # contract reference). Measured 2026-09-28 on native-legal-references 53755e3e…: both scopes resolve.
     _join("native_legal_references", "scope_id", "native_legal_reference_reads", "scope_id", 2, 0),

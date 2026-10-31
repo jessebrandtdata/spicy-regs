@@ -1066,8 +1066,18 @@ tables:
       True range: every filing of each filing year held, read whole from the LDA
       API, from the earliest filing year the backfill has reached to date;
       earlier years are added one year per dispatched run (owner decision 47).
-      Query min(filing_year) for the current start.
-    measured_on: "2026-09-28"
+      Query min(filing_year) for the current start. Filing years 1999-2006
+      are short of the LDA's declared totals until a re-walk of those years
+      lands; see the data-quality note for the shortfall per year.
+    measured_on: "2026-10-30"
+    data_quality: >-
+      Filing years 1999-2006 are short of the LDA's declared totals: offset
+      paging over tied posting times skipped 12,853 filings in the one walk
+      held (measured 2026-10-30, filings missing of declared): 1999 2,099 of
+      31,498; 2000 584 of 31,555; 2001 676 of 35,897; 2002 1,429 of 38,352;
+      2003 2,669 of 43,292; 2004 1,969 of 44,704; 2005 2,180 of 49,353; 2006
+      1,247 of 49,068. Counts for those years undercount until the re-walk
+      lands. Filing years 2007 to 2025 matched their declared totals.
     summary: >-
       One row per federal lobbying-disclosure filing, ingested from the U.S.
       Senate Lobbying Disclosure Act (LDA) REST API (`lda.gov`, formerly `lda.senate.gov`) by
@@ -1093,7 +1103,7 @@ tables:
       url: "URL of the filing's printable document page on lda.gov (`filing_document_url`; lda.senate.gov redirects there)."
       filing_type_display: "The publisher's label for `filing_type`, as served (e.g. `1st Quarter - Report`, `Registration`)."
       filing_period_display: "The publisher's label for `filing_period`, as served (e.g. `1st Quarter (Jan 1 - Mar 31)`)."
-      filing_document_content_type: "Media type of the filing document at `url`, as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none."
+      filing_document_content_type: "Media type of the filing document (the receipt's `url`), as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none."
       expenses_method: "The self-filer's expense accounting method code as filed (`expenses_method`). Two spellings occur, both kept as filed: lower case `a`, `b`, `c`, whose `expenses_method_display` is the long label, and upper case `A`, `B`, `C`, whose display is the bare letter; both occur in current years (a 400-page retained sample, 2026-10-30, held 751 lower-case and 286 upper-case codes). `a`/`A` is Method A (LDA definitions), `b`/`B` Method B (IRC 6033(b)(8)), `c`/`C` Method C (IRC 162(e)). Null when the filing states no method, as on most firm reports, which carry `income` instead."
       expenses_method_display: "The publisher's label for `expenses_method`, as filed: `Method A - Reporting amounts using LDA definitions only`, `Method B - Reporting amounts under section 6033(b)(8) of the Internal Revenue Code`, `Method C - Reporting amounts under section 162(e) of the Internal Revenue Code`, or the bare letter when the code is upper case."
       termination_date: "Date the registrant ended its representation of the client, on a termination report (`filing_type` `1T`–`4T`, `MT` and their no-activity forms). Null on other filings."
@@ -1159,6 +1169,103 @@ tables:
       suffix: "Name suffix as filed; often null."
       covered_position: "The covered executive- or legislative-branch position the lobbyist held, as the registrant typed it for this activity: free text, not parsed, with no link to `committees` or any agency table. It is stated per activity, so one lobbyist's rows can carry it on some activities and not others; NULL means this entry states none, not that the lobbyist held none. Many values are placeholders rather than positions (`N/A`, `None`, `Not applicable`) or point elsewhere (`See prior filing`), and LDA's own filings sometimes put a colleague's text against the wrong name."
       new: "`True` when the filing lists the lobbyist as new for this activity, `False` otherwise."
+  lobbying_foreign_entities:
+    identity_columns: [filing_uuid, foreign_entity_index]
+    label: "Foreign entities disclosed on lobbying filings"
+    subject: lobbying
+    coverage: >-
+      True range, the same filings as `lobbying_filings`: one row per foreign
+      entity a filing discloses. Most filings disclose none and have no rows
+      here.
+    measured_on: "2026-10-31"
+    summary: >-
+      The foreign entities an LDA filing discloses: a foreign entity that owns
+      part of the client, controls or finances its activities, or is affiliated
+      with it and has a direct interest in the outcome. Each row is the entity as stated on this filing,
+      with its contribution and ownership share. Keyed `(filing_uuid,
+      foreign_entity_index)`, the entry's position in the filing's own list;
+      joins to `lobbying_filings` on `filing_uuid`.
+    columns:
+      filing_uuid: "The filing; joins to `lobbying_filings.filing_uuid`."
+      foreign_entity_index: "The entity's position in the filing's `foreign_entities` list, from `0`. Completes the key."
+      name: "Foreign entity name as filed."
+      contribution: "The entity's contribution to the registrant's lobbying activities for the period, in dollars as filed (`contribution`), an exact decimal; null when the filing states none."
+      ownership_percentage: "The entity's ownership share of the client in percent as filed (`ownership_percentage`, `100` is whole ownership), an exact decimal; null when the filing states none."
+      address: "Street address as filed; null when none."
+      city: "City as filed; null when none."
+      state: "State or province code as filed; null outside the United States in most rows."
+      state_display: "LDA's display name for `state`."
+      country: "Country code as filed (e.g. `KR`)."
+      country_display: "LDA's display name for `country` (e.g. `South Korea`)."
+      ppb_city: "City of the entity's principal place of business; null when none."
+      ppb_state: "State code of the principal place of business; null when none."
+      ppb_state_display: "LDA's display name for `ppb_state`."
+      ppb_country: "Country code of the principal place of business."
+      ppb_country_display: "LDA's display name for `ppb_country`."
+  lobbying_affiliated_organizations:
+    identity_columns: [filing_uuid, affiliated_organization_index]
+    label: "Affiliated organizations disclosed on lobbying filings"
+    subject: lobbying
+    coverage: >-
+      True range, the same filings as `lobbying_filings`: one row per
+      affiliated organization a filing discloses. Most filings disclose none
+      and have no rows here.
+    measured_on: "2026-10-31"
+    summary: >-
+      The affiliated organizations an LDA filing discloses: organizations other
+      than the client that contribute to the lobbying activities and actively
+      participate in planning, supervising or controlling them. Each
+      row is the organization as stated on this filing. Keyed `(filing_uuid,
+      affiliated_organization_index)`, the entry's position in the filing's own
+      list; joins to `lobbying_filings` on `filing_uuid`.
+    columns:
+      filing_uuid: "The filing; joins to `lobbying_filings.filing_uuid`."
+      affiliated_organization_index: "The organization's position in the filing's `affiliated_organizations` list, from `0`. Completes the key."
+      name: "Affiliated organization name as filed."
+      url: "The organization's web address as filed (its own site, not an LDA link); null when none."
+      address_1: "First address line as filed; null when none."
+      address_2: "Second address line; null when none."
+      address_3: "Third address line; rarely set."
+      address_4: "Fourth address line; rarely set."
+      city: "City as filed; null when none."
+      state: "State code as filed (e.g. `CO`); null when none."
+      state_display: "LDA's display name for `state`."
+      zip: "ZIP or postal code as filed; null when none."
+      country: "Country code as filed (e.g. `US`)."
+      country_display: "LDA's display name for `country`."
+      ppb_city: "City of the organization's principal place of business; null when none."
+      ppb_state: "State code of the principal place of business; null when none."
+      ppb_state_display: "LDA's display name for `ppb_state`."
+      ppb_country: "Country code of the principal place of business."
+      ppb_country_display: "LDA's display name for `ppb_country`."
+  lobbying_conviction_disclosures:
+    identity_columns: [filing_uuid, conviction_disclosure_index]
+    label: "Lobbyist conviction disclosures on lobbying filings"
+    subject: lobbying
+    coverage: >-
+      True range, the same filings as `lobbying_filings`: one row per
+      conviction a filing discloses. Very few filings disclose one; the rest
+      have no rows here.
+    measured_on: "2026-10-31"
+    summary: >-
+      The convictions an LDA filing discloses for a lobbyist it names: the lobbyist, the conviction date
+      and the description the registrant filed. A disclosure is the
+      registrant's statement on a public filing, not a court record; the same
+      conviction recurs on each later filing that names the lobbyist. Keyed
+      `(filing_uuid, conviction_disclosure_index)`, the entry's position in the
+      filing's own list; joins to `lobbying_filings` on `filing_uuid`.
+    columns:
+      filing_uuid: "The filing; joins to `lobbying_filings.filing_uuid`."
+      conviction_disclosure_index: "The disclosure's position in the filing's `conviction_disclosures` list, from `0`. Completes the key."
+      lobbyist_id: "LDA's lobbyist record id for the person disclosed, as on `lobbying_activity_lobbyists.lobbyist_id` (one registrant's record of a lobbyist, not an identity for the person)."
+      prefix: "Name prefix as filed; often null."
+      first_name: "First name as filed."
+      nickname: "Nickname as filed; often null."
+      middle_name: "Middle name as filed; often null."
+      last_name: "Last name as filed."
+      suffix: "Name suffix as filed; often null."
+      date: "Date of the conviction as filed."
+      description: "The conviction as the registrant described it (offense and sentence), free text as filed."
   lobbying_registrants:
     identity_columns: [registrant_id]
     label: "Lobbying registrants (profile as last captured)"
@@ -1175,8 +1282,8 @@ tables:
       The registrant record LDA embeds in each filing, kept once per
       `registrant_id`: the later `dt_updated` wins, then the later capture.
       Joins from `lobbying_filings.registrant_id` and
-      `lobbying_clients.registrant_id`. The record's contact name and telephone
-      are not published here (owner question open, 2026-10-30).
+      `lobbying_clients.registrant_id`. The record's contact telephone is
+      published as LDA serves it; its contact name is not.
     columns:
       registrant_id: "LDA registrant id (`registrant.id`). Primary key; joins from `lobbying_filings.registrant_id`."
       house_registrant_id: "The registrant's House Clerk id as LDA states it; null when none."
@@ -1194,6 +1301,7 @@ tables:
       country_display: "LDA's display name for `country` (e.g. `United States of America`)."
       ppb_country: "Country code of the registrant's principal place of business."
       ppb_country_display: "LDA's display name for `ppb_country`."
+      contact_telephone: "The registrant's business contact telephone as LDA served it at capture (`registrant.contact_telephone`), as filed and unnormalized (e.g. `+1 202-642-1416`); a fetch-time value, so it can postdate any given filing. Some registrants are individuals or self-employed, so this can be a person's own number. Null when the record carries none."
       dt_updated: "When LDA last updated this registrant record, as LDA states it."
       captured_at: "When spicy-regs captured the filing page this row was read from (UTC): the profile is LDA's record at that moment."
       captured_filing_uuid: "The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`."
