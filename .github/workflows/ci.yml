@@ -33,10 +33,12 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    # Run 38487097199 exceeded this bound with two file partitions.
+    # Run 38487097199 exceeded an earlier bound with two file partitions.
+    # Partitions hash by file, so they are uneven: on five recent full runs partition 3 took 15-26 minutes and
+    # partition 2 took 8-16. Partition 3 hit 25 minutes on runs 41151838063 and 41238221217, the second at 97%.
     # Main and shared changes run the full suite. Independent test-only PRs
     # retain complete collection manifests and execute only the changed files.
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
