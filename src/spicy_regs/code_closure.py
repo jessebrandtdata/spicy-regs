@@ -37,12 +37,17 @@ def _digest(path: Path) -> str:
         return "sha256:" + hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def is_data_file(path: Path) -> bool:
+    """Whether ``path`` is a non-Python data file in an installed package tree."""
+    return path.is_file() and path.suffix not in (".py", ".pyc") and "__pycache__" not in path.parts
+
+
 def _data_files() -> dict[str, str]:
     files = {}
     for package in ROOTS:
         root = _root(package)
         for path in sorted(root.rglob("*")):
-            if path.is_file() and path.suffix not in (".py", ".pyc") and "__pycache__" not in path.parts:
+            if is_data_file(path):
                 files[f"{package}/{path.relative_to(root).as_posix()}"] = _digest(path)
     return files
 

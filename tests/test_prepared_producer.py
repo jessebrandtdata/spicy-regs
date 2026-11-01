@@ -295,3 +295,50 @@ def test_the_conversion_path_imports_no_unrelated_builders_or_spicy_docs():
             "import spicy_regs.transforms.regulations_receipts; "
             "assert not any(n.startswith('spicy_regs.transforms.build_') for n in sys.modules), 'builders'")
     subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_importing_source_evidence_loads_no_spicy_docs_modules():
+    """Importing spicy_regs.source_evidence in a fresh process does not eagerly load spicy_docs modules (ss-5tt8)."""
+    import sys
+
+    code = (
+        "import sys, spicy_regs.source_evidence; "
+        "loaded = sorted(n for n in sys.modules if n == 'spicy_docs' or n.startswith('spicy_docs.')); "
+        "assert not loaded, f'unexpected spicy_docs modules loaded: {loaded}'"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_package_tree_and_code_closure_agree_on_package_data_files(tmp_path, monkeypatch):
+    """generations._package_tree and code_closure._data_files share one package data-file boundary (ss-5tt8)."""
+    from spicy_regs import code_closure
+
+    copy = _installed_copy(tmp_path, monkeypatch, "spicy_regs")
+    monkeypatch.setattr(generations, "__file__", str(copy / "generations.py"))
+
+    before_tree = generations._package_tree(copy)
+    before_identity = generations.validation_identity()["spicy_regs"]
+    before_data = code_closure._data_files()
+    assert before_tree == before_identity
+
+    # Ignored bytecode / cache files do not affect either authority.
+    pycache = copy / "__pycache__"
+    pycache.mkdir(exist_ok=True)
+    (pycache / "cached.sql").write_text("SELECT 1;\n")
+    (copy / "orphan.pyc").write_bytes(b"bytecode")
+    assert generations._package_tree(copy) == before_tree
+    assert code_closure._data_files() == before_data
+
+    # Non-.py/.pyc package data files (.sql, .txt) move both validation_identity() and code_closure._data_files().
+    sql_file = copy / "schema.sql"
+    sql_file.write_text("SELECT 1;\n")
+    after_sql_tree = generations._package_tree(copy)
+    after_sql_identity = generations.validation_identity()["spicy_regs"]
+    after_sql_data = code_closure._data_files()
+    assert after_sql_tree == after_sql_identity != before_tree
+    assert "spicy_regs/schema.sql" in after_sql_data
+
+    sql_file.write_text("SELECT 2;\n")
+    assert generations.validation_identity()["spicy_regs"] != after_sql_identity
+    assert code_closure._data_files()["spicy_regs/schema.sql"] != after_sql_data["spicy_regs/schema.sql"]
+

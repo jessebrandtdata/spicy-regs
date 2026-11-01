@@ -45,8 +45,8 @@ def validation_identity() -> dict:
     import rulespec_artifacts
 
     return {
-        "spicy_regs": source_digest(Path(__file__).parent, (".py", ".json", ".xsd")),
-        "rulespec_artifacts": source_digest(Path(rulespec_artifacts.__file__).parent, (".py", ".json")),
+        "spicy_regs": _package_tree(Path(__file__).parent),
+        "rulespec_artifacts": _package_tree(Path(rulespec_artifacts.__file__).parent),
         "spicy_docs_code": spicy_docs_code(),
         "runtime": sys.version,
         "platform": {"system": platform.system(), "machine": platform.machine()},
@@ -130,6 +130,20 @@ def _check_partition(path: Path, partition: Mapping[str, str]) -> None:
                             [str(path)]).fetchall()
     if any(row != tuple(partition.values()) for row in found):
         raise ValueError(f"Split member rows differ from the partition its key names: {path.name}")
+
+
+def _package_tree(root: Path) -> str:
+    """SHA-256 over every ``.py`` and package data file (:func:`spicy_regs.code_closure.is_data_file`) under ``root``."""
+    from spicy_regs.code_closure import is_data_file
+
+    digest = hashlib.sha256()
+    for path in sorted(
+        p for p in root.rglob("*")
+        if (p.is_file() and p.suffix == ".py" and "__pycache__" not in p.parts) or is_data_file(p)
+    ):
+        digest.update(path.relative_to(root).as_posix().encode() + b"\0")
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def source_digest(root: Path, suffixes: tuple[str, ...] = (".py",)) -> str:

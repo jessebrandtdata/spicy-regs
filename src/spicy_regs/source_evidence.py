@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
-from typing import IO, Any
+from typing import TYPE_CHECKING, IO, Any
 from uuid import uuid4
 
 from rulespec_artifacts import (
@@ -32,11 +32,10 @@ from rulespec_artifacts import (
     describe_member,
     write_member_manifest,
 )
-from spicy_docs.reading.refusals import RefusedResponse, retain_refused_response
-from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
-from spicy_docs.storage.raw_archive import CentralRawArchiveStore, default_raw_archive_root
-from spicy_docs.transport.captured import CapturedBodyResponse, CompletedCapture, attached_capture
-from spicy_docs.transport.credentials import CredentialRefusedError, scrub_credential
+
+if TYPE_CHECKING:
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+    from spicy_docs.transport.captured import CapturedBodyResponse
 
 KIND = "spicy-regs-source-evidence"
 INPUT_ROLE = "source-evidence"
@@ -127,9 +126,14 @@ class EvidenceMemberSource:
                             if body.get("blob_member") != key:
                                 raise SourceEvidenceError("Invalid central source member reference")
                             self.blobs[key] = body
-        self.store = None if self.references is None else CentralRawArchiveStore(
-            archive_root or Path(os.environ.get("SPICYGOV_RAW_ROOT", self.references["root"])), create=False
-        )
+        if self.references is None:
+            self.store = None
+        else:
+            from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+
+            self.store = CentralRawArchiveStore(
+                archive_root or Path(os.environ.get("SPICYGOV_RAW_ROOT", self.references["root"])), create=False
+            )
 
     def keys(self):
         return sorted(set(self.local.keys()) | self.blobs.keys())
@@ -163,6 +167,8 @@ class _StreamCheck:
         if self.secret:
             keep = len(self.secret) - 1
             if self.secret in chunk or self.secret in self.tail + chunk[:keep]:
+                from spicy_docs.transport.credentials import CredentialRefusedError
+
                 raise CredentialRefusedError("Source response refused; credential-bearing bytes were not retained")
             self.tail = (self.tail + chunk[-keep:])[-keep:] if keep else b""
         self.digest.update(chunk)
@@ -181,6 +187,9 @@ class CaptureEvidence:
     """
 
     def __init__(self, output_dir: Path, family: str, *, archive_root: Path | None = None):
+        from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+        from spicy_docs.storage.raw_archive import CentralRawArchiveStore, default_raw_archive_root
+
         self.directory = output_dir / "source-evidence" / uuid4().hex
         self.artifact_dir = self.directory / "artifact"
         self.artifact_dir.mkdir(parents=True)
@@ -252,6 +261,8 @@ class CaptureEvidence:
     def _safe(self, value):
         """Recursively redact the run's credential from a value before it is journaled."""
         if isinstance(value, str):
+            from spicy_docs.transport.credentials import scrub_credential
+
             # The owner scrubber handles named query credentials. The literal
             # replacement also covers short injected test credentials.
             result = scrub_credential(value, self.credential)
@@ -364,6 +375,9 @@ class CaptureEvidence:
         ``SourceEvidenceError``; a credential-bearing or 401/403 response raises
         ``CredentialRefusedError`` and journals only a refusal reason and status.
         """
+        from spicy_docs.transport.captured import CapturedBodyResponse
+        from spicy_docs.transport.credentials import CredentialRefusedError
+
         if not isinstance(capture, CapturedBodyResponse):
             raise SourceEvidenceError("Source result has no owner capture")
         access_refused = capture.status_code in (401, 403)
@@ -433,6 +447,8 @@ class CaptureEvidence:
         if self.artifact is not None:
             raise SourceEvidenceError("Cannot append to sealed source evidence")
         if status_code in (401, 403) or (self.credential and request_body and self.credential.encode() in request_body):
+            from spicy_docs.transport.credentials import CredentialRefusedError
+
             raise CredentialRefusedError("Source response refused; credential-bearing bytes were not retained")
         response = self._file_blob(stream, sha256=sha256, byte_size=byte_size)
         return self._record_capture(
@@ -501,6 +517,8 @@ class CaptureEvidence:
         if not isinstance(body, bytes):
             raise SourceEvidenceError("Retained input must be immutable bytes")
         if self.credential and self.credential.encode() in body:
+            from spicy_docs.transport.credentials import CredentialRefusedError
+
             raise CredentialRefusedError("Source input refused; credential-bearing bytes were not retained")
         return self._retained(self._body(body, raw_source=raw_source), stage=stage, fields=fields)
 
@@ -524,6 +542,7 @@ class CaptureEvidence:
         """
         if self.artifact is not None:
             raise SourceEvidenceError("Cannot append to sealed source evidence")
+        from spicy_docs.transport.credentials import CredentialRefusedError
 
         def identity(info):
             return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
@@ -563,6 +582,8 @@ class CaptureEvidence:
         policies use a private temporary replay file and retain no body blob.
         """
         import httpx
+        from spicy_docs.transport.captured import CompletedCapture
+        from spicy_docs.transport.credentials import CredentialRefusedError
 
         evidence = self
         if type(max_bytes) is not int or max_bytes < 1:
@@ -724,6 +745,10 @@ class CaptureEvidence:
             raise SourceEvidenceError("Cannot append to sealed source evidence")
         if isinstance(error, SourceEvidenceError):
             raise error
+        from spicy_docs.reading.refusals import RefusedResponse, retain_refused_response
+        from spicy_docs.transport.captured import attached_capture
+        from spicy_docs.transport.credentials import CredentialRefusedError
+
         retained = None
         restricted_root = (
             self.policy == "full" and self._restricted_diagnostics and not isinstance(self, SourceEvidenceContext)
