@@ -575,6 +575,9 @@ def test_the_reusable_workflow_declares_every_input_the_callers_pass():
 
 def test_member_and_cosponsor_family_growth_is_explicit():
     assert MembersRollup.added_tables == ("member_party_affiliations.parquet",)
+    # Run 41270152327 refused a generation holding this table before it was declared.
+    assert "committee_report_cbo_letters.parquet" in CommitteeReportsRollup.added_tables
+    assert "committee_report_cbo_letters.parquet" in CommitteeReportsRollup.outputs
     assert BillFamilyRollup.added_tables == (
         "bill_cosponsors.parquet",
         "bill_committee_activities.parquet",

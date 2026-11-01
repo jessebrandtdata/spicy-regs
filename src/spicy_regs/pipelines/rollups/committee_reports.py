@@ -31,6 +31,8 @@ class CommitteeReportsRollup(LegislativeReceiptRollup):
     )
 
     receipt_only_tables = ("committee_report_reads.parquet",)
+    # The first generation with this table is a migration; publication refuses any other change of membership.
+    added_tables: ClassVar[tuple[str, ...]] = ("committee_report_cbo_letters.parquet",)
 
     def build(self, output_dir: Path) -> tuple[Path, ...]:
         # Comma-separated package ids to re-read alone; unset is the normal discovery run.
