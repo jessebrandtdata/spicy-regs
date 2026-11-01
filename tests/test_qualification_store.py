@@ -28,14 +28,24 @@ def test_actual_publisher_uploads_and_readmits_streamed_multipart_members(tmp_pa
     assert any(call['method'] == 'upload_part' for call in store.calls)
     assert store.uploads == {}
     assert publication.parse_index(store.objects[publication.INDEX_V2_KEY].read_bytes()) == selected
-    # The uploader's SHA-256 checksums are kept as S3 keeps them: composite over the parts, reported only on request.
-    raw = source.read_bytes()
-    parts = [hashlib.sha256(raw[start:start + 31]).digest() for start in range(0, len(raw), 31)]
-    head = store.head_object(Bucket='private', Key=family['prefix'] + '/a.parquet', ChecksumMode='ENABLED')
-    assert head['ChecksumSHA256'] == f"{base64.b64encode(hashlib.sha256(b''.join(parts)).digest()).decode()}-{len(parts)}"
-    assert 'ChecksumSHA256' not in store.head_object(Bucket='private', Key=family['prefix'] + '/a.parquet')
-    assert 'ChecksumSHA256' not in store.head_object(Bucket='private', Key=publication.INDEX_V2_KEY,
-                                                    ChecksumMode='ENABLED')  # the pointer is put without one
+    # The uploader sends Content-MD5 alone, so storage holds no SHA-256 for a member or the pointer.
+    for key in (family['prefix'] + '/a.parquet', publication.INDEX_V2_KEY):
+        assert 'ChecksumSHA256' not in store.head_object(Bucket='private', Key=key, ChecksumMode='ENABLED')
+
+
+def test_the_store_refuses_what_r2_refuses(tmp_path):
+    """Run 41223379525 and the 2026-11-01 probe: the store must not accept a checksum shape storage refuses."""
+    store = DiskStore(tmp_path / 'store', bucket='private')
+    md5 = base64.b64encode(hashlib.md5(b'data', usedforsecurity=False).digest()).decode()
+    sha256 = base64.b64encode(hashlib.sha256(b'data').digest()).decode()
+    with pytest.raises(ClientError, match='InvalidRequest'):
+        store.put_object(Bucket='private', Key='data', Body=b'data', ContentMD5=md5, ChecksumSHA256=sha256)
+    upload = store.create_multipart_upload(Bucket='private', Key='data')['UploadId']
+    with pytest.raises(ClientError, match='NotImplemented'):
+        store.upload_part(Bucket='private', Key='data', UploadId=upload, PartNumber=1, Body=b'data',
+                          ContentMD5=md5, ChecksumSHA256=sha256)
+    store.abort_multipart_upload(Bucket='private', Key='data', UploadId=upload)
+    assert store.objects == {}
 
 
 def test_a_wrong_sha256_checksum_refuses_before_writing_private_state(tmp_path):
@@ -43,12 +53,6 @@ def test_a_wrong_sha256_checksum_refuses_before_writing_private_state(tmp_path):
     wrong = base64.b64encode(hashlib.sha256(b'other').digest()).decode()
     with pytest.raises(ClientError, match='BadDigest'):
         store.put_object(Bucket='private', Key='data', Body=b'data', ChecksumSHA256=wrong)
-    upload = store.create_multipart_upload(Bucket='private', Key='data', ChecksumAlgorithm='SHA256')['UploadId']
-    with pytest.raises(ClientError, match='BadDigest'):
-        store.upload_part(Bucket='private', Key='data', UploadId=upload, PartNumber=1, Body=b'data',
-                          ContentMD5=base64.b64encode(hashlib.md5(b'data', usedforsecurity=False).digest()).decode(),
-                          ChecksumSHA256=wrong)
-    store.abort_multipart_upload(Bucket='private', Key='data', UploadId=upload)
     assert store.objects == {} and store.checksums == {} and store.uploads == {}
     right = base64.b64encode(hashlib.sha256(b'data').digest()).decode()
     store.put_object(Bucket='private', Key='data', Body=b'data', ChecksumSHA256=right)

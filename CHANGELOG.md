@@ -7,6 +7,16 @@ Entries link to the pull request that introduced the change.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Uploads send one checksum per request** (ss-7lrn). R2 refused every upload
+  carrying Content-MD5 beside a SHA-256 checksum ("You can only specify one
+  non-default checksum at a time"), which stopped all publication from
+  2026-10-31. A probe found R2 also answers NotImplemented to a SHA-256 checksum
+  on UploadPart, so uploads send Content-MD5 alone, the shape R2 accepted before.
+  Multipart members stream on read-back again. Both test stores refuse what R2
+  refuses.
+
 ### Added
 
 - **`committee_report_cbo_letters`: every CBO letter a committee report

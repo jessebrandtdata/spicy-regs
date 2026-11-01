@@ -42,7 +42,6 @@ class Store:
         self.modified = {}
         self.etags = {}  # multipart ETags only; others derive from the stored bytes
         self.checksums = {}
-        self.algorithms = {}
         self.writes = []
         self.deletes = []
         self.copies = []
@@ -94,11 +93,13 @@ class Store:
         return {"Body": BytesIO(self.objects[Key]), "ETag": self._etag(Key)}
 
     def put_object(self, *, Bucket, Key, Body, IfMatch=None, IfNoneMatch=None, ContentMD5=None, etag=None,
-                   ChecksumSHA256=None, parts=None, **kwargs):
+                   ChecksumSHA256=None, **kwargs):
         if self.before_put:
             self.before_put(Key)
         raw = Body.read() if hasattr(Body, "read") else Body
         self.sent[Key] += len(raw)
+        if ContentMD5 is not None and ChecksumSHA256 is not None:
+            raise error("InvalidRequest")  # R2: "You can only specify one non-default checksum at a time."
         if ContentMD5 is not None and ContentMD5 != base64.b64encode(_md5(raw)).decode():
             raise error("BadDigest")
         if ChecksumSHA256 is not None and ChecksumSHA256 != _sha256_b64(raw):
@@ -114,8 +115,8 @@ class Store:
         if etag:
             self.etags[Key] = etag
         self.checksums.pop(Key, None)
-        if parts is not None or ChecksumSHA256 is not None:
-            self.checksums[Key] = parts
+        if ChecksumSHA256 is not None:
+            self.checksums[Key] = None  # or a test's part sizes: a composite on HEAD
         self.modified[Key] = datetime.now(timezone.utc)
         self.writes.append(Key)
         return {}
@@ -141,34 +142,26 @@ class Store:
         yield {"Contents": listed[:1]}
         yield {"Contents": listed[1:]}
 
-    def create_multipart_upload(self, *, Bucket, Key, ChecksumAlgorithm=None, **kwargs):
+    def create_multipart_upload(self, *, Bucket, Key, **kwargs):
         self.uploads[Key] = []
-        self.algorithms[Key] = ChecksumAlgorithm
         return {"UploadId": Key}
 
     def upload_part(self, *, Bucket, Key, UploadId, PartNumber, Body, ContentMD5, ChecksumSHA256=None):
         assert PartNumber == len(self.uploads[Key]) + 1
         self.sent[Key] += len(Body)
+        if ChecksumSHA256 is not None:
+            raise error("NotImplemented")  # R2 on UploadPart, probe 2026-11-01
         if ContentMD5 != base64.b64encode(_md5(Body)).decode():
-            raise error("BadDigest")
-        if (ChecksumSHA256 is None) != (self.algorithms[Key] is None) or (
-                ChecksumSHA256 is not None and ChecksumSHA256 != _sha256_b64(Body)):
             raise error("BadDigest")
         self.uploads[Key].append(Body)
         return {"ETag": str(PartNumber)}
 
     def complete_multipart_upload(self, *, Bucket, Key, UploadId, MultipartUpload, IfNoneMatch):
         parts = self.uploads[Key]
-        if self.algorithms.pop(Key) == "SHA256" and [item.get("ChecksumSHA256") for item in MultipartUpload["Parts"]] != [
-                _sha256_b64(part) for part in parts]:
-            raise error("InvalidPart")
         etag = f'"{md5(b"".join(_md5(part) for part in parts), usedforsecurity=False).hexdigest()}-{len(parts)}"'
         self.sent[Key] -= sum(map(len, parts))  # put_object below recounts the assembled bytes
-        checksummed = [len(part) for part in parts] if any("ChecksumSHA256" in item for item in MultipartUpload["Parts"]) else None
-        self.put_object(Bucket=Bucket, Key=Key, Body=b"".join(parts), IfNoneMatch=IfNoneMatch, etag=etag,
-                        parts=checksummed)
+        self.put_object(Bucket=Bucket, Key=Key, Body=b"".join(parts), IfNoneMatch=IfNoneMatch, etag=etag)
         del self.uploads[Key]
 
     def abort_multipart_upload(self, *, Bucket, Key, UploadId):
         self.uploads.pop(Key, None)
-        self.algorithms.pop(Key, None)

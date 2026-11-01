@@ -1047,17 +1047,16 @@ def _copy_unchanged_member(client, bucket: str, source_key: str, destination_key
         client.copy_object(Bucket=bucket, Key=destination_key, CopySource={"Bucket": bucket, "Key": source_key})
 
 
-def _create_multipart(client, bucket: str, key: str, upload_parts: Callable[[str], list[dict]], **create) -> None:
+def _create_multipart(client, bucket: str, key: str, upload_parts: Callable[[str], list[dict]]) -> None:
     """Create-only multipart lifecycle: any failure aborts; a refused completion means the key already exists.
 
     The caller admits the destination bytes afterwards, so an existing object is
-    only reused once it proves to hold the expected bytes. ``create`` adds request
-    options, such as the checksum algorithm, to the upload's creation.
+    only reused once it proves to hold the expected bytes.
     """
     from botocore.exceptions import ClientError
 
     args = {"Bucket": bucket, "Key": key}
-    upload_id = client.create_multipart_upload(**args, **_IMMUTABLE_HEADERS, **create)["UploadId"]
+    upload_id = client.create_multipart_upload(**args, **_IMMUTABLE_HEADERS)["UploadId"]
     completing = False
     try:
         parts = upload_parts(upload_id)
@@ -1073,10 +1072,11 @@ def _create_multipart(client, bucket: str, key: str, upload_parts: Callable[[str
 def _put_immutable(client, bucket: str, key: str, path: Path, *, sha256: str | None = None) -> None:
     """Conditional creation, including multipart completion for large tables.
 
-    Every request carries Content-MD5 and a SHA-256 checksum, so storage refuses
-    bytes damaged in transit and keeps a SHA-256 a later HEAD can compare
-    (:func:`verify_stored_member`; composite over ``PART_BYTES`` parts for a
-    multipart object). With ``sha256``, the bytes actually sent must hash to it
+    Every request carries Content-MD5 and no SHA-256 checksum, so storage refuses bytes
+    damaged in transit. R2 refuses Content-MD5 beside a SHA-256 checksum ("You can only
+    specify one non-default checksum at a time") and answers NotImplemented to a SHA-256
+    checksum on UploadPart (probe, 2026-11-01). A single-part object's ETag is then the MD5
+    a later HEAD can compare (:func:`verify_stored_member`). With ``sha256``, the bytes actually sent must hash to it
     before the object is created, so a content-addressed key never holds other bytes.
     """
     _put_immutable_stream(client, bucket, key, lambda: path.open("rb"), path.stat().st_size, sha256=sha256)
@@ -1092,8 +1092,7 @@ def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) 
 
     def checked(chunk: bytes) -> dict:
         digest.update(chunk)
-        return {"Body": chunk, "ContentMD5": base64.b64encode(hashlib.md5(chunk, usedforsecurity=False).digest()).decode(),
-                "ChecksumSHA256": base64.b64encode(hashlib.sha256(chunk).digest()).decode()}
+        return {"Body": chunk, "ContentMD5": base64.b64encode(hashlib.md5(chunk, usedforsecurity=False).digest()).decode()}
 
     def assert_content_address() -> None:
         if sha256 is not None and "sha256:" + digest.hexdigest() != sha256:
@@ -1125,13 +1124,13 @@ def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) 
                 part = len(parts) + 1
                 body = checked(chunk)
                 result = client.upload_part(Bucket=bucket, Key=key, UploadId=upload_id, PartNumber=part, **body)
-                parts.append({"PartNumber": part, "ETag": result["ETag"], "ChecksumSHA256": body["ChecksumSHA256"]})
+                parts.append({"PartNumber": part, "ETag": result["ETag"]})
         if observed != size:
             raise PublicationError(f"Bytes sent for {key} differ from their declared size")
         assert_content_address()
         return parts
 
-    _create_multipart(client, bucket, key, upload_parts, ChecksumAlgorithm="SHA256")
+    _create_multipart(client, bucket, key, upload_parts)
 
 
 def verify_stored_member(client, bucket: str, member: Member, open_local: Callable[[], ContextManager[BinaryIO]]

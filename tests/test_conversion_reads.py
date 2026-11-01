@@ -216,8 +216,12 @@ def test_public_bytes_match_live_candidate_without_copy_or_second_admission(tmp_
         stored = {entry['prefix'] + '/' + key: (directory / key).read_bytes() for key in source.keys()}
         for key, raw in stored.items():
             publication._put_immutable_stream(store, 'bucket', key, lambda raw=raw: BytesIO(raw), len(raw))
-            if upload.endswith('etag-only'):  # stored before the uploader sent checksums
-                store.checksums.pop(key)
+            # The uploader sends Content-MD5 alone, so a hash storage reports is the only way to reach these branches.
+            if upload == 'checksummed':
+                store.checksums[key] = None
+            elif upload == 'multipart':
+                store.checksums[key] = [len(raw[start:start + publication.PART_BYTES])
+                                        for start in range(0, len(raw), publication.PART_BYTES)]
         assert all(len(store.objects[key]) > publication.PART_BYTES * 2 for key in stored
                    if key.endswith('.parquet')) == upload.startswith('multipart')
         if damage == 'binding':

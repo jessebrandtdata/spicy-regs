@@ -3,8 +3,8 @@
 This models the small S3 operation set used by a fresh local rehearsal. It has
 no credentials or network transport. Unsupported calls raise instead of being
 approximated. HTTP serving belongs to the qualification script's range server.
-SHA-256 checksums follow S3: checked on every put and part, a composite over
-the parts on completion, and reported by HEAD with ``ChecksumMode='ENABLED'``.
+Checksums follow R2: a SHA-256 is checked on a whole put and reported by HEAD with
+``ChecksumMode='ENABLED'``, refused beside Content-MD5, and not implemented on a part.
 """
 from __future__ import annotations
 
@@ -70,10 +70,17 @@ class DiskStore:
                 if_match is not None and self.etags.get(key) != if_match):
             raise refused('PreconditionFailed')
 
+    @staticmethod
+    def _one_checksum(md5, sha256):
+        # R2: "You can only specify one non-default checksum at a time."
+        if md5 is not None and sha256 is not None:
+            raise refused('InvalidRequest')
+
     def put_object(self, *, Bucket, Key, Body, IfMatch=None, IfNoneMatch=None, ContentMD5=None,
                    ContentLength=None, ChecksumSHA256=None, **kwargs):
         target = self.path(Bucket, Key)
         self.options(kwargs)
+        self._one_checksum(ContentMD5, ChecksumSHA256)
         with self.lock:
             self._condition(Key, IfMatch, IfNoneMatch)
         temporary = self.root / ('put-' + uuid4().hex)
@@ -117,15 +124,13 @@ class DiskStore:
         for offset in range(0, len(entries), 1000):
             yield {'Contents': entries[offset:offset + 1000]}
 
-    def create_multipart_upload(self, *, Bucket, Key, ChecksumAlgorithm=None, **kwargs):
+    def create_multipart_upload(self, *, Bucket, Key, **kwargs):
         self.path(Bucket, Key)
         self.options(kwargs)
-        if ChecksumAlgorithm not in (None, 'SHA256'):
-            raise ValueError('Unsupported private store checksum algorithm')
         identity = uuid4().hex
         directory = self.root / 'multipart' / identity
         directory.mkdir(parents=True)
-        self.uploads[identity] = {'key': Key, 'directory': directory, 'parts': [], 'algorithm': ChecksumAlgorithm}
+        self.uploads[identity] = {'key': Key, 'directory': directory, 'parts': []}
         return {'UploadId': identity}
 
     def _upload(self, bucket, key, identity):
@@ -136,27 +141,24 @@ class DiskStore:
         return upload
 
     def upload_part(self, *, Bucket, Key, UploadId, PartNumber, Body, ContentMD5, ChecksumSHA256=None):
+        if ChecksumSHA256 is not None:
+            raise refused('NotImplemented')  # R2 on UploadPart, probe 2026-11-01
         upload = self._upload(Bucket, Key, UploadId)
         if PartNumber != len(upload['parts']) + 1:
             raise ValueError('Private multipart parts must arrive in order')
-        if (ChecksumSHA256 is None) != (upload['algorithm'] is None):
-            raise ValueError('Private multipart parts must carry exactly the checksum the upload was created with')
-        digest, sha256 = hashlib.md5(Body, usedforsecurity=False), hashlib.sha256(Body)
-        if base64.b64encode(digest.digest()).decode() != ContentMD5 or (
-                ChecksumSHA256 is not None and base64.b64encode(sha256.digest()).decode() != ChecksumSHA256):
+        digest = hashlib.md5(Body, usedforsecurity=False)
+        if base64.b64encode(digest.digest()).decode() != ContentMD5:
             raise refused('BadDigest')
         path = upload['directory'] / str(PartNumber)
         path.write_bytes(Body)
         etag = '"' + digest.hexdigest() + '"'
-        upload['parts'].append({'PartNumber': PartNumber, 'ETag': etag, 'path': path, 'digest': digest.digest(),
-                                'sha256': sha256.digest(), 'ChecksumSHA256': ChecksumSHA256})
+        upload['parts'].append({'PartNumber': PartNumber, 'ETag': etag, 'path': path, 'digest': digest.digest()})
         self.calls.append({'method': 'upload_part', 'key': Key, 'bytes': len(Body)})
-        return {'ETag': etag, **({'ChecksumSHA256': ChecksumSHA256} if ChecksumSHA256 else {})}
+        return {'ETag': etag}
 
     def complete_multipart_upload(self, *, Bucket, Key, UploadId, MultipartUpload, IfNoneMatch):
         upload = self._upload(Bucket, Key, UploadId)
-        names = ('PartNumber', 'ETag') + (('ChecksumSHA256',) if upload['algorithm'] else ())
-        wanted = [{name: part[name] for name in names} for part in upload['parts']]
+        wanted = [{'PartNumber': part['PartNumber'], 'ETag': part['ETag']} for part in upload['parts']]
         if not wanted or MultipartUpload != {'Parts': wanted}:
             raise ValueError('Private multipart completion differs from uploaded parts')
         with self.lock:
@@ -169,15 +171,12 @@ class DiskStore:
                     shutil.copyfileobj(source, sink, 1024 * 1024)
         digest = hashlib.md5(b''.join(part['digest'] for part in upload['parts']), usedforsecurity=False)
         etag = f'"{digest.hexdigest()}-{len(wanted)}"'
-        composite = hashlib.sha256(b''.join(part['sha256'] for part in upload['parts'])).digest()
         with self.lock:
             self._condition(Key, None, IfNoneMatch)
             target.parent.mkdir(parents=True, exist_ok=True)
             temporary.replace(target)
             self.objects[Key], self.etags[Key] = target, etag
             self.checksums.pop(Key, None)
-            if upload['algorithm']:
-                self.checksums[Key] = f'{base64.b64encode(composite).decode()}-{len(wanted)}'
             self.abort_multipart_upload(Bucket=Bucket, Key=Key, UploadId=UploadId)
             return {'ETag': etag}
 
