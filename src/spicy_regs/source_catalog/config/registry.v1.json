@@ -15779,10 +15779,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -18298,10 +18298,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -28373,10 +28373,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -31824,18 +31824,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -31882,18 +31882,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -31940,18 +31940,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32188,18 +32188,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32246,18 +32246,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32304,18 +32304,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32616,18 +32616,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32666,18 +32666,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32716,18 +32716,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32765,18 +32765,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32830,18 +32830,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -32898,18 +32898,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33201,18 +33201,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33267,18 +33267,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33333,18 +33333,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33683,18 +33683,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33733,18 +33733,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33783,18 +33783,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33833,18 +33833,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33883,18 +33883,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -33932,18 +33932,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34251,18 +34251,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34301,18 +34301,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34351,18 +34351,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34401,18 +34401,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34450,18 +34450,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34499,18 +34499,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34556,18 +34556,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34608,18 +34608,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34660,18 +34660,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34902,18 +34902,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -34960,18 +34960,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -35018,18 +35018,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -35266,18 +35266,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -35324,18 +35324,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -35382,18 +35382,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -89324,10 +89324,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -96354,10 +96354,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -98229,10 +98229,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -99800,10 +99800,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -100879,10 +100879,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -116757,10 +116757,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -116799,10 +116799,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -147669,18 +147669,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -147727,18 +147727,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -147785,18 +147785,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -148306,18 +148306,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -148356,18 +148356,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -148406,18 +148406,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -148455,18 +148455,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -148520,18 +148520,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -148588,18 +148588,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -149419,18 +149419,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -149469,18 +149469,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -149519,18 +149519,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -149569,18 +149569,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -149619,18 +149619,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -149668,18 +149668,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -152900,18 +152900,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -152950,18 +152950,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153000,18 +153000,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153050,18 +153050,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153099,18 +153099,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153148,18 +153148,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153205,18 +153205,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153257,18 +153257,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153309,18 +153309,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153746,18 +153746,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153804,18 +153804,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -153862,18 +153862,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -154428,18 +154428,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -154494,18 +154494,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -154560,18 +154560,18 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 253,
-              "end_line": 301,
+              "start_line": 341,
+              "end_line": 388,
               "symbol": "CourtListenerLocalDump.iter_batches",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
-              "start_line": 198,
-              "end_line": 251,
+              "start_line": 285,
+              "end_line": 339,
               "symbol": "CourtListenerLocalDump._parse",
-              "sha256": "4f039c279895532c377faf88322a70e4ab5034ebcb796e5cb742189899adb674",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
               "scope": "current checkout capability"
             },
             {
@@ -181433,10 +181433,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -185344,10 +185344,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {
@@ -185386,10 +185386,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
-              "start_line": 162,
-              "end_line": 197,
+              "start_line": 163,
+              "end_line": 198,
               "symbol": "scan_unified_agenda_records",
-              "sha256": "026ed284ee7f8683548c57f134e325c36299cd7c842fcef2b64737d5737d02c0",
+              "sha256": "67587dfb6984b5363fa893d12f9a1bbd563653b239530bf13e1b33a9777ab842",
               "scope": "current checkout capability"
             },
             {

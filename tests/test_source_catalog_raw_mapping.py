@@ -490,3 +490,44 @@ def test_fec_research_originals_have_one_dataset_per_collection():
     assert {b["dataset_id"] for b in bindings} <= declared
     digests = [d for b in bindings for d in b["sha256"]]
     assert len(digests) == len(set(digests)) == 418
+
+
+def test_unified_agenda_and_courtlistener_local_code_refs_match_installed_spicy_docs():
+    """ss-k4yp, ss-olaa: registry code_refs for unified_agenda/records.py and courtlistener/local.py match spicy-docs."""
+    import ast
+    import hashlib
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.find_spec("spicy_docs")
+    assert spec is not None and spec.origin is not None
+    sd_root = Path(spec.origin).parent
+    registry = json.loads(REGISTRY.read_text())
+
+    targets = {
+        "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
+        "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+    }
+    found = []
+
+    def walk(obj):
+        if isinstance(obj, dict):
+            if obj.get("path") in targets:
+                found.append(obj)
+            for value in obj.values():
+                walk(value)
+        elif isinstance(obj, list):
+            for value in obj:
+                walk(value)
+
+    walk(registry)
+    assert len(found) == 13 + 132
+    for ref in found:
+        rel = ref["path"].removeprefix("repo:spicy-docs/src/spicy_docs/")
+        source_file = sd_root / rel
+        assert ref["sha256"] == hashlib.sha256(source_file.read_bytes()).hexdigest()
+        tree = ast.parse(source_file.read_text())
+        symbol_name = ref["symbol"].split(".")[-1]
+        node = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == symbol_name)
+        assert (ref["start_line"], ref["end_line"]) == (node.lineno, node.end_lineno)
+
