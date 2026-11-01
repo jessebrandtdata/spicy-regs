@@ -76,6 +76,40 @@ def main() -> None:
     if old_package["wheels"] != [{"filename": old_name, "hash": "sha256:" + old_sha}]:
         raise ValueError("current locked reader wheel does not match its recorded digest")
 
+    with zipfile.ZipFile(io.BytesIO(base_bytes)) as archive:
+        names = set(archive.namelist())
+        native_archive = (
+            archive.read("spicy_docs/storage/raw_archive.py")
+            if "spicy_docs/storage/raw_archive.py" in names
+            else b""
+        )
+        native_refusal = archive.read("spicy_docs/reading/refusals.py")
+    if (
+        b"def put_stream(" in native_archive
+        and b"receipt_keys" in native_archive
+        and b"SourceNativeBlobStore" in native_refusal
+    ):
+        expected_pins = len(re.findall(r'spicy-docs\[[^"\n]+\]==' + re.escape(base_version) + r'(?=")', project_text))
+        if expected_pins != 2 or old_version != base_version:
+            raise ValueError("native central raw release wheel must be pinned directly without an overlay")
+        print(
+            json.dumps(
+                {
+                    "status": "verified",
+                    "version": base_version,
+                    "wheel": base.name,
+                    "sha256": base_sha,
+                    "native_package_files": {
+                        "spicy_docs/storage/raw_archive.py": sha256(native_archive),
+                        "spicy_docs/reading/refusals.py": sha256(native_refusal),
+                    },
+                    "scope": "Release wheel natively includes the central raw archive module and refusal blob store API.",
+                },
+                indent=2,
+            )
+        )
+        return
+
     module_names = ["spicy_docs/storage/raw_archive.py"]
     owned_provider = consumer / "vendor/central_raw_reader"
     if provider is None and owned_provider.is_dir():

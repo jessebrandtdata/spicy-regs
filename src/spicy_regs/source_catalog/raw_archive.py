@@ -423,9 +423,7 @@ class RawImporter(Importer):
             content_reviews = self.qualified_reviews(skip)
             receipt_keys = sorted(frozen.keys() - inherited)
             self.metadata_counts['inherited_receipt_payloads_reused'] = len(inherited)
-        receipts = (iter_acquisition_receipts(self.root) if receipt_keys is None else
-                    iter_acquisition_receipts(self.root, receipt_keys=receipt_keys))
-        for path, receipt in receipts:
+        for path, receipt in iter_acquisition_receipts(self.root, receipt_keys=receipt_keys):
             visited.add(str(path.relative_to(self.root)))
             if str(path.resolve()) in skip:
                 if "content_review" in receipt["receipt"]:

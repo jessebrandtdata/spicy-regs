@@ -5,19 +5,22 @@ The optional `source-readers` extra enables the same readers for package install
 its wheels must be supplied explicitly until they are published in a registry.
 Base CLI and MCP installs do not require them.
 
-- **Active: `spicy_docs-0.67.1+centralraw.02cc4431e606`**. The same shared raw
-  archive overlay over `spicy_docs-0.67.1`, built from SpicyDocs tag `v0.67.1`
-  (`1cbc791b`: 0.67.0 plus `134c9601` and the version change, merged into fork
-  main). SHA-256
-  `73f850a7fdd975cd46c9f1caa2247eb37056e5c924722dc9a5db59dc087acbd3`
-  ([receipt](spicy_docs-0.67.1+centralraw.02cc4431e606-py3-none-any.json)).
-  0.67.0 plus `held_original`: one verified spool per archive session serves
-  every member of a FEC ZIP, so a build reads and hashes each ZIP once per
-  contiguous run (ss-6fuk). Only `sources/fec/delimited.py` differs from 0.67.0
-  ([package receipt](spicy_docs-0.67.1.json)). Two release builds from clean
-  archives of `v0.67.1` are byte-identical and equal the gating build this
-  branch vendored before the release (SHA-256 `ed7938d6…`), so the vendored
-  bytes were kept.
+- **Active: `spicy_docs-0.68.0`**. Built from SpicyDocs fork main `7d140262`
+  (tag `v0.68.0`); SHA-256
+  `b9dcfaaa86cb9ee756c3269f83029eb3d41ecb846cef1d269ad4863d052893db`
+  ([package receipt](spicy_docs-0.68.0.json); two builds from clean archives are
+  byte-identical). It ports `CentralRawArchiveStore` (`storage/raw_archive.py`,
+  including `put_stream` and `receipt_keys` selection in
+  `iter_acquisition_receipts`) and the `Path | SourceNativeBlobStore` refusal
+  store API (`reading/refusals.py`) onto `main` (ss-z50t), bounds
+  `verify_archive` memory to one packed entry per original (ss-zznj), refuses
+  the shared raw archive root under pytest unless `SPICYGOV_RAW_ROOT` is set
+  (ss-m5bh), and refuses unnamed House `<xml>` vote envelopes (ss-xus7), on top
+  of `0.67.1` (`held_original` for FEC ZIP runs, ss-6fuk). Because the release
+  wheel natively ships `storage/raw_archive.py` and the refusal store API, no
+  `+centralraw` overlay wheel or `vendor/central_raw_reader` source copy is
+  needed. The superseded `0.67.0` and `0.67.1` wheels and their `+centralraw`
+  overlays were removed when `0.68.0` was adopted.
 
 - `spicy_docs-0.67.0+centralraw.02cc4431e606`: the previous overlay. The same shared raw
   archive overlay over `spicy_docs-0.67.0`, the consolidated Layer 1 release

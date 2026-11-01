@@ -1,7 +1,0 @@
-{
-  "wheel": "spicy_docs-0.65.0+centralraw.523052e8a6fe-py3-none-any.whl",
-  "wheel_sha256": "2049deea32da3460cbaf3eac78594dbcf9d092daa6bc2c24d22b762c834f74d4",
-  "module": "spicy_docs/storage/raw_archive.py",
-  "module_sha256": "b4d921b09181e247e9071e57fca76c0affeb638eeab7261c19957a32fd50c7a0",
-  "scope": "Maintained central raw archive module; selected receipt keys extend its existing authenticated reader."
-}

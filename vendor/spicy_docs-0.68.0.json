@@ -1,0 +1,10 @@
+{
+  "filename": "spicy_docs-0.68.0-py3-none-any.whl",
+  "version": "0.68.0",
+  "sha256": "b9dcfaaa86cb9ee756c3269f83029eb3d41ecb846cef1d269ad4863d052893db",
+  "byte_size": 2751947,
+  "source_commit": "7d14026263d4f5077bfc238414481148bcf7052f",
+  "source_state": "SpicyDocs fork main, tag v0.68.0 (build: version the raw archive store, House envelope refusal, verify bound and writer guard as 0.68.0)",
+  "build": "uv 0.11.21 build --wheel --offline; two builds from clean git archives of the commit are byte-identical",
+  "scope": "0.67.1 plus the central raw archive store and refusal store API on main (spicy_docs/storage/raw_archive.py with put_stream and receipt_keys selection in iter_acquisition_receipts, Path | SourceNativeBlobStore in retain_refused_response; ss-z50t), bounded verify_archive memory (ss-zznj), pytest shared raw archive guard in default_raw_archive_root (ss-m5bh), and House <xml> envelope refusal in votes (ss-xus7)."
+}

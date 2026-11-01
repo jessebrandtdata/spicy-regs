@@ -18,16 +18,25 @@ def test_overlay_reproduces_and_preserves_current_reader_modules():
     root = Path(__file__).parents[1]
     project = tomllib.loads((root / "pyproject.toml").read_text())
     wheel = root / project["tool"]["uv"]["sources"]["spicy-docs"]["path"]
-    receipt = json.loads(wheel.with_suffix(".json").read_text())
-    assert hashlib.sha256(wheel.read_bytes()).hexdigest() == receipt["sha256"]
-    changed = set(receipt["changed_package_files"])
-    assert changed == {"spicy_docs/storage/raw_archive.py", "spicy_docs/reading/refusals.py"}
-    with zipfile.ZipFile(root / "vendor" / receipt["base_wheel"]) as base, zipfile.ZipFile(wheel) as overlay:
-        original_modules = {name for name in base.namelist()
-                            if name.startswith("spicy_docs/") and not name.endswith("/")}
-        assert {name for name in overlay.namelist() if name.startswith("spicy_docs/")} == original_modules | changed
-        for name in original_modules - changed:
-            assert overlay.read(name) == base.read(name), name
+    if "+centralraw." in wheel.name:
+        receipt = json.loads(wheel.with_suffix(".json").read_text())
+        assert hashlib.sha256(wheel.read_bytes()).hexdigest() == receipt["sha256"]
+        changed = set(receipt["changed_package_files"])
+        assert changed == {"spicy_docs/storage/raw_archive.py", "spicy_docs/reading/refusals.py"}
+        with zipfile.ZipFile(root / "vendor" / receipt["base_wheel"]) as base, zipfile.ZipFile(wheel) as overlay:
+            original_modules = {name for name in base.namelist()
+                                if name.startswith("spicy_docs/") and not name.endswith("/")}
+            assert {name for name in overlay.namelist() if name.startswith("spicy_docs/")} == original_modules | changed
+            for name in original_modules - changed:
+                assert overlay.read(name) == base.read(name), name
+    else:
+        version = wheel.name.removeprefix("spicy_docs-").removesuffix("-py3-none-any.whl")
+        receipt = json.loads((root / f"vendor/spicy_docs-{version}.json").read_text())
+        assert receipt["filename"] == wheel.name and receipt["version"] == version
+        assert hashlib.sha256(wheel.read_bytes()).hexdigest() == receipt["sha256"]
+        with zipfile.ZipFile(wheel) as archive:
+            names = set(archive.namelist())
+            assert {"spicy_docs/storage/raw_archive.py", "spicy_docs/reading/refusals.py"} <= names
     subprocess.run([sys.executable, str(root / "scripts/package_central_raw_reader.py"), "--check"],
                    cwd=root, check=True, capture_output=True)
 
