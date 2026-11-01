@@ -6,9 +6,9 @@
 
 One row per federal lobbying-disclosure filing, ingested from the U.S. Senate Lobbying Disclosure Act (LDA) REST API (`lda.gov`, formerly `lda.senate.gov`) by `build_lobbying_filings`. Registrants file quarterly reports naming the clients they lobby for, the money involved, the issues raised, and the government entities (agencies/chambers) lobbied — so this table links the comment campaigns in `comments`/`dockets` to the same organizations' *direct* agency lobbying. Primary / dedup key is `filing_uuid`.
 
-**Coverage.** True range: every filing of each filing year held, read whole from the LDA API, from the earliest filing year the backfill has reached to date; earlier years are added one year per dispatched run (owner decision 47). Query min(filing_year) for the current start. Filing years 1999-2006 are short of the LDA's declared totals until a re-walk of those years lands; see the data-quality note for the shortfall per year. *(measured 2026-10-30)*
+**Coverage.** True range: every filing of each filing year held, read whole from the LDA API, from the earliest filing year the backfill has reached to date; earlier years are added one year per dispatched run (owner decision 47). Query min(filing_year) for the current start. *(measured 2026-10-30)*
 
-**Data quality.** Filing years 1999-2006 are short of the LDA's declared totals: offset paging over tied posting times skipped 12,853 filings in the one walk held (measured 2026-10-30, filings missing of declared): 1999 2,099 of 31,498; 2000 584 of 31,555; 2001 676 of 35,897; 2002 1,429 of 38,352; 2003 2,669 of 43,292; 2004 1,969 of 44,704; 2005 2,180 of 49,353; 2006 1,247 of 49,068. Counts for those years undercount until the re-walk lands. Filing years 2007 to 2025 matched their declared totals.
+**Data quality.** Filing years 1999-2006 are short of the LDA's declared totals: offset paging over tied posting times skipped 12,853 filings in the one walk held (measured 2026-10-30, filings missing of declared): 1999 2,099 of 31,498; 2000 584 of 31,555; 2001 676 of 35,897; 2002 1,429 of 38,352; 2003 2,669 of 43,292; 2004 1,969 of 44,704; 2005 2,180 of 49,353; 2006 1,247 of 49,068. Filing years 2007 to 2025 matched their declared totals.
 
 - **Parquet file:** `lobbying_filings.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
