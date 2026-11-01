@@ -9,6 +9,12 @@ Entries link to the pull request that introduced the change.
 
 ### Fixed
 
+- **A new reading of an unchanged print replaces the old one** (ss-fmxo). When a
+  derivation changed a print's text digest but its PDF bytes had not changed,
+  `document_citations` and `bill_committee_actions` kept every finding under both
+  digests (16,201 and 4,182 repeated rows on 19 reports in one run). The new
+  reading now takes the old one's place; a real revision still keeps both.
+
 - **Uploads send one checksum per request** (ss-7lrn). R2 refused every upload
   carrying Content-MD5 beside a SHA-256 checksum ("You can only specify one
   non-default checksum at a time"), which stopped all publication from

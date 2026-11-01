@@ -3821,17 +3821,18 @@ tables:
       document, kind and target alone would collapse CRPT-118hrpt968's repeated mentions of one bill into
       one row; the aggregate is derivable from this table with
       `GROUP BY document_key, cite_kind, target_key` and the reverse is not.
-      **Different text digests retain their histories.** A source revision
-      producing a new `text_sha256` adds findings beside earlier text versions.
-      A successful rule correction for the same document and text digest
-      replaces that digest's findings, including an empty result; it can
-      retire obsolete rows. A failed read preserves previous findings. Size
-      grows with retained text revisions and their citations. Filter to the
-      digest the document row states (`house_activity_reports.text_sha256` or
-      `budget_volumes.text_sha256`) to read exactly one extraction. Prints are
-      revised rarely, so this is a property to know before building on the
-      table; pruning earlier text digests would require a separate retention
-      decision. `stated_by_index`
+      **A publisher's revisions keep their histories; a new reading of the same
+      bytes does not.** A print whose source bytes changed adds findings beside
+      the earlier text version. A new `text_sha256` from unchanged bytes (a
+      corrected text derivation) replaces the earlier reading, so the same span
+      does not repeat. A checkpoint written before source digests were recorded
+      uses the publisher's `lastModified` for that one comparison. A successful
+      rule correction for the same document and text digest replaces that
+      digest's findings, including an empty result; it can retire obsolete rows.
+      A failed read preserves previous findings. Size grows with revisions and
+      their citations. Filter to the digest the document row states
+      (`house_activity_reports.text_sha256` or `budget_volumes.text_sha256`) to
+      read exactly one text. Prints are revised rarely. `stated_by_index`
       is three-valued and the third value matters: `true`/`false` where a
       keyed index record was read and could state a key of this shape, and
       **NULL where no comparison was possible** — either no index record was

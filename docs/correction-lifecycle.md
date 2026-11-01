@@ -21,9 +21,17 @@ parent and citation output. An interrupted publication that leaves mismatched
 checkpoints therefore makes the source eligible on the next run.
 
 A successful re-evaluation replaces findings for that document and text digest,
-including a corrected result with no findings. Earlier text-digest histories
-remain available, as the table definitions require. Consumers select the digest
-named by the current parent row. Failed reads preserve the prior results and
+including a corrected result with no findings. A publisher's revision keeps its
+earlier findings: offsets are evidence for one text, so changed source bytes
+add rows under the new digest and leave the old ones. A new digest from unchanged
+bytes is a new reading of the same print, not a revision, so it replaces the
+reading its checkpoint names in every table keyed by text digest
+(`document_citations`, `bill_committee_actions`). The checkpoint records the body's
+`source_sha256` for this. One written before that field has only `last_modified`,
+so an equal stamp stands in for that one read. The replaced digest is journaled as
+`print-reading-replaced` in the run's source evidence, and the replaced rows stay
+in the prior immutable generation. Consumers select the digest named by the
+current parent row. Failed reads preserve the prior results and
 checkpoint. Stale retained packages remain eligible outside the discovery window
 when processing changes; unchanged processing does not establish fresh source
 polling outside that window.

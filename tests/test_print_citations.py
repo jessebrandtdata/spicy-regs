@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import pyarrow.parquet as pq
 import pytest
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -39,6 +40,7 @@ from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.credentials import CredentialRefusedError
 
 from spicy_regs.transforms.build_print_citations import (
+    CHECKPOINT_NAMESPACE,
     PRINT_BODY_PREFERENCE,
     ACTIVITY_REPORTS,
     BILL_ACTIONS,
@@ -46,6 +48,7 @@ from spicy_regs.transforms.build_print_citations import (
     CITATIONS,
     build_print_citations,
 )
+from spicy_regs.transforms.read_checkpoints import checkpoint_metadata, read_checkpoints
 from tests.pdf_fixtures import make_multiline_pdf
 
 MODS_DIR = Path(__file__).parent / "fixtures" / "govinfo_bodies"
@@ -276,6 +279,191 @@ def test_same_text_correction_retires_current_findings_but_keeps_older_text(tmp_
     assert acquirer.asked == [], "empty current-digest findings and older history share a complete checkpoint"
     assert _rows(paths[2]) == old_actions
     assert _rows(paths[3]) == old_citations
+
+
+def _read_differently(monkeypatch, marker: str = "\u25cb") -> None:
+    """A new derivation of the same bytes: one more character after every finding, and a moved version."""
+    from spicy_docs.extraction.body_text import body_text as real
+
+    def derive(package):
+        derived = real(package)
+        assert derived.pages is not None
+        pages = (*derived.pages[:-1], derived.pages[-1] + f"\n{marker}")
+        return replace(derived, text="\n".join(pages), pages=pages)
+
+    monkeypatch.setattr("spicy_regs.transforms.build_print_citations.body_text", derive)
+    monkeypatch.setattr("spicy_regs.transforms.build_print_citations.BODY_TEXT_DERIVATION_VERSION", f"read-{marker}")
+
+
+def _spans(rows: list[dict]) -> list[tuple]:
+    """A finding without its text digest: the same span under two digests repeats here."""
+    return sorted(tuple(sorted((k, repr(v)) for k, v in row.items() if k not in ("text_sha256", "body_version_id")))
+                  for row in rows)
+
+
+def _forget_source_digest(paths: tuple[Path, ...]) -> None:
+    """Leave each output's checkpoints as a build before ``source_sha256`` wrote them."""
+    for path in paths:
+        table = pq.read_table(path)
+        records = [{k: v for k, v in record.items() if k != "source_sha256"}
+                   for record in read_checkpoints(path, CHECKPOINT_NAMESPACE)]
+        pq.write_table(table.replace_schema_metadata(checkpoint_metadata(path, CHECKPOINT_NAMESPACE, records)), path)
+
+
+def test_same_bytes_read_differently_keeps_one_copy_in_every_digest_table(tmp_path, monkeypatch):
+    listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
+    acquirer = _Acquirer({CRPT_ID: _package(CRPT_ID, pages=REPORT_PAGES)})
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    actions, citations = _rows(paths[2]), _rows(paths[3])
+    assert actions and citations, "both digest tables must begin with findings"
+    before = {row["text_sha256"] for row in actions + citations}
+    _publish_as_prior(paths)
+
+    _read_differently(monkeypatch)
+    acquirer.asked.clear()
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    assert acquirer.asked == [CRPT_ID], "the moved derivation must re-read the print"
+    current = _rows(paths[0])[0]["text_sha256"]
+    assert current not in before, "the new reading must have a new digest for this to test anything"
+    assert {row["text_sha256"] for row in _rows(paths[2]) + _rows(paths[3])} == {current}
+    assert _spans(_rows(paths[2])) == _spans(actions)
+    assert _spans(_rows(paths[3])) == _spans(citations)
+
+
+def test_budget_volume_read_differently_keeps_one_copy(tmp_path, monkeypatch):
+    listing = _listing(BUDGET_ID, "Mid-Session Review")
+    acquirer = _Acquirer({BUDGET_ID: _package(BUDGET_ID, pages=BUDGET_PAGES)})
+    paths = _build(tmp_path, _Reader({"BUDGET": [listing]}), acquirer)
+    citations = _rows(paths[3])
+    assert citations
+    _publish_as_prior(paths)
+
+    _read_differently(monkeypatch)
+    paths = _build(tmp_path, _Reader({"BUDGET": [listing]}), acquirer)
+    assert {row["text_sha256"] for row in _rows(paths[3])} == {_rows(paths[1])[0]["text_sha256"]}
+    assert _spans(_rows(paths[3])) == _spans(citations)
+
+
+def test_changed_bytes_keep_both_readings_even_under_an_equal_stamp(tmp_path, monkeypatch):
+    """A recorded digest decides. An equal ``lastModified`` cannot hide a real revision."""
+    listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
+    acquirer = _Acquirer({CRPT_ID: _package(CRPT_ID, pages=REPORT_PAGES)})
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    citations = _rows(paths[3])
+    _publish_as_prior(paths)
+
+    revised = [[*REPORT_PAGES[0], "The Committee ordered H.R. 1093 reported on April 4, 2024."], *REPORT_PAGES[1:]]
+    acquirer.packages[CRPT_ID] = _package(CRPT_ID, pages=revised)
+    monkeypatch.setattr("spicy_regs.transforms.build_print_citations.CITATION_RULE_SET_VERSION", "corrected")
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    current = _rows(paths[0])[0]["text_sha256"]
+    rows = _rows(paths[3])
+    assert {row["text_sha256"] for row in rows} == {citations[0]["text_sha256"], current}
+    assert [row for row in rows if row["text_sha256"] != current] == citations
+
+
+def test_a_moved_stamp_over_the_same_bytes_is_not_a_revision(tmp_path, monkeypatch):
+    listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
+    acquirer = _Acquirer({CRPT_ID: _package(CRPT_ID, pages=REPORT_PAGES)})
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    citations = _rows(paths[3])
+    _publish_as_prior(paths)
+
+    modified = "2026-09-19T12:00:00Z"
+    acquirer.packages[CRPT_ID] = _package(CRPT_ID, pages=REPORT_PAGES, last_modified=modified)
+    _read_differently(monkeypatch)
+    paths = _build(tmp_path, _Reader({"CRPT": [dict(listing, lastModified=modified)]}), acquirer)
+    assert {row["text_sha256"] for row in _rows(paths[3])} == {_rows(paths[0])[0]["text_sha256"]}
+    assert _spans(_rows(paths[3])) == _spans(citations)
+
+
+def test_a_checkpoint_without_a_digest_falls_back_to_the_stamp(tmp_path, monkeypatch):
+    """Live checkpoints have no ``source_sha256``: an equal stamp replaces once, a moved one keeps both."""
+    listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
+    acquirer = _Acquirer({CRPT_ID: _package(CRPT_ID, pages=REPORT_PAGES)})
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    citations = _rows(paths[3])
+    _forget_source_digest(paths)
+    _publish_as_prior(paths)
+
+    _read_differently(monkeypatch, "a")
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    assert {row["text_sha256"] for row in _rows(paths[3])} == {_rows(paths[0])[0]["text_sha256"]}
+    assert _spans(_rows(paths[3])) == _spans(citations)
+    _forget_source_digest(paths)
+    _publish_as_prior(paths)
+
+    modified = "2026-09-19T12:00:00Z"
+    acquirer.packages[CRPT_ID] = _package(CRPT_ID, pages=REPORT_PAGES, last_modified=modified)
+    _read_differently(monkeypatch, "b")
+    paths = _build(tmp_path, _Reader({"CRPT": [dict(listing, lastModified=modified)]}), acquirer)
+    assert len({row["text_sha256"] for row in _rows(paths[3])}) == 2
+
+
+def test_an_earlier_revision_survives_a_later_reading_of_the_current_bytes(tmp_path, monkeypatch):
+    """Only the reading the checkpoint names goes: revision one stays when revision two is read again."""
+    listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
+    acquirer = _Acquirer({CRPT_ID: _package(CRPT_ID, pages=REPORT_PAGES)})
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    first = _rows(paths[3])
+    _publish_as_prior(paths)
+
+    modified = "2026-09-19T12:00:00Z"
+    second_pages = [["The Committee ordered H.R. 1093 reported on April 4, 2024."]]
+    acquirer.packages[CRPT_ID] = _package(CRPT_ID, pages=second_pages, last_modified=modified)
+    paths = _build(tmp_path, _Reader({"CRPT": [dict(listing, lastModified=modified)]}), acquirer)
+    second = [row for row in _rows(paths[3]) if row not in first]
+    assert second, "the revision must add findings"
+    _publish_as_prior(paths)
+
+    _read_differently(monkeypatch)
+    paths = _build(tmp_path, _Reader({"CRPT": [dict(listing, lastModified=modified)]}), acquirer)
+    current = _rows(paths[0])[0]["text_sha256"]
+    rows = _rows(paths[3])
+    assert {row["text_sha256"] for row in rows} == {first[0]["text_sha256"], current}
+    assert [row for row in rows if row["text_sha256"] != current] == first
+    assert _spans([row for row in rows if row["text_sha256"] == current]) == _spans(second)
+
+
+def test_a_failed_read_replaces_no_reading(tmp_path, monkeypatch):
+    listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
+    acquirer = _Acquirer({CRPT_ID: _package(CRPT_ID, pages=REPORT_PAGES)})
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    citations = _rows(paths[3])
+    _publish_as_prior(paths)
+
+    _read_differently(monkeypatch)
+    acquirer.refuse[CRPT_ID] = PagedJsonSourceError("refused")
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    assert _rows(paths[3]) == citations
+
+
+def test_a_replaced_reading_is_journaled(tmp_path, monkeypatch):
+    class _Journal:
+        credential = ""
+
+        def __init__(self):
+            self.events = []
+
+        def event(self, name, **fields):
+            self.events.append((name, fields))
+
+        def transport(self, **_kwargs):
+            return None
+
+    listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
+    package = _package(CRPT_ID, pages=REPORT_PAGES)
+    acquirer = _Acquirer({CRPT_ID: package})
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
+    earlier = _rows(paths[0])[0]["text_sha256"]
+    _publish_as_prior(paths)
+
+    _read_differently(monkeypatch)
+    journal = _Journal()
+    paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer, evidence=journal)
+    replaced = [fields for name, fields in journal.events if name == "print-reading-replaced"]
+    assert replaced == [{"package_id": CRPT_ID, "source_sha256": package.body_capture.sha256,
+                         "replaced_text_sha256": [earlier], "text_sha256": _rows(paths[0])[0]["text_sha256"]}]
 
 
 @pytest.mark.parametrize(

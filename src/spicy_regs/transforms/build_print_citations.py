@@ -331,6 +331,37 @@ def _processing_versions(vocabularies: Mapping[str, Mapping[str, tuple[tuple[str
     }
 
 
+def _superseded_readings(
+    states: Iterable[Mapping[str, Any]], *, source_sha256: str, last_modified: str | None, current: str
+) -> set[str]:
+    """Earlier text digests that this read replaces because its source bytes did not change.
+
+    ``body_version_id`` keeps a publisher's revisions apart: offsets are evidence for one text, so the
+    findings on an earlier revision stay beside the current ones. A new digest from the same bytes is not a
+    revision. It is this code reading the same print differently (derivation 003 moved one glyph on 41 of 42
+    House activity reports and would have repeated every finding under a second digest), so the new reading
+    takes the old one's place. Only the reading a checkpoint names is replaced: a digest from an
+    earlier revision of the source stays.
+
+    Bytes decide where the checkpoint recorded them. One written before ``source_sha256`` has only the
+    publisher's ``lastModified``, so an equal stamp stands in for that one read. The stamp errs mostly towards
+    keeping both: it moves without the bytes moving. Over 32 retained runs, 71 packages read repeatedly, no
+    body digest changed at all, so a change hidden behind an equal stamp is unobserved rather than disproved.
+    O(outputs).
+    """
+    superseded = set()
+    for state in states:
+        earlier = state.get("text_sha256")
+        if not earlier or earlier == current:
+            continue
+        held_source = state.get("source_sha256")
+        unchanged = (held_source == source_sha256 if held_source is not None
+                     else last_modified is not None and state.get("last_modified") == last_modified)
+        if unchanged:
+            superseded.add(earlier)
+    return superseded
+
+
 def _collection(package_id: str) -> str | None:
     """The collection spicy-docs' package-id grammar places this id in, or None when it refuses the id."""
     try:
@@ -720,12 +751,24 @@ def build_print_citations(
                 for action in reading.findings
             )
 
-        # Offsets are evidence for one normalized text. Correct findings for
-        # that text, while retaining the history of different text digests.
+        # Offsets are evidence for one normalized text. Correct findings for that text, and keep the
+        # findings on an earlier revision of the source; see :func:`_superseded_readings`. This one
+        # scope drives every table that keeps a row per text digest.
+        source_sha256 = package.body_capture.sha256
         if provenance.text_sha256 is not None:
             evaluated[collection].add((package_id, provenance.text_sha256))
+            superseded = _superseded_readings(
+                (checkpoints[name].get(package_id, {}) for name in _OUTPUTS[collection]),
+                source_sha256=source_sha256, last_modified=package.summary.last_modified,
+                current=provenance.text_sha256,
+            )
+            evaluated[collection].update((package_id, digest) for digest in superseded)
+            if superseded and evidence is not None:
+                # The public rows hold one reading; this and the prior generation keep the trail.
+                evidence.event("print-reading-replaced", package_id=package_id, source_sha256=source_sha256,
+                               replaced_text_sha256=sorted(superseded), text_sha256=provenance.text_sha256)
         state = {"package_id": package_id, "last_modified": package.summary.last_modified,
-                 "text_sha256": provenance.text_sha256,
+                 "source_sha256": source_sha256, "text_sha256": provenance.text_sha256,
                  "processing_version": processing_versions[collection], "read_at": _now()}
         for name in _OUTPUTS[collection]:
             checkpoints[name][package_id] = state
