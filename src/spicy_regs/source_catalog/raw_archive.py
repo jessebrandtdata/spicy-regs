@@ -32,8 +32,19 @@ def legacy_fec_evidence(row: dict, mapping: dict) -> bool:
     artifact = context.get("artifact", "")
     sha = str(row.get("sha256", "")).removeprefix("sha256:")
     member = f"blobs/sha256/{sha}"
+    dataset = mapping.get("dataset_id")
+    narrowed_fec = (
+        mapping.get("mapping_status") == "mapped"
+        and any(
+            item.get("origin") == "receipt"
+            and item.get("rule") == "registry-family-object"
+            and item.get("value") == "fec-query"
+            and item.get("dataset_id") == dataset
+            for item in mapping.get("evidence", [])
+        )
+    )
     return (
-        mapping.get("dataset_id") == "family:fec-query"
+        (dataset == "family:fec-query" or narrowed_fec)
         and mapping.get("role") == context.get("declared_role") == "evidence"
         and context.get("family") == "fec-query"
         and isinstance(artifact, str) and re.fullmatch(r"sha256:[0-9a-f]{64}", artifact) is not None
@@ -153,13 +164,26 @@ def verify_reviewed_original(root: Path, sha: str, obj) -> None:
         raise ValueError("Reviewed original changed")
 
 
-def retained_classification_candidates(db):
+def retained_classification_candidates(db, configuration: dict | None = None):
     """Yield indexed legacy objects and exact-byte reviews, never scan raw bytes."""
     reviews = retained_content_reviews()
     for sha in sorted(reviews):
         if db.execute("SELECT 1 FROM main.files WHERE sha256=? LIMIT 1", (sha,)).fetchone():
             yield sha
     seen = set(reviews)
+    for binding in (configuration or {}).get("object_datasets", []):
+        if binding.get("family") != "fec-query":
+            continue
+        for raw_digest in binding.get("sha256", []):
+            sha = "sha256:" + str(raw_digest).removeprefix("sha256:")
+            if sha in seen:
+                continue
+            for row in db.execute("SELECT sha256,data FROM main.files WHERE sha256=? ORDER BY id", (sha,)):
+                facts = json.loads(row["data"])
+                if legacy_fec_evidence(facts, facts.get("mapping", {})):
+                    seen.add(sha)
+                    yield sha
+                    break
     for row in db.execute(
         "SELECT sha256,data FROM main.files WHERE collection_id=? ORDER BY id", ("family:fec-query",)
     ):
@@ -169,6 +193,66 @@ def retained_classification_candidates(db):
         if legacy_fec_evidence(facts, facts.get("mapping", {})):
             seen.add(row["sha256"])
             yield row["sha256"]
+
+
+def remap_object_datasets(db, configuration: dict) -> int:
+    """Re-apply configured object_datasets bindings to inherited file rows by hash."""
+    mapper = SourceMapper(configuration)
+    if not mapper.objects:
+        return 0
+    remapped_rows = 0
+    for sha in sorted({"sha256:" + raw_digest for _, raw_digest in mapper.objects}):
+        rows = db.execute(
+            "SELECT id,collection_id,sha256,data FROM main.files "
+            "WHERE sha256=? AND collection_id!='archive:receipts' ORDER BY id",
+            (sha,),
+        ).fetchall()
+        for row in rows:
+            facts = json.loads(row["data"])
+            prior_mapping = facts.get("mapping")
+            if not isinstance(prior_mapping, dict):
+                continue
+            raw_row = {
+                key: value
+                for key, value in facts.items()
+                if key not in {
+                    "mapping", "verification", "encoding", "stored_sha256",
+                    "encoded_bytes", "presence_mtime_ns", "content_review",
+                }
+            }
+            remapped = mapper.map_source(raw_row)
+            if "receipt_evidence_ref" in prior_mapping:
+                remapped["receipt_evidence_ref"] = prior_mapping["receipt_evidence_ref"]
+            if "content_metadata" in prior_mapping:
+                content = dict(
+                    prior_mapping["content_metadata"],
+                    evidence=[
+                        item for item in prior_mapping.get("evidence", [])
+                        if item.get("origin") != "receipt"
+                    ],
+                    periods=[
+                        item for item in prior_mapping.get("periods", [])
+                        if item.get("origin") in {"content", "publication-context"}
+                    ],
+                )
+                remapped = merge_content(remapped, content, row["sha256"])
+            cid = remapped.get("dataset_id") or "archive:unmapped"
+            db.execute(
+                "INSERT OR IGNORE INTO main.collections VALUES(?,?,?)",
+                (
+                    cid,
+                    cid.removeprefix("dataset:").replace("-", " "),
+                    encoded({
+                        "mapping_status": remapped.get("mapping_status", "receipt-only"),
+                        "description": "Retained source files; completeness and usable record counts are not inferred.",
+                    }),
+                ),
+            )
+            data = encoded(dict(facts, mapping=remapped))
+            if cid != row["collection_id"] or data != row["data"]:
+                db.execute("UPDATE main.files SET collection_id=?,data=? WHERE id=?", (cid, data, row["id"]))
+                remapped_rows += 1
+    return remapped_rows
 
 
 def classify_retained_objects(db, root: Path, sha256s, *, max_bytes: int = 1024 * 1024) -> dict:

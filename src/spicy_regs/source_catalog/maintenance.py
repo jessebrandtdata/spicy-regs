@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .importer import Importer, encoded
 from .publication import _clone_index, import_publications
-from .raw_archive import classify_retained_objects, holdings, retained_classification_candidates
+from .raw_archive import classify_retained_objects, holdings, remap_object_datasets, retained_classification_candidates
 from .raw_classification import classification_inputs
 from .scope import install_scope
 from .selection import check_identities, identity, index_inventory, metadata, plain, raw_selection, require
@@ -163,6 +163,8 @@ def configured_metadata(db, configuration, inputs, base_generation):
                 placeholders = ",".join("?" for _ in row)
                 db.execute(f"INSERT INTO main.{table} VALUES({placeholders}) ON CONFLICT(id) DO UPDATE SET {updates}", row)
                 changed[table] += 1
+        if remapped := remap_object_datasets(db, configuration):
+            changed["object_datasets"] = remapped
         return changed
     finally:
         normalized.close()
@@ -338,7 +340,7 @@ def refresh_metadata(index: Path, output: Path, *, config: Path | None = None,
                      'partialContentReaders': partial_readers,
                      'metadataExtraction': dict(importer.metadata_counts),
                      'baseInventoryReplayed': False}
-        classification = classify_retained_objects(db, raw_root, retained_classification_candidates(db))
+        classification = classify_retained_objects(db, raw_root, retained_classification_candidates(db, configuration))
         publication = None
         if publication_reconciliation is not None:
             publication = import_publications(db, inputs, publication_reconciliation)

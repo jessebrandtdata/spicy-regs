@@ -103,6 +103,44 @@ def test_refresh_matches_fresh_import_for_classification_and_configured_rows(pre
     assert json.loads(report.read_text()) == result
 
 
+def test_refresh_remaps_inherited_rows_when_object_datasets_binds_digest(prepared):
+    with connect(prepared["index"], readonly=True, scope="all") as source:
+        sha = source.execute("SELECT sha256 FROM files WHERE name='context'").fetchone()[0]
+    configuration = json.loads(prepared["config"].read_text())
+    configuration["collections"].append({
+        "id": "dataset:fec-research-source-pages",
+        "title": "FEC source documentation pages",
+    })
+    configuration["catalog_scope"]["collections"].append({
+        "id": "dataset:fec-research-source-pages",
+        "disposition": "retained",
+        "reason": "Evidence",
+    })
+    configuration["object_datasets"] = [{
+        "dataset_id": "dataset:fec-research-source-pages",
+        "family": "fec-query",
+        "sha256": [sha.removeprefix("sha256:")],
+    }]
+    write(prepared["config"], configuration)
+
+    result = maintenance.refresh_metadata(**prepared)
+    fresh = prepared["output"].parent / "fresh.sqlite"
+    build(prepared["index"].parent / "raw", fresh, config=prepared["config"])
+
+    assert result["configuredMetadata"]["object_datasets"] == 1
+    with connect(prepared["output"], readonly=True, scope="all") as db, connect(fresh, readonly=True, scope="all") as expected:
+        row = db.execute("SELECT collection_id,status,data FROM files WHERE name='context'").fetchone()
+        assert row["collection_id"] == "dataset:fec-research-source-pages"
+        assert row["status"] == "supporting-evidence"
+        mapping = json.loads(row["data"])["mapping"]
+        assert mapping["dataset_id"] == "dataset:fec-research-source-pages"
+        assert mapping["candidate_dataset_ids"] == ["dataset:fec-research-source-pages"]
+        assert [tuple(r) for r in db.execute("SELECT id,collection_id,status,data FROM files ORDER BY id")] == [
+            tuple(r) for r in expected.execute("SELECT id,collection_id,status,data FROM files ORDER BY id")
+        ]
+
+
+
 def test_unchanged_refresh_reuses_accepted_generation_without_cloning_or_reading_sources(prepared, monkeypatch):
     result = maintenance.refresh_metadata(**prepared)
     second: dict[str, Any] = dict(prepared, index=prepared['output'], output=prepared['output'].with_name('unchanged.sqlite'),
