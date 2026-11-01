@@ -132,6 +132,29 @@ def test_standalone_source_path_finishes_its_existing_owner(tmp_path, monkeypatc
     assert outcome["outcome"] == ("complete" if valid else "failed")
 
 
+def test_later_pages_keep_their_window_when_next_page_url_is_not_a_window_request(tmp_path, monkeypatch):
+    """Run 41241935207: the API's next_page_url path has no ``.json``, so it does not parse as a window request."""
+    today = date.today().isoformat()
+    # The shape of a live next_page_url, 2026-11-01.
+    next_url = ("https://www.federalregister.gov/api/v1/documents?"
+                f"conditions%5Bpublication_date%5D%5Bgte%5D={today}&conditions%5Bpublication_date%5D%5Blte%5D={today}"
+                "&format=json&order=newest&page=2&per_page=1000&search_after_cursor=WzE3OTMzMTg0MDAwMDAsIjIwMjYtMjIyNjkiXQ")
+    documents = [dict(_RAW_DOC, publication_date=today, document_number=number) for number in ("2026-1", "2026-2")]
+    pages = {
+        False: {"count": 2, "total_pages": 2, "next_page_url": next_url, "results": documents[:1]},
+        True: {"count": 2, "total_pages": 2, "results": documents[1:]},
+    }
+    pipeline = runner(tmp_path, monkeypatch, b"")
+
+    @contextmanager
+    def fetcher(_):
+        yield lambda url: json.dumps(pages[url == next_url]).encode()
+
+    monkeypatch.setattr(acquisition, "federal_register_fetcher", fetcher)
+    read = _live_federal_register_documents(date.today(), output_dir=pipeline.output_dir)
+    assert [document["document_number"] for document in read] == ["2026-1", "2026-2"]
+
+
 def test_workflow_always_retains_main_evidence_bodies_and_journal():
     workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/_rollup.yml").read_text())
     audit = next(step for step in workflow["jobs"]["rollup"]["steps"]

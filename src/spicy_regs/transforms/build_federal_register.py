@@ -170,6 +170,7 @@ def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=
                                                   "requested_through": scope["publishedThrough"]})
             return body
 
+        window = None
         for page in federal_register.iter_federal_register_pages(retained_fetch, query_scope=scope, traversals=1):
             response = federal_register.parse_page_response(page.response_bytes)
             import hashlib
@@ -178,9 +179,10 @@ def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=
                   "bytes": len(page.response_bytes), "asset_kind": "json-body"}],
                 scope_id=f"{evidence.family}:successful-source-files", complete=False,
             )
-            if not federal_register.federal_register_records_included(
-                response, query_scope=scope, page_window=federal_register.federal_register_request_window(page.request_key)
-            ):
+            # A later page's key is the source's next_page_url, which is not a window request and does not parse as one.
+            if page.window_page_index == 0:
+                window = federal_register.federal_register_request_window(page.request_key)
+            if not federal_register.federal_register_records_included(response, query_scope=scope, page_window=window):
                 continue
             yield from response["results"]
 
