@@ -515,10 +515,11 @@ def test_output_scan_refuses_c1_in_any_table_at_any_depth(tmp_path):
         pq.write_table(pa.Table.from_pylist(rows, schema=schema), path)
         return path
 
-    # Neighbours of the C1 range (U+007F, U+00A0, the cp1252 reading U+2019) stay admitted.
-    clean = [dict(record_id="r1", amount=1, attributes=[dict(name="memo", value="PAC’s \x7f\xa0")])]
+    # Neighbours of the C1 range (U+007F, U+00A0, the cp1252 reading U+2019, and their JSON escapes) stay admitted.
+    clean = [dict(record_id="r1", amount=1, attributes=[dict(name="memo", value="PAC’s \x7f\xa0 \\u007f \\u00a0")])]
     planted = [*clean, dict(record_id="r2", amount=2, attributes=[dict(name="memo", value="PAC\x92s")]),
-               dict(record_id="r\x93", amount=3, attributes=None)]
+               dict(record_id="r\x93", amount=3, attributes=None),
+               dict(record_id="r4", amount=4, attributes=[dict(name="locator", value=json.dumps({"raw": "PAC\x92s"}))])]
     receipts = table(tmp_path / "fec_receipts" / "source_namespace=a" / "part-000000.parquet", clean)
     table(tmp_path / "fec_receipts" / "source_namespace=b" / "part-000000.parquet", planted)
     numbers = tmp_path / "fec_numbers.parquet"
@@ -526,5 +527,5 @@ def test_output_scan_refuses_c1_in_any_table_at_any_depth(tmp_path):
     flat = table(tmp_path / "fec_legal_events.parquet", clean)
 
     refuse_c1_controls([flat, numbers, receipts.parent])  # clean partition only
-    with pytest.raises(ValueError, match=r"C1 controls \(rows by table: \{'fec_receipts': 2\}\)"):
+    with pytest.raises(ValueError, match=r"C1 controls \(rows by table: \{'fec_receipts': 3\}\)"):
         refuse_c1_controls([flat, numbers, tmp_path / "fec_receipts"])

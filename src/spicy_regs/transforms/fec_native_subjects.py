@@ -111,8 +111,10 @@ def _select(item, fields, allowed=None):
 
 # C1 controls in filing text mean Windows punctuation was decoded as latin-1
 # (FEC-1981885 read U+0092 for an apostrophe); cp1252 reads the intended text.
-# The class holds the literal characters, so Python re and DuckDB's RE2 read it alike.
+# The class holds the literal characters, so Python re and DuckDB's RE2 read it alike;
+# the output scan also catches JSON-escaped C1 sequences (\u0080 to \u009f).
 _C1_CONTROL = re.compile("[\x80-\x9f]")
+_C1_OUTPUT_PATTERN = _C1_CONTROL.pattern + r"|\\u00[89][0-9a-fA-F]"
 _C1_REMEDY = "decode the filing with spicy-docs filing_encoding (UTF-8, then cp1252), not latin-1"
 
 
@@ -150,7 +152,7 @@ def refuse_c1_controls(tables, *, check_resources=lambda: None, threads=6):
             if not columns:
                 continue
             matched = " OR ".join(
-                'regexp_matches(CAST("{}" AS VARCHAR), \'{}\')'.format(name.replace('"', '""'), _C1_CONTROL.pattern)
+                'regexp_matches(CAST("{}" AS VARCHAR), \'{}\')'.format(name.replace('"', '""'), _C1_OUTPUT_PATTERN)
                 for name in columns)
             [(rows,)] = con.execute(f"SELECT count(*) FILTER (WHERE {matched}) FROM read_parquet(?, hive_partitioning=false)",
                                     [[str(path) for path in members]]).fetchall()

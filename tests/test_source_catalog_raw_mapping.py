@@ -493,7 +493,7 @@ def test_fec_research_originals_have_one_dataset_per_collection():
 
 
 def test_unified_agenda_and_courtlistener_local_code_refs_match_installed_spicy_docs():
-    """ss-k4yp, ss-olaa: registry code_refs for unified_agenda/records.py and courtlistener/local.py match spicy-docs."""
+    """ss-k4yp, ss-olaa, ss-z50t: registry code_refs for spicy-docs 0.68.0 modules match installed spicy-docs."""
     import ast
     import hashlib
     import importlib.util
@@ -507,6 +507,10 @@ def test_unified_agenda_and_courtlistener_local_code_refs_match_installed_spicy_
     targets = {
         "repo:spicy-docs/src/spicy_docs/sources/unified_agenda/records.py",
         "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+        "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
+        "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
+        "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
+        "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
     }
     found = []
 
@@ -520,14 +524,25 @@ def test_unified_agenda_and_courtlistener_local_code_refs_match_installed_spicy_
             for value in obj:
                 walk(value)
 
+    def find_node(tree, symbol):
+        parts = symbol.split(".")
+        if len(parts) == 1:
+            return next(
+                n for n in ast.walk(tree)
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.name == parts[0]
+            )
+        cls_name, meth_name = parts
+        cls_node = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == cls_name)
+        return next(m for m in cls_node.body if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef)) and m.name == meth_name)
+
     walk(registry)
-    assert len(found) == 13 + 132
+    assert len(found) == 13 + 132 + 134
     for ref in found:
         rel = ref["path"].removeprefix("repo:spicy-docs/src/spicy_docs/")
         source_file = sd_root / rel
-        assert ref["sha256"] == hashlib.sha256(source_file.read_bytes()).hexdigest()
+        if "sha256" in ref:
+            assert ref["sha256"] == hashlib.sha256(source_file.read_bytes()).hexdigest()
         tree = ast.parse(source_file.read_text())
-        symbol_name = ref["symbol"].split(".")[-1]
-        node = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == symbol_name)
+        node = find_node(tree, ref["symbol"])
         assert (ref["start_line"], ref["end_line"]) == (node.lineno, node.end_lineno)
 

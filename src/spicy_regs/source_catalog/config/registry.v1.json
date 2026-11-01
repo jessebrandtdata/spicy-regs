@@ -15735,18 +15735,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -18254,18 +18254,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -28329,18 +28329,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -32822,10 +32822,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -32890,10 +32890,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -33193,10 +33193,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -33259,10 +33259,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -33325,10 +33325,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -40749,10 +40749,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
@@ -40799,10 +40799,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
@@ -48834,97 +48834,97 @@
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "default_raw_archive_root",
               "start_line": 43,
-              "end_line": 45
+              "end_line": 53
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_hex",
-              "start_line": 48,
-              "end_line": 51
+              "start_line": 56,
+              "end_line": 59
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_size",
-              "start_line": 54,
-              "end_line": 56
+              "start_line": 62,
+              "end_line": 64
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_state",
-              "start_line": 59,
-              "end_line": 62
+              "start_line": 67,
+              "end_line": 70
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore",
-              "start_line": 65,
-              "end_line": 234
+              "start_line": 73,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.__init__",
-              "start_line": 74,
-              "end_line": 82
+              "start_line": 82,
+              "end_line": 90
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._descriptor",
-              "start_line": 84,
-              "end_line": 96
+              "start_line": 92,
+              "end_line": 104
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open_member",
-              "start_line": 99,
-              "end_line": 118
+              "start_line": 107,
+              "end_line": 126
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._stored",
-              "start_line": 121,
-              "end_line": 133
+              "start_line": 129,
+              "end_line": 141
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open",
-              "start_line": 136,
-              "end_line": 143
+              "start_line": 144,
+              "end_line": 151
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.describe_blob",
-              "start_line": 145,
-              "end_line": 176
+              "start_line": 153,
+              "end_line": 184
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._writer",
-              "start_line": 178,
-              "end_line": 183
+              "start_line": 186,
+              "end_line": 191
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.put_blob",
-              "start_line": 185,
-              "end_line": 203
+              "start_line": 193,
+              "end_line": 211
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.record_receipt",
-              "start_line": 205,
-              "end_line": 234
+              "start_line": 245,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_check_object",
-              "start_line": 237,
-              "end_line": 258
+              "start_line": 277,
+              "end_line": 298
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "iter_acquisition_receipts",
-              "start_line": 261,
-              "end_line": 307
+              "start_line": 301,
+              "end_line": 371
             }
           ],
           "complete_code_trace_ref": "private-evidence-locator:sha256:135733d8d6a19cae806028ffda3bf2471011f78ce77f34bae1b36ae024448895",
@@ -50290,85 +50290,85 @@
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "default_raw_archive_root",
               "start_line": 43,
-              "end_line": 45
+              "end_line": 53
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_hex",
-              "start_line": 48,
-              "end_line": 51
+              "start_line": 56,
+              "end_line": 59
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_size",
-              "start_line": 54,
-              "end_line": 56
+              "start_line": 62,
+              "end_line": 64
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_state",
-              "start_line": 59,
-              "end_line": 62
+              "start_line": 67,
+              "end_line": 70
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore",
-              "start_line": 65,
-              "end_line": 234
+              "start_line": 73,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.__init__",
-              "start_line": 74,
-              "end_line": 82
+              "start_line": 82,
+              "end_line": 90
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._descriptor",
-              "start_line": 84,
-              "end_line": 96
+              "start_line": 92,
+              "end_line": 104
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open_member",
-              "start_line": 99,
-              "end_line": 118
+              "start_line": 107,
+              "end_line": 126
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._stored",
-              "start_line": 121,
-              "end_line": 133
+              "start_line": 129,
+              "end_line": 141
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open",
-              "start_line": 136,
-              "end_line": 143
+              "start_line": 144,
+              "end_line": 151
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.describe_blob",
-              "start_line": 145,
-              "end_line": 176
+              "start_line": 153,
+              "end_line": 184
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._writer",
-              "start_line": 178,
-              "end_line": 183
+              "start_line": 186,
+              "end_line": 191
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.put_blob",
-              "start_line": 185,
-              "end_line": 203
+              "start_line": 193,
+              "end_line": 211
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.record_receipt",
-              "start_line": 205,
-              "end_line": 234
+              "start_line": 245,
+              "end_line": 274
             }
           ],
           "complete_code_trace_ref": "private-evidence-locator:sha256:b750b47a08b037d0b5c9afe7e98874eb9e381c67315b9e64ce0ad1374d4eaf7d",
@@ -51957,91 +51957,91 @@
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "default_raw_archive_root",
               "start_line": 43,
-              "end_line": 45
+              "end_line": 53
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_hex",
-              "start_line": 48,
-              "end_line": 51
+              "start_line": 56,
+              "end_line": 59
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_size",
-              "start_line": 54,
-              "end_line": 56
+              "start_line": 62,
+              "end_line": 64
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_state",
-              "start_line": 59,
-              "end_line": 62
+              "start_line": 67,
+              "end_line": 70
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore",
-              "start_line": 65,
-              "end_line": 234
+              "start_line": 73,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.__init__",
-              "start_line": 74,
-              "end_line": 82
+              "start_line": 82,
+              "end_line": 90
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._descriptor",
-              "start_line": 84,
-              "end_line": 96
+              "start_line": 92,
+              "end_line": 104
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open_member",
-              "start_line": 99,
-              "end_line": 118
+              "start_line": 107,
+              "end_line": 126
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._stored",
-              "start_line": 121,
-              "end_line": 133
+              "start_line": 129,
+              "end_line": 141
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open",
-              "start_line": 136,
-              "end_line": 143
+              "start_line": 144,
+              "end_line": 151
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.describe_blob",
-              "start_line": 145,
-              "end_line": 176
+              "start_line": 153,
+              "end_line": 184
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._writer",
-              "start_line": 178,
-              "end_line": 183
+              "start_line": 186,
+              "end_line": 191
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.put_blob",
-              "start_line": 185,
-              "end_line": 203
+              "start_line": 193,
+              "end_line": 211
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.record_receipt",
-              "start_line": 205,
-              "end_line": 234
+              "start_line": 245,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_check_object",
-              "start_line": 237,
-              "end_line": 258
+              "start_line": 277,
+              "end_line": 298
             }
           ],
           "complete_code_trace_ref": "private-evidence-locator:sha256:7bdae8c1bdd9581e879378644ed9511ac8a0c2a927b200614498f3be1a9eeeb9",
@@ -79209,18 +79209,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -79243,18 +79243,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -82291,18 +82291,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -89280,18 +89280,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -96310,18 +96310,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -98185,18 +98185,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -99756,18 +99756,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -100835,18 +100835,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -128930,97 +128930,97 @@
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "default_raw_archive_root",
               "start_line": 43,
-              "end_line": 45
+              "end_line": 53
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_hex",
-              "start_line": 48,
-              "end_line": 51
+              "start_line": 56,
+              "end_line": 59
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_size",
-              "start_line": 54,
-              "end_line": 56
+              "start_line": 62,
+              "end_line": 64
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_state",
-              "start_line": 59,
-              "end_line": 62
+              "start_line": 67,
+              "end_line": 70
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore",
-              "start_line": 65,
-              "end_line": 234
+              "start_line": 73,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.__init__",
-              "start_line": 74,
-              "end_line": 82
+              "start_line": 82,
+              "end_line": 90
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._descriptor",
-              "start_line": 84,
-              "end_line": 96
+              "start_line": 92,
+              "end_line": 104
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open_member",
-              "start_line": 99,
-              "end_line": 118
+              "start_line": 107,
+              "end_line": 126
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._stored",
-              "start_line": 121,
-              "end_line": 133
+              "start_line": 129,
+              "end_line": 141
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open",
-              "start_line": 136,
-              "end_line": 143
+              "start_line": 144,
+              "end_line": 151
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.describe_blob",
-              "start_line": 145,
-              "end_line": 176
+              "start_line": 153,
+              "end_line": 184
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._writer",
-              "start_line": 178,
-              "end_line": 183
+              "start_line": 186,
+              "end_line": 191
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.put_blob",
-              "start_line": 185,
-              "end_line": 203
+              "start_line": 193,
+              "end_line": 211
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.record_receipt",
-              "start_line": 205,
-              "end_line": 234
+              "start_line": 245,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_check_object",
-              "start_line": 237,
-              "end_line": 258
+              "start_line": 277,
+              "end_line": 298
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "iter_acquisition_receipts",
-              "start_line": 261,
-              "end_line": 307
+              "start_line": 301,
+              "end_line": 371
             }
           ],
           "complete_code_trace_ref": "private-evidence-locator:sha256:135733d8d6a19cae806028ffda3bf2471011f78ce77f34bae1b36ae024448895",
@@ -129427,85 +129427,85 @@
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "default_raw_archive_root",
               "start_line": 43,
-              "end_line": 45
+              "end_line": 53
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_hex",
-              "start_line": 48,
-              "end_line": 51
+              "start_line": 56,
+              "end_line": 59
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_size",
-              "start_line": 54,
-              "end_line": 56
+              "start_line": 62,
+              "end_line": 64
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_state",
-              "start_line": 59,
-              "end_line": 62
+              "start_line": 67,
+              "end_line": 70
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore",
-              "start_line": 65,
-              "end_line": 234
+              "start_line": 73,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.__init__",
-              "start_line": 74,
-              "end_line": 82
+              "start_line": 82,
+              "end_line": 90
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._descriptor",
-              "start_line": 84,
-              "end_line": 96
+              "start_line": 92,
+              "end_line": 104
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open_member",
-              "start_line": 99,
-              "end_line": 118
+              "start_line": 107,
+              "end_line": 126
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._stored",
-              "start_line": 121,
-              "end_line": 133
+              "start_line": 129,
+              "end_line": 141
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open",
-              "start_line": 136,
-              "end_line": 143
+              "start_line": 144,
+              "end_line": 151
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.describe_blob",
-              "start_line": 145,
-              "end_line": 176
+              "start_line": 153,
+              "end_line": 184
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._writer",
-              "start_line": 178,
-              "end_line": 183
+              "start_line": 186,
+              "end_line": 191
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.put_blob",
-              "start_line": 185,
-              "end_line": 203
+              "start_line": 193,
+              "end_line": 211
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.record_receipt",
-              "start_line": 205,
-              "end_line": 234
+              "start_line": 245,
+              "end_line": 274
             }
           ],
           "complete_code_trace_ref": "private-evidence-locator:sha256:b750b47a08b037d0b5c9afe7e98874eb9e381c67315b9e64ce0ad1374d4eaf7d",
@@ -129906,91 +129906,91 @@
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "default_raw_archive_root",
               "start_line": 43,
-              "end_line": 45
+              "end_line": 53
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_hex",
-              "start_line": 48,
-              "end_line": 51
+              "start_line": 56,
+              "end_line": 59
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_size",
-              "start_line": 54,
-              "end_line": 56
+              "start_line": 62,
+              "end_line": 64
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_state",
-              "start_line": 59,
-              "end_line": 62
+              "start_line": 67,
+              "end_line": 70
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore",
-              "start_line": 65,
-              "end_line": 234
+              "start_line": 73,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.__init__",
-              "start_line": 74,
-              "end_line": 82
+              "start_line": 82,
+              "end_line": 90
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._descriptor",
-              "start_line": 84,
-              "end_line": 96
+              "start_line": 92,
+              "end_line": 104
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open_member",
-              "start_line": 99,
-              "end_line": 118
+              "start_line": 107,
+              "end_line": 126
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._stored",
-              "start_line": 121,
-              "end_line": 133
+              "start_line": 129,
+              "end_line": 141
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.open",
-              "start_line": 136,
-              "end_line": 143
+              "start_line": 144,
+              "end_line": 151
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.describe_blob",
-              "start_line": 145,
-              "end_line": 176
+              "start_line": 153,
+              "end_line": 184
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore._writer",
-              "start_line": 178,
-              "end_line": 183
+              "start_line": 186,
+              "end_line": 191
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.put_blob",
-              "start_line": 185,
-              "end_line": 203
+              "start_line": 193,
+              "end_line": 211
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "CentralRawArchiveStore.record_receipt",
-              "start_line": 205,
-              "end_line": 234
+              "start_line": 245,
+              "end_line": 274
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/storage/raw_archive.py",
               "symbol": "_check_object",
-              "start_line": 237,
-              "end_line": 258
+              "start_line": 277,
+              "end_line": 298
             }
           ],
           "complete_code_trace_ref": "private-evidence-locator:sha256:7bdae8c1bdd9581e879378644ed9511ac8a0c2a927b200614498f3be1a9eeeb9",
@@ -148512,10 +148512,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -148580,10 +148580,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -154420,10 +154420,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -154486,10 +154486,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -154552,10 +154552,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
-              "start_line": 106,
-              "end_line": 137,
+              "start_line": 190,
+              "end_line": 269,
               "symbol": "CourtListenerSearchReader",
-              "sha256": "384d5124df0580e1bbf7a699cc181ba36be3f0c7d816a8d86564141c822b3dba",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
               "scope": "current checkout capability"
             },
             {
@@ -157484,10 +157484,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
@@ -157534,10 +157534,10 @@
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
@@ -158678,18 +158678,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -158712,18 +158712,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -161036,18 +161036,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],
@@ -181389,18 +181389,18 @@
           "code_refs": [
             {
               "path": "repo:spicy-docs/src/spicy_docs/sources/federal_register/native.py",
-              "start_line": 494,
-              "end_line": 627,
+              "start_line": 565,
+              "end_line": 702,
               "symbol": "iter_federal_register_pages",
-              "sha256": "8c306cd0254b41ddd2df341f4d134ca6f8fd3db2dfb469219d0ba6f11fca151c",
+              "sha256": "16c340ff70c3b531cf01ac1159d69f1c82501173ae69af8d4c5f01ebbfcaa1f4",
               "scope": "current checkout capability"
             },
             {
               "path": "repo:spicy-docs/src/spicy_docs/schemas/federal_register.py",
-              "start_line": 60,
-              "end_line": 107,
+              "start_line": 63,
+              "end_line": 115,
               "symbol": "project_federal_register_document",
-              "sha256": "ed4411402d3ba81435f8b0beeb7ab75ded7dff73a05bb476f414e3ea64ba4ffa",
+              "sha256": "9c9dda445681ec44d609f144ccd1c42e47cff787b7e6d22cb5d2f49bc6f6e6b9",
               "scope": "current checkout capability"
             }
           ],

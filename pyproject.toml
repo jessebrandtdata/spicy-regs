@@ -154,6 +154,7 @@ default-groups = ["dev", "source-readers"]
 # Integration tests hit external services (the public Mirrulations S3 mirror)
 # and are excluded from the default run so the unit suite stays hermetic. The
 # dedicated "Integration (live data)" workflow runs them via `-m integration`.
+testpaths = ["tests"]
 addopts = "-m 'not integration'"
 markers = [
     "integration: live test against external data (anonymous Mirrulations S3); run in the Integration CI workflow, not the default suite",
