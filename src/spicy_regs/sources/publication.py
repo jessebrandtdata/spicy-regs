@@ -1459,18 +1459,19 @@ def _mirror_published(index: Mapping, raw: bytes, family: str, local: Path | Non
     """
     if not (root := os.environ.get(PUBLICATION_MIRROR)):
         return None
+    target = Path(root).expanduser().resolve()
     entry = index["families"][family]
-    outcome: dict = {"root": root, "prefix": entry["prefix"]}
+    outcome: dict = {"root": str(target), "prefix": entry["prefix"]}
     try:
-        outcome |= mirror_generation(Path(root), entry, local=local)
-        outcome["snapshot"] = str(mirror_index(Path(root), raw).relative_to(root))
+        outcome |= mirror_generation(target, entry, local=local)
+        outcome["snapshot"] = str(mirror_index(target, raw).relative_to(target))
     except Exception as error:
         logger.warning("publication: {} is published but its local mirror failed: {!r}", entry["prefix"], error)
         return outcome | {"error": f"{type(error).__name__}: {error}"}
-    logger.info("publication: mirrored {} under {}: {}", entry["prefix"], root, outcome)
+    logger.info("publication: mirrored {} under {}: {}", entry["prefix"], target, outcome)
     if outcome["missing"]:
         logger.warning("publication: {} file(s) of {} are not held locally; run `spicy-regs mirror {} --family {}`",
-                       outcome["missing"], entry["prefix"], root, family)
+                       outcome["missing"], entry["prefix"], target, family)
     return outcome
 
 

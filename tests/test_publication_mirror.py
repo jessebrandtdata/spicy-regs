@@ -275,3 +275,16 @@ def test_prune_keeps_only_the_selected_generation(tmp_path):
     assert pub.prune_superseded(tmp_path, entry) == [tmp_path / "generations/f" / older]
     assert sorted(p.name for p in (tmp_path / "generations/f").iterdir()) == [selected, "notes"]
     assert (tmp_path / "generations/g" / older).is_dir()  # another family is untouched
+
+
+def test_relative_mirror_root_is_resolved_to_an_absolute_path(tmp_path, monkeypatch):
+    """ss-kvij: relative SPICYGOV_PUBLICATION_MIRROR paths are normalized to an absolute root in the receipt."""
+    from pathlib import Path
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv(pub.PUBLICATION_MIRROR, "./rel-mirror")
+    _, published, _ = publish(tmp_path, Store())
+    assert published.mirror is not None
+    assert Path(published.mirror["root"]).is_absolute()
+    assert Path(published.mirror["root"]) == (tmp_path / "rel-mirror").resolve()
+

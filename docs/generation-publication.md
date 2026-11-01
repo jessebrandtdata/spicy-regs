@@ -70,7 +70,9 @@ pointer write succeeds, also places the generation at
 (`publication.generation_files`), cloned copy-on-write from the build directory,
 never hardlinked. Beside it the mirror keeps the selection that named the
 generation: the exact `publication.v2.json` bytes the publish wrote, as the
-content-addressed snapshot `<root>/publication.v2/<sha256>.json`. The hook sits
+content-addressed snapshot `<root>/publication.v2/<sha256>.json`, which
+supersedes any legacy `<root>/publication.v2.json` file left at the mirror
+root. The hook sits
 in `_publish_verified_generation` and `publish_fec_release`, so rollups, native
 conversion and remote promotion are covered too. A mirror failure does not fail
 the publish: it is logged and reported on the returned index
