@@ -56,10 +56,11 @@ OUTPUT = "unified_agenda.parquet"
 #: through the shared, hash-qualified repair; changed malformed originals refuse.
 UNREADABLE_EDITIONS = frozenset({"199504", "201204"})
 
-#: Missing editions fetched per run, newest first: about five minutes at the
-#: measured 15 s each, well inside the rollup job's 30-minute timeout. A
-#: complete backfill takes three runs.
-BACKFILL_EDITIONS_PER_RUN = 20
+#: Missing editions fetched per run, newest first. At least the 60 editions of
+#: ``edition_series``, so the first generation under a new column is complete
+#: rather than 37% filled for up to three days (run 41237549923). The runner took
+#: 121 s for 21 editions, so 60 take about 6 minutes of the job's 60-minute timeout.
+BACKFILL_EDITIONS_PER_RUN = 60
 
 # The raw input schema: 18 columns, all VARCHAR; array-valued fields serialized
 # as JSON strings. Primary / dedup key is (rin, agenda_edition). related_rins_json

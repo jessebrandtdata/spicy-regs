@@ -249,13 +249,15 @@ def test_the_series_runs_from_fall_1995_to_the_current_edition_without_unreadabl
     assert {"200404", "200410"} <= set(series)
 
 
-def test_each_run_refreshes_the_current_edition_then_backfills_the_newest_missing():
-    from spicy_regs.transforms.build_unified_agenda import BACKFILL_EDITIONS_PER_RUN, editions_to_fetch
+def test_each_run_refreshes_the_current_edition_then_backfills_the_newest_missing(monkeypatch):
+    from spicy_regs.transforms import build_unified_agenda as module
 
-    fetch = editions_to_fetch({"202510", "202504", "201210"}, "202510")
+    fetch = module.editions_to_fetch({"202510", "202504", "201210"}, "202510")
     assert fetch[:3] == ("202510", "202410", "202404")
     assert "2012" not in fetch  # held as its stated edition, 201210
-    assert len(fetch) == 1 + BACKFILL_EDITIONS_PER_RUN
+    assert len(fetch) == len(module.edition_series()) - 2  # every edition but the two other held ones
+    monkeypatch.setattr(module, "BACKFILL_EDITIONS_PER_RUN", 20)
+    assert len(module.editions_to_fetch({"202510", "202504", "201210"}, "202510")) == 21  # the bound holds
 
 
 def _report(status: int, body: str) -> httpx.MockTransport:
@@ -289,7 +291,7 @@ def test_the_legacy_2012_file_is_keyed_by_the_edition_its_records_state():
     assert {row["agenda_edition"] for row in rows} == {"201210"}
 
 
-def test_the_backfill_completes_over_runs_and_keeps_every_prior_row(tmp_path, monkeypatch):
+def test_the_first_run_is_complete_and_a_smaller_bound_completes_over_runs(tmp_path, monkeypatch):
     import sys
 
     import pyarrow.parquet as pq
@@ -310,14 +312,21 @@ def test_the_backfill_completes_over_runs_and_keeps_every_prior_row(tmp_path, mo
     monkeypatch.setattr(module, "UnifiedAgendaReader", Reader)
     monkeypatch.setattr(module.r2, "download", lambda *args: False)
     monkeypatch.setattr(module, "newest_edition", lambda: "202510")
-    counts = []
-    for _ in range(4):
-        out = module.build_unified_agenda(tmp_path)
-        editions = set(pq.read_table(out)["agenda_edition"].to_pylist())
-        counts.append(len(editions))
-        out.replace(tmp_path / "_ua_prior.parquet")  # the next run's prior table
-    assert counts == [21, 41, 60, 60]
-    assert editions == {"201210" if stem == "2012" else stem for stem in module.edition_series()}
+    every = {"201210" if stem == "2012" else stem for stem in module.edition_series()}
+
+    def runs(number):
+        counts = []
+        for _ in range(number):
+            out = module.build_unified_agenda(tmp_path)
+            editions = set(pq.read_table(out)["agenda_edition"].to_pylist())
+            counts.append(len(editions))
+            out.replace(tmp_path / "_ua_prior.parquet")  # the next run's prior table
+        (tmp_path / "_ua_prior.parquet").unlink()
+        return counts, editions
+
+    assert runs(2) == ([60, 60], every)  # a first publication under a new column holds it for every edition
+    monkeypatch.setattr(module, "BACKFILL_EDITIONS_PER_RUN", 20)
+    assert runs(4) == ([21, 41, 60, 60], every)  # and a smaller bound keeps every prior row as it converges
 
 
 def _agenda(*records: tuple[str, str]) -> bytes:
@@ -495,4 +504,4 @@ def test_a_prior_without_the_related_rins_column_is_reread_from_the_newest_editi
     monkeypatch.setattr(module, "UnifiedAgendaReader", Reader)
     monkeypatch.setattr(module, "newest_edition", lambda: "202510")
     module.build_unified_agenda(tmp_path, download_prior=lambda *args: False)
-    assert requested[:3] == ["202510", "202504", "202410"] and len(requested) == 1 + module.BACKFILL_EDITIONS_PER_RUN
+    assert requested[:3] == ["202510", "202504", "202410"] and len(requested) == len(module.edition_series())
