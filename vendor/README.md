@@ -5,7 +5,10 @@ The optional `source-readers` extra enables the same readers for package install
 its wheels must be supplied explicitly until they are published in a registry.
 Base CLI and MCP installs do not require them.
 
-- **Active: `spicy_docs-0.68.0`**. Built from SpicyDocs fork main `7d140262`
+- **Local reconciliation candidate** `spicy_docs-0.68.0+rawguard.1` includes
+  the empty-setting archive guard. The private dependency pin is intended
+  for installed validation. See its [build receipt](spicy_docs-0.68.0+rawguard.1.json).
+- **Retained release candidate** `spicy_docs-0.68.0`. Built from local SpicyDocs `7d140262`
   (tag `v0.68.0`); SHA-256
   `b9dcfaaa86cb9ee756c3269f83029eb3d41ecb846cef1d269ad4863d052893db`
   ([package receipt](spicy_docs-0.68.0.json); two builds from clean archives are
