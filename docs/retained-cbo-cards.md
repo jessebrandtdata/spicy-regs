@@ -16,7 +16,10 @@ build-cbo-archive-cards --manifest pages.json \
 
 The destination must be new and outside the raw archive. Inputs are bounded by
 `--max-pages` and a 16 MiB aggregate original-byte limit. Missing or damaged
-inputs and weak archive identity abort before an output appears. The latest
+inputs and weak archive identity abort before an output appears. Common Crawl
+record IDs must be nonempty UUID URIs of the form `<urn:uuid:...>` and match
+the pinned receipt. A page must have an ASCII publication number and complete
+archive coordinates before it can be selected, even if its card is absent. The latest
 archive timestamp selects each publication's card; differing original digests
 at one timestamp refuse, so receipt order cannot silently select a revision.
 Capture count and earliest archive timestamp describe only the selected inputs.

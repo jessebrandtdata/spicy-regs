@@ -21,6 +21,8 @@ import pyarrow.parquet as pq
 
 VERSION = "cbo-retained-cards/1"
 MAX_INPUT_BYTES = 16 * 1024 * 1024
+# This Common Crawl route retains the UUID URI recorded by its WARC writer.
+WARC_RECORD_ID = re.compile(r"<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}>", re.IGNORECASE)
 
 
 def _schema() -> pa.Schema:
@@ -100,11 +102,26 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_page
             raise ValueError("Retained CBO original differs from its receipt")
         observed_bytes += size
         response = read_warc_response(body)
-        identifier = receipt.get("native_id")
-        timestamp = receipt.get("archive_timestamp", "")
+        string_fields = (
+            "native_id",
+            "original_publisher_url",
+            "archive_timestamp",
+            "warc_record_id",
+            "index_digest",
+            "payload_sha1",
+            "index_sha256",
+            "warc_filename",
+            "crawl_id",
+        )
+        if not all(isinstance(receipt.get(name), str) and receipt[name].strip() for name in string_fields):
+            raise ValueError("Weak or conflicting CBO archive identity")
+        identifier = receipt["native_id"]
+        timestamp = receipt["archive_timestamp"]
         if (
             receipt.get("authority") != "archive"
             or receipt.get("archive_operator") != "Common Crawl"
+            or not re.fullmatch(r"[1-9][0-9]{0,8}", identifier)
+            or WARC_RECORD_ID.fullmatch(response.record_id) is None
             or item.get("native_id", identifier) != identifier
             or archived_publication_id(response.target_uri) != identifier
             or response.target_uri != receipt.get("original_publisher_url")
@@ -114,7 +131,8 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_page
             or response.payload_digest != receipt.get("index_digest", "").removeprefix("sha1:")
             or response.payload_digest != receipt.get("payload_sha1")
             or response.http_status != 200
-            or receipt.get("warc_length") != size
+            or type(receipt.get("warc_length")) is not int
+            or receipt["warc_length"] != size
             or type(receipt.get("warc_offset")) is not int
             or receipt["warc_offset"] < 0
             or not re.fullmatch(r"sha256:[0-9a-f]{64}", receipt.get("index_sha256", ""))

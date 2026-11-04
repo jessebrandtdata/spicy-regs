@@ -129,7 +129,22 @@ def test_raw_destination_and_existing_output_refuse(tmp_path):
 
 @pytest.mark.parametrize(
     "field,value",
-    [("native_id", "1"), ("archive_timestamp", "20250101000000"), ("index_digest", "A" * 32), ("warc_offset", -1)],
+    [
+        ("native_id", "1"),
+        ("archive_timestamp", "20250101000000"),
+        ("index_digest", "A" * 32),
+        ("warc_offset", -1),
+        ("warc_offset", None),
+        ("warc_offset", True),
+        ("warc_length", None),
+        ("warc_length", ""),
+        ("warc_filename", None),
+        ("warc_filename", ""),
+        ("crawl_id", None),
+        ("crawl_id", ""),
+        ("native_id", None),
+        ("native_id", ""),
+    ],
 )
 def test_weak_receipt_identity_refuses_before_output(tmp_path, field, value):
     manifest, archive = held(tmp_path, [("62720", CARD, "2026-10-17T05:18:39Z")])
@@ -155,3 +170,49 @@ def test_failed_write_can_retry_without_partial_output(tmp_path, monkeypatch):
     assert not (tmp_path / "candidate").exists()
     monkeypatch.setattr(pq, "write_table", original)
     build(manifest, archive, tmp_path / "candidate")
+
+
+@pytest.mark.parametrize("record_id", ["", " ", "not-a-record-id", "<urn:uuid:not-a-uuid>"])
+def test_missing_or_malformed_warc_record_locator_refuses(tmp_path, record_id):
+    import gzip
+    import re
+
+    manifest, archive = held(tmp_path, [("62720", CARD, "2026-10-17T05:18:39Z")])
+    document = json.loads((archive / json.loads(manifest.read_text())["receipt_keys"][0]).read_text())
+    original = (archive / document["files"][0]["object"]).read_bytes()
+    replacement = b"" if record_id == "" else b"WARC-Record-ID: " + record_id.encode() + b"\r\n"
+    changed, count = re.subn(rb"(?im)^WARC-Record-ID:[^\r\n]*\r?\n", replacement, gzip.decompress(original), count=1)
+    assert count == 1
+    body = gzip.compress(changed, mtime=0)
+    digest = hashlib.sha256(body).hexdigest()
+    store = CentralRawArchiveStore(archive)
+    store.put_blob(digest, len(body), [body])
+    document["receipt"].update(warc_record_id=record_id.strip(), warc_length=len(body))
+    key = store.record_receipt(files=[{"sha256": digest, "bytes": len(body)}], receipt=document["receipt"])["object"]
+    manifest.write_text(json.dumps({"receipt_keys": [key]}))
+    with pytest.raises(ValueError, match="identity"):
+        build(manifest, archive, tmp_path / "candidate")
+    assert not (tmp_path / "candidate").exists()
+
+
+def test_matching_missing_publication_identity_is_not_an_absent_or_refused_card(tmp_path):
+    import gzip
+    import re
+
+    manifest, archive = held(tmp_path, [("62720", CARD, "2026-10-17T05:18:39Z")])
+    document = json.loads((archive / json.loads(manifest.read_text())["receipt_keys"][0]).read_text())
+    original = (archive / document["files"][0]["object"]).read_bytes()
+    changed, count = re.subn(
+        rb"(?im)^WARC-Target-URI:[^\r\n]*", b"WARC-Target-URI: https://www.cbo.gov/", gzip.decompress(original), count=1
+    )
+    assert count == 1
+    body = gzip.compress(changed, mtime=0)
+    digest = hashlib.sha256(body).hexdigest()
+    store = CentralRawArchiveStore(archive)
+    store.put_blob(digest, len(body), [body])
+    document["receipt"].update(native_id=None, original_publisher_url="https://www.cbo.gov/", warc_length=len(body))
+    key = store.record_receipt(files=[{"sha256": digest, "bytes": len(body)}], receipt=document["receipt"])["object"]
+    manifest.write_text(json.dumps({"receipt_keys": [key]}))
+    with pytest.raises(ValueError, match="identity"):
+        build(manifest, archive, tmp_path / "candidate")
+    assert not (tmp_path / "candidate").exists()
