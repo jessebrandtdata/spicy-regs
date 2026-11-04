@@ -602,7 +602,7 @@ def test_native_nightly_receipts_only_the_window_and_equals_the_full_row_merge(t
         gr._write_by_row(retained, tmp_path / "row-subject.parquet", tmp_path / "row-receipt.parquet", path.stem,
                          generation_id="g0", source_uri=str(retained), digest=gr._digest(retained))
         assert pq.read_table(path).equals(pq.read_table(tmp_path / "row-subject.parquet"))
-        actual = pq.read_table(first_dir / ".government-etl/g0" / path.stem / "etl_receipts.parquet")
+        actual = pq.read_table(first_dir / "etl_receipts.parquet", filters=[("dataset", "=", path.stem)])
         assert actual.equals(pq.read_table(tmp_path / "row-receipt.parquet"))
 
     prior_receipts = pq.read_table(first_dir / "etl_receipts.parquet").to_pylist()

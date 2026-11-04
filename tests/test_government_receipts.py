@@ -87,6 +87,83 @@ def test_refused_money_retains_input_without_replacing_original(tmp_path):
     attempts = list(read_attempts([candidate / "etl_receipts.parquet"], POLICIES[dataset], generation_id="refusal"))
     assert attempts[0]["outcome"] == "refused"
     assert attempts[0]["processing_fields"]["raw_record"]["total_award_amount"] == "1.0000001"
+    assert not (tmp_path / BUILD_METADATA).exists()
+
+
+def test_completed_migration_retires_only_its_conversion_work(tmp_path):
+    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "version": "1"}])
+    original = path.read_bytes()
+    failed = tmp_path / ".government-etl/earlier-failed/partial.parquet"
+    evidence = tmp_path / "source-evidence/artifact.json"
+    for held in (failed, evidence):
+        held.parent.mkdir(parents=True)
+        held.write_bytes(b"preserved")
+
+    migrate_outputs((path,), generation_id="complete")
+
+    assert not (tmp_path / ".government-etl/complete").exists()
+    assert (tmp_path / ".government-inputs/complete" / path.name).read_bytes() == original
+    assert failed.read_bytes() == evidence.read_bytes() == b"preserved"
+    args = generation_receipt_args((path,))  # Both final subject and receipt pins still verify.
+    restored = list(read_with_receipts(
+        [path], [args["receipt_path"]], POLICIES[path.stem], generation_id=args["receipt_generation_id"]
+    ))
+    assert restored[0]["raw_record"]["report_id"] == "R"
+
+
+@pytest.mark.parametrize("failure", ["subject-copy", "final-hash", "metadata"])
+def test_interrupted_migration_keeps_conversion_work(tmp_path, monkeypatch, failure):
+    from spicy_regs.transforms import government_receipts as gr
+
+    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "version": "1"}])
+    original = path.read_bytes()
+    work = tmp_path / ".government-etl/interrupted"
+    copyfile, digest, write_text = gr.shutil.copyfile, gr._digest, Path.write_text
+
+    def copy(source, target, **kwargs):
+        if failure == "subject-copy" and Path(target).name == "." + path.name + ".native":
+            raise InterruptedError("subject-copy")
+        return copyfile(source, target, **kwargs)
+
+    def hash_file(source):
+        if failure == "final-hash" and Path(source) == path:
+            raise InterruptedError("final-hash")
+        return digest(source)
+
+    def metadata(target, *args, **kwargs):
+        if failure == "metadata" and target.name == BUILD_METADATA:
+            raise InterruptedError("metadata")
+        return write_text(target, *args, **kwargs)
+
+    monkeypatch.setattr(gr.shutil, "copyfile", copy)
+    monkeypatch.setattr(gr, "_digest", hash_file)
+    monkeypatch.setattr(Path, "write_text", metadata)
+    with pytest.raises(InterruptedError, match=failure):
+        migrate_outputs((path,), generation_id="interrupted")
+    assert (tmp_path / ".government-inputs/interrupted" / path.name).read_bytes() == original
+    assert pq.read_table(work / path.stem / path.name).num_rows == 1
+    assert pq.read_table(work / path.stem / "etl_receipts.parquet").num_rows == 1
+    assert pq.read_table(work / "etl_receipts.parquet").num_rows == 1
+    assert not (tmp_path / BUILD_METADATA).exists()
+
+
+def test_cleanup_error_stops_before_admission_with_final_pins_intact(tmp_path, monkeypatch):
+    from spicy_regs.transforms import government_receipts as gr
+
+    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "version": "1"}])
+    work = tmp_path / ".government-etl/complete"
+    rmtree = gr.shutil.rmtree
+
+    def refuse(target, *args, **kwargs):
+        if Path(target) == work:
+            raise PermissionError("cannot retire conversion work")
+        return rmtree(target, *args, **kwargs)
+
+    monkeypatch.setattr(gr.shutil, "rmtree", refuse)
+    with pytest.raises(PermissionError, match="cannot retire conversion work"):
+        migrate_outputs((path,), generation_id="complete")
+    assert generation_receipt_args((path,))["receipt_path"] == tmp_path / "etl_receipts.parquet"
+    assert (work / "etl_receipts.parquet").exists()
 
 
 def test_invalid_source_digest_is_a_retained_refusal(tmp_path):

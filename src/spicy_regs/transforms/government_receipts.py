@@ -510,6 +510,9 @@ def migrate_outputs(
         "counts": counts,
     }
     (directory / BUILD_METADATA).write_text(json.dumps(metadata, indent=2) + "\n")
+    # Final pinned copies own the next read. Keep producer inputs and every
+    # incomplete/refused conversion; only this completed work tree is disposable.
+    shutil.rmtree(work)
     return metadata
 
 
