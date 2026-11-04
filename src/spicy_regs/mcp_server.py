@@ -2027,6 +2027,9 @@ RECEIPT_FIELD_MEANINGS = "receipt_field_meanings"
 #: A table's publisher-documented column values and labels (generated from ``source_domains``), also detail-only:
 #: lobbying_activities' 79 issue labels and fec_committee_history's 95 party labels would crowd the compact reply.
 DOCUMENTED_VALUES = "documented_values"
+#: Policy-version column inventories repeat names already given in columns/schema_differences.
+#: Keep their version grouping available with detail=true.
+DESCRIBE_METADATA_DETAIL = (DOCUMENTED_VALUES, "later_policy_columns")
 
 
 def _reply_text(result: Any) -> tuple[Any, str]:
@@ -2881,8 +2884,8 @@ def _tools() -> list[Tool]:
             _connection_index(cursor), local, R2_BASE_URL, table, _connection_rulemaking(cursor)) is not None)
         if receipts is not None and not detail:
             omitted.append(RECEIPT_FIELD_MEANINGS)
-        if DOCUMENTED_VALUES in entry and not detail:
-            omitted.append(f"metadata.{DOCUMENTED_VALUES}")
+        if not detail:
+            omitted.extend(f"metadata.{key}" for key in DESCRIBE_METADATA_DETAIL if key in entry)
         # Full release evidence sits once: in publication for an available view, else in relationship.
         held = publication if "release_compatibility" in publication else relationship
         if not detail and "release_compatibility" in held:
@@ -2904,7 +2907,7 @@ def _tools() -> list[Tool]:
                          for key, value in entry.items()
                          if key not in {"table", "columns", "column_descriptions", "column_lineage",
                                         "legacy_column_descriptions"}
-                         and (detail or key != DOCUMENTED_VALUES)},
+                         and (detail or key not in DESCRIBE_METADATA_DETAIL)},
             "metadata_basis": "Dictionary declarations and dated coverage notes; not live population measurements.",
             "schema_matches_declared": not any(differences.values()) if differences is not None else None,
             "schema_differences": differences,

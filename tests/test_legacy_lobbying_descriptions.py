@@ -102,3 +102,21 @@ def test_labels_only_lists_say_they_gate_nothing():
     action_code = metadata['bill_actions']['documented_values']['action_code']
     assert action_code['checked'] is False
     assert 'does not exist' in action_code['caveat']
+
+
+@pytest.mark.parametrize('native', [False, True])
+def test_later_policy_column_inventory_is_detail_only(monkeypatch, native):
+    """Compact replies keep actual schema and meanings; detail keeps the policy grouping."""
+    compact = describe(monkeypatch, native=native)
+    full = describe(monkeypatch, native=native, detail=True)
+    assert 'later_policy_columns' not in compact['metadata']
+    assert 'metadata.later_policy_columns' in compact['detail']['omitted']
+    assert 'metadata.later_policy_columns' not in full['detail']['omitted']
+    expected = mcp_server._table_metadata()['lobbying_filings']['later_policy_columns']
+    assert full['metadata']['later_policy_columns'] == expected
+    assert compact['columns'] == full['columns']
+    assert compact['schema_differences'] == full['schema_differences']
+    names = {column['column_name'] for column in compact['columns']}
+    missing = compact['schema_differences']['missing_columns']
+    assert set(expected) <= names | set(missing)
+    assert compact['metadata']['data_quality'] == full['metadata']['data_quality']
