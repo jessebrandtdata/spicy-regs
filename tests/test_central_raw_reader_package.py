@@ -73,3 +73,84 @@ def test_stream_failure_publishes_no_partial_original(tmp_path, failure):
     with pytest.raises(error):
         store.put_stream(chunks(), max_bytes=5)
     assert not [path for path in tmp_path.rglob("*") if path.is_file()]
+
+
+def _private_consumer(tmp_path, *, version="0.68.0+rawguard.1"):
+    """Copy only the helper's pinned inputs; tests never edit the checkout's vendor bytes."""
+    import shutil
+
+    root = Path(__file__).parents[1]
+    consumer = tmp_path / "consumer"
+    (consumer / "scripts").mkdir(parents=True)
+    (consumer / "vendor").mkdir()
+    shutil.copy2(root / "scripts/package_central_raw_reader.py", consumer / "scripts")
+    current = "0.68.0+rawguard.1"
+    current_receipt = json.loads((root / f"vendor/spicy_docs-{current}.json").read_text())
+    receipt = json.loads((root / f"vendor/spicy_docs-{version}.json").read_text())
+    for name in [receipt["filename"], f"spicy_docs-{version}.json"]:
+        shutil.copy2(root / "vendor" / name, consumer / "vendor" / name)
+    for name in ["pyproject.toml", "uv.lock"]:
+        text = (root / name).read_text().replace(current, version)
+        text = text.replace(current_receipt["sha256"], receipt["sha256"])
+        (consumer / name).write_text(text)
+    return consumer, receipt
+
+
+def _run_package_check(consumer, *options):
+    return subprocess.run([sys.executable, str(consumer / "scripts/package_central_raw_reader.py"), *options],
+                          cwd=consumer, capture_output=True, text=True)
+
+
+@pytest.mark.parametrize("options", [[], ["--check"], ["--write"]])
+def test_qualified_private_native_check_preserves_all_input_bytes(tmp_path, options):
+    consumer, receipt = _private_consumer(tmp_path)
+    before = {path: (path.read_bytes(), path.stat().st_mtime_ns)
+              for path in consumer.rglob("*") if path.is_file()}
+    result = _run_package_check(consumer, *options)
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert report["qualification"] == "private_native"
+    assert report["source_commit"] == receipt["source_commit"]
+    assert report["sha256"] == receipt["sha256"]
+    assert {path: (path.read_bytes(), path.stat().st_mtime_ns)
+            for path in consumer.rglob("*") if path.is_file()} == before
+
+
+def test_numbered_native_release_still_uses_retained_release_validation(tmp_path):
+    consumer, receipt = _private_consumer(tmp_path, version="0.68.0")
+    result = _run_package_check(consumer, "--check")
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["qualification"] == "release"
+    assert json.loads(result.stdout)["sha256"] == receipt["sha256"]
+
+
+@pytest.mark.parametrize("damage, message", [
+    ("wheel", "does not match its qualified digest"),
+    ("lock", "does not match its recorded digest"),
+    ("source", "not the reviewed identity"),
+    ("receipt-size", "source receipt identities disagree"),
+    ("unknown-qualifier", "current reader pin is not"),
+])
+def test_unqualified_private_pin_or_changed_inputs_refuse_without_writes(tmp_path, damage, message):
+    consumer, receipt = _private_consumer(tmp_path)
+    wheel = consumer / "vendor" / receipt["filename"]
+    receipt_path = consumer / "vendor/spicy_docs-0.68.0+rawguard.1.json"
+    if damage == "wheel":
+        raw = wheel.read_bytes()
+        wheel.write_bytes(raw[:100] + bytes([raw[100] ^ 1]) + raw[101:])
+    elif damage == "lock":
+        lock = consumer / "uv.lock"
+        lock.write_text(lock.read_text().replace(receipt["sha256"], "a" * 64))
+    elif damage in {"source", "receipt-size"}:
+        receipt["source_commit" if damage == "source" else "byte_size"] = (
+            "a" * 40 if damage == "source" else receipt["byte_size"] + 1
+        )
+        receipt_path.write_text(json.dumps(receipt))
+    else:
+        for name in ["pyproject.toml", "uv.lock"]:
+            path = consumer / name
+            path.write_text(path.read_text().replace("+rawguard.1", "+rawguard.2"))
+    before = {path: path.read_bytes() for path in consumer.rglob("*") if path.is_file()}
+    result = _run_package_check(consumer, "--write")
+    assert result.returncode != 0 and message in result.stderr
+    assert {path: path.read_bytes() for path in consumer.rglob("*") if path.is_file()} == before

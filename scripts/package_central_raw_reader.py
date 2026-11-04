@@ -5,7 +5,9 @@ Other current reader modules stay unchanged. The base is the current overlay's
 recorded base unless --base names another retained release wheel, whose digest
 must match its vendor receipt. The default check compares in-memory
 reproduction with existing wheel, receipt, project and lock bytes. --write is
-explicit and preserves identical files, including an existing overlay.
+explicit and preserves identical files, including an existing overlay. Numbered
+releases and explicitly qualified private native builds are checked directly;
+arbitrary local versions are refused.
 """
 
 import argparse
@@ -18,6 +20,16 @@ import re
 import tomllib
 import zipfile
 from pathlib import Path
+
+
+# Only this independently qualified private native build is admitted beside
+# numbered releases. A different local qualifier needs its own reviewed identity.
+QUALIFIED_PRIVATE_NATIVE = {
+    "0.68.0+rawguard.1": {
+        "source_commit": "d456e9c7e4ba0d5df66366449a02b8bea9c327b9",
+        "sha256": "61ebbefb2d3614f8dbc100e51f4eb94ca6a36809af1ea65256897580e07042c5",
+    }
+}
 
 
 def sha256(body: bytes) -> str:
@@ -50,9 +62,11 @@ def main() -> None:
     project_data = tomllib.loads(project_text)
     lock_data = tomllib.loads(lock_text)
     old_path = project_data["tool"]["uv"]["sources"]["spicy-docs"]["path"]
-    match = re.fullmatch(r"vendor/spicy_docs-(\d+\.\d+\.\d+(?:\+centralraw\.[0-9a-f]{12})?)-py3-none-any\.whl", old_path)
+    versions = r"\d+\.\d+\.\d+(?:\+centralraw\.[0-9a-f]{12})?"
+    private_versions = "|".join(re.escape(version) for version in QUALIFIED_PRIVATE_NATIVE)
+    match = re.fullmatch(rf"vendor/spicy_docs-({versions}|{private_versions})-py3-none-any\.whl", old_path)
     if match is None:
-        raise ValueError("current reader pin is not a retained release or an owned centralraw overlay")
+        raise ValueError("current reader pin is not a retained release, an owned centralraw overlay or a qualified private native build")
     old_version = match[1]
     if args.base is not None:
         base = args.base.resolve()
@@ -60,12 +74,20 @@ def main() -> None:
         base = consumer / "vendor" / json.loads((consumer / old_path).with_suffix(".json").read_text())["base_wheel"]
     else:
         base = consumer / old_path
-    base_match = re.fullmatch(r"spicy_docs-(\d+\.\d+\.\d+)-py3-none-any\.whl", base.name)
+    base_match = re.fullmatch(rf"spicy_docs-(\d+\.\d+\.\d+|{private_versions})-py3-none-any\.whl", base.name)
     if base_match is None or base.parent != consumer / "vendor":
-        raise ValueError("base must be a retained vendor release wheel")
+        raise ValueError("base must be a retained vendor release or qualified private native wheel")
     base_version = base_match[1]
     base_bytes = base.read_bytes()
-    base_sha = json.loads((consumer / f"vendor/spicy_docs-{base_version}.json").read_text())["sha256"]
+    base_receipt = json.loads((consumer / f"vendor/spicy_docs-{base_version}.json").read_text())
+    base_sha = base_receipt["sha256"]
+    if (base_receipt.get("filename") != base.name or base_receipt.get("version") != base_version
+            or base_receipt.get("byte_size") != len(base_bytes)):
+        raise ValueError("retained native wheel and source receipt identities disagree")
+    if base_version in QUALIFIED_PRIVATE_NATIVE:
+        qualified = QUALIFIED_PRIVATE_NATIVE[base_version]
+        if any(base_receipt.get(key) != value for key, value in qualified.items()):
+            raise ValueError("private native wheel source receipt is not the reviewed identity")
     if sha256(base_bytes) != base_sha:
         raise ValueError("retained base wheel does not match its qualified digest")
     old_name = Path(old_path).name
@@ -99,11 +121,13 @@ def main() -> None:
                     "version": base_version,
                     "wheel": base.name,
                     "sha256": base_sha,
+                    "source_commit": base_receipt.get("source_commit"),
+                    "qualification": "private_native" if base_version in QUALIFIED_PRIVATE_NATIVE else "release",
                     "native_package_files": {
                         "spicy_docs/storage/raw_archive.py": sha256(native_archive),
                         "spicy_docs/reading/refusals.py": sha256(native_refusal),
                     },
-                    "scope": "Release wheel natively includes the central raw archive module and refusal blob store API.",
+                    "scope": "Pinned wheel natively includes the central raw archive module and refusal blob store API.",
                 },
                 indent=2,
             )
