@@ -10,7 +10,7 @@ import pytest
 from tests.test_fec_receipt_adapter import fixture
 
 
-def invoke(tmp_path, *, wrong_pin=False):
+def invoke(tmp_path, *, wrong_pin=False, httpfs_extension=None):
     subject, receipts, index = fixture(tmp_path)
     pin = index['families']['fec-query']['etlReceipts']
     admitted = {name: pin[name] for name in ('sha256', 'byteSize', 'rows')}
@@ -21,16 +21,17 @@ def invoke(tmp_path, *, wrong_pin=False):
     output = tmp_path/'qualification'
     root = Path(__file__).resolve().parents[1]
     before = receipts.read_bytes()
+    extension_args = [] if httpfs_extension is None else ['--httpfs-extension', str(httpfs_extension)]
     run = subprocess.run([sys.executable, str(root/'scripts/qualify_receipt_index.py'),
         str(receipts), str(output), '--pin', str(pin_file), '--dataset', 'fec_receipts',
-        '--member', str(subject), '--force-small-fixture'], cwd=root,
+        '--member', str(subject), '--force-small-fixture', *extension_args], cwd=root,
         env={**os.environ, 'PYTHONPATH': str(root/'src')}, text=True, capture_output=True, timeout=90)
     assert receipts.read_bytes() == before
     return run, output
 
 
-def test_actual_producer_local_upload_and_locked_http(tmp_path):
-    run, output = invoke(tmp_path)
+def test_actual_producer_local_upload_and_locked_http(tmp_path, installed_httpfs):
+    run, output = invoke(tmp_path, httpfs_extension=installed_httpfs)
     assert run.returncode == 0, run.stdout+'\n'+run.stderr
     result = json.loads((output/'RESULT.json').read_text())
     assert result['status'] == 'passed' and result['scope'] == 'local-simulation'
@@ -95,3 +96,30 @@ def test_explicit_private_artifact_binding_and_publication_descriptor(tmp_path):
     assert KEY not in selected['tables']
     with pytest.raises(ValueError, match='already declares'):
         bind_key_index_for_qualification(generation, sidecar, descriptor)
+
+
+def test_explicit_signed_httpfs_installs_into_private_cache(tmp_path, installed_httpfs):
+    from scripts.qualify_receipt_index import connection
+    from spicy_regs.sources.publication import file_identity
+
+    with connection([], remote=True, scratch=tmp_path, httpfs_extension=installed_httpfs) as con:
+        assert con.execute("SELECT current_setting('http_timeout')").fetchone() == (60,)
+        paths = list((tmp_path / 'duckdb-extensions').rglob('httpfs.duckdb_extension'))
+        assert len(paths) == 1
+        assert file_identity(paths[0]) == file_identity(installed_httpfs)
+        assert con.execute("SELECT current_setting('allow_unsigned_extensions')").fetchone() == (False,)
+
+
+@pytest.mark.parametrize('kind', ['missing', 'unsigned', 'wrong-name'])
+def test_explicit_httpfs_refuses_bad_input_without_download(tmp_path, kind, monkeypatch):
+    import duckdb
+    from scripts import qualify_receipt_index as qualifier
+
+    local = tmp_path / ('other.duckdb_extension' if kind == 'wrong-name' else 'httpfs.duckdb_extension')
+    if kind != 'missing':
+        local.write_bytes(b'not a signed DuckDB extension')
+    # Any fallback to the ordinary repository would reach this helper.
+    if kind != 'unsigned':
+        monkeypatch.setattr(qualifier, 'load_public_http', lambda *a, **k: pytest.fail('No repository fallback'))
+    with pytest.raises((OSError, ValueError, duckdb.Error)):
+        qualifier.connection([], remote=True, scratch=tmp_path, httpfs_extension=local)

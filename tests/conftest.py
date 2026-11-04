@@ -295,3 +295,26 @@ def write_parquet_from_dicts(path: Path, records: list[dict], schema: dict) -> N
     """Write ``records`` to ``path`` as a zstd-compressed Parquet file under ``schema``."""
     df = pl.DataFrame(records, schema=schema)
     df.write_parquet(path, compression="zstd")
+
+
+@pytest.fixture(scope="session")
+def installed_httpfs() -> Path:
+    """Reuse matching signed httpfs; a cold runner provisions it once through DuckDB.
+
+    A warm cache never downloads. A cold offline runner fails at this ordinary
+    dependency-install boundary, rather than inside a sealed private HOME.
+    """
+    import duckdb
+
+    with duckdb.connect() as con:
+        row = con.execute("SELECT install_path FROM duckdb_extensions() "
+                          "WHERE extension_name='httpfs' AND installed").fetchone()
+        if row is None or not Path(row[0]).is_file():
+            con.execute('INSTALL httpfs')
+            row = con.execute("SELECT install_path FROM duckdb_extensions() "
+                              "WHERE extension_name='httpfs' AND installed").fetchone()
+        assert row and Path(row[0]).is_file(), "DuckDB did not install a matching httpfs"
+        path = Path(row[0]).resolve()
+        assert con.execute("SELECT current_setting('allow_unsigned_extensions')").fetchone() == (False,)
+        con.execute("LOAD '" + str(path).replace("'", "''") + "'")
+    return path

@@ -339,7 +339,7 @@ def build_candidates(plan_path, output, *, fixture=False):
     return descriptor
 
 
-def audit_candidates(plan_path, candidate, output, *, fixture=False):
+def audit_candidates(plan_path, candidate, output, *, fixture=False, httpfs_extension=None):
     """Run the complete independent checks against a closed candidate in a fresh attempt.
 
     This command does not authorize continuation: the enclosing operational
@@ -425,6 +425,8 @@ def audit_candidates(plan_path, candidate, output, *, fixture=False):
                      '--member', str(subject)]
         if fixture:
             arguments.append('--force-small-fixture')
+        if httpfs_extension is not None:
+            arguments.extend(['--httpfs-extension', str(httpfs_extension)])
         child('qualify_receipt_index.py', arguments)
     with phase(log, 'explicit-full-index-artifact-admission'):
         descriptor = json.loads((output / 'index' / 'descriptor.json').read_text())
@@ -467,15 +469,19 @@ def main():
     parser.add_argument('--fixture', action='store_true')
     parser.add_argument('--stage', choices=('build', 'audit'), required=True)
     parser.add_argument('--candidate', type=Path, help='Closed build root for the audit stage only')
+    parser.add_argument('--httpfs-extension', type=Path, help='Exact installed signed httpfs file for offline audit')
     args = parser.parse_args()
     if args.stage == 'build':
         if args.candidate:
             parser.error('--candidate applies only to audit')
+        if args.httpfs_extension:
+            parser.error('--httpfs-extension applies only to audit')
         result = build_candidates(args.plan, args.output, fixture=args.fixture)
     elif args.stage == 'audit':
         if not args.candidate:
             parser.error('--stage audit requires --candidate')
-        result = audit_candidates(args.plan, args.candidate, args.output, fixture=args.fixture)
+        result = audit_candidates(args.plan, args.candidate, args.output, fixture=args.fixture,
+                                  httpfs_extension=args.httpfs_extension)
     print(json.dumps(result), flush=True)
 
 

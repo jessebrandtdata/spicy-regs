@@ -45,7 +45,7 @@ def selected_plan(tmp_path, dataset, *, refused=False):
 
 
 @pytest.mark.parametrize('dataset', runner.DATASETS)
-def test_actual_complete_fixture_pipeline(tmp_path, dataset):
+def test_actual_complete_fixture_pipeline(tmp_path, dataset, installed_httpfs):
     path, _, source = selected_plan(tmp_path, dataset)
     output = tmp_path / 'workflow'
     candidate = tmp_path / 'candidate'
@@ -54,7 +54,8 @@ def test_actual_complete_fixture_pipeline(tmp_path, dataset):
                            cwd=Path(__file__).parents[1], capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
     result = subprocess.run([sys.executable, '-m', 'scripts.qualify_retained_population', str(path),
-                             str(output), '--fixture', '--stage', 'audit', '--candidate', str(candidate)],
+                             str(output), '--fixture', '--stage', 'audit', '--candidate', str(candidate),
+                             '--httpfs-extension', str(installed_httpfs)],
                             cwd=Path(__file__).parents[1], capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
     assert json.loads((output / 'RESULT.json').read_text())['status'] == 'passed'
@@ -93,7 +94,7 @@ def test_actual_complete_fixture_pipeline(tmp_path, dataset):
     assert pq.read_table(source).schema.metadata == {b'original': b'line\n'}
 
 
-def test_separate_closed_candidate_audit_keeps_full_oracles_without_candidate_build(tmp_path):
+def test_separate_closed_candidate_audit_keeps_full_oracles_without_candidate_build(tmp_path, installed_httpfs):
     """Constructed dockets fixture; real audit/restore/private-serving checks run."""
     from spicy_regs.operational_runner import census
 
@@ -116,11 +117,13 @@ def produce(*args, **kwargs):
     assert Path(args[2]).name not in ('selected-prior', 'current')
     return real(*args, **kwargs)
 runner.produce = produce
-runner.audit_candidates(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), fixture=True)
+runner.audit_candidates(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), fixture=True,
+                        httpfs_extension=Path(sys.argv[5]))
 Path(sys.argv[4]).write_text(json.dumps(calls))
 '''
     counts = tmp_path / 'oracle-calls.json'
-    result = subprocess.run([sys.executable, '-B', '-c', code, str(path), str(candidate), str(audit), str(counts)],
+    result = subprocess.run([sys.executable, '-B', '-c', code, str(path), str(candidate), str(audit), str(counts),
+                             str(installed_httpfs)],
                             cwd=Path(__file__).parents[1], capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
     assert json.loads(counts.read_text()) == ['full-row-reference', 'reference-bundle']
@@ -171,7 +174,7 @@ def test_wrong_pin_and_empty_selection_refuse_before_production(tmp_path):
     assert not (tmp_path / 'empty.parquet').exists()
 
 
-def test_source_changed_after_capture_refuses_final_claim(tmp_path):
+def test_source_changed_after_capture_refuses_final_claim(tmp_path, installed_httpfs):
     path, _, source = selected_plan(tmp_path, 'court_opinions')
     output = tmp_path / 'changed'
     code = '''
@@ -187,9 +190,10 @@ runner.produce = produce
 output = Path(sys.argv[2])
 candidate = output.with_name('candidate')
 runner.build_candidates(Path(sys.argv[1]), candidate, fixture=True)
-runner.audit_candidates(Path(sys.argv[1]), candidate, output, fixture=True)
+runner.audit_candidates(Path(sys.argv[1]), candidate, output, fixture=True,
+                        httpfs_extension=Path(sys.argv[4]))
 '''
-    result = subprocess.run([sys.executable, '-c', code, str(path), str(output), str(source)],
+    result = subprocess.run([sys.executable, '-c', code, str(path), str(output), str(source), str(installed_httpfs)],
                             cwd=Path(__file__).parents[1], capture_output=True, text=True)
     assert result.returncode != 0
     assert 'differs from its admitted hash' in result.stderr

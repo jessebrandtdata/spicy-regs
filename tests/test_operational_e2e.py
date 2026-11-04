@@ -215,18 +215,20 @@ def test_prepared_d_cfr_runs_preflight_then_semantic_offline(tmp_path):
     assert record["phases_launched"] == ["build", "audit"]
 
 
-def test_court_qualification_under_runner_then_explicit_continuation(tmp_path):
+def test_court_qualification_under_runner_then_explicit_continuation(tmp_path, installed_httpfs):
     plan, _, source = selected_plan(tmp_path, "court_opinions")
     code = f"""
 from pathlib import Path
 from scripts import qualify_retained_population as q
 q.build_candidates(Path({str(plan)!r}), Path({str(tmp_path / "observed/candidate")!r}), fixture=True)
 q.audit_candidates(Path({str(plan)!r}), Path({str(tmp_path / "observed/candidate")!r}),
-                   Path({str(tmp_path / "observed/audit")!r}), fixture=True)
+                   Path({str(tmp_path / "observed/audit")!r}), fixture=True,
+                   httpfs_extension=Path({str(installed_httpfs)!r}))
 """
     (tmp_path / "observed").mkdir()
     files = observed_files(code, [REPO / "src", REPO], tmp_path / "observe")
     runtime = [*inventory(files, [tmp_path, *FIRST_PARTY])["files"], runner.file_pin(Path(sys.executable).resolve())]
+    runtime.append(runner.file_pin(installed_httpfs))
     first_party = [
         runner.file_pin(path)
         for base in (REPO / "src/spicy_regs", REPO / "scripts")
@@ -280,6 +282,8 @@ q.audit_candidates(Path({str(plan)!r}), Path({str(tmp_path / "observed/candidate
                     "audit",
                     "--candidate",
                     "{candidate}",
+                    "--httpfs-extension",
+                    str(installed_httpfs),
                 ],
             },
         },
@@ -305,3 +309,9 @@ q.audit_candidates(Path({str(plan)!r}), Path({str(tmp_path / "observed/candidate
     assert record["phases_launched"] == ["audit"] and not (fresh / "build-launch.json").exists()
     assert runner.read_json(fresh / "output/audit/RESULT.json")["status"] == "passed"
     assert runner.census(root) == before
+    pinned = runner.file_pin(installed_httpfs)
+    assert pinned in request["runtime"]
+    for completed in (root, fresh):
+        extensions = list((completed / "output/audit/index/scratch/duckdb-extensions").rglob("httpfs.duckdb_extension"))
+        assert len(extensions) == 1
+        assert runner.file_pin(extensions[0])["sha256"] == pinned["sha256"]

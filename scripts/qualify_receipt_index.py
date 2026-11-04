@@ -213,7 +213,7 @@ def serve(objects: dict[str, Path], request_log: Path, marker: dict[str, str]):
         worker.join()
 
 
-def connection(paths: list[str], *, remote: bool, scratch: Path):
+def connection(paths: list[str], *, remote: bool, scratch: Path, httpfs_extension: Path | None = None):
     from spicy_regs.mcp_server import _apply_security_settings
     con = duckdb.connect()
     try:
@@ -228,6 +228,12 @@ def connection(paths: list[str], *, remote: bool, scratch: Path):
             extensions.mkdir(exist_ok=True)
             con.execute('SET home_directory=?', [str(home)])
             con.execute('SET extension_directory=?', [str(extensions)])
+            if httpfs_extension is not None:
+                local = httpfs_extension.resolve(strict=True)
+                if not local.is_file() or local.name != 'httpfs.duckdb_extension':
+                    raise ValueError('Expected an exact local httpfs.duckdb_extension file')
+                # DuckDB installs into this private cache and verifies its signature/version on LOAD.
+                con.execute("INSTALL '" + str(local).replace("'", "''") + "'")
             load_public_http(con, retries={})
             con.execute('SET http_timeout=60')
         _apply_security_settings(con, paths)
@@ -262,6 +268,7 @@ def main():
     parser.add_argument('--dataset', required=True)
     parser.add_argument('--member', action='append', type=Path, default=[], help='Admitted subject member to copy too')
     parser.add_argument('--force-small-fixture', action='store_true')
+    parser.add_argument('--httpfs-extension', type=Path, help='Exact installed signed httpfs file to seed the private cache offline')
     args = parser.parse_args()
     started = time.monotonic()
     args.receipts = args.receipts.resolve()
@@ -309,7 +316,8 @@ def main():
             locations = {member['source']: base+member['route'] for member in members}
             receipt_url, index_url = locations[str(args.receipts)], locations[str(args.output/KEY)]
             before = time.monotonic()
-            with connection([receipt_url, index_url], remote=True, scratch=scratch) as con:
+            with connection([receipt_url, index_url], remote=True, scratch=scratch,
+                            httpfs_extension=args.httpfs_extension) as con:
                 check_reader(con.cursor(), index_url, descriptor, receipt)
                 record['coldAdmissionSeconds'] = time.monotonic()-before
                 record['lookups'] = []
