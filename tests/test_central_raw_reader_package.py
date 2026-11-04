@@ -84,7 +84,10 @@ def _private_consumer(tmp_path, *, version="0.68.0+rawguard.1"):
     (consumer / "scripts").mkdir(parents=True)
     (consumer / "vendor").mkdir()
     shutil.copy2(root / "scripts/package_central_raw_reader.py", consumer / "scripts")
-    current = "0.68.0+rawguard.1"
+    project = tomllib.loads((root / "pyproject.toml").read_text())
+    current = Path(project["tool"]["uv"]["sources"]["spicy-docs"]["path"]).name.removeprefix(
+        "spicy_docs-"
+    ).removesuffix("-py3-none-any.whl")
     current_receipt = json.loads((root / f"vendor/spicy_docs-{current}.json").read_text())
     receipt = json.loads((root / f"vendor/spicy_docs-{version}.json").read_text())
     for name in [receipt["filename"], f"spicy_docs-{version}.json"]:

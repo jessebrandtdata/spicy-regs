@@ -1,0 +1,10 @@
+{
+  "filename": "spicy_docs-0.68.1-py3-none-any.whl",
+  "version": "0.68.1",
+  "sha256": "bec715f3ae45a3503e93aa4ebccfd91b2717ebf0068fbe1ba26432e7894ba82e",
+  "byte_size": 2751940,
+  "source_commit": "65ba61939cc57572b5ed11dcc4b0c42143c2b9cd",
+  "source_state": "Locally staged codex/release-provider-0681-20261104; no public tag or push",
+  "build": "uv build --offline --wheel",
+  "scope": "Numbered release candidate of accepted d456 guarded source. Every spicy_docs product member equals qualified 0.68.0+rawguard.1; only distribution identity changes. No CBO/RefSpec/GPO prototype adoption."
+}

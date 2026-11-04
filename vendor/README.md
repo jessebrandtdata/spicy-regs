@@ -1,5 +1,13 @@
 # Source reader wheels
 
+- **Locally staged release candidate** `spicy_docs-0.68.1` comes from
+  `65ba61939cc57572b5ed11dcc4b0c42143c2b9cd`. Its product files equal the
+  independently qualified `0.68.0+rawguard.1` wheel byte for byte. The new
+  numbered identity preserves the empty test-archive guard without moving
+  the existing `v0.68.0` tag. See [the build receipt](spicy_docs-0.68.1.json).
+  This candidate excludes the separate CBO and GPO prototypes. Publication,
+  remote refs and coordinated reader adoption remain held.
+
 `uv sync --frozen` installs these through the default `source-readers` group.
 The optional `source-readers` extra enables the same readers for package installs;
 its wheels must be supplied explicitly until they are published in a registry.
