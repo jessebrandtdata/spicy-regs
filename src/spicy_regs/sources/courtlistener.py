@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Iterable, Iterator, Mapping
+from contextlib import nullcontext
 from datetime import date
 from decimal import Decimal
 from typing import Any, Literal
@@ -24,6 +25,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from spicy_docs.sources.courtlistener.search import CourtListenerTraversalBudget
     from spicy_regs.source_evidence import CaptureEvidence
+    from spicy_regs.sources.courtlistener_resume import RetainedCourtSearch
 
 import httpx
 
@@ -103,6 +105,7 @@ class CourtListenerReader(Reader):
         transport: httpx.BaseTransport | None = None,
         evidence: CaptureEvidence | None = None,
         traversal_budget: CourtListenerTraversalBudget | None = None,
+        retained_search: RetainedCourtSearch | None = None,
     ) -> None:
         if max_records is not None and (type(max_records) is not int or max_records < 1):
             raise ValueError("max_records must be a positive integer")
@@ -114,6 +117,9 @@ class CourtListenerReader(Reader):
         self.transport = transport
         self.evidence = evidence
         self.traversal_budget = traversal_budget
+        self.retained_search = retained_search
+        if retained_search is not None and (evidence is None or max_records is not None):
+            raise ValueError("Retained CourtListener search requires source evidence and an uncapped walk")
 
     def _validate_record(self, record: Mapping[str, Any], seen: set[int]) -> None:
         identity = record.get(self.identity_field)
@@ -157,31 +163,41 @@ class CourtListenerReader(Reader):
             transport = self.evidence.transport(transport, stage="courtlistener-response", max_bytes=budget.max_page_bytes)
         # This is one caller's allocation, not a claim about the token's remaining quota.
         traversal = self.traversal_budget or CourtListenerTraversalBudget(max_requests=50, max_wait_seconds=600)
+        recovery = (
+            self.retained_search.open(
+                url=url, max_page_bytes=budget.max_page_bytes, live_transport=transport,
+                evidence=self.evidence, api_token=self.api_token,
+            ) if self.retained_search else nullcontext((transport, iter))
+        )
         try:
-            with CourtListenerSearchReader(budget=budget, traversal_budget=traversal,
-                                           api_key=self.api_token, transport=transport) as reader:
-                for page in reader.search(url, max_pages=_MAX_PAGES):
-                    if page.declared_count is None:
-                        raise CourtListenerError("CourtListener search omitted its declared count")
-                    if declared is None:
-                        declared = page.declared_count
-                    # Validate the whole received page even when a record cap stops
-                    # midway through it; malformed rows are not successful selection.
-                    records = []
+            with recovery as (selected_transport, track), CourtListenerSearchReader(
+                budget=budget, traversal_budget=traversal, api_key=self.api_token, transport=selected_transport,
+            ) as reader:
+                # Commit only after the existing whole-page native checks.
+                # The same checks run again on a retained prefix before live continuation.
+                def checked_pages():
+                    nonlocal declared
+                    for page in reader.search(url, max_pages=_MAX_PAGES):
+                        if page.declared_count is None:
+                            raise CourtListenerError("CourtListener search omitted its declared count")
+                        if declared is None:
+                            declared = page.declared_count
+                        for record in page.records:
+                            self._validate_record(record, seen)
+                            seen.add(record[self.identity_field])
+                        if is_exact_count(self.kind, declared) and page.next_url is None and len(seen) != declared:
+                            raise CourtListenerError("CourtListener terminal page disagrees with its declared count")
+                        # Large RECAP counts can be estimates; the terminal cursor
+                        # ends a nonempty docket walk, not equality with that estimate.
+                        if page.next_url is None and not seen and page.declared_count:
+                            raise CourtListenerError("CourtListener empty search has a positive declared count")
+                        if page.next_url is not None and not page.records:
+                            raise CourtListenerError("CourtListener continuation follows an empty page")
+                        yield page
+
+                for page in track(checked_pages()):
                     for record in page.records:
-                        self._validate_record(record, seen)
-                        seen.add(record[self.identity_field])
-                        records.append(dict(record))
-                    if is_exact_count(self.kind, declared) and page.next_url is None and len(seen) != declared:
-                        raise CourtListenerError("CourtListener terminal page disagrees with its declared count")
-                    # Large RECAP counts can be cardinality estimates; the terminal cursor,
-                    # not equality with that estimate, ends a nonempty docket walk.
-                    if page.next_url is None and not seen and page.declared_count:
-                        raise CourtListenerError("CourtListener empty search has a positive declared count")
-                    if page.next_url is not None and not records:
-                        raise CourtListenerError("CourtListener continuation follows an empty page")
-                    for record in records:
-                        yield record
+                        yield dict(record)
                         yielded += 1
                         if self.max_records is not None and yielded >= self.max_records:
                             return
@@ -226,6 +242,7 @@ class CourtListenerOpinionSearchReader(CourtListenerReader):
         transport: httpx.BaseTransport | None = None,
         evidence: CaptureEvidence | None = None,
         traversal_budget: CourtListenerTraversalBudget | None = None,
+        retained_search: RetainedCourtSearch | None = None,
     ) -> None:
         if above is not None and (type(above) is not int or above < 0):
             raise ValueError("above must be a non-negative integer cluster id")
@@ -233,7 +250,7 @@ class CourtListenerOpinionSearchReader(CourtListenerReader):
             raise ValueError("through must be an integer cluster id greater than above")
         super().__init__(
             since=since, max_records=max_records, api_token=api_token, verbose=verbose, transport=transport,
-            evidence=evidence, traversal_budget=traversal_budget,
+            evidence=evidence, traversal_budget=traversal_budget, retained_search=retained_search,
         )
         self.court = court
         self.above = above
