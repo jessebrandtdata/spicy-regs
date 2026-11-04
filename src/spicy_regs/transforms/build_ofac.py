@@ -206,6 +206,18 @@ def build_ofac(readers, output_dir: Path):
         staging = Path(temporary)
         entities = write_rows(_rows(readers, snapshots), staging / destinations[0].name, ENTITY_SCHEMA, batch_size=128)
         metadata = write_rows(snapshots, staging / destinations[1].name, SNAPSHOT_SCHEMA)
-        for source, destination in zip((entities, metadata), destinations, strict=True):
-            source.replace(destination)
+        outputs = ((entities, destinations[0]), (metadata, destinations[1]))
+        try:
+            for source, destination in outputs:
+                destination.hardlink_to(source)
+        except BaseException:
+            # Staging shares the destination filesystem. Roll back only files
+            # this attempt installed, preserving a competing writer's output.
+            for source, destination in outputs:
+                try:
+                    if not destination.is_symlink() and destination.samefile(source):
+                        destination.unlink()
+                except FileNotFoundError:
+                    pass
+            raise
     return tuple(destinations)

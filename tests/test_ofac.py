@@ -259,3 +259,29 @@ def test_changed_archive_refuses_before_table_or_generation(tmp_path):
     with pytest.raises(ValueError, match="digest"):
         pipeline.build([reader], output, archives={ref: archive})
     assert not list(output.glob("*.parquet")) and not (output / "generation").exists()
+
+
+@pytest.mark.parametrize("blocked_output", [0, 1])
+def test_concurrent_output_is_preserved_and_install_can_retry(tmp_path, monkeypatch, blocked_output):
+    targets = [tmp_path / f"{table}.parquet" for table in module.SCHEMAS]
+    unrelated = tmp_path / "owner-notes"
+    unrelated.write_bytes(b"unrelated")
+    write_rows = module.write_rows
+
+    def reserve_destination_after_staging(rows, path, schema, **kwargs):
+        staged = write_rows(rows, path, schema, **kwargs)
+        if path.name == targets[1].name:
+            targets[blocked_output].write_bytes(b"foreign")
+        return staged
+
+    with monkeypatch.context() as patch:
+        patch.setattr(module, "write_rows", reserve_destination_after_staging)
+        with pytest.raises(FileExistsError):
+            module.build_ofac([Reader()], tmp_path)
+    assert targets[blocked_output].read_bytes() == b"foreign"
+    assert not targets[1 - blocked_output].exists()
+    assert unrelated.read_bytes() == b"unrelated"
+    targets[blocked_output].unlink()
+    entities, snapshots = read(module.build_ofac([Reader()], tmp_path))
+    assert entities and snapshots[0]["entity_count"] == len(entities)
+    assert unrelated.read_bytes() == b"unrelated"
