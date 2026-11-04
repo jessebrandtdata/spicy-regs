@@ -2445,7 +2445,7 @@
       {
         "column_name": "government_entities",
         "column_type": "STRUCT(id VARCHAR, \"name\" VARCHAR)[]",
-        "description": "Native list of the government entities lobbied (`{id, name}`) — the agencies and chambers (e.g. `HOUSE OF REPRESENTATIVES`, `SENATE`) named on the filing's activities, in activity order, one entry per occurrence: an entity lobbied on two activities appears twice. Rows converted before 2026-10-03 held each entity once; a filing not re-read since keeps that form until the retained rebuild (ss-hqoi) re-reads it. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
+        "description": "Government entities named on the filing, in order of first appearance. A rebuilt filing lists each source ID once and uses the source name when the ID is absent. The activity rows retain every occurrence. Earlier native generations may repeat entities at filing level. A missing activity list yields null and an empty activity list yields an empty result."
       },
       {
         "column_name": "filing_type_display",

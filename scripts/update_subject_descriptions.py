@@ -153,7 +153,14 @@ def main(tables=None):
             if not prose:
                 unresolved.append((table,name))
                 continue
-            if pa.types.is_list(field.type) or pa.types.is_struct(field.type):
+            if (table, name) == ('lobbying_filings', 'government_entities'):
+                prose = (
+                    "Government entities named on the filing, in order of first appearance. A rebuilt filing lists each "
+                    "source ID once and uses the source name when the ID is absent. The activity rows retain every "
+                    "occurrence. Earlier native generations may repeat entities at filing level. A missing activity "
+                    "list yields null and an empty activity list yields an empty result."
+                )
+            elif pa.types.is_list(field.type) or pa.types.is_struct(field.type):
                 prose=re.sub(r'JSON[- ](?:encoded|serialized|serialised)\s*', '', prose, flags=re.I)
                 prose=prose.replace('JSON array','Native list').replace('JSON object','Native structure').replace('JSON list','Native list')
                 prose+=' Stored as native nested values; list order, repeated values, null and empty collections remain distinct.'

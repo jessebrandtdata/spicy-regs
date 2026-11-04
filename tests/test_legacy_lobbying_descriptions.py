@@ -64,6 +64,8 @@ def test_pinned_legacy_lobbying_columns_keep_original_meanings(monkeypatch):
 def test_native_lobbying_subject_does_not_reintroduce_historical_fields(monkeypatch):
     result = describe(monkeypatch, native=True)
     assert HISTORICAL.isdisjoint(c['column_name'] for c in result['columns'])
+    entity_description = next(c['description'] for c in result['columns'] if c['column_name'] == 'government_entities')
+    assert 'each source ID once' in entity_description and 'activity rows retain every occurrence' in entity_description
     assert result['schema_matches_declared'] is True
     assert result['metadata']['identity_columns'] == ['filing_uuid']
     assert 'legacy_column_descriptions' not in result['metadata']
