@@ -70,29 +70,30 @@ def _identities(con, policy: DatasetPolicy, view: str, path: Path, *, scratch: P
         wanted = iter(etl_bulk._ordinal_file(
             con, f"SELECT _o FROM {view}_ids WHERE _ref ORDER BY _o", [], root / "ordinals.parquet"))
         pending = next(wanted, None)
-        schema = pa.schema([("_o", pa.int64()), ("_rid", pa.string())])
-        with pq.ParquetWriter(root / "corrections.parquet", schema, compression="zstd") as output:
-            with pq.ParquetFile(path) as source:
-                start = 0
-                for group in range(source.metadata.num_row_groups):
-                    end = start + source.metadata.row_group(group).num_rows
-                    if pending is not None and pending < end:
-                        for batch in source.iter_batches(batch_size=etl_bulk._BATCH, row_groups=[group]):
-                            stop = start + batch.num_rows
-                            decided = []
-                            while pending is not None and pending < stop:
-                                row = batch.slice(pending - start, 1).to_pylist()[0]
-                                decided.append({"_o": pending, "_rid": subject_identity(policy, row)[0]})
-                                pending = next(wanted, None)
-                            if decided:
-                                output.write_table(pa.Table.from_pylist(decided, schema=schema))
-                            start = stop
-                    start = end
         if pending is not None:
-            raise ValueError(f"{policy.dataset}: routed subject ordinal is outside its source")
-        con.execute(f"UPDATE {view}_ids SET _rid = c._rid, _ref = false FROM "
-                    f"read_parquet({etl_bulk._literal(str(root / 'corrections.parquet'))}) c "
-                    f"WHERE {view}_ids._o = c._o")
+            schema = pa.schema([("_o", pa.int64()), ("_rid", pa.string())])
+            with pq.ParquetWriter(root / "corrections.parquet", schema, compression="zstd") as output:
+                with pq.ParquetFile(path) as source:
+                    start = 0
+                    for group in range(source.metadata.num_row_groups):
+                        end = start + source.metadata.row_group(group).num_rows
+                        if pending is not None and pending < end:
+                            for batch in source.iter_batches(batch_size=etl_bulk._BATCH, row_groups=[group]):
+                                stop = start + batch.num_rows
+                                decided = []
+                                while pending is not None and pending < stop:
+                                    row = batch.slice(pending - start, 1).to_pylist()[0]
+                                    decided.append({"_o": pending, "_rid": subject_identity(policy, row)[0]})
+                                    pending = next(wanted, None)
+                                if decided:
+                                    output.write_table(pa.Table.from_pylist(decided, schema=schema))
+                                start = stop
+                        start = end
+            if pending is not None:
+                raise ValueError(f"{policy.dataset}: routed subject ordinal is outside its source")
+            con.execute(f"UPDATE {view}_ids SET _rid = c._rid, _ref = false FROM "
+                        f"read_parquet({etl_bulk._literal(str(root / 'corrections.parquet'))}) c "
+                        f"WHERE {view}_ids._o = c._o")
     if con.execute(f"SELECT count(*) - count(DISTINCT _rid) FROM {view}_ids").fetchone()[0]:
         raise ValueError(f"{policy.dataset}: {view} subjects repeat an identity")
 

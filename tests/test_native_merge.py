@@ -192,3 +192,33 @@ def test_dense_exceptional_identities_have_bounded_python_allocation(tmp_path):
     small = measure(500, 'small')
     large = measure(8000, 'large')
     assert large - small < 1024 * 1024, (small, large)
+
+
+@pytest.mark.parametrize("duplicate", [False, True])
+def test_sql_only_identities_do_not_reopen_source(tmp_path, monkeypatch, duplicate):
+    from spicy_regs import etl_bulk
+    from spicy_regs.native_merge import _identities
+
+    path = tmp_path / "plain.parquet"
+    rows = [_row("1"), _row("1" if duplicate else "2")]
+    pq.write_table(pa.Table.from_pylist(rows, schema=POLICY.subject_schema), path)
+    with etl_bulk.bulk_connection(tmp_path, threads=1, memory_limit="128MB") as (con, _):
+        con.execute(f"CREATE VIEW held AS SELECT *, file_row_number AS _o FROM read_parquet({etl_bulk._literal(str(path))}, file_row_number=true)")
+        original_file, original_writer = pq.ParquetFile, pq.ParquetWriter
+
+        def read(selected, *args, **kwargs):
+            assert selected != path, "SQL-only identity path must not reopen source"
+            return original_file(selected, *args, **kwargs)
+
+        def write(selected, *args, **kwargs):
+            assert selected.name != "corrections.parquet", "SQL-only identity path must not write corrections"
+            return original_writer(selected, *args, **kwargs)
+
+        monkeypatch.setattr(pq, "ParquetFile", read)
+        monkeypatch.setattr(pq, "ParquetWriter", write)
+        if duplicate:
+            with pytest.raises(ValueError, match="repeat an identity"):
+                _identities(con, POLICY, "held", path)
+        else:
+            _identities(con, POLICY, "held", path)
+            assert con.execute("SELECT count(*) FROM held_ids WHERE _ref").fetchone() == (0,)
