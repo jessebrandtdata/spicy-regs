@@ -13,14 +13,17 @@ Entries link to the pull request that introduced the change.
   derivation changed a print's text digest but its PDF bytes had not changed,
   `document_citations` and `bill_committee_actions` kept every finding under both
   digests (16,201 and 4,182 repeated rows on 19 reports in one run). The new
-  reading now takes the old one's place; a real revision still keeps both.
+  reading now takes the old one's place when the checkpoint records the same
+  source SHA. A real revision keeps both. Legacy checkpoints without that hash
+  preserve ambiguous earlier readings and journal the unresolved source identity.
 
 - **Uploads send one checksum per request** (ss-7lrn). R2 refused every upload
   carrying Content-MD5 beside a SHA-256 checksum ("You can only specify one
   non-default checksum at a time"), which stopped all publication from
   2026-10-31. A probe found R2 also answers NotImplemented to a SHA-256 checksum
   on UploadPart, so uploads send Content-MD5 alone, the shape R2 accepted before.
-  Multipart members stream on read-back again. Both test stores refuse what R2
+  Matching-layout multipart MD5s verify without a stored-body read. Unknown or
+  mismatching layouts stream through the strong-digest check. Both test stores refuse what R2
   refuses.
 
 ### Added

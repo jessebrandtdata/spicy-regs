@@ -332,7 +332,7 @@ def _processing_versions(vocabularies: Mapping[str, Mapping[str, tuple[tuple[str
 
 
 def _superseded_readings(
-    states: Iterable[Mapping[str, Any]], *, source_sha256: str, last_modified: str | None, current: str
+    states: Iterable[Mapping[str, Any]], *, source_sha256: str, current: str
 ) -> set[str]:
     """Earlier text digests that this read replaces because its source bytes did not change.
 
@@ -343,11 +343,9 @@ def _superseded_readings(
     takes the old one's place. Only the reading a checkpoint names is replaced: a digest from an
     earlier revision of the source stays.
 
-    Bytes decide where the checkpoint recorded them. One written before ``source_sha256`` has only the
-    publisher's ``lastModified``, so an equal stamp stands in for that one read. The stamp errs mostly towards
-    keeping both: it moves without the bytes moving. Over 32 retained runs, 71 packages read repeatedly, no
-    body digest changed at all, so a change hidden behind an equal stamp is unobserved rather than disproved.
-    O(outputs).
+    Only an explicit recorded source SHA proves unchanged bytes. Legacy checkpoints without that hash
+    keep their earlier reading, even under an equal publisher timestamp. Resolving those ambiguous readings
+    requires exact retained source evidence; this build makes no timestamp-based inference. O(outputs).
     """
     superseded = set()
     for state in states:
@@ -355,9 +353,7 @@ def _superseded_readings(
         if not earlier or earlier == current:
             continue
         held_source = state.get("source_sha256")
-        unchanged = (held_source == source_sha256 if held_source is not None
-                     else last_modified is not None and state.get("last_modified") == last_modified)
-        if unchanged:
+        if held_source == source_sha256:
             superseded.add(earlier)
     return superseded
 
@@ -757,12 +753,17 @@ def build_print_citations(
         source_sha256 = package.body_capture.sha256
         if provenance.text_sha256 is not None:
             evaluated[collection].add((package_id, provenance.text_sha256))
-            superseded = _superseded_readings(
-                (checkpoints[name].get(package_id, {}) for name in _OUTPUTS[collection]),
-                source_sha256=source_sha256, last_modified=package.summary.last_modified,
-                current=provenance.text_sha256,
-            )
+            prior_states = tuple(checkpoints[name].get(package_id, {}) for name in _OUTPUTS[collection])
+            superseded = _superseded_readings(prior_states, source_sha256=source_sha256,
+                                              current=provenance.text_sha256)
             evaluated[collection].update((package_id, digest) for digest in superseded)
+            unresolved = {state["text_sha256"] for state in prior_states
+                          if state.get("text_sha256") and state["text_sha256"] != provenance.text_sha256
+                          and state.get("source_sha256") is None}
+            if unresolved and evidence is not None:
+                evidence.event("print-reading-source-unresolved", package_id=package_id,
+                               source_sha256=source_sha256, retained_text_sha256=sorted(unresolved),
+                               text_sha256=provenance.text_sha256, reason="missing_checkpoint_source_sha256")
             if superseded and evidence is not None:
                 # The public rows hold one reading; this and the prior generation keep the trail.
                 evidence.event("print-reading-replaced", package_id=package_id, source_sha256=source_sha256,

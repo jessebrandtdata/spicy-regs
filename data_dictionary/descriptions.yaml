@@ -3825,8 +3825,10 @@ tables:
       bytes does not.** A print whose source bytes changed adds findings beside
       the earlier text version. A new `text_sha256` from unchanged bytes (a
       corrected text derivation) replaces the earlier reading, so the same span
-      does not repeat. A checkpoint written before source digests were recorded
-      uses the publisher's `lastModified` for that one comparison. A successful
+      does not repeat when the checkpoint records the same source SHA. A
+      checkpoint without that hash keeps earlier readings, even under an equal
+      publisher timestamp. Historical duplicates need exact source evidence
+      before reconciliation. A successful
       rule correction for the same document and text digest replaces that
       digest's findings, including an empty result; it can retire obsolete rows.
       A failed read preserves previous findings. Size grows with revisions and

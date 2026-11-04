@@ -77,11 +77,12 @@ members remain unchanged before reuse and rejects readers after it closes.
 Publication in the same process reuses the admitted bytes. Readback then
 holds the public root and every manifest to the admitted candidate's bytes,
 and each member to its admitted digest by one HEAD against the hash storage
-computed when it took the bytes: a single-part object's MD5 ETag, or a SHA-256
-checksum where storage reports one. Uploads send Content-MD5 alone, because R2
+computed when it took the bytes: a single-part or supported-layout multipart
+MD5 ETag, or a SHA-256 checksum where storage reports one. Uploads send Content-MD5 alone, because R2
 refuses it beside a SHA-256 checksum and does not implement that checksum on
-UploadPart. A member with neither, which is every multipart object,
-streams from the public URL through a SHA-256 instead. Readback keeps no copy
+UploadPart. Multipart MD5 comparison uses the uploader's `PART_BYTES` layout and
+rechecks the local candidate's strong digest and size. An unknown or mismatching
+layout streams from the public URL through a SHA-256 instead. Readback keeps no copy
 on disk and does not admit the same bytes a second time, because identical
 bytes admit identically. Storage hashes cover transfer and the object a key
 names, not later decay at rest. A missing or differing member fails the

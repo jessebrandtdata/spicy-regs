@@ -27,8 +27,11 @@ add rows under the new digest and leave the old ones. A new digest from unchange
 bytes is a new reading of the same print, not a revision, so it replaces the
 reading its checkpoint names in every table keyed by text digest
 (`document_citations`, `bill_committee_actions`). The checkpoint records the body's
-`source_sha256` for this. One written before that field has only `last_modified`,
-so an equal stamp stands in for that one read. The replaced digest is journaled as
+`source_sha256` for this. A checkpoint without that hash keeps its earlier
+reading. An equal `last_modified` does not prove the source bytes match.
+The run records `print-reading-source-unresolved` for that ambiguity. Historical
+duplicates remain unresolved until exact retained source evidence can bind them.
+The replaced digest is journaled as
 `print-reading-replaced` in the run's source evidence, and the replaced rows stay
 in the prior immutable generation. Consumers select the digest named by the
 current parent row. Failed reads preserve the prior results and
