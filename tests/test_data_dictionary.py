@@ -410,8 +410,15 @@ def test_check_detects_a_missing_or_malformed_measurement_date():
     assert any("not an ISO date" in e for e in dd.check_descriptions(dd.expected_schemas(), malformed))
 
 
-def test_unreachable_source_is_not_reported_as_a_pass():
+def test_unreachable_source_is_not_reported_as_a_pass(monkeypatch):
     """The gate must tell an outage from drift; collapsing them is why it could not fail."""
+    import httpx
+    from spicy_regs.sources import publication
+
+    def unreachable(*_args, **_kwargs):
+        raise httpx.ConnectError("fixture publisher is unavailable")
+
+    monkeypatch.setattr(publication, "load_index", unreachable)
     parser = dd.build_parser()
     args = parser.parse_args(["check", "--source", "r2", "--base", "https://nonexistent.invalid"])
     assert args.func(args) == dd.EXIT_SOURCE_UNREACHABLE
@@ -430,20 +437,54 @@ def test_discovery_continues_after_an_unreadable_table(tmp_path, monkeypatch):
     assert '[missing]' in str(error.value)
 
 
-def test_live_check_accepts_supported_but_unpublished_tables(monkeypatch):
+@pytest.fixture
+def dictionary_publication(monkeypatch):
+    """Pin live-check metadata while the unit cases control schema discovery.
+
+    Exercise the real index parser, stable-selection check and published row
+    counts. Only the remote byte reader is replaced; unknown routes fail.
+    """
+    from spicy_regs.sources import publication
+
+    base = "https://dictionary.test"
+    digest = "a" * 64
+    index = {**publication.empty_index(), "families": {"dockets": {
+        "prefix": f"generations/dockets/{digest}",
+        "logicalId": "urn:spicy:test:dictionary-dockets",
+        "artifactDigest": f"sha256:{digest}",
+        "tables": {"dockets.parquet": {
+            "sha256": "sha256:" + "b" * 64, "byteSize": 0, "rows": 1,
+            "columns": dd.expected_schemas()["dockets"],
+        }},
+    }}}
+    raw = json.dumps(index).encode()
+
+    def read(url, **_kwargs):
+        if url == f"{base}/{publication.INDEX_V2_KEY}":
+            return raw
+        if url == f"{base}/{publication.SNAPSHOT_POINTER}":
+            return None
+        pytest.fail(f"Unexpected publication fixture URL: {url}")
+
+    monkeypatch.setenv("R2_PUBLIC_URL", base)
+    monkeypatch.setattr(publication, "_bounded_get", read)
+    return publication.parse_index(raw)
+
+
+def test_live_check_accepts_supported_but_unpublished_tables(monkeypatch, dictionary_publication):
     schemas = dd.expected_schemas()
     monkeypatch.setattr(dd, 'discover_schemas', lambda *_, **_kwargs: {'dockets': schemas['dockets']})
     args = dd.build_parser().parse_args(['check', '--source', 'r2'])
     assert args.func(args) == 0
 
 
-def test_unknown_published_table_is_schema_drift(monkeypatch):
+def test_unknown_published_table_is_schema_drift(monkeypatch, dictionary_publication):
     monkeypatch.setattr(dd, 'discover_schemas', lambda *_, **_kwargs: {'unknown_published': [('id', 'VARCHAR')]})
     args = dd.build_parser().parse_args(['check', '--source', 'r2'])
     assert args.func(args) == 1
 
 
-def test_incomplete_live_check_is_not_a_pass_after_other_tables_match(monkeypatch):
+def test_incomplete_live_check_is_not_a_pass_after_other_tables_match(monkeypatch, dictionary_publication):
     def partial(*_, **_kwargs):
         raise dd.SchemaDiscoveryError({'dockets': dd.expected_schemas()['dockets']}, ['[documents] unreachable'])
     monkeypatch.setattr(dd, 'discover_schemas', partial)
@@ -725,7 +766,7 @@ def test_each_rulemaking_table_names_its_identity_and_where_it_is_published():
         assert "**MCP `query_sql` support:** Configured" in page, table
 
 
-def test_a_pointer_that_names_no_publication_is_unreadable_not_drift(monkeypatch):
+def test_a_pointer_that_names_no_publication_is_unreadable_not_drift(monkeypatch, dictionary_publication):
     from spicy_regs.sources.publication import PublicationError
 
     def refuse(*_, **_kwargs):
@@ -736,7 +777,7 @@ def test_a_pointer_that_names_no_publication_is_unreadable_not_drift(monkeypatch
     assert args.func(args) == dd.EXIT_SOURCE_UNREACHABLE
 
 
-def test_live_check_holds_declared_types_to_the_published_file(monkeypatch, capsys):
+def test_live_check_holds_declared_types_to_the_published_file(monkeypatch, dictionary_publication, capsys):
     """A DATE column published as VARCHAR keeps its name, so only the type comparison can see it."""
     declared = dd.expected_schemas()["rulemaking_lifecycles"]
     drifted = [(column, "VARCHAR" if column == "proposal_date" else kind) for column, kind in declared]
@@ -812,7 +853,7 @@ def test_published_urls_use_captured_index_without_reloading(monkeypatch):
     assert publication.published_urls("https://example.test", index=publication.empty_index()) == {}
 
 
-def test_live_checker_passes_captured_selection_to_discovery(monkeypatch):
+def test_live_checker_passes_captured_selection_to_discovery(monkeypatch, dictionary_publication):
     from spicy_regs.sources import publication
 
     selected = publication.empty_index()
