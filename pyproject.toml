@@ -1,6 +1,6 @@
 [project]
 name = "spicy-regs"
-version = "0.1.6+reconcile.8"
+version = "0.1.6+reconcile.9"
 description = "Regulations Data Analysis Tools"
 requires-python = ">=3.12,<3.13"
 dependencies = [

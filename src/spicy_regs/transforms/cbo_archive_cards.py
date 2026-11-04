@@ -190,10 +190,11 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_page
             continue
         windows = []
         for position, period in enumerate(card.periods):
-            window = {"period": period}
+            window: dict[str, str | int | None] = {"period": period}
             for name in CARD_MEASURES:
                 literal = card.measures[name][position] if name in card.measures else None
-                window.update({name + "_literal": literal, name + "_millions": card_millions(literal)})
+                window[name + "_literal"] = literal
+                window[name + "_millions"] = card_millions(literal)
             windows.append(window)
         rows.append(
             {
