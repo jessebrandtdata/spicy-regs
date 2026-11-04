@@ -15,9 +15,10 @@ from spicy_regs.transforms.build_executive_orders import build_executive_orders
 from tests.test_executive_orders import Reader, captured, record
 
 
+@pytest.mark.parametrize("string_paths", [False, True], ids=["path-objects", "json-string-paths"])
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("mixed", [False, True], ids=["all-refused", "mixed"])
-def test_saved_access_refusal_aborts_and_preserves_previous_output(tmp_path, status, mixed):
+def test_saved_access_refusal_aborts_and_preserves_previous_output(tmp_path, status, mixed, string_paths):
     reader = Reader([record(), record("2025-00002", "14134")] if mixed else [record()])
     paths = captured(tmp_path / "good", reader)
     output = tmp_path / "output"
@@ -42,6 +43,9 @@ def test_saved_access_refusal_aborts_and_preserves_previous_output(tmp_path, sta
     assert manifest["failure"]["status_code"] == status
     assert manifest["captures"] == []  # The provider deliberately excludes denied response bodies.
     paths[selected["sourceRecordId"]] = path
+    if string_paths:
+        # The normal CLI reads this mapping from JSON, so every value is a string.
+        paths = {identity: str(value) for identity, value in paths.items()}
     retry_evidence = CaptureEvidence(output, "executive-orders")
     with pytest.raises(CredentialRefusedError, match="explicit retry") as refused:
         build_executive_orders(reader, output, year=2025, body_paths=paths,

@@ -182,7 +182,7 @@ def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, l
                 # The provider's loader preserves this saved outcome without raising.
                 # Keep its exact receipt and require the same explicit retry as capture_body.
                 evidence.retain_file(
-                    body_paths[identity], stage="executive-order-body-result", source_record_id=identity
+                    Path(body_paths[identity]), stage="executive-order-body-result", source_record_id=identity
                 )
                 evidence.event(
                     "refusal", stage="executive-order-body", source_record_id=identity,
