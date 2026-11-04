@@ -175,6 +175,22 @@ def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, l
                 )
                 retained.add(ref)
             result = load_body(body_paths[identity], record=record)
+            failure = result.manifest.get("failure")
+            if isinstance(failure, dict) and failure.get("credential_refused"):
+                from spicy_docs.transport.credentials import CredentialRefusedError
+
+                # The provider's loader preserves this saved outcome without raising.
+                # Keep its exact receipt and require the same explicit retry as capture_body.
+                evidence.retain_file(
+                    body_paths[identity], stage="executive-order-body-result", source_record_id=identity
+                )
+                evidence.event(
+                    "refusal", stage="executive-order-body", source_record_id=identity,
+                    error_type="CredentialRefusedError", reason_code="access_refused",
+                    status_code=failure.get("status_code"),
+                    body_retained=False, credential_refused=True, message=None, response=None,
+                )
+                raise CredentialRefusedError("Retained source access refusal; explicit retry is required")
             for capture in result.captures:
                 evidence.capture(capture, stage="executive-order-body")
             if result.refused_response is not None:
