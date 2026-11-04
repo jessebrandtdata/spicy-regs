@@ -86,6 +86,95 @@ def test_restores_receipt_only_reads_without_a_public_subject(tmp_path):
     assert pq.read_table(result["urls"][0]).to_pylist() == [raw]
 
 
+def empty_legislative_request(tmp_path, dataset):
+    schema = pa.schema([(f["name"], pa.string()) for f in field_registry()[dataset]["fields"]])
+    source = tmp_path / (dataset + ".parquet")
+    pq.write_table(pa.Table.from_batches([], schema=schema), source)
+    manifest = write_legislative_outputs([source], tmp_path / "native", generation_id="empty-coverage")
+    request = {
+        "dataset": dataset,
+        "generationId": "empty-coverage",
+        "subjects": [member(tmp_path / "native" / path) for path in manifest["subjects"][dataset]],
+        "receipts": member(tmp_path / "native/etl_receipts.parquet"),
+        "destination": str(tmp_path / "restored"),
+    }
+    return source, request
+
+
+@pytest.mark.parametrize("dataset", [
+    "bill_summaries", "diff_summaries", "financial_changes", "section_classifications",
+])
+def test_declared_empty_legislative_subject_restores_with_retained_file_state(tmp_path, dataset):
+    source, request = empty_legislative_request(tmp_path, dataset)
+    result = bridge.restore(request)
+    assert result["rows"] == 0
+    assert result["selection"] == {key: request[key] for key in ("subjects", "receipts")}
+    assert pq.read_table(result["urls"][0]).equals(pq.read_table(source), check_metadata=True)
+
+
+@pytest.mark.parametrize("change", ["no-subject", "no-file-state", "wrong-schema"])
+def test_empty_subject_still_requires_selected_schema_and_retained_file_state(tmp_path, change):
+    _, request = empty_legislative_request(tmp_path, "bill_summaries")
+    if change == "no-subject":
+        request["subjects"] = []
+        expected = "no receipt context"
+    elif change == "no-file-state":
+        rewrite_receipts(request, lambda table: table.slice(0, 0))
+        expected = "Missing or duplicate retained source file state"
+    else:
+        subject = Path(request["subjects"][0]["path"])
+        pq.write_table(pa.table({"wrong": pa.array([], type=pa.string())}), subject)
+        request["subjects"] = [member(subject)]
+        expected = "schema"
+    with pytest.raises(ValueError, match=expected):
+        bridge.restore(request)
+
+
+def test_nonempty_subject_still_requires_its_receipts(tmp_path):
+    _, request = fixture(tmp_path, "bill_versions", {"bill_id": "hr1-119", "version_code": "is", "source": "govinfo"})
+    rewrite_receipts(request, lambda table: pa.Table.from_pylist(
+        [row for row in table.to_pylist() if row["dataset"] != "bill_versions"], schema=table.schema,
+    ))
+    with pytest.raises(ValueError, match="no receipt context"):
+        bridge.restore(request)
+    assert not Path(request["destination"]).exists()
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_mixed_empty_and_nonempty_subjects_require_receipts_before_creating_output(tmp_path, reverse):
+    _, request = empty_legislative_request(tmp_path, "bill_summaries")
+    empty = Path(request["subjects"][0]["path"])
+    nonempty = tmp_path / "nonempty.parquet"
+    pq.write_table(pa.Table.from_pylist([{}], schema=pq.read_schema(empty)), nonempty)
+    request["subjects"].append(member(nonempty))
+    if reverse:
+        request["subjects"].reverse()
+    with pytest.raises(ValueError, match="no receipt context"):
+        bridge.restore(request)
+    assert not Path(request["destination"]).exists()
+
+
+def test_empty_subject_cannot_borrow_another_legislative_datasets_file_state(tmp_path):
+    _, request = empty_legislative_request(tmp_path, "bill_summaries")
+    request["dataset"] = "diff_summaries"
+    with pytest.raises(ValueError):
+        bridge.restore(request)
+    assert not list(Path(request["destination"]).rglob("processing/*.parquet"))
+
+
+@pytest.mark.parametrize("dataset", ["members", "dockets", "fec_committees"])
+def test_nonlegislative_empty_subject_still_requires_receipt_context(tmp_path, dataset):
+    policy = subject_receipts.dataset_policy(dataset)
+    subject, receipts = tmp_path / "empty.parquet", tmp_path / "receipts.parquet"
+    pq.write_table(pa.Table.from_batches([], schema=policy.subject_schema), subject)
+    pq.write_table(pa.Table.from_batches([], schema=RECEIPT_SCHEMA), receipts)
+    request = {"dataset": dataset, "generationId": "empty-other-route", "subjects": [member(subject)],
+               "receipts": member(receipts), "destination": str(tmp_path / "restored")}
+    with pytest.raises(ValueError, match="no receipt context"):
+        bridge.checked_request(request, subject_receipts.dataset_policy)
+    assert not Path(request["destination"]).exists()
+
+
 @pytest.mark.parametrize("change", ["sha", "size"])
 def test_refuses_changed_inputs(tmp_path, change):
     _, request = fixture(tmp_path, "bill_versions", {"bill_id": "hr1-119", "version_code": "is", "source": "govinfo"})

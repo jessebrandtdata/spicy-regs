@@ -122,7 +122,7 @@ def _equals(values, expected):
     return pc.call_function("coalesce", [matches, False])
 
 
-def current_receipts(path, dataset, policy):
+def current_receipts(path, dataset, policy, *, empty_subjects=False):
     """Admit only receipts of the selected dataset under a current or declared earlier policy version.
 
     Carried receipts keep the ``policy_version`` and the ``generation_id`` they were written under, so the declared
@@ -131,6 +131,8 @@ def current_receipts(path, dataset, policy):
     undeclared or null version is refused. What binds the receipts to the selection is the pinned receipt-member
     bytes ``checked_member`` verified; the generation admission re-proves every subject-receipt join. The request's
     ``generationId`` is the caller's selection label, not something these receipts can confirm.
+    An explicitly empty legislative selection may have no dataset receipts; its
+    restoration still requires the exact retained source-file states.
     """
     versions = pa.array(sorted({item.policy_version for item in receipt_policies(policy)}))
     found = False
@@ -148,7 +150,7 @@ def current_receipts(path, dataset, policy):
             ids = selected.column("generation_id")
             if ids.null_count or pc.call_function("any", [pc.call_function("equal", [ids, ""])]).as_py():
                 raise ValueError("Coverage receipts lack a generation")
-    if not found:
+    if not found and not empty_subjects:
         raise ValueError("Selected coverage generation has no receipt context")
 
 
@@ -170,7 +172,11 @@ def checked_request(request, policy_for, *, one_subject=False):
     policy = policy_for(request["dataset"])
     subjects = tuple(checked_member(member) for member in request["subjects"])
     receipts = checked_member(request["receipts"])
-    current_receipts(receipts, request["dataset"], policy)
+    current_receipts(
+        receipts, request["dataset"], policy,
+        empty_subjects=request["dataset"] in field_registry() and bool(subjects)
+        and all(pq.read_metadata(path).num_rows == 0 for path in subjects),
+    )
     return policy, subjects, receipts, destination
 
 
