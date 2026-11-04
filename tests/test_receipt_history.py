@@ -641,3 +641,64 @@ def test_refusal_derivation_operational_failure_preserves_destination(tmp_path, 
         carry_receipt_history(current, [prior], destination,
                               refusal_identities={"example": RefusalIdentity(("id", "sub"), None, "raw", failed)})
     assert destination.read_bytes() == before
+
+
+@pytest.mark.parametrize("threads", [None, 2])
+def test_history_settings_receipt_matches_the_actual_query(tmp_path, policy, context, monkeypatch, threads):
+    import duckdb
+
+    real_connect = duckdb.connect
+    effective = []
+
+    class ObservedConnection:
+        def __init__(self, *args, **kwargs):
+            self.connection = real_connect(*args, **kwargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.connection.close()
+
+        def execute(self, query, *args, **kwargs):
+            result = self.connection.execute(query, *args, **kwargs)
+            if query.startswith("CREATE TABLE matches AS"):
+                effective.append(self.connection.execute(
+                    "SELECT current_setting('threads'), current_setting('memory_limit'), "
+                    "current_setting('max_temp_directory_size')"
+                ).fetchone())
+            return result
+
+    monkeypatch.setattr(duckdb, "connect", ObservedConnection)
+    rows = [accepted(policy, context)]
+    prior = write(tmp_path / "prior.parquet", rows)
+    current = write(tmp_path / "current.parquet", [dict(rows[0], generation_id="new")])
+    originals = [path.read_bytes() for path in (prior, current)]
+    reported = []
+    kwargs = {} if threads is None else {"threads": threads}
+    result = carry_receipt_history(current, [prior], tmp_path / "result.parquet",
+                                   report_settings=reported.append, **kwargs)
+    assert pq.read_table(result).to_pylist() == rows
+    assert [path.read_bytes() for path in (prior, current)] == originals
+    assert len(effective) == len(reported) == 1
+    assert effective[0][0] == (1 if threads is None else threads)
+    assert reported == [dict(zip(
+        ["historyQueryThreads", "historyQueryMemory", "historyQuerySpill"], effective[0]
+    ))]
+
+
+@pytest.mark.parametrize("threads", [0, -1, True, 1.5, "2", 2**63])
+def test_invalid_history_threads_refuse_before_any_file_or_connection(tmp_path, monkeypatch, threads):
+    import duckdb
+
+    def unexpected_connection(*args, **kwargs):
+        raise AssertionError("invalid settings must refuse before opening DuckDB")
+
+    monkeypatch.setattr(duckdb, "connect", unexpected_connection)
+    destination = tmp_path / "not-created" / "result.parquet"
+    reported = []
+    with pytest.raises(ValueError, match="History query threads"):
+        carry_receipt_history(tmp_path / "missing-current", [], destination,
+                              threads=threads, report_settings=reported.append)
+    assert not destination.parent.exists()
+    assert not reported

@@ -25,7 +25,7 @@ import pyarrow.parquet as pq
 
 from spicy_regs import congress_bulk, etl_bulk
 from spicy_regs.congress_receipts import PROCESSOR, _digest, policy
-from spicy_regs.receipt_history import carry_receipt_history
+from spicy_regs.receipt_history import carry_receipt_history, history_query_threads
 from spicy_regs.votes_batch_receipts import congress_attempt, restore_processing_input, write_congress_dataset
 from spicy_regs.etl_receipts import ReceiptContext
 
@@ -156,7 +156,13 @@ def main():
     parser.add_argument('--dataset', required=True, choices=['member_votes', 'member_vote_terms'])
     parser.add_argument('--sha256', required=True)
     parser.add_argument('--generation', required=True)
+    parser.add_argument('--history-query-threads', type=int, default=1,
+                        help='Thread setting for the unchanged-history query (default: 1)')
     args = parser.parse_args()
+    try:
+        history_query_threads(args.history_query_threads)
+    except ValueError as error:
+        parser.error(str(error))
     args.output.mkdir(parents=True, exist_ok=False)
     log = args.output/'phases.jsonl'
     original_source = args.source.resolve()
@@ -205,11 +211,13 @@ def main():
         record.update(generation=prior_generation, receiptSha256=_digest(prior_receipts),
                       receiptBytes=prior_receipts.stat().st_size, subjectRows=compare_files(subjects, prior_subjects))
     with measured(log, 'unchanged-history-full') as record:
-        carried = carry_receipt_history(receipts, [prior_receipts], args.output/'carried-receipts.parquet')
+        carried = carry_receipt_history(
+            receipts, [prior_receipts], args.output/'carried-receipts.parquet',
+            threads=args.history_query_threads, report_settings=record.update,
+        )
         record.update(rows=compare_files(prior_receipts, carried), currentGeneration=args.generation,
                       selectedPriorGeneration=prior_generation, currentReceiptSha256=_digest(receipts),
-                      selectedPriorReceiptSha256=_digest(prior_receipts), carriedReceiptSha256=_digest(carried),
-                      historyQueryThreads=4, historyQueryMemory='1GB', historyQuerySpill='32GB')
+                      selectedPriorReceiptSha256=_digest(prior_receipts), carriedReceiptSha256=_digest(carried))
         etl_bulk.validate_bundle({args.dataset:[subjects]}, [carried], [policy(args.dataset)], generation_id=args.generation)
     with measured(log, 'final-input-pin') as record:
         with args.source.open('rb') as stream:

@@ -173,10 +173,19 @@ def _take_prior_rows(priors, file_ends, group_ends, ordinals, schema):
     return pa.concat_tables(chunks).take(pa.array(order, type=pa.int64())), sorted(positions)
 
 
+def history_query_threads(value: int) -> int:
+    """Validate DuckDB's positive BIGINT thread setting before creating private state."""
+    if type(value) is not int or not 1 <= value <= (1 << 63) - 1:
+        raise ValueError("History query threads must be a positive BIGINT integer")
+    return value
+
+
 def carry_receipt_history(
     current_path: Path, prior_paths: Sequence[Path], destination: Path, *,
     refusal_identities: Mapping[str, RefusalIdentity] | None = None,
     resolution_receipts: Path | None = None,
+    threads: int = 1,
+    report_settings: Callable[[dict[str, int | str]], None] | None = None,
 ) -> Path:
     """Keep identical attempts exactly; reference only the direct accepted predecessor on change.
 
@@ -190,9 +199,12 @@ def carry_receipt_history(
     includes unchanged held rows; those alone cannot prove a fresh success.
     Missing or changed key spellings remain unresolved. Duplicate nonaccepted
     occurrences match FIFO, so repeated refusals do not accumulate copies.
+    ``report_settings`` receives the effective limits from this query connection;
+    ``threads`` defaults to one and is validated before any private state is created.
     Narrow matching keys spill to private disk. Full prior rows are gathered by
     Parquet ordinal in output batches; Python only decodes changed predecessors.
     """
+    threads = history_query_threads(threads)
     import duckdb
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -210,13 +222,22 @@ def carry_receipt_history(
         duckdb.connect(str(Path(temporary) / "history.duckdb")) as con,
         ExitStack() as files,
     ):
-        con.execute("SET threads=1")
+        con.execute("SET threads=?", [threads])
         con.execute("SET memory_limit='1GB'")
         con.execute("SET max_temp_directory_size='32GB'")
         con.execute("SET temp_directory=?", [str(Path(temporary) / "spill")])
         # Ordinals define occurrence and final output order explicitly. Avoid
         # extra import/export buffers while the wide history spills to disk.
         con.execute("SET preserve_insertion_order=false")
+        if report_settings is not None:
+            effective = con.execute(
+                "SELECT current_setting('threads'), current_setting('memory_limit'), "
+                "current_setting('max_temp_directory_size')"
+            ).fetchone()
+            assert effective is not None
+            report_settings(dict(zip(
+                ["historyQueryThreads", "historyQueryMemory", "historyQuerySpill"], effective
+            )))
 
         def quoted(path):
             return "'" + str(path).replace("'", "''") + "'"
