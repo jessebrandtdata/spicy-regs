@@ -1075,8 +1075,8 @@ def _put_immutable(client, bucket: str, key: str, path: Path, *, sha256: str | N
     Every request carries Content-MD5 and no SHA-256 checksum, so storage refuses bytes
     damaged in transit. R2 refuses Content-MD5 beside a SHA-256 checksum ("You can only
     specify one non-default checksum at a time") and answers NotImplemented to a SHA-256
-    checksum on UploadPart (probe, 2026-11-01). A single-part object's ETag is then the MD5
-    a later HEAD can compare (:func:`verify_stored_member`). With ``sha256``, the bytes actually sent must hash to it
+    checksum on UploadPart (probe, 2026-11-01). The ETag is then the whole-object MD5 or
+    the composite MD5 over these parts, which a later HEAD can compare (:func:`verify_stored_member`). With ``sha256``, the bytes actually sent must hash to it
     before the object is created, so a content-addressed key never holds other bytes.
     """
     _put_immutable_stream(client, bucket, key, lambda: path.open("rb"), path.stat().st_size, sha256=sha256)
@@ -1138,8 +1138,8 @@ def verify_stored_member(client, bucket: str, member: Member, open_local: Callab
     """Hold one stored member to its pin by a hash storage computed itself: one HEAD, no body read.
 
     Returns the hash that matched: ``"sha256"``, the SHA-256 checksum the uploader sent and storage checked, or
-    ``"md5"``, a single-part ETag, which is the MD5 storage computed. ``None`` when neither is comparable (no
-    checksum and a multipart ETag, or a composite checksum over another part layout):
+    ``"md5"``, a single-part or supported-layout multipart ETag storage computed. ``None`` when neither is comparable
+    (no checksum or ETag, or a composite hash over an unknown or different part layout):
     the caller then streams the bytes (:func:`verify_member`). A missing object, another size, a full-object checksum
     or single-part ETag that differs, or a local candidate that no longer matches its pin raises.
 
@@ -1161,7 +1161,18 @@ def verify_stored_member(client, bucket: str, member: Member, open_local: Callab
         if checksum != base64.b64encode(bytes.fromhex(member.sha256.removeprefix("sha256:"))).decode():
             raise differs
         return "sha256"
-    if not checksum and (not etag or "-" in etag):
+    if not checksum and "-" in etag:
+        count = (member.byte_size + PART_BYTES - 1) // PART_BYTES
+        # The maintained uploader uses this width and at most 10,000 parts.
+        # Another count/shape cannot establish that layout and must stream.
+        if not 1 < count <= 10_000 or re.fullmatch(rf"[0-9a-f]{{32}}-{count}", etag) is None:
+            return None
+        with open_local() as stream:
+            identity = _stream_identity(stream, part_bytes=PART_BYTES)
+        if identity["sha256"] != member.sha256 or identity["bytes"] != member.byte_size:
+            raise RuntimeError(f"Local candidate differs from its pin: {member.path}")
+        return "md5" if identity["etag"].strip('"') == etag else None
+    if not checksum and not etag:
         return None
     digest, whole_md5, parts = hashlib.sha256(), hashlib.md5(usedforsecurity=False), []
     with open_local() as stream:

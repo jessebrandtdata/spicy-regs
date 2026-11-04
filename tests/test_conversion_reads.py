@@ -192,10 +192,15 @@ def test_failed_admission_cleanup_closes_platform_index_even_if_reader_cleanup_r
     ('checksummed', None, {'sha256': 2, 'md5': 0, 'streamed': 0}),
     ('multipart', None, {'sha256': 2, 'md5': 0, 'streamed': 0}),
     ('etag-only', None, {'sha256': 0, 'md5': 2, 'streamed': 0}),
-    ('multipart-etag-only', None, {'sha256': 0, 'md5': 0, 'streamed': 2}),
+    ('multipart-etag-only', None, {'sha256': 0, 'md5': 2, 'streamed': 0}),
+    ('multipart-etag-other-width', None, {'sha256': 0, 'md5': 0, 'streamed': 2}),
+    ('multipart-etag-same-count-width', None, {'sha256': 0, 'md5': 0, 'streamed': 2}),
+    ('multipart-etag-unknown', None, {'sha256': 0, 'md5': 0, 'streamed': 2}),
     *(('checksummed', damage, None) for damage in
       ('root', 'manifest', 'subject', 'receipt', 'missing', 'oversize', 'binding')),
     ('multipart', 'subject', None), ('etag-only', 'subject', None), ('multipart-etag-only', 'subject', None),
+    ('multipart-etag-other-width', 'subject', None), ('multipart-etag-same-count-width', 'subject', None),
+    ('multipart-etag-unknown', 'subject', None),
 ])
 def test_public_bytes_match_live_candidate_without_copy_or_second_admission(tmp_path, monkeypatch, upload, damage,
                                                                             verified_by):
@@ -209,11 +214,17 @@ def test_public_bytes_match_live_candidate_without_copy_or_second_admission(tmp_
     store = Store()
     if upload.startswith('multipart'):
         monkeypatch.setattr(publication, 'PART_BYTES', 2048)  # several parts per member
+    stored_part_bytes = 1024 if upload == 'multipart-etag-other-width' else publication.PART_BYTES
     with ConversionReadOperation() as operation:
         artifact, reader, source = operation.admit_generation(directory)
         entry = publication.generation_entry(artifact, list(iter_member_descriptors(artifact, source)))
         index = {'families': {'members': entry}}
         stored = {entry['prefix'] + '/' + key: (directory / key).read_bytes() for key in source.keys()}
+        if upload == 'multipart-etag-same-count-width':
+            stored_part_bytes = next(width for width in (2049, 2047) if all(
+                (len(raw) + width - 1) // width == (len(raw) + 2047) // 2048
+                for key, raw in stored.items() if key.endswith('.parquet')))
+        monkeypatch.setattr(publication, 'PART_BYTES', stored_part_bytes)
         for key, raw in stored.items():
             publication._put_immutable_stream(store, 'bucket', key, lambda raw=raw: BytesIO(raw), len(raw))
             # The uploader sends Content-MD5 alone, so a hash storage reports is the only way to reach these branches.
@@ -222,6 +233,12 @@ def test_public_bytes_match_live_candidate_without_copy_or_second_admission(tmp_
             elif upload == 'multipart':
                 store.checksums[key] = [len(raw[start:start + publication.PART_BYTES])
                                         for start in range(0, len(raw), publication.PART_BYTES)]
+        if upload in {'multipart-etag-other-width', 'multipart-etag-same-count-width'}:
+            monkeypatch.setattr(publication, 'PART_BYTES', 2048)
+        if upload == 'multipart-etag-unknown':
+            for key in stored:
+                if key.endswith('.parquet'):
+                    store.etags[key] = '"opaque-multipart-layout"'
         assert all(len(store.objects[key]) > publication.PART_BYTES * 2 for key in stored
                    if key.endswith('.parquet')) == upload.startswith('multipart')
         if damage == 'binding':
@@ -238,6 +255,15 @@ def test_public_bytes_match_live_candidate_without_copy_or_second_admission(tmp_
             else:
                 raw = store.objects[key]
                 store.objects[key] = raw[:100] + bytes([raw[100] ^ 1]) + raw[101:]
+                if upload in {'multipart-etag-only', 'multipart-etag-other-width', 'multipart-etag-same-count-width'}:
+                    # Model a wrong upload, whose storage-computed ETag covers its actual bytes.
+                    # Keeping the old ETag after editing fake storage models later at-rest decay,
+                    # outside every HEAD-only checksum's promise.
+                    import hashlib
+                    damaged = store.objects[key]
+                    parts = [hashlib.md5(damaged[start:start + stored_part_bytes], usedforsecurity=False).digest()
+                             for start in range(0, len(damaged), stored_part_bytes)]
+                    store.etags[key] = f'"{hashlib.md5(b"".join(parts), usedforsecurity=False).hexdigest()}-{len(parts)}"'
         base = 'https://test.invalid'
         monkeypatch.setattr(publication, '_bounded_get', lambda url, **kwargs: store.objects.get(url.removeprefix(base + '/')))
         streamed = []
@@ -254,6 +280,14 @@ def test_public_bytes_match_live_candidate_without_copy_or_second_admission(tmp_
         operation.release_generation(directory)
         before = sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob('*'))
         reads = sum(store.reads.values())
+        heads = []
+        original_head = store.head_object
+
+        def head(**kwargs):
+            heads.append(kwargs['Key'])
+            return original_head(**kwargs)
+
+        monkeypatch.setattr(store, 'head_object', head)
         if damage:
             with pytest.raises((ValueError, RuntimeError), match='Public generation|Published generation'):
                 operation.verify_public_generation(base, index, 'members', directory, store, 'bucket')
@@ -265,6 +299,32 @@ def test_public_bytes_match_live_candidate_without_copy_or_second_admission(tmp_
                                'streamed_bytes': sum(len(store.objects[key]) for key in members) if streamed else 0,
                                'root_and_manifests': 'exact', 'retained_payload_copies': 0}
             assert sorted(streamed) == (sorted(base + '/' + key for key in members) if verified_by['streamed'] else [])
+            assert sorted(heads) == sorted(members)
         assert sum(store.reads.values()) == reads  # storage bodies are never read: HEAD only
         # Nothing is written: no public copy is kept on disk.
         assert sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob('*')) == before
+
+
+def test_multipart_md5_proof_rechecks_local_sha256_and_uses_bounded_reads(monkeypatch):
+    import hashlib
+    from spicy_regs.sources import publication
+    from tests.generation_fakes import Store
+
+    raw = b'one exact local candidate' * 11
+    store = Store()
+    monkeypatch.setattr(publication, 'PART_BYTES', 31)
+    publication._put_immutable_stream(store, 'bucket', 'member', lambda: BytesIO(raw), len(raw))
+    member = publication.Member('member', 'sha256:' + hashlib.sha256(raw).hexdigest(), len(raw), None)
+    reads = []
+
+    class Bounded(BytesIO):
+        def read(self, size=-1):
+            assert size == 31
+            value = super().read(size)
+            reads.append(len(value))
+            return value
+
+    assert publication.verify_stored_member(store, 'bucket', member, lambda: Bounded(raw)) == 'md5'
+    assert sum(reads) == len(raw) and store.reads == {}
+    with pytest.raises(RuntimeError, match='Local candidate differs'):
+        publication.verify_stored_member(store, 'bucket', member, lambda: Bounded(b'!' + raw[1:]))
