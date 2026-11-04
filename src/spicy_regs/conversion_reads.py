@@ -385,8 +385,8 @@ class _FamilyReader:
                                 dataset, schema, subjects, table, low, unproven):
                             return False
                         count += subjects.num_rows
-            except (etl_bulk.duckdb.Error, pa.ArrowException):
-                return False
+            except (etl_bulk.duckdb.Error, pa.ArrowException) as error:
+                raise etl_bulk.bulk_failure('Court comparison proof failed', error) from error
             return (count == parquet.metadata.num_rows and not any(piece.num_rows for piece in pending)
                     and next(held, None) is None and read == [count, count])
 

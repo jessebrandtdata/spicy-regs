@@ -158,3 +158,37 @@ def test_native_merge_keeps_unanswered_refusals_and_resolves_only_successes(tmp_
                          subjects=tmp_path / "again-s.parquet", receipts=tmp_path / "again-r.parquet",
                          refusal_identity=RefusalIdentity(("id",), "raw"))
     assert pq.read_table(again.receipts).equals(pq.read_table(merged.receipts))
+
+
+def test_dense_exceptional_identities_have_bounded_python_allocation(tmp_path):
+    """A larger routed population must not accumulate Python ordinals or identities."""
+    import tracemalloc
+
+    from spicy_regs import etl_bulk
+    from spicy_regs.native_merge import _identities
+    from spicy_regs.etl_receipts import subject_identity
+
+    def measure(count, name):
+        path = tmp_path / f'{name}.parquet'
+        rows = [_row(str(i), note='text\x1b') for i in range(count)]
+        rows[0]['id'] = ESCAPE
+        table = pa.Table.from_pylist(rows, schema=POLICY.subject_schema)
+        pq.write_table(table, path, row_group_size=997)
+        # Fixture creation and the independent expected values are outside measurement.
+        expected = [subject_identity(POLICY, row)[0] for row in table.to_pylist()]
+        del rows, table
+        with etl_bulk.bulk_connection(tmp_path, threads=1, memory_limit='128MB') as (con, _):
+            con.execute(f"CREATE VIEW held AS SELECT *, file_row_number AS _o FROM read_parquet({etl_bulk._literal(str(path))}, file_row_number=true)")
+            tracemalloc.start()
+            try:
+                _identities(con, POLICY, 'held', path)
+                _, peak = tracemalloc.get_traced_memory()
+            finally:
+                tracemalloc.stop()
+            got = [value for value, in con.execute('SELECT _rid FROM held_ids ORDER BY _o').fetchall()]
+        assert got == expected
+        return peak
+
+    small = measure(500, 'small')
+    large = measure(8000, 'large')
+    assert large - small < 1024 * 1024, (small, large)

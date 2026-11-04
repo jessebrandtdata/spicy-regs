@@ -172,3 +172,43 @@ def test_only_unproven_court_rows_reach_python(tmp_path, monkeypatch):
                                           _FamilyReader.compare_original)
         assert proof is False and bulk == reference
         assert reference == 'Restored processing values, order or repetitions differ from original'
+
+
+@pytest.mark.parametrize('require_bulk', [False, True])
+@pytest.mark.parametrize('failure_kind', ['duckdb', 'arrow'])
+def test_court_comparison_propagates_bulk_execution_failure_without_row_replay(
+    tmp_path, monkeypatch, require_bulk, failure_kind,
+):
+    import duckdb
+    from spicy_regs import court_receipts, etl_bulk
+
+    row = opinions()[0]
+    rows = [row | {'opinion_id': str(i + 1)} for i in range(5)]
+    original = pa.Table.from_pylist(rows, schema=pa.schema([(name, pa.string()) for name in row]))
+    failure = (duckdb.OutOfMemoryException('injected comparison memory failure') if failure_kind == 'duckdb'
+               else pa.ArrowMemoryError('injected comparison allocation failure'))
+    with admitted_court(tmp_path, 'court_opinions', rows, original) as (reader, retained):
+        actual = reader.connection
+        comparisons = []
+
+        class BrokenConnection:
+            def __getattr__(self, name):
+                return getattr(actual, name)
+
+            def execute(self, sql, *args, **kwargs):
+                if sql.startswith('WITH s AS (SELECT'):
+                    comparisons.append(True)
+                    if len(comparisons) == 2:
+                        raise failure
+                return actual.execute(sql, *args, **kwargs)
+
+        monkeypatch.setattr(etl_bulk, '_BATCH', 2)
+        monkeypatch.setattr('spicy_regs.conversion_reads._GROUP_ROWS', 2)
+        monkeypatch.setattr(reader, 'connection', BrokenConnection())
+        monkeypatch.setattr(court_receipts, 'processing_rows',
+                            lambda *a, **k: pytest.fail('operational failure must not start row replay'))
+        with etl_bulk.bulk_limits(threads=1, memory_limit='256MB', require_bulk=require_bulk):
+            with pytest.raises(etl_bulk.BulkValidationError, match='Court comparison proof failed') as raised:
+                reader.compare_original('court_opinions', retained)
+        assert raised.value.__cause__ is failure
+        assert len(comparisons) == 2

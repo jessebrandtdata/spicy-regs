@@ -27,6 +27,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from contextlib import ExitStack
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import NamedTuple
 
 import pyarrow as pa
@@ -51,7 +52,7 @@ def _q(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
 
 
-def _identities(con, policy: DatasetPolicy, view: str, path: Path) -> None:
+def _identities(con, policy: DatasetPolicy, view: str, path: Path, *, scratch: Path | None = None) -> None:
     """``<view>_ids(_o, _rid)``: each subject's record id, from SQL where it spells as Python does, else from Python.
 
     Only the routed rows are decoded: their row groups are read, one at a time, and nothing else.
@@ -61,21 +62,37 @@ def _identities(con, policy: DatasetPolicy, view: str, path: Path) -> None:
     con.execute(
         f"CREATE TABLE {view}_ids AS SELECT _o, {record_id} AS _rid, ({reference}) IS NOT FALSE AS _ref FROM {view}"
     )
-    routed = sorted(ordinal for (ordinal,) in con.execute(f"SELECT _o FROM {view}_ids WHERE _ref").fetchall())
-    if routed:
-        decided, start, wanted = [], 0, iter(routed)
+    # Finish the ordinal query before issuing another statement on this
+    # connection. Both the sorted ordinals and corrections live on disk;
+    # Python retains only one source batch and its decisions at a time.
+    with TemporaryDirectory(prefix="native-identities-", dir=scratch) as temporary:
+        root = Path(temporary)
+        wanted = iter(etl_bulk._ordinal_file(
+            con, f"SELECT _o FROM {view}_ids WHERE _ref ORDER BY _o", [], root / "ordinals.parquet"))
         pending = next(wanted, None)
-        with pq.ParquetFile(path) as source:
-            for group in range(source.metadata.num_row_groups):
-                end = start + source.metadata.row_group(group).num_rows
-                if pending is not None and pending < end:
-                    table = source.read_row_group(group)
-                    while pending is not None and pending < end:
-                        row = table.slice(pending - start, 1).to_pylist()[0]
-                        decided.append((subject_identity(policy, row)[0], pending))
-                        pending = next(wanted, None)
-                start = end
-        con.executemany(f"UPDATE {view}_ids SET _rid = ?, _ref = false WHERE _o = ?", decided)
+        schema = pa.schema([("_o", pa.int64()), ("_rid", pa.string())])
+        with pq.ParquetWriter(root / "corrections.parquet", schema, compression="zstd") as output:
+            with pq.ParquetFile(path) as source:
+                start = 0
+                for group in range(source.metadata.num_row_groups):
+                    end = start + source.metadata.row_group(group).num_rows
+                    if pending is not None and pending < end:
+                        for batch in source.iter_batches(batch_size=etl_bulk._BATCH, row_groups=[group]):
+                            stop = start + batch.num_rows
+                            decided = []
+                            while pending is not None and pending < stop:
+                                row = batch.slice(pending - start, 1).to_pylist()[0]
+                                decided.append({"_o": pending, "_rid": subject_identity(policy, row)[0]})
+                                pending = next(wanted, None)
+                            if decided:
+                                output.write_table(pa.Table.from_pylist(decided, schema=schema))
+                            start = stop
+                    start = end
+        if pending is not None:
+            raise ValueError(f"{policy.dataset}: routed subject ordinal is outside its source")
+        con.execute(f"UPDATE {view}_ids SET _rid = c._rid, _ref = false FROM "
+                    f"read_parquet({etl_bulk._literal(str(root / 'corrections.parquet'))}) c "
+                    f"WHERE {view}_ids._o = c._o")
     if con.execute(f"SELECT count(*) - count(DISTINCT _rid) FROM {view}_ids").fetchone()[0]:
         raise ValueError(f"{policy.dataset}: {view} subjects repeat an identity")
 
@@ -169,12 +186,12 @@ def native_merge(
         view("prior_r", prior_receipts or fresh_receipts, cold=prior is None)
         if con.execute(f"SELECT count(*) FROM prior_r WHERE dataset <> {lit(policy.dataset)}").fetchone()[0]:
             raise ValueError(f"{policy.dataset}: prior receipts must be scoped to the dataset")
-        _identities(con, policy, "fresh_s", fresh_subjects)
+        _identities(con, policy, "fresh_s", fresh_subjects, scratch=root)
         if prior is None:
             con.execute("CREATE TABLE prior_s_ids (_o BIGINT, _rid VARCHAR)")
         else:
             assert prior_subjects is not None
-            _identities(con, policy, "prior_s", prior_subjects)
+            _identities(con, policy, "prior_s", prior_subjects, scratch=root)
 
         # Receipts the fresh pair replaces, as the history carrier's prior: the prior accepted receipts of replaced
         # identities and every non-accepted one (a refusal or observation repeated verbatim keeps its prior receipt).
