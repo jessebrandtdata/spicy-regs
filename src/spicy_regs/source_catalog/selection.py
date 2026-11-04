@@ -100,7 +100,7 @@ def index_inventory(db, raw_root):
     return inventory_pins(snapshot[0], receipt_paths), snapshot[1]
 
 
-def public_members(root, generation):
+def public_members(root, generation, *, decode=True):
     """Read and pin one public document at a time, following only contained references."""
     members, identities = [], {}
     public_version = None
@@ -154,9 +154,10 @@ def public_members(root, generation):
                     body = member_bytes(page["path"])
                     require(len(body) == page["bytes"] and "sha256:" + hashlib.sha256(body).hexdigest() == page["sha256"],
                             "Native public file pin differs")
-                    records = validate(body, generation=generation, dataset_id=summary["id"], inventory_kind=inventory_kind)
-                    require(len(records) == page["rows"], "Public file page differs from collection")
-                    rows += len(records)
+                    if decode:
+                        records = validate(body, generation=generation, dataset_id=summary["id"], inventory_kind=inventory_kind)
+                        require(len(records) == page["rows"], "Public file page differs from collection")
+                    rows += page["rows"]
                 else:
                     value = member(page["path"], "spicy-source-files")
                     require(value["collectionId"] == summary["id"] and len(value["files"]) == page["rows"],
@@ -273,47 +274,54 @@ def _select(candidate, reconciliation, staged_public, cache, public, raw_root, e
         require(current_tables > 0
                 and candidate_metadata.get("publication_reconciliation", {}).get("currentTables") == current_tables,
                 "Candidate dropped selected publication accounting")
-    members, staged_identities = public_members(staged_public, generation)
-    staged_manifest = read(staged_public / "manifest.json")
-    version = staged_manifest["version"]
-    layout = {}
-    for summary in staged_manifest["collections"]:
-        detail = read(staged_public / summary["detailPath"])
-        for field, kind in (("files", "active"), ("retainedFiles", "attention")):
-            inventory = detail.get(field)
-            if inventory is None:
-                continue
-            pages = inventory["pages"]
-            provenance = set()
-            if version in (1, 2):
-                for page in pages:
-                    value = read(staged_public / page["path"])
-                    provenance.update("provenance" in row for row in value["files"])
-                require(len(provenance) <= 1, "Mixed legacy provenance layouts")
-                require(version == 1 or provenance != {False}, "Version 2 provenance is missing")
-            layout[(summary["id"], kind)] = {"rows": [page["rows"] for page in pages],
-                                              "provenance": next(iter(provenance), True)}
-    # Reproduce the public export from the candidate, comparing one generated
-    # member at a time to the pinned staged bytes. A receipt supplied with the
-    # staged output cannot itself prove the output came from this index.
-    expected = {item["path"]: item for item in members}
-    emitted = set()
+    from .export_completion import check_references, load as load_export_completion
 
-    def compare(path, body):
-        name = str(path.relative_to(staged_public))
-        item = expected.get(name)
-        if item is None or name in emitted:
-            raise ValueError(f"Staged public member differs from candidate export: {name}")
-        if path.suffix == ".json":
-            require(json.loads(body) == read(path), f"Staged public member differs from candidate export: {name}")
-        else:
-            require(len(body) == item["bytes"] and "sha256:" + hashlib.sha256(body).hexdigest() == item["sha256"],
-                    f"Staged public member differs from candidate export: {name}")
-        emitted.add(name)
+    admitted = load_export_completion(cache, candidate, staged_public, generation)
+    if admitted is not None:
+        completion, staged_identities = admitted
+        members = completion['members']
+        index_sha256 = completion['indexSha256'].removeprefix('sha256:')
+    else:
+        members, staged_identities = public_members(staged_public, generation)
+        staged_manifest = read(staged_public / "manifest.json")
+        version = staged_manifest["version"]
+        layout = {}
+        for summary in staged_manifest["collections"]:
+            detail = read(staged_public / summary["detailPath"])
+            for field, kind in (("files", "active"), ("retainedFiles", "attention")):
+                inventory = detail.get(field)
+                if inventory is None:
+                    continue
+                pages = inventory["pages"]
+                provenance = set()
+                if version in (1, 2):
+                    for page in pages:
+                        value = read(staged_public / page["path"])
+                        provenance.update("provenance" in row for row in value["files"])
+                    require(len(provenance) <= 1, "Mixed legacy provenance layouts")
+                    require(version == 1 or provenance != {False}, "Version 2 provenance is missing")
+                layout[(summary["id"], kind)] = {"rows": [page["rows"] for page in pages],
+                                                  "provenance": next(iter(provenance), True)}
+        # Unadmitted or transferred exports retain canonical replay. A record
+        # supplied alongside staging cannot stand in for native completion.
+        expected = {item["path"]: item for item in members}
+        emitted = set()
 
-    export(candidate, staged_public, emit=compare, public_version=version, page_layout=layout)
-    require(emitted == set(expected), "Staged public members differ from candidate export")
-    index_sha256 = digest(candidate).removeprefix("sha256:")
+        def compare(path, body):
+            name = str(path.relative_to(staged_public))
+            item = expected.get(name)
+            if item is None or name in emitted:
+                raise ValueError(f"Staged public member differs from candidate export: {name}")
+            if path.suffix == ".json":
+                require(json.loads(body) == read(path), f"Staged public member differs from candidate export: {name}")
+            else:
+                require(len(body) == item["bytes"] and "sha256:" + hashlib.sha256(body).hexdigest() == item["sha256"],
+                        f"Staged public member differs from candidate export: {name}")
+            emitted.add(name)
+
+        export(candidate, staged_public, emit=compare, public_version=version, page_layout=layout)
+        require(emitted == set(expected), "Staged public members differ from candidate export")
+        index_sha256 = digest(candidate).removeprefix("sha256:")
     generation_name = generation.removeprefix("sha256:")
     source_generation = staged_public / "generations" / generation_name
     destination_generation = plain(public / "generations" / generation_name)
@@ -326,6 +334,8 @@ def _select(candidate, reconciliation, staged_public, cache, public, raw_root, e
         check_identities(baseline, "Selected files changed during validation")
         check_identities({candidate: candidate_identity, reconciliation: report_identity}, "Candidate changed during validation")
         check_identities(staged_identities, "Staged public files changed")
+        if admitted is not None:
+            check_references(completion["references"])
         if receipt_snapshot is not None:
             # Validation/export can outlive the initial custody check. Recheck
             # raw inputs here without rebinding the hard-linked selected index.

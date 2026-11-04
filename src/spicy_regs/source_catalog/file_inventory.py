@@ -112,8 +112,9 @@ def safe_pointer(value):
 class ReceiptReferences:
     """Resolve only pinned inputs and indexed archive objects; never scan a tree."""
 
-    def __init__(self, db):
+    def __init__(self, db, dependencies=None):
         self.db, self.pins, self.cache = db, {}, {}
+        self.dependencies = dependencies
         row = db.execute("SELECT value FROM metadata WHERE key='receipt_admission'").fetchone()
         admission = json.loads(row[0]) if row else {}
         self.admitted_receipts = admission.get('receipts', {}) if admission.get('version') == 1 else {}
@@ -128,6 +129,16 @@ class ReceiptReferences:
         self.roots = list(dict.fromkeys(self.roots))
         self.raw = bool(db.execute("SELECT 1 FROM main.sqlite_master WHERE name='raw_objects'").fetchone())
 
+    def observe(self, path):
+        if self.dependencies is not None:
+            from .export_completion import observation
+
+            value = observation(path)
+            key = str(path.absolute())
+            if key in self.dependencies and self.dependencies[key] != value:
+                raise ValueError("Export reference changed during resolution")
+            self.dependencies[key] = value
+
     def indexed(self, ref):
         key, digest = ref.get("manifest"), ref.get("sha256")
         if not contained_key(key) or sha_bytes(digest) is None:
@@ -139,6 +150,7 @@ class ReceiptReferences:
             ]
             found = False
             for path, size in candidates:
+                self.observe(path)
                 if path.is_file() and not path.is_symlink() and path.stat().st_size == size:
                     from .storage import digest as hash_file
                     from .selection import identity as file_identity
@@ -169,6 +181,12 @@ class ReceiptReferences:
 
                 for root in self.roots:
                     path = root / row[0]
+                    self.observe(path)
+                    # The raw owner prefers an uncompressed object when both
+                    # storage forms exist. Preserve that negative decision too.
+                    key = f"objects/sha256/{digest.removeprefix('sha256:')[:2]}/{digest.removeprefix('sha256:')}"
+                    self.observe(root / key)
+                    self.observe(root / (key + '.gz'))
                     if path.is_file():
                         descriptor = CentralRawArchiveStore(root, create=False).describe_blob(digest, row[2])
                         if descriptor["object"] != row[0]:

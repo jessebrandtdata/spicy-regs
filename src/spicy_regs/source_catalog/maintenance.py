@@ -16,11 +16,12 @@ from pathlib import Path
 
 from .importer import Importer, encoded
 from .publication import _clone_index, import_publications
+from .progress import phase
 from .raw_archive import classify_retained_objects, holdings, remap_object_datasets, retained_classification_candidates
 from .raw_classification import classification_inputs
 from .scope import install_scope
 from .selection import check_identities, identity, index_inventory, metadata, plain, raw_selection, require
-from .storage import Inputs, connect, digest, schema, stable
+from .storage import Inputs, connect, digest, schema, stable, summary_index
 
 
 def receipt_inventory(root):
@@ -302,11 +303,15 @@ def refresh_metadata(index: Path, output: Path, *, config: Path | None = None,
         descriptor, temporary = tempfile.mkstemp(prefix=output.name + ".", suffix=".tmp", dir=output.parent)
         os.close(descriptor)
         candidate = Path(temporary)
-        method = _clone_index(index, candidate, source)
+        with phase('clone'):
+            method = _clone_index(index, candidate, source)
         check_identities({index: source_identity}, 'Base catalog changed while cloning metadata candidate')
         require(metadata(candidate)['generation'] == expected_generation, 'Cloned metadata base generation differs')
         db = connect(candidate)
-        changed = configured_metadata(db, configuration, inputs, expected_generation)
+        with phase('summary-index'):
+            added_summary_index = summary_index(db)
+        with phase('configured-metadata'):
+            changed = configured_metadata(db, configuration, inputs, expected_generation)
         delta = None
         if include_acquisitions:
             from .raw_archive import RawImporter
@@ -324,8 +329,10 @@ def refresh_metadata(index: Path, output: Path, *, config: Path | None = None,
                     # Retain the family-wide reader pin for all other originals.
                     assert cohort_pin is not None
                     partial_readers[cid] = {**cohort_pin, 'reader': reader}
-            reviews = importer.import_receipts(skip=prior_receipts, **({'receipt_snapshot': frozen} if frozen is not None else {}))
-            importer.finish_reviews(reviews)
+            with phase('receipt-import'):
+                reviews = importer.import_receipts(skip=prior_receipts, **({'receipt_snapshot': frozen} if frozen is not None else {}))
+            with phase('receipt-reviews'):
+                importer.finish_reviews(reviews)
             for path, pin in inputs.pins.items():
                 if Path(path).is_relative_to(raw_root / 'acquisitions/sha256') and path not in prior_receipts:
                     db.execute('INSERT INTO inputs VALUES(?,?,?)', (path, pin['sha256'], pin['bytes']))
@@ -340,14 +347,18 @@ def refresh_metadata(index: Path, output: Path, *, config: Path | None = None,
                      'partialContentReaders': partial_readers,
                      'metadataExtraction': dict(importer.metadata_counts),
                      'baseInventoryReplayed': False}
-        classification = classify_retained_objects(db, raw_root, retained_classification_candidates(db, configuration))
+        with phase('retained-classification'):
+            classification = classify_retained_objects(db, raw_root, retained_classification_candidates(db, configuration))
         publication = None
         if publication_reconciliation is not None:
-            publication = import_publications(db, inputs, publication_reconciliation)
+            with phase('publication'):
+                publication = import_publications(db, inputs, publication_reconciliation)
         policy = configuration.get("catalog_scope", source_metadata.get("source_scope"))
         if policy is not None:
-            install_scope(db, policy)
-        measured_holdings = holdings(db)
+            with phase('source-scope'):
+                install_scope(db, policy)
+        with phase('holdings-all'):
+            measured_holdings = holdings(db)
         measured_holdings["inventory_scope"] = "all-custody; includes supporting evidence, excludes receipt-only"
         measured_counts = {
             "files": db.execute("SELECT count(*) FROM main.files").fetchone()[0],
@@ -357,13 +368,16 @@ def refresh_metadata(index: Path, output: Path, *, config: Path | None = None,
         active_holdings = None
         if policy is not None:
             with closing(connect(candidate, readonly=True, scope="active")) as scoped:
-                active_holdings = holdings(scoped)
+                with phase('holdings-active'):
+                    active_holdings = holdings(scoped)
             active_holdings["inventory_scope"] = "active; applies reviewed source scope and usable-status filters"
         quick_check_tables = ("collections", "routes", "metadata", "tables", "lineage")
         foreign_key_tables = ("routes", "tables", "lineage")
         if include_acquisitions:
             quick_check_tables += ('files', 'objects', 'raw_objects', 'raw_periods', 'inputs', 'evidence')
             foreign_key_tables += ('files', 'raw_objects', 'raw_periods', 'evidence')
+        elif added_summary_index:
+            quick_check_tables += ('files',)
         check_identities({index: source_identity}, "Base catalog changed during metadata refresh")
         check_inventory()
         generation = "sha256:" + stable("source-catalog-metadata-refresh", 1, expected_generation, inputs.pins,
@@ -373,10 +387,11 @@ def refresh_metadata(index: Path, output: Path, *, config: Path | None = None,
                   "ancestry": list(dict.fromkeys([*source_metadata.get('refresh_ancestry', []), expected_generation])),
                   "phaseInputs": inputs.pins, "configuredMetadata": changed,
                   "retainedClassification": classification, "rawInventory": raw,
+                  "storageLayout": {"filesHoldingsIndexCreated": added_summary_index},
                   "raw_archive": measured_holdings, **measured_counts,
                   "validation": {"sqliteQuickCheckTables": list(quick_check_tables),
                                  "foreignKeyCheckTables": list(foreign_key_tables),
-                                 "configuredReferencesEnforced": True, "fullInheritedIndexScan": False},
+                                 "configuredReferencesEnforced": True, "fullInheritedIndexScan": added_summary_index},
                   "scope": "Metadata refresh over unchanged raw holdings; no acquisition, full raw audit or deployment."}
         if frozen is not None:
             added = check_inventory()
@@ -400,11 +415,13 @@ def refresh_metadata(index: Path, output: Path, *, config: Path | None = None,
             db.execute("INSERT OR REPLACE INTO metadata VALUES(?,?)", (key, encoded(value)))
         db.commit()
         for table in quick_check_tables:
-            require([row[0] for row in db.execute(f"PRAGMA quick_check('{table}')")] == ["ok"],
-                    f"Metadata refresh SQLite check failed: {table}")
+            with phase('quick-check:' + table):
+                require([row[0] for row in db.execute(f"PRAGMA quick_check('{table}')")] == ["ok"],
+                        f"Metadata refresh SQLite check failed: {table}")
         for table in foreign_key_tables:
-            require(not db.execute(f"PRAGMA foreign_key_check('{table}')").fetchall(),
-                    f"Metadata refresh references failed validation: {table}")
+            with phase('foreign-key-check:' + table):
+                require(not db.execute(f"PRAGMA foreign_key_check('{table}')").fetchall(),
+                        f"Metadata refresh references failed validation: {table}")
         db.close()
         db = None
         descriptor, temporary_report = tempfile.mkstemp(prefix=report_path.name + ".", suffix=".tmp", dir=output.parent)

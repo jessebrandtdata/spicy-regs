@@ -373,7 +373,7 @@ class RawImporter(Importer):
             self.inputs.pin(source)
         self.prepare_metadata()
         # Build secondary file indexes once after loading the immutable manifests.
-        self.db.executescript("DROP INDEX files_collection; DROP INDEX files_sha;")
+        self.db.executescript("DROP INDEX files_collection; DROP INDEX files_sha; DROP INDEX files_holdings;")
         snapshot = self.inputs.json(self.root / "snapshot.json") if (self.root / "snapshot.json").is_file() else {}
         self.generated_at = snapshot.get("recorded_at", self.generated_at)
         for name, expected in snapshot.get("indexes", {}).items():
@@ -403,6 +403,7 @@ class RawImporter(Importer):
         self.db.executescript("""
             CREATE INDEX files_collection ON files(collection_id,id);
             CREATE INDEX files_sha ON files(sha256);
+            CREATE INDEX files_holdings ON files(collection_id,status,sha256,id);
             CREATE INDEX raw_periods_label ON raw_periods(kind,label);
         """)
         self.finish_reviews(content_reviews)

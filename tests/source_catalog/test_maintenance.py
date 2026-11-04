@@ -279,3 +279,23 @@ def test_failed_report_install_removes_only_its_new_candidate(prepared, monkeypa
         maintenance.refresh_metadata(**prepared)
     assert not prepared["output"].exists()
     assert report.read_bytes() == b"concurrent report"
+
+
+def test_old_layout_migration_preserves_rows_and_checks_new_index(prepared, capsys):
+    with connect(prepared['index']) as db:
+        db.execute('DROP INDEX files_holdings')
+    before = prepared['index'].read_bytes()
+    result = maintenance.refresh_metadata(**prepared)
+    assert prepared['index'].read_bytes() == before
+    assert result['storageLayout']['filesHoldingsIndexCreated'] is True
+    assert 'files' in result['validation']['sqliteQuickCheckTables']
+    assert result['validation']['fullInheritedIndexScan'] is True
+    with connect(prepared['output']) as db:
+        from spicy_regs.source_catalog.storage import summary_index
+        assert summary_index(db) is False
+        assert [row[2] for row in db.execute('PRAGMA index_info(files_holdings)')] == [
+            'collection_id', 'status', 'sha256', 'id']
+        assert db.execute("SELECT 1 FROM sqlite_master WHERE name='files_collection'").fetchone()
+    events = [json.loads(line) for line in capsys.readouterr().err.splitlines() if line.startswith('{"catalogPhase"')]
+    for phase in ('summary-index', 'holdings-all', 'holdings-active', 'quick-check:files'):
+        assert [event['status'] for event in events if event['catalogPhase'] == phase] == ['started', 'completed']

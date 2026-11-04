@@ -151,6 +151,7 @@ def main() -> None:
     publish.add_argument("--output", type=Path, required=True)
     publish.add_argument("--internal", action="store_true")
     publish.add_argument("--page-size", type=int, default=5000)
+    publish.add_argument("--completion-cache", type=Path, help="Own reusable public export completion in this selection cache")
     select = commands.add_parser("select", help="Select a prepared local catalog and public export")
     for flag in ("candidate", "reconciliation", "staged-public", "cache", "public", "raw-root"):
         select.add_argument("--" + flag, type=Path, required=True)
@@ -224,12 +225,22 @@ def main() -> None:
             raise SystemExit(1)
         return
     elif args.command == "export":
-        manifest = export(args.index, args.output, internal=args.internal, page_size=args.page_size)
+        members = None
+        if args.completion_cache:
+            if args.internal:
+                parser.error('--completion-cache requires a public export')
+            from .export_completion import export_completed
+
+            manifest, members = export_completed(args.index, args.output, args.completion_cache, page_size=args.page_size)
+        else:
+            manifest = export(args.index, args.output, internal=args.internal, page_size=args.page_size)
         result = {
             "generation": manifest["generation"],
             "totals": manifest["totals"],
             "manifest": str(args.output / "manifest.json"),
         }
+        if members is not None:
+            result["files"] = members
     elif args.command == "select":
         from .selection import select
 

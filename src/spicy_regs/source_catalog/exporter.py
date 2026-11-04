@@ -462,7 +462,7 @@ def export_file_pages(db, output: Path, *, cid: str, folder: str, common: dict, 
     return pages
 
 
-def export(index: Path, output: Path, *, internal: bool = False, page_size: int = 5000, emit=None, public_version=3, page_layout=None) -> dict:
+def export(index: Path, output: Path, *, internal: bool = False, page_size: int = 5000, emit=None, public_version=3, page_layout=None, reference_dependencies=None) -> dict:
     if page_size < 1 or page_size > 5000:
         raise ValueError("page_size must be between 1 and 5000")
     db = connect(index, readonly=True)
@@ -479,7 +479,7 @@ def export(index: Path, output: Path, *, internal: bool = False, page_size: int 
         # evidence reads instead of repeating them for every collection.
         coverage_by_collection = {item["collection_id"]: item for item in coverage(db)["collections"]}
         from .file_inventory import ReceiptReferences
-        references = None if internal else ReceiptReferences(db)
+        references = None if internal else ReceiptReferences(db, reference_dependencies)
         retained_responses = select_retained_responses(db)
         summaries: list[dict[str, Any]] = []
         for collection in db.execute("SELECT * FROM collections ORDER BY id"):

@@ -56,6 +56,7 @@ def schema(db: sqlite3.Connection) -> None:
       name TEXT NOT NULL, status TEXT NOT NULL, sha256 TEXT REFERENCES objects, bytes INTEGER,
       local_path TEXT, data TEXT NOT NULL);
     CREATE INDEX files_collection ON files(collection_id,id);
+    CREATE INDEX files_holdings ON files(collection_id,status,sha256,id);
     CREATE INDEX files_sha ON files(sha256);
     CREATE TABLE evidence(id TEXT PRIMARY KEY, collection_id TEXT REFERENCES collections, kind TEXT, data TEXT NOT NULL);
     CREATE INDEX evidence_collection ON evidence(collection_id,kind);
@@ -64,6 +65,13 @@ def schema(db: sqlite3.Connection) -> None:
     CREATE TABLE lineage(id TEXT PRIMARY KEY, collection_id TEXT REFERENCES collections, data TEXT NOT NULL);
     CREATE TABLE inputs(path TEXT PRIMARY KEY, sha256 TEXT NOT NULL, bytes INTEGER NOT NULL);
     """)
+
+
+def summary_index(db: sqlite3.Connection) -> bool:
+    """Migrate old candidates once; retain the separate ordered-export index."""
+    present = db.execute("SELECT 1 FROM sqlite_master WHERE type='index' AND name='files_holdings'").fetchone()
+    db.execute('CREATE INDEX IF NOT EXISTS files_holdings ON files(collection_id,status,sha256,id)')
+    return present is None
 
 
 class Inputs:

@@ -658,3 +658,145 @@ def test_full_build_cannot_replace_selected_index_or_report(prepared):
     with pytest.raises(ValueError, match='selected catalog'):
         build(prepared['raw_root'], prepared['cache'] / 'index.sqlite')
     assert selected_bytes(prepared) == before
+
+
+def admit_export(prepared):
+    from spicy_regs.source_catalog.export_completion import export_completed
+
+    prepared['staged_public'] = prepared['staged_public'].with_name('owned-public')
+    return export_completed(prepared['candidate'], prepared['staged_public'], prepared['cache'])
+
+
+def test_owned_export_survives_lost_response_and_selection_does_not_replay(prepared, monkeypatch):
+    from spicy_regs.source_catalog import export_completion, exporter, file_inventory
+
+    manifest, members = admit_export(prepared)
+    def repeated(*args, **kwargs):
+        raise AssertionError('Repeated export or Parquet validation')
+    monkeypatch.setattr(exporter, 'export', repeated)
+    monkeypatch.setattr(selection, 'export', repeated)
+    monkeypatch.setattr(file_inventory, 'validate', repeated)
+    # A new invocation reads durable completion, not in-memory exporter state.
+    assert export_completion.export_completed(prepared['candidate'], prepared['staged_public'], prepared['cache']) == (manifest, members)
+    original_digest = export_completion.digest
+    def no_candidate_rehash(path):
+        assert path != prepared['candidate'], 'Candidate already qualified by export'
+        return original_digest(path)
+    monkeypatch.setattr(export_completion, 'digest', no_candidate_rehash)
+    selected = selection.select(**prepared)
+    assert selected['status'] == 'selected'
+    assert selection.read(prepared['cache'] / 'selection.json')['files'] == members
+
+
+@pytest.mark.parametrize('mutation', ['candidate', 'member', 'extra', 'sidecar', 'completion', 'completion-hash', 'implementation', 'symlink'])
+def test_owned_export_refuses_mutation_without_replay(prepared, monkeypatch, mutation):
+    from spicy_regs.source_catalog import export_completion
+
+    _, members = admit_export(prepared)
+    baseline = selected_bytes(prepared)
+    def repeated(*args, **kwargs):
+        raise AssertionError('Invalid completion must not fall back to replay')
+    monkeypatch.setattr(selection, 'export', repeated)
+    if mutation == 'candidate':
+        with connect(prepared['candidate']) as db:
+            db.execute("UPDATE files SET name='changed'")
+    elif mutation == 'member':
+        member = next(item for item in members if item['path'].endswith('.parquet'))
+        path = prepared['staged_public'] / member['path']
+        body = bytearray(path.read_bytes())
+        body[-1] ^= 1
+        path.write_bytes(body)
+    elif mutation == 'extra':
+        path = prepared['staged_public'] / next(item['path'] for item in members if item['path'].endswith('.parquet'))
+        path.with_name('extra').write_text('unexpected')
+    elif mutation == 'sidecar':
+        prepared['candidate'].with_name(prepared['candidate'].name+'-journal').touch()
+    elif mutation == 'completion':
+        export_completion.completion_path(prepared['cache'], prepared['candidate'], prepared['staged_public']).write_text('{}')
+    elif mutation == 'completion-hash':
+        path = export_completion.completion_path(prepared['cache'], prepared['candidate'], prepared['staged_public'])
+        record = selection.read(path)
+        sha = record['payload']['indexSha256']
+        record['payload']['indexSha256'] = sha[:-1] + ('0' if sha[-1] != '0' else '1')
+        write(path, record)
+    elif mutation == 'implementation':
+        monkeypatch.setattr(export_completion, 'implementation', lambda: {'changed': True})
+    else:
+        path = prepared['staged_public'] / 'manifest.json'
+        moved = path.with_name('real-manifest.json')
+        path.rename(moved)
+        path.symlink_to(moved)
+    with pytest.raises(ValueError):
+        selection.select(**prepared)
+    assert selected_bytes(prepared) == baseline
+
+
+@pytest.mark.parametrize('missing', [False, True])
+def test_owned_export_preserves_positive_and_negative_reference_decisions(prepared, monkeypatch, missing):
+    receipt = prepared['raw_root'] / 'retained/receipt.json'
+    write(receipt, {'retained': True})
+    body = receipt.read_bytes()
+    facts = {'mapping': {'receipt_evidence_ref': {
+        'manifest': str(receipt.relative_to(prepared['raw_root'])), 'sha256': digest(receipt), 'entry': 1}}}
+    with connect(prepared['candidate']) as db:
+        db.execute('INSERT INTO inputs VALUES(?,?,?)', (str(receipt), digest(receipt), len(body)))
+        db.execute('UPDATE files SET data=?', (json.dumps(facts),))
+    if missing:
+        receipt.unlink()
+    admit_export(prepared)
+    receipt.write_bytes(body if missing else b'changed receipt')
+    monkeypatch.setattr(selection, 'export', lambda *a, **k: pytest.fail('Repeated export'))
+    with pytest.raises(ValueError, match='Export reference changed'):
+        selection.select(**prepared)
+
+
+def test_export_cli_lost_response_recovers_in_fresh_process(prepared):
+    import subprocess
+    import sys
+
+    subprocess.run([sys.executable, '-m', 'spicy_regs.source_catalog', 'export',
+                    '--index', str(prepared['candidate']), '--output', str(prepared['staged_public']),
+                    '--completion-cache', str(prepared['cache'])], check=True, capture_output=True)
+    script = '''
+import sys
+from pathlib import Path
+from spicy_regs.source_catalog import exporter, file_inventory
+from spicy_regs.source_catalog.export_completion import export_completed
+def repeated(*args, **kwargs):
+    raise AssertionError('Completed export replayed in fresh process')
+exporter.export = repeated
+file_inventory.validate = repeated
+manifest, members = export_completed(*map(Path, sys.argv[1:]))
+assert manifest['generation'] and members
+'''
+    subprocess.run([sys.executable, '-c', script, str(prepared['candidate']),
+                    str(prepared['staged_public']), str(prepared['cache'])], check=True, capture_output=True)
+
+
+def test_original_reference_completion_captures_compressed_storage_preference(prepared):
+    import gzip
+    import hashlib
+    from spicy_regs.source_catalog.export_completion import check_references
+    from spicy_regs.source_catalog.file_inventory import ReceiptReferences
+
+    body = b'{"original-receipt":true}'
+    sha = hashlib.sha256(body).hexdigest()
+    key = f'objects/sha256/{sha[:2]}/{sha}'
+    raw = prepared['raw_root']
+    packed = raw / (key + '.gz')
+    packed.parent.mkdir(parents=True)
+    packed.write_bytes(gzip.compress(body))
+    dependencies = {}
+    with connect(prepared['candidate']) as db:
+        db.execute('CREATE TABLE raw_objects(sha256 TEXT,object TEXT,present INTEGER)')
+        db.execute('INSERT INTO objects VALUES(?,?)', ('sha256:' + sha, len(body)))
+        db.execute('INSERT INTO raw_objects VALUES(?,?,1)', ('sha256:' + sha, key + '.gz'))
+        refs = ReceiptReferences(db, dependencies)
+        assert refs.original('sha256:' + sha) == key + '.gz'
+    assert dependencies[str(raw / key)] is None
+    check_references(dependencies)
+    # The raw owner would now choose this uncompressed member first, even
+    # though the compressed member has exactly the same identity as before.
+    (raw / key).write_bytes(body)
+    with pytest.raises(ValueError, match='Export reference changed'):
+        check_references(dependencies)
