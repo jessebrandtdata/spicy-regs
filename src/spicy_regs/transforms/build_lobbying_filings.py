@@ -245,11 +245,26 @@ def _activities(filing: dict) -> list | None:
 
 
 def _government_entities(filing: dict) -> list | None:
-    """Known entity occurrences in activity order; child rows retain per-activity null lists."""
+    """First occurrence of each entity across the filing, in source order."""
     activities = _source_list(filing.get("lobbying_activities"), "lobbying_activities")
     if activities is None:
         return None
-    return [entity for act in activities if act is not None for entity in (_entities(act) or [])]
+    seen = set()
+    distinct = []
+    for activity in activities:
+        if activity is None:
+            continue
+        for entity in _entities(activity) or []:
+            if entity is None:
+                key = None
+            elif entity["id"] is None:
+                key = ("name", entity["name"])
+            else:
+                key = ("id", entity["id"])
+            if key not in seen:
+                distinct.append(entity)
+                seen.add(key)
+    return distinct
 
 
 def _shape(filing: dict) -> dict:

@@ -92,11 +92,22 @@ def test_shape_maps_and_serializes_fields():
     acts = json.loads(row["lobbying_activities_json"])
     assert [a["general_issue_code"] for a in acts] == ["TEC", "BUD"]
     assert acts[0]["general_issue_code_display"] == "Telecommunications"
-    # Government entities retain every occurrence in activity order.
+    # One entity per filing; activity rows retain each source occurrence.
     ents = json.loads(row["government_entities_json"])
     assert {e["name"] for e in ents} == {"HOUSE OF REPRESENTATIVES", "SENATE"}
-    assert len(ents) == 3
-    assert [e["id"] for e in ents] == [2, 2, 1]
+    assert [e["id"] for e in ents] == [2, 1]
+    activities = bld._activity_rows(_RAW_FILING)
+    assert [[e["id"] for e in json.loads(a["government_entities_json"])] for a in activities] == [[2], [2, 1]]
+
+
+def test_filing_entity_identity_uses_id_then_name_and_retains_null():
+    entries = [{"id": 2, "name": "First"}, {"id": 2, "name": "Later"},
+               {"name": "Unnamed ID"}, {"name": "Unnamed ID"}, None, None]
+    filing = {"lobbying_activities": [{"government_entities": entries}]}
+    assert bld._government_entities(filing) == [
+        {"id": 2, "name": "First"}, {"id": None, "name": "Unnamed ID"}, None,
+    ]
+    assert len(json.loads(bld._activity_rows(filing)[0]["government_entities_json"])) == len(entries)
 
 
 def test_shape_handles_missing_nested():
