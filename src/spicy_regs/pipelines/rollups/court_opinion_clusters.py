@@ -11,6 +11,7 @@ run whose published table already holds the newest export streams neither: it
 only adds the clusters created since.
 """
 
+from datetime import date
 from pathlib import Path
 from typing import ClassVar
 
@@ -32,6 +33,52 @@ class CourtOpinionClustersRollup(RollupPipeline):
 
 
 app = make_rollup_app(CourtOpinionClustersRollup)
+
+
+@app.command(name="catch-up")
+def catch_up(
+    *,
+    output_dir: Path,
+    prior_directory: Path,
+    expected_prior: str,
+    source_edition: date,
+    source_edition_evidence: Path,
+    source_edition_sha256: str,
+    courts_local_file: Path,
+    courts_sha256: str,
+    search_through: int,
+    retained_search_directory: Path,
+    max_requests: int = 50,
+    max_wait_seconds: float = 600,
+    skip_upload: bool = True,
+) -> None:
+    """Resume a bounded same-edition Search addition; see docs/court-search-recovery.md.
+
+    Select the same local prior, source-edition evidence, courts original and
+    retained directory on every attempt. This never refreshes historical rows
+    or acquires a newer bulk edition; use the default command for those cases.
+    """
+    from dotenv import load_dotenv
+    from spicy_docs.sources.courtlistener.search import CourtListenerTraversalBudget
+    from spicy_regs.transforms.catch_up_court_opinion_clusters import catch_up_court_opinion_clusters
+
+    load_dotenv()
+    allocation = CourtListenerTraversalBudget(max_requests, max_wait_seconds)
+
+    class SelectedCatchup(CourtOpinionClustersRollup):
+        def build(self, output_dir: Path) -> Path:
+            if self.source_evidence is None:
+                raise ValueError("Court catch-up requires captured source evidence")
+            return catch_up_court_opinion_clusters(
+                output_dir, prior_directory=prior_directory, expected_prior=expected_prior,
+                source_edition=source_edition, source_edition_evidence=source_edition_evidence,
+                source_edition_sha256=source_edition_sha256, courts_local_file=courts_local_file,
+                courts_sha256=courts_sha256, search_through=search_through, search_budget=allocation,
+                retained_search_directory=retained_search_directory, evidence=self.source_evidence,
+            )
+
+    SelectedCatchup(output_dir=output_dir, skip_upload=skip_upload).run()
+
 
 if __name__ == "__main__":
     app()

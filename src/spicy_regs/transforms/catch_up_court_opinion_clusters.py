@@ -74,6 +74,7 @@ def catch_up_court_opinion_clusters(
     search_through: int,
     search_budget: CourtListenerTraversalBudget,
     evidence: CaptureEvidence,
+    retained_search_directory: Path | None = None,
 ) -> Path:
     """Fetch before prior admission/restoration; return a private complete candidate.
 
@@ -120,11 +121,25 @@ def catch_up_court_opinion_clusters(
     above = _highest_cluster_id([str(prior)])
     if above is None:
         raise ValueError("Court catch-up prior has no numeric cluster ceiling")
+    retained_search = None
+    if retained_search_directory is not None:
+        from spicy_regs.sources.courtlistener_resume import RetainedCourtSearch
+
+        retained_search = RetainedCourtSearch(retained_search_directory, {
+            "family": FAMILY,
+            "parent": entry,
+            "source_edition": source_edition.isoformat(),
+            "source_edition_sha256": source_edition_sha256,
+            "courts_sha256": courts_sha256,
+            "above": above,
+            "through": search_through,
+        })
     reader = CourtListenerOpinionSearchReader(
         above=above,
         through=search_through,
         traversal_budget=search_budget,
         evidence=evidence,
+        retained_search=retained_search,
     )
     evidence.retain_file(
         source_edition_evidence,
