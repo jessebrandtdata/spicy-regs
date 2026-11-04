@@ -88,7 +88,7 @@ def test_new_family_is_visible_before_ttl_and_old_cursor_keeps_its_pins(publishe
         if tool_name == "describe_table":
             assert result["available"]
         elif subject is None:
-            assert sum(group["table_count"] for group in result["subjects"]) == 3
+            assert sum(len(group["tables"]) for group in result["subjects"]) == 3
         else:
             assert "new_source" in {row["table"] for group in result["subjects"] for row in group["tables"]}
         current = server._cached_discovery_connection

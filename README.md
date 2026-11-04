@@ -387,9 +387,8 @@ FEC subject tables are shaped at build time. Necessary response/array child view
 appear in the same table list with `role: child_query` and their `source_tables`.
 See [FEC tables and child rows](docs/fec-query-views.md) for grains, evidence and release limits.
 
-`list_sources` is used in two steps. With no argument it lists each subject
-with its table count and the row total of its pinned tables (null when none is
-pinned; `unassigned` holds tables the dictionary gives no subject), the first
+`list_sources` is used in two steps. With no argument it names each subject's
+tables (`unassigned` holds tables the dictionary gives no subject), the first
 declared tables without a loaded view in `unavailable_tables` with their count,
 relationship, unavailable and deferred view counts, the receipt summary and the
 FEC release status counts. `list_sources(subject)` then returns that subject's

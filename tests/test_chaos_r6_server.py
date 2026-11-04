@@ -402,8 +402,9 @@ def test_a_file_without_a_same_as_field_is_not_given_one():
     assert "target_rule" not in fields["same_as"]
 
 
-#: The default list_sources reply's bound (ss-ehe5 acceptance): subjects and counts, never table entries.
-DEFAULT_REPLY_CHARS = 2_000
+#: The default list_sources reply's bound: table names by subject, never table entries (owner decision 2026-10-31,
+#: ss-zt4p, raised from ss-ehe5's 2,000 for counts only).
+DEFAULT_REPLY_CHARS = 10_000
 #: What a live connection adds to a description that the dictionary-typed fixture lacks: pins with inputs (a
 #: snapshot table's are about 1,600 characters, round 6) and release summaries. Measured 2026-10-03 on the live
 #: bucket: list_sources 34,243 characters, the largest default description congress_bills' 27,748 (27,476 here).
@@ -433,8 +434,6 @@ def test_the_catalog_replies_stay_under_the_budget_so_none_is_ever_refused_or_cu
         widest, qualified = (1 << 63) - 1, [spec.view.name for spec in server.FEC_QUALIFIED_VIEWS]
         statuses = {"compatible": len(qualified), "disabled": len(qualified)}
         reason = "Release pins match; exact receipt row and output schema admission remains pending."
-        for group in listed["subjects"]:
-            group["rows"] = widest
         listed["fec_release"]["status_counts"] = statuses
         listed["deferred_views"] = [{"count": len(qualified), "query_admission": "pending_receipt_rows", "reason": reason}]
         # The fixture loads every declared table; live, ten were unloaded (2026-10-31). Widen to the longest names.
@@ -519,10 +518,10 @@ def test_list_sources_groups_tables_by_subject_with_unassigned_tables_last(monke
         # A declared subject with no loaded table is empty, not unknown.
         spending = _tool_data(mcp, "list_sources", {"subject": "spending"})
     assert "tables" not in listed
-    # No table here is pinned, so no subject claims a row total; 0 would read as an empty publication.
-    assert listed["subjects"] == [{"subject": "rulemaking", "table_count": 2, "rows": None},
-                                  {"subject": "congress", "table_count": 1, "rows": None},
-                                  {"subject": "unassigned", "table_count": 1, "rows": None}]
+    # The default names each subject's tables in page order; the page gives their label, coverage and rows.
+    assert listed["subjects"] == [{"subject": "rulemaking", "tables": ["dockets", "documents"]},
+                                  {"subject": "congress", "tables": ["laws"]},
+                                  {"subject": "unassigned", "tables": ["comments"]}]
     assert spending["subjects"] == [{"subject": "spending", "tables": []}]
     assert {reply["generation"] for reply in (listed, spending, *pages.values())} == {listed["generation"]}
     assert listed["pages"] == ["views"]
@@ -550,10 +549,8 @@ def test_a_subject_page_carries_exactly_the_entries_the_whole_catalog_listed(mon
         pages = {name: _tool_data(mcp, "list_sources", {"subject": name}) for name in names}
         relationships = server._connection_relationships(con.cursor())
     groups = [group for name in names for group in pages[name].get("subjects", [])]
-    assert [(group["subject"] or "unassigned", len(group["tables"])) for group in groups] == [
-        (group["subject"], group["table_count"]) for group in listed["subjects"]]
-    assert [sum(pinned) if (pinned := [table["rows"] for table in group["tables"] if table["rows"] is not None])
-            else None for group in groups] == [group["rows"] for group in listed["subjects"]]
+    assert [(group["subject"] or "unassigned", [table["table"] for table in group["tables"]]) for group in groups] == [
+        (group["subject"], group["tables"]) for group in listed["subjects"]]
     # Every available table is on exactly one subject page, every relationship view on the views page.
     tables = [table["table"] for group in groups for table in group["tables"]]
     views = [name for group in pages["views"]["relationship_views"] for name in group["views"]]

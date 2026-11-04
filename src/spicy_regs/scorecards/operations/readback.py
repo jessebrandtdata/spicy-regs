@@ -162,15 +162,16 @@ async def hosted(args, connection, family):
 
             expected_tables = {key.removesuffix(".parquet") for key in family["tables"]}
             listed = await call("list_sources", {}, "list_sources")
-            listed_names = {row["table"] for row in listed.get("tables", [])}
+            listed_names = {row if isinstance(row, str) else row["table"] for row in listed.get("tables", [])}
             for group in listed.get("subjects", []):
                 if expected_tables <= listed_names:
                     break
-                # A server that pages list_sources by subject lists counts first; each subject's page has its tables.
+                # Counts-only servers need a page; older full replies have entries
+                # and the names default has strings. Keep all supported readers.
                 if "tables" not in group:
                     page = await call("list_sources", {"subject": group["subject"]}, "list_sources_" + group["subject"])
                     group = page["subjects"][0]
-                listed_names.update(row["table"] for row in group["tables"])
+                listed_names.update(row if isinstance(row, str) else row["table"] for row in group["tables"])
             if not expected_tables <= listed_names:
                 raise ValueError("Hosted source tables are not all listed")
             described = await call("describe_table", {"table": "scorecard_member_ratings"}, "describe_ratings")

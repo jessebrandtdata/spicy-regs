@@ -756,6 +756,12 @@ file its reader cannot page, so two of five personas never read a row.
   `subject` is null: two personas could not find the rulemaking tables among
   158 in one list. A group costs about 40 characters. Pins,
   audits and view dependencies live in `describe_table`.
+  Since 2026-10-31 the entries are paged by subject (ss-ehe5): the whole
+  catalog approached the reply budget. With no subject
+  the reply names each subject's tables, without labels, coverage or rows
+  (owner decision, ss-zt4p). The default has a 10,000-character bound;
+  detailed pages retain their reply reserve. `list_sources(subject)` gives the
+  full entries; the `views` and `archive` pages hold the rest.
   FEC release discovery reports the selected receipt, consumer identity and
   counts of the captured compatibility states. It retains the warning that raw
   financial qualification is not inferred. Available and unavailable view names

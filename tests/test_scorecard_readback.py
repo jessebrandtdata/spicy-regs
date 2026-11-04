@@ -349,10 +349,11 @@ def test_public_readback_compares_carried_origin_distribution_to_exact_candidate
         assert {member["origin"] for member in json.loads((args.output / "public-files.json").read_bytes())["members"]} == {"downloaded"}
 
 
-@pytest.mark.parametrize("mode,corruption", [
-    ("full", fault) for fault in (None, "origin", "count", "missing-pin", "stale-pin", "field-state", "native-value")
-] + [("source-adoption", fault) for fault in (None, "native-value", "missing-scope", "stale-pin", "native-scorecard", "no-ratings", "no-source-columns")])
-def test_hosted_readback_counts_all_source_origins_and_binds_family_among_other_pins(tmp_path, monkeypatch, mode, corruption):
+@pytest.mark.parametrize("mode,corruption,discovery", [
+    ("full", fault, "counts") for fault in (None, "origin", "count", "missing-pin", "stale-pin", "field-state", "native-value")
+] + [("source-adoption", fault, "counts") for fault in (None, "native-value", "missing-scope", "stale-pin", "native-scorecard", "no-ratings", "no-source-columns")]
+  + [(mode, None, shape) for mode in ("full", "source-adoption") for shape in ("names", "entries", "flat")])
+def test_hosted_readback_counts_all_source_origins_and_binds_family_among_other_pins(tmp_path, monkeypatch, mode, corruption, discovery):
     import asyncio
     from contextlib import asynccontextmanager
     import duckdb
@@ -411,12 +412,21 @@ def test_hosted_readback_counts_all_source_origins_and_binds_family_among_other_
                 assert arguments.get("table") != "etl_receipts"
                 assert "FROM etl_receipts" not in arguments.get("sql", "")
             if tool == "list_sources" and "subject" in arguments:
+                assert discovery == "counts", "names and full replies must not cause extra subject requests"
                 assert arguments["subject"] == "unassigned", "readback pages only until the family's tables are listed"
                 body = dict(subjects=[dict(subject=None, tables=[dict(table=key.removesuffix(".parquet"))
                                                                  for key in family["tables"]])])
             elif tool == "list_sources":
-                body = dict(subjects=[dict(subject="unassigned", table_count=len(family["tables"]), rows=0),
-                                      dict(subject="congress", table_count=1, rows=0)])
+                names = [key.removesuffix(".parquet") for key in family["tables"]]
+                if discovery == "counts":
+                    body = dict(subjects=[dict(subject="unassigned", table_count=len(names), rows=0),
+                                          dict(subject="congress", table_count=1, rows=0)])
+                elif discovery == "flat":
+                    body = dict(tables=[dict(table=name) for name in names])
+                else:
+                    rows = names if discovery == "names" else [dict(table=name) for name in names]
+                    body = dict(subjects=[dict(subject="unassigned", tables=rows),
+                                          dict(subject="congress", tables=["laws"] if discovery == "names" else [dict(table="laws")])])
             elif tool == "describe_table":
                 body: dict[str, object] = dict(available=True)
                 if arguments["table"] == "scorecard_member_ratings":

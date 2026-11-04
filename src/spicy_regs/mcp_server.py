@@ -337,8 +337,8 @@ STATEMENT_TIMEOUT_SECONDS = _parse_timeout_seconds(STATEMENT_TIMEOUT)
 
 INSTRUCTIONS = (
     "Query Spicy Regs public datasets across government and attributed third-party sources. Discover tables in two steps: "
-    "list_sources with no subject lists the subjects with table and row counts, then list_sources(subject) lists "
-    "that subject's tables; unavailable_tables names declared outputs not loaded (all on the views page). Use describe_table for actual "
+    "list_sources with no subject names each subject's tables, then list_sources(subject) gives "
+    "their labels, coverage and rows; unavailable_tables names declared outputs not loaded (all on the views page). Use describe_table for actual "
     "schemas, field meanings, identifiers and coverage caveats, and query_sql for "
     "read-only queries and joins. A declared output or coverage measurement does "
     "not establish publication or freshness. qualification reports the output "
@@ -465,8 +465,8 @@ TOOL_CONCURRENCY = _resolve_tool_concurrency()
 REPLY_CHARS = _resolve_reply_chars()
 #: list_sources' page name for the tables the dictionary gives no subject; their group's subject stays null.
 UNASSIGNED_SUBJECT = "unassigned"
-#: The default list_sources reply names this many unavailable declared tables; the views page names them all. All 213
-#: unavailable at once would be 5,045 characters, against the default reply's 2,000 (ss-ehe5 review).
+#: The default previews unavailable declared tables; the views page names them all.
+#: Keep the preview bounded so unavailable names cannot crowd out the loaded table names.
 UNAVAILABLE_TABLES_LISTED = 8
 #: Room a refusal keeps for the clause it asks the caller to add (ORDER BY, LIMIT, OFFSET), which the reply echoes.
 RE_ASK_CHARS = 100
@@ -2661,8 +2661,8 @@ def _tools() -> list[Tool]:
     def list_sources(subject: Annotated[str | None, Field(min_length=1, max_length=64)] = None) -> dict[str, Any]:
         """List subjects, then one subject's tables: call with no subject first, then list_sources(subject).
 
-        No subject: each subject's table_count and rows over pinned tables (null if none; unassigned: no
-        dictionary subject), view counts (unavailable_views: every declared view not loaded), the first
+        No subject: each subject's table names (unassigned: no dictionary subject), view counts
+        (unavailable_views: every declared view not loaded), the first
         unavailable_tables, receipt summary and fec_release.status_counts. A subject gives its tables (none if
         declared but unloaded). views lists relationship views by shared summary, every unavailable table and
         view, deferred views by the reason binding waits for query_sql's own connection, and the FEC release;
@@ -2737,16 +2737,14 @@ def _tools() -> list[Tool]:
         unavailable_tables = [name for name in unavailable if name in declared]
         identity = {**_source_details(cursor), "generation": _connection_generation(cursor)}
 
-        def total(tables: list[dict[str, Any]]) -> int | None:
-            pinned = [table["rows"] for table in tables if table["rows"] is not None]
-            return sum(pinned) if pinned else None
-
         if subject is None:
             receipt_families = _receipt_families(index, local)
+            # Names only (owner decision 2026-10-31, ss-zt4p): one call shows what each subject holds;
+            # its page adds label, coverage and rows. The default's budget is 10,000 characters.
             return {
                 **identity,
-                "subjects": [{"subject": UNASSIGNED_SUBJECT if name is None else name, "table_count": len(tables),
-                              "rows": total(tables)} for name, tables in subjects.items()],
+                "subjects": [{"subject": UNASSIGNED_SUBJECT if name is None else name,
+                              "tables": [table["table"] for table in tables]} for name, tables in subjects.items()],
                 "unavailable_tables": unavailable_tables[:UNAVAILABLE_TABLES_LISTED],
                 "unavailable_table_count": len(unavailable_tables),
                 "relationship_views": {"available": sum(len(names) for names in views.values())},
