@@ -38,9 +38,8 @@ def test_missing_explicit_archive_cannot_fall_back_to_shared_writer(tmp_path):
         CaptureEvidence(tmp_path, 'scorecards')
 
 
-@pytest.mark.integration
 @pytest.mark.parametrize('outcome', ['complete', 'refused', 'exception'])
-def test_synthetic_integration_capture_lifecycle_stays_isolated(tmp_path, outcome):
+def test_offline_capture_lifecycle_stays_isolated(tmp_path, outcome):
     archive = tmp_path / 'central-raw'
     evidence = CaptureEvidence(tmp_path, 'scorecards', archive_root=archive)
     scope = evidence.for_source('hrc', 'full', parser_version='fixture/1', policy_decision_id='explicit-fixture-only')
