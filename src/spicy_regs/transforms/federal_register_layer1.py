@@ -12,6 +12,7 @@ from datetime import date
 import hashlib
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -102,8 +103,12 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_reco
 
     if not 1 <= max_records <= 10000:
         raise ValueError("A Federal Register candidate requires max_records between 1 and 10000")
-    if output_dir.exists():
+    destination = output_dir.resolve()
+    if destination.is_relative_to(archive_root.resolve()):
+        raise ValueError("Federal Register candidate output must be outside the raw archive")
+    if output_dir.exists() or output_dir.is_symlink():
         raise FileExistsError(output_dir)
+    output_dir = destination
     schema = document_schema()
     manifest_bytes = manifest_path.read_bytes()
     manifest = json.loads(manifest_bytes)
@@ -146,8 +151,6 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_reco
             observed_records += 1
             if observed_records > max_records:
                 raise ValueError("Federal Register candidate exceeds max_records")
-            if set(record) != native.DOCUMENT_FIELDS:
-                raise ValueError("Federal Register record members differ from the requested field set")
             if window is not None and not window.published_from.isoformat() <= record["publication_date"] <= window.published_through.isoformat():
                 raise ValueError("Federal Register record is outside its requested window")
             if manifest["query_scope"].get("presidentialDocumentType") and record.get("subtype") != "Executive Order":
@@ -186,9 +189,6 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_reco
     }
     # Convert before creating the output, so invalid physical values cannot leave a successful-looking candidate.
     converted = {name: pa.Table.from_pylist(data, schema=table_schema) for name, (data, table_schema) in tables.items()}
-    output_dir.mkdir(parents=True)
-    for name, table in converted.items():
-        pq.write_table(table.replace_schema_metadata({"layer1.version": VERSION}), output_dir / f"{name}.parquet", compression="zstd")
     receipt = {"version": VERSION, "reader_schema": native.SCHEMA_VERSION, "reader_schema_digest": native.source_schema_digest(),
                "input_manifest_sha256": "sha256:" + hashlib.sha256(manifest_bytes).hexdigest(),
                "requested_fields": sorted(native.DOCUMENT_FIELDS), "query_scope": manifest["query_scope"],
@@ -196,5 +196,22 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_reco
                "coverage": {name: {"present": members[name], "null": nulls[name], "populated": populated[name],
                                     "absent": len(rows) - members[name], "unrequested": False} for name in sorted(native.DOCUMENT_FIELDS)},
                "tables": {name: {"rows": len(data), "inputs": list(used.values())} for name, (data, _) in tables.items()}}
-    (output_dir / "inputs.json").write_text(json.dumps(receipt, indent=2) + "\n")
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(prefix=f".{output_dir.name}-", dir=output_dir.parent) as temporary:
+        staged = Path(temporary) / "candidate"
+        staged.mkdir()
+        for name, table in converted.items():
+            pq.write_table(table.replace_schema_metadata({"layer1.version": VERSION}), staged / f"{name}.parquet", compression="zstd")
+        (staged / "inputs.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        # Reserve without clobbering a competing writer. Rename only the empty
+        # directory we just created; no partially written table becomes visible.
+        output_dir.mkdir()
+        try:
+            staged.rename(output_dir)
+        except BaseException:
+            try:
+                output_dir.rmdir()
+            except OSError:
+                pass  # Preserve another writer's content if it appeared in the reservation.
+            raise
     return output_dir / "federal_register_documents.parquet"

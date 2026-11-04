@@ -25,8 +25,11 @@ build-federal-register-layer1 --manifest selected-pages.json \
   --archive-root ~/Work/corpora/spicyregs/raw --output-dir new-candidate
 ```
 
-The archive opens read-only. The output directory must be new. The command
-refuses missing or unused pages, repeated request cursors, dropped source members,
+The archive opens read-only. The output directory must be new and outside the
+archive, including through symlinks. A complete staged result becomes visible
+only after every table and the receipt are written. A failed write can be retried
+at the same destination. The command
+refuses missing or unused pages, repeated request cursors,
 conflicting observations of one document number and publication date, unsupported
 date or number spellings, and inputs exceeding the candidate row bound. Identical
 observations collapse; the same number on distinct publication dates survives.
@@ -50,7 +53,9 @@ publisher-stated docket id in `regulations_dot_gov_info`.
 
 `inputs.json` pins the manifest, reader schema and selected source pages once per
 table. Its field coverage distinguishes populated and null values from absent or
-unrequested members. It describes only the selected records; it does not prove
+unrequested members. Optional source members may be absent; `member_names`
+distinguishes their absence from explicit null in a queryable column. It describes
+only the selected records; it does not prove
 publisher-wide coverage, a current publisher snapshot or cross-family list
 encoding behavior. No null object-array element is accepted by the current
 Federal Register reader.
