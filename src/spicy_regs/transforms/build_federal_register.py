@@ -53,6 +53,31 @@ FR_EPOCH = date(1994, 1, 1)
 OVERLAP_DAYS = 120
 
 
+def build_federal_register_layer1(manifest: Path, archive_root: Path, output_dir: Path, *, max_records: int = 10000) -> Path:
+    """Build a bounded typed source slice offline; never reads or publishes R2.
+
+    The manifest selects retained pages by URL and digest. The maintained
+    SpicyDocs traversal validates their field request, dates and inventory.
+    This explicit candidate route is separate from the scheduled public table.
+    """
+    from spicy_regs.transforms.federal_register_layer1 import build
+
+    return build(manifest, archive_root, output_dir, max_records=max_records)
+
+
+def layer1_main() -> None:
+    """Installed offline entry point for a retained Federal Register slice."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Build a typed Federal Register slice from retained originals only")
+    parser.add_argument("--manifest", required=True, type=Path)
+    parser.add_argument("--archive-root", required=True, type=Path)
+    parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--max-records", type=int, default=10000)
+    args = parser.parse_args()
+    build_federal_register_layer1(args.manifest, args.archive_root, args.output_dir, max_records=args.max_records)
+
+
 def published_columns() -> tuple[str, ...]:
     """The published width: SpicyDocs' ``federal_register`` contract, the projection plus the derived ``rin``.
 
