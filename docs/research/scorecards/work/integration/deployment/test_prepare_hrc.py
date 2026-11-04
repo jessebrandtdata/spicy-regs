@@ -16,9 +16,9 @@ from validate_hrc_candidate import value_readback
 def deny_shared_archive(monkeypatch, tmp_path):
     """Apply to this research collection root, including integration markers."""
     from pathlib import Path
-    from spicy_regs import source_evidence
+    from spicy_docs.storage import raw_archive
 
-    original = source_evidence.CentralRawArchiveStore
+    original = raw_archive.CentralRawArchiveStore
 
     def forbidden_default():
         raise AssertionError('Synthetic research captures require an explicit temporary archive')
@@ -29,8 +29,8 @@ def deny_shared_archive(monkeypatch, tmp_path):
 
     monkeypatch.delenv('SPICYGOV_CATALOG_REQUEST', raising=False)
     monkeypatch.setenv('SPICYGOV_RAW_ROOT', str(tmp_path / 'central-raw'))
-    monkeypatch.setattr(source_evidence, 'default_raw_archive_root', forbidden_default)
-    monkeypatch.setattr(source_evidence, 'CentralRawArchiveStore', isolated)
+    monkeypatch.setattr(raw_archive, 'default_raw_archive_root', forbidden_default)
+    monkeypatch.setattr(raw_archive, 'CentralRawArchiveStore', isolated)
 
 
 def test_missing_explicit_archive_cannot_fall_back_to_shared_writer(tmp_path):
