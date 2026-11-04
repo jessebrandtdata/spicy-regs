@@ -26,6 +26,7 @@ from spicy_regs.transforms.fec_native_subjects import FIELD_RULES, refuse_c1_con
 from spicy_regs.transforms.fec_subject_receipts import subject_files as _members
 
 FAMILIES = frozenset({'fec-observations', 'fec-query'})
+FEC_SCHEMA_PATH = Path(__file__).with_name('dictionary_resources') / 'fec_typed_schemas.json'
 LEGACY_FIELDS = json.loads(Path(__file__).with_name('fec_retained_legacy_fields.json').read_text())
 
 
@@ -94,9 +95,7 @@ def family_tables(family):
     if family == 'fec-observations':
         return frozenset(OUTPUTS)
     if family == 'fec-query':
-        root = Path(__file__).resolve().parents[2]
-        return frozenset(name + '.parquet' for name in json.loads(
-            (root / 'data_dictionary/fec_typed_schemas.json').read_text())['tables'])
+        return frozenset(name + '.parquet' for name in json.loads(FEC_SCHEMA_PATH.read_text())['tables'])
     raise ValueError('Unsupported FEC conversion family')
 
 
@@ -291,8 +290,7 @@ def _bounded_record_batches(batch, *, max_bytes=8 * 1024 * 1024):
 
 def validate_identity_schema(table, schema):
     """Only the supported mapper schema or exact retained /1 schema may convert."""
-    source = Path(__file__).resolve().parents[2] / 'data_dictionary/fec_typed_schemas.json'
-    current = json.loads(source.read_text())['tables'].get(table)
+    current = json.loads(FEC_SCHEMA_PATH.read_text())['tables'].get(table)
     legacy = json.loads(Path(__file__).with_name('fec_retained_legacy_schemas.json').read_text()).get(table)
     candidates = [value for value in (None if current is None else current['arrow_schema_ipc_base64'], legacy) if value]
     if not any(schema.equals(pa.ipc.read_schema(pa.BufferReader(base64.b64decode(value))), check_metadata=False)

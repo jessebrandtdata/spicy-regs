@@ -52,7 +52,8 @@ from spicy_regs.sources.publication import SNAPSHOT_POINTER, PublicationError, p
 
 # Repo layout anchors (this file lives at src/spicy_regs/data_dictionary.py).
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DESCRIPTIONS = REPO_ROOT / "data_dictionary" / "descriptions.yaml"
+DICTIONARY_INPUTS = Path(__file__).with_name("dictionary_resources")
+DEFAULT_DESCRIPTIONS = DICTIONARY_INPUTS / "descriptions.yaml"
 DEFAULT_DOCS_TABLES_DIR = REPO_ROOT / "docs" / "tables"
 DEFAULT_CATALOG_PATH = REPO_ROOT / "data_dictionary" / "catalog.json"
 DEFAULT_CATALOG_DIGEST_PATH = REPO_ROOT / "data_dictionary" / "catalog.json.sha256"
@@ -859,7 +860,7 @@ def fec_typed_schemas() -> dict[str, list[tuple[str, str]]]:
     are support declarations and require their own output qualification. It makes
     no assertion that any table is currently published or fully populated.
     """
-    path = REPO_ROOT / "data_dictionary" / "fec_typed_schemas.json"
+    path = DICTIONARY_INPUTS / "fec_typed_schemas.json"
     document = json.loads(path.read_text(encoding="utf-8"))
     if document.get("format_version") != 2 or set(document.get("tables", {})) != set(FEC_TYPED_TABLES):
         raise ValueError("Retained FEC schema declaration differs from the supported table set")
@@ -1142,7 +1143,7 @@ def load_descriptions(path: Path = DEFAULT_DESCRIPTIONS, *, native: bool = True)
     # processing datasets remain discoverable through receipt declarations.
     # Nothing about receipts is added to a summary here (owner decision, 2026-10-05): one page explains them,
     # and what a table says about its own receipt is written in its own notes.
-    subject_prose = REPO_ROOT / "data_dictionary" / "subject_descriptions.json"
+    subject_prose = DICTIONARY_INPUTS / "subject_descriptions.json"
     overrides = json.loads(subject_prose.read_text()) if subject_prose.exists() else {}
     for name, policy in (subject_policies().items() if native else ()):
         if policy.receipt_only:
@@ -1159,7 +1160,7 @@ def load_descriptions(path: Path = DEFAULT_DESCRIPTIONS, *, native: bool = True)
     # A selected receiptless FEC generation still exposes the captured source
     # fields. Keep their qualified meanings independently of current native
     # fields, whose versioned interpretation can legitimately change.
-    legacy_path = REPO_ROOT / "data_dictionary" / "fec_legacy_column_descriptions.json"
+    legacy_path = DICTIONARY_INPUTS / "fec_legacy_column_descriptions.json"
     legacy = json.loads(legacy_path.read_text(encoding="utf-8"))
     for name, meanings in legacy["tables"].items():
         if name in tables:
@@ -1196,7 +1197,7 @@ def selected_dictionary_definitions(index: dict, names: Iterable[str], descripti
         # These fixed producer declarations describe the earlier receipt-free
         # FEC generations. Current native definitions remain the default.
         if any(name.startswith("fec_") for name in legacy_names):
-            path = REPO_ROOT / "data_dictionary" / "fec_historical_definitions.json"
+            path = DICTIONARY_INPUTS / "fec_historical_definitions.json"
             historical = json.loads(path.read_text(encoding="utf-8"))["tables"]
             for name in legacy_names & historical.keys():
                 entry = historical[name]
