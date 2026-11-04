@@ -123,3 +123,26 @@ def test_explicit_httpfs_refuses_bad_input_without_download(tmp_path, kind, monk
         monkeypatch.setattr(qualifier, 'load_public_http', lambda *a, **k: pytest.fail('No repository fallback'))
     with pytest.raises((OSError, ValueError, duckdb.Error)):
         qualifier.connection([], remote=True, scratch=tmp_path, httpfs_extension=local)
+
+
+def test_explicit_httpfs_seeds_default_private_home(tmp_path, installed_httpfs):
+    import duckdb
+    from scripts.qualify_receipt_index import install_local_httpfs
+    from spicy_regs.duckdb_settings import load_public_http
+    from spicy_regs.sources.publication import file_identity
+
+    home = tmp_path / 'mcp-home'
+    home.mkdir()
+    with duckdb.connect() as seed:
+        seed.execute('SET home_directory=?', [str(home)])
+        install_local_httpfs(seed, installed_httpfs)
+    with duckdb.connect() as consumer:
+        consumer.execute('SET home_directory=?', [str(home)])
+        load_public_http(consumer)
+        row = consumer.execute("SELECT loaded,install_path FROM duckdb_extensions() "
+                               "WHERE extension_name='httpfs'").fetchone()
+        assert row is not None
+        loaded, path = row
+        assert loaded and Path(path).is_relative_to(home)
+        assert file_identity(Path(path)) == file_identity(installed_httpfs)
+        assert consumer.execute("SELECT current_setting('allow_unsigned_extensions')").fetchone() == (False,)

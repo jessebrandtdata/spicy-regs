@@ -441,7 +441,8 @@ def audit_candidates(plan_path, candidate, output, *, fixture=False, httpfs_exte
         marker = {'probe': 'actual-mcp-startup-and-controls'}
         with serve({'/' + key: path for key, path in store.objects.items()},
                    output / 'mcp-requests.jsonl', marker) as served_base:
-            controls = mcp_controls(served_base, output, {dataset: subject}, policies={dataset: declared})
+            controls = mcp_controls(served_base, output, {dataset: subject}, policies={dataset: declared},
+                                    httpfs_extension=httpfs_extension)
         (output / 'mcp-controls.json').write_text(json.dumps(controls, indent=2) + '\n')
         record.update(settings=controls['settings'], transport=controls['transport'], schemeOverride=controls['schemeOverride'])
     with phase(log, 'final-complete-artifact-stored-bytes-and-original-pins'):

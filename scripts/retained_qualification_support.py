@@ -13,7 +13,7 @@ import sys
 import pyarrow.parquet as pq
 from starlette.testclient import TestClient
 
-from scripts.qualify_receipt_index import phase
+from scripts.qualify_receipt_index import install_local_httpfs, phase
 from spicy_regs.generations import implementation_id, source_digest
 
 def compare_files(source: Path, restored: Path):
@@ -80,7 +80,7 @@ def records(reply):
     return [dict(zip(data['columns'], row, strict=True)) for row in data['rows']]
 
 
-def mcp_controls(base: str, output: Path, subjects: dict[str, Path], *, policies=None):
+def mcp_controls(base: str, output: Path, subjects: dict[str, Path], *, policies=None, httpfs_extension=None):
     import spicy_regs.public_url as public_url
     setattr(public_url, 'resolve_r2_base_url', lambda value=None: base)
     os.environ['SPICY_REGS_MEMORY_LIMIT'] = '4GB'
@@ -89,6 +89,12 @@ def mcp_controls(base: str, output: Path, subjects: dict[str, Path], *, policies
     for name in ('R2_CATALOG_URI', 'R2_CATALOG_WAREHOUSE', 'R2_CATALOG_TOKEN'):
         os.environ.pop(name, None)
     (output / 'mcp-home').mkdir()
+    if httpfs_extension is not None:
+        import duckdb
+
+        with duckdb.connect() as seed:
+            seed.execute('SET home_directory=?', [str(output / 'mcp-home')])
+            install_local_httpfs(seed, httpfs_extension)
     from spicy_regs import mcp_server
     mcp_server.R2_BASE_URL, mcp_server.DATA_DIR = base, None
     mcp_server.MEMORY_LIMIT = '4GB'

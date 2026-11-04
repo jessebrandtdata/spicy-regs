@@ -312,6 +312,7 @@ q.audit_candidates(Path({str(plan)!r}), Path({str(tmp_path / "observed/candidate
     pinned = runner.file_pin(installed_httpfs)
     assert pinned in request["runtime"]
     for completed in (root, fresh):
-        extensions = list((completed / "output/audit/index/scratch/duckdb-extensions").rglob("httpfs.duckdb_extension"))
-        assert len(extensions) == 1
-        assert runner.file_pin(extensions[0])["sha256"] == pinned["sha256"]
+        for cache in ("output/audit/index/scratch/duckdb-extensions", "output/audit/mcp-home"):
+            extensions = list((completed / cache).rglob("httpfs.duckdb_extension"))
+            assert len(extensions) == 1
+            assert runner.file_pin(extensions[0])["sha256"] == pinned["sha256"]
