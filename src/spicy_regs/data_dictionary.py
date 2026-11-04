@@ -45,6 +45,7 @@ import duckdb
 from dotenv import load_dotenv
 
 from spicy_regs import output_ledger, table_joins
+from spicy_regs.dictionary_resources import INPUTS as DICTIONARY_INPUTS
 from spicy_regs.duckdb_settings import load_public_http
 from spicy_regs.public_url import resolve_r2_base_url
 from spicy_regs.schemas.regulations import COMMENT_MIRROR_COLUMNS, DOCUMENT_FAMILY_COLUMNS, RECORD_TYPES
@@ -52,7 +53,6 @@ from spicy_regs.sources.publication import SNAPSHOT_POINTER, PublicationError, p
 
 # Repo layout anchors (this file lives at src/spicy_regs/data_dictionary.py).
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DICTIONARY_INPUTS = Path(__file__).with_name("dictionary_resources")
 DEFAULT_DESCRIPTIONS = DICTIONARY_INPUTS / "descriptions.yaml"
 DEFAULT_DOCS_TABLES_DIR = REPO_ROOT / "docs" / "tables"
 DEFAULT_CATALOG_PATH = REPO_ROOT / "data_dictionary" / "catalog.json"

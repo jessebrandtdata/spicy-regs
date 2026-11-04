@@ -15,6 +15,7 @@ from uuid import uuid4
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from spicy_regs.dictionary_resources import INPUTS as DICTIONARY_INPUTS
 from spicy_regs.etl_receipts import RECEIPT_SCHEMA, ReceiptContext
 from spicy_regs.generations import build_generation
 from spicy_regs.sources import publication
@@ -26,7 +27,7 @@ from spicy_regs.transforms.fec_native_subjects import FIELD_RULES, refuse_c1_con
 from spicy_regs.transforms.fec_subject_receipts import subject_files as _members
 
 FAMILIES = frozenset({'fec-observations', 'fec-query'})
-FEC_SCHEMA_PATH = Path(__file__).with_name('dictionary_resources') / 'fec_typed_schemas.json'
+FEC_SCHEMA_PATH = DICTIONARY_INPUTS / 'fec_typed_schemas.json'
 LEGACY_FIELDS = json.loads(Path(__file__).with_name('fec_retained_legacy_fields.json').read_text())
 
 

@@ -143,6 +143,10 @@ spicy-regs-dict = "spicy_regs.data_dictionary:main"
 requires = ["uv_build"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+# Install the maintained dictionary files beside their reader, as regular files.
+data = { purelib = "packaging/purelib" }
+
 [tool.uv.sources]
 spicy-docs = { path = "vendor/spicy_docs-0.68.0+rawguard.1-py3-none-any.whl" }
 rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.1.2-py3-none-any.whl" }
