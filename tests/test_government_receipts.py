@@ -190,10 +190,12 @@ def test_lobbying_source_mapper_keeps_null_empty_repeats_and_child_positions():
     }
     row = map_subject("lobbying_filings", _shape(raw))
     assert row["lobbying_activities"][0] is None
-    assert row["government_entities"] == [None, {"id": "1", "name": None}, {"id": "1", "name": None}]
+    entity = {"id": "1", "name": None}
+    assert row["government_entities"] == [None, entity]
     children = [map_subject("lobbying_activities", r) for r in _activity_rows(raw)]
     assert [r["activity_index"] for r in children] == [0, 1, 2, 3]
     assert [r["government_entities"] for r in children[:3]] == [None, None, []]
+    assert children[3]["government_entities"] == [None, entity, entity]
     assert [r["lobbyist_index"] for r in _lobbyist_rows(raw)] == ["0", "1"]
 
 
