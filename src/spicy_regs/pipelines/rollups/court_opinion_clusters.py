@@ -60,8 +60,13 @@ def catch_up(
     """
     from dotenv import load_dotenv
     from spicy_docs.sources.courtlistener.search import CourtListenerTraversalBudget
-    from spicy_regs.transforms.catch_up_court_opinion_clusters import catch_up_court_opinion_clusters
+    from spicy_regs.transforms.catch_up_court_opinion_clusters import (
+        catch_up_court_opinion_clusters,
+        check_catch_up_directories,
+    )
 
+    # The rollup opens its output evidence before calling build.
+    check_catch_up_directories(prior_directory, output_dir, retained_search_directory)
     load_dotenv()
     allocation = CourtListenerTraversalBudget(max_requests, max_wait_seconds)
 

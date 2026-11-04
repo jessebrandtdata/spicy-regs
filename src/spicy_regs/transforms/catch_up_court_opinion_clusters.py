@@ -38,6 +38,17 @@ OUTPUT = DATASET + ".parquet"
 FAMILY = "court-opinion-clusters"
 
 
+def check_catch_up_directories(prior: Path, output: Path, retained_search: Path | None) -> None:
+    """Refuse paths that could write checkpoints or output into the immutable prior."""
+    prior = prior.resolve()
+    if output.resolve().is_relative_to(prior):
+        raise ValueError("Court catch-up output must be outside the selected prior")
+    if retained_search is not None:
+        retained = retained_search.resolve()
+        if retained.is_relative_to(prior) or prior.is_relative_to(retained):
+            raise ValueError("Court retained search must be outside the selected prior and use a separate directory")
+
+
 def _append_native(prior: Path, delta: Path, destination: Path, *, guard) -> None:
     """Copy exact Arrow values in bounded batches; never choose an overlap winner."""
     schema = pq.read_schema(prior)
@@ -92,6 +103,7 @@ def catch_up_court_opinion_clusters(
     """
     from spicy_docs.sources.courtlistener.search import CourtListenerTraversalBudget
 
+    check_catch_up_directories(prior_directory, output_dir, retained_search_directory)
     if not isinstance(source_edition, date) or not isinstance(search_budget, CourtListenerTraversalBudget):
         raise ValueError("Court catch-up requires an explicit source edition and traversal allocation")
     require_api_token("Court opinion-cluster search catch-up")

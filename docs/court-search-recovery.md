@@ -26,6 +26,8 @@ run-rollup-court-opinion-clusters catch-up \
   --retained-search-directory /retained/this-selected-search
 ```
 
+Choose a separate retained-search directory and keep the run output outside the selected prior.
+
 Set `R2_PUBLIC_URL` to the intended publication. The command preserves the existing
 `COURTLISTENER_API_TOKEN` prerequisite, including for replay. It does not read
 account quota state. Upload remains off by default; selecting

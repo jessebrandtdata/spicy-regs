@@ -251,6 +251,20 @@ def local_cli(selected, tmp_path, monkeypatch):
     return run, retained, work, kwargs
 
 
+@pytest.mark.parametrize("option", ["output_dir", "retained_search_directory"])
+@pytest.mark.parametrize("nested", [False, True], ids=["prior", "inside-prior"])
+def test_catch_up_preserves_prior_when_writable_directory_aliases_it(local_cli, monkeypatch, tmp_path, option, nested):
+    run, _, _, options = local_cli
+    prior = options["prior_directory"]
+    alias = tmp_path / "prior-alias"
+    alias.symlink_to(prior, target_is_directory=True)
+    calls = transport(monkeypatch, 503)
+    with pytest.raises(ValueError, match="outside the selected prior"):
+        run(**{option: alias / "new-child" if nested else alias})
+    assert not calls
+    assert verify_generation(prior).pin.artifact_digest == options["expected_prior"]
+
+
 def test_normal_cli_retains_interruption_and_resumes_only_missing_page(local_cli, monkeypatch, tmp_path):
     from types import SimpleNamespace
     from spicy_docs.transport import capture
