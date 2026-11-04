@@ -126,6 +126,48 @@ updating all three configuration values: `containers[].image`,
 the actual provider image selection and bounded live MCP release checks after
 deployment. Prepared datasets still need their reader checks.
 
+### Observe an existing image without publishing
+
+`observe_image.py` reads only the digest-pinned manifest and its configuration
+blob. It never builds an image, reads layer bodies, inspects local tags or
+requires `RepoDigests`. Supply a SHA-pinned build association and an independently
+captured, SHA-pinned `runtime_consumer` record. The selected image, code fingerprint
+and package versions must agree before any registry request. The observer does
+not reconstruct source or measure a running container.
+
+For retained exact originals, use:
+
+```sh
+uv run --frozen python deploy/cloudflare/observe_image.py \
+  --selection image-output/registry-association.json --selection-sha256 sha256:<SHA> \
+  --runtime-consumer image-output/installed-consumer.json --runtime-consumer-sha256 sha256:<SHA> \
+  --prepublication-runtime \
+  --manifest <original-manifest> --config <original-config> --output <new-observation.json>
+```
+
+`--prepublication-runtime` explicitly accepts an image capture taken before its
+registry digest existed, whose `image_digest` is null. It does not establish the
+current serving image. The receipt keeps capture provenance and an unknown time
+as unknown. Ordinary current runtime records must name the selected digest.
+
+For a live observation, provide `--runtime-observed-at <ISO-time-with-timezone>`
+and already-issued pull credentials through `--pull-credentials-stdin` instead
+of the two retained-original options. This path needs no OAuth login, write
+scope, Docker login or local image. Credential JSON stays in memory. Alternatively,
+`--wrangler <locked-wrangler.js> --profile <named-profile> --operator-config <account.json>`
+uses the existing pinned issuer with only `--pull` and a five-minute lifetime.
+The issuer's OAuth authority is separate from the issued registry credential;
+this does not claim that credential issuance works with a read-only OAuth profile.
+See [Cloudflare's credential permissions](https://developers.cloudflare.com/api/resources/containers/subresources/registries/subresources/credentials/methods/generate/).
+
+The [OCI read endpoints](https://github.com/opencontainers/distribution-spec/blob/main/spec.md#pull)
+preserve the exact bytes that their digests name. A Docker-rendered JSON view
+does not substitute for those bytes. The observer refuses redirects, indexes,
+wrong platform, changed bytes, mismatched runtime selection and oversize controls.
+It saves one complete receipt, including the original manifest/config bytes as
+base64, without replacing an existing output. Layer descriptors and uncompressed
+diff IDs retain their separate ordered meanings; no layer decompression is proved.
+
 Deploying existing configuration reuses its image even when local Python source
 has changed. Retain the prior registry digest, matching release receipt and
 Worker configuration/version. Roll back by selecting that compatible set and
