@@ -109,7 +109,8 @@ performed by this workflow. See the [image release procedure](cloudflare/README.
 
 ## MCP hosting
 
-Export `SPICYREGS_DOMAIN=spicygov.ai` before running the Cloudflare npm commands.
+Export `SPICYREGS_DOMAIN=spicygov.ai` and
+`MCP_GUIDE_URL=https://spicygov.ai/mcp/` before running the Cloudflare npm commands.
 They render `wrangler.jsonc` from `wrangler.template.jsonc`, deriving the MCP route
 and `vars.SPICY_REGS_R2_URL` from the domain. The Worker returns 503 if that setting is cleared.
 For Iceberg, fill the three catalog variables in the template and install the Worker secret
@@ -128,9 +129,25 @@ script was run against the exact image locally and against the live endpoint:
 the three tools answer, `describe_table` names each table's managed generation,
 and five cross-source joins return rows (FEC candidate to legislator and votes,
 laws to Table III, compiled hearing dates, organization to FEC committee,
-USAspending to SAM by UEI). A cold `list_sources` takes about 25 seconds while
-the container reads each table's footer. Script and receipts:
+USAspending to SAM by UEI). That early reader read each table's footer during
+cold discovery. Its script and receipts are in
 `~/Work/corpora/fork-execution-2026-09-21/r7-mcp-2026-09-25/`.
+
+The maintained [Worker template](cloudflare/wrangler.template.jsonc) pins the
+reader built from `67ef430e57b2ab55f09a66faaa9008e3bcfe8dc3` and its matching
+Federal Election Commission compatibility receipt. Keep the registry image and
+both runtime pins together when updating the template. Confirm the running
+container and live MCP response after deployment.
+[Reader image build and association](https://github.com/mikewolfd/spicy-regs/actions/runs/42077305450)
+
+On November 5, 2026, Cloudflare reported Worker version
+`8a25d4a5-8ba1-4bd9-9c41-116cac029969` and container app version `64`.
+The public MCP check verified discovery, table descriptions, and representative
+lobbying and campaign-finance queries. The public Explorer metadata matched the
+selected lobbying generation. The browser opened both filing references and
+reopened the same client from its deep link.
+[Release CI](https://github.com/mikewolfd/spicy-regs/actions/runs/42077204001)
+
 The Cloud Run script describes the historical upstream service. A fork using
 that separate hosting path needs its own project, data URL, catalog settings and
 smoke-test target; the existing script is not a fork deployment recipe.
