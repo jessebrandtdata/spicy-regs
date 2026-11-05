@@ -27,9 +27,18 @@ jobs:
       - name: Verify exact source
         shell: bash
         env:
-          REGISTRY_TOKEN: ${{ secrets.CLOUDFLARE_CONTAINER_REGISTRY_TOKEN }}
+          REGISTRY_TOKEN_CONFIGURED: ${{ secrets.CLOUDFLARE_CONTAINER_REGISTRY_TOKEN != '' }}
+          REGISTRY_USERNAME_CONFIGURED: ${{ secrets.CLOUDFLARE_CONTAINER_REGISTRY_USERNAME != '' }}
+          REGISTRY_PASSWORD_CONFIGURED: ${{ secrets.CLOUDFLARE_CONTAINER_REGISTRY_PASSWORD != '' }}
         run: |
-          : "${REGISTRY_TOKEN:?Set CLOUDFLARE_CONTAINER_REGISTRY_TOKEN for the pinned account}"
+          if [ "$REGISTRY_USERNAME_CONFIGURED" != "$REGISTRY_PASSWORD_CONFIGURED" ]; then
+            echo 'Set both temporary registry secrets or remove both.' >&2
+            exit 1
+          fi
+          if [ "$REGISTRY_USERNAME_CONFIGURED" != true ] && [ "$REGISTRY_TOKEN_CONFIGURED" != true ]; then
+            echo 'Configure temporary registry credentials or the account-scoped registry token.' >&2
+            exit 1
+          fi
           printf 'DOCKER_CONFIG=%s/mcp-registry-auth\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           SOURCE_STATUS=$(git status --porcelain)
           mkdir image-output
@@ -61,25 +70,53 @@ jobs:
       - name: Authenticate the registry before building
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_CONTAINER_REGISTRY_TOKEN }}
+          REGISTRY_USERNAME: ${{ secrets.CLOUDFLARE_CONTAINER_REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.CLOUDFLARE_CONTAINER_REGISTRY_PASSWORD }}
         run: |
-          : "${CLOUDFLARE_API_TOKEN:?Set the account-scoped Containers token}"
           mkdir -m 700 "$DOCKER_CONFIG"
           python3 - <<'PY'
-          import json, subprocess
-          command = ['deploy/cloudflare/node_modules/.bin/wrangler', '--cwd', 'deploy/cloudflare',
-                     'containers', 'registries', 'credentials', 'registry.cloudflare.com',
-                     '--push', '--pull', '--expiration-minutes', '30', '--json']
-          result = subprocess.run(command, capture_output=True, text=True, timeout=60)
-          if result.returncode:
-              raise SystemExit('Registry credential request refused before build; check the account token permissions')
+          import base64, json, os, subprocess
+          from pathlib import Path
+          from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+          registry = 'registry.cloudflare.com'
+          account = os.environ['CLOUDFLARE_ACCOUNT_ID']
+          username = os.environ.pop('REGISTRY_USERNAME')
+          password = os.environ.pop('REGISTRY_PASSWORD')
+          if bool(username) != bool(password):
+              raise SystemExit('Set both temporary registry secrets or remove both.')
+          if not username:
+              command = ['deploy/cloudflare/node_modules/.bin/wrangler', '--cwd', 'deploy/cloudflare',
+                         'containers', 'registries', 'credentials', registry,
+                         '--push', '--pull', '--expiration-minutes', '30', '--json']
+              result = subprocess.run(command, capture_output=True, text=True, timeout=60)
+              if result.returncode:
+                  raise SystemExit('Registry credential request refused before build; check the account token permissions')
+              try:
+                  credentials = json.loads(result.stdout)
+                  if credentials['account_id'] != account or credentials['registry_host'] != registry:
+                      raise ValueError('Registry credentials target another account or host')
+                  username, password = credentials['username'], credentials['password']
+              except (ValueError, KeyError, TypeError):
+                  raise SystemExit('Registry credential response invalid; values withheld') from None
+          if not all(isinstance(value, str) and value for value in (username, password)):
+              raise SystemExit('Registry credential response invalid; values withheld')
+          auth = base64.b64encode(f'{username}:{password}'.encode()).decode()
+
+          class NoRedirect(HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  raise ValueError('Registry redirect refused')
+
+          request = Request(f'https://{registry}/v2/', headers={'Authorization': f'Basic {auth}'})
           try:
-              credentials = json.loads(result.stdout)
-              username, password = credentials['username'], credentials['password']
-              assert isinstance(username, str) and username and isinstance(password, str) and password
-          except (ValueError, KeyError, TypeError, AssertionError):
-              raise SystemExit('Registry credential response invalid; values withheld') from None
-          subprocess.run(['docker', 'login', 'registry.cloudflare.com', '--username', username,
-                          '--password-stdin'], input=password, text=True, check=True, timeout=60)
+              with build_opener(NoRedirect()).open(request, timeout=20) as response:
+                  if response.status != 200:
+                      raise ValueError('Registry authentication refused')
+          except (OSError, ValueError):
+              raise SystemExit('Registry authentication failed before build; verify credential scope and lifetime') from None
+          config = Path(os.environ['DOCKER_CONFIG']) / 'config.json'
+          with os.fdopen(os.open(config, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as handle:
+              json.dump({'auths': {registry: {'auth': auth}}}, handle)
           PY
       - name: Build the existing locked reader image
         shell: bash
