@@ -826,7 +826,9 @@ def _comments_exports(comments: dict, served: list[str]) -> dict[str, dict]:
 
 
 _discovery_only = ContextVar("spicy_schema_discovery", default=False)
+_physical_receipt_lookup = ContextVar("spicy_physical_receipt_lookup", default=False)
 _requested_relations: ContextVar[set[str] | None] = ContextVar("spicy_requested_relations", default=None)
+_DISCOVERY_CATALOG = "_spicy_discovery_catalog"
 
 
 def _remote_query_scope(con, available_names):
@@ -934,10 +936,11 @@ def _build_connection_inputs(con, publication):
         publication_index, rulemaking = local.publication, None
     else:
         publication_index, rulemaking, comments = publication or _read_publication()
+    catalog_only = DATA_DIR is None and _discovery_only.get() and not _physical_receipt_lookup.get()
     checkpoint()
     con.execute("SET allow_persistent_secrets=false")
     con.execute(f"SET home_directory='{HOME_DIRECTORY.replace(chr(39), chr(39) * 2)}'")
-    if DATA_DIR is None:
+    if DATA_DIR is None and not catalog_only:
         with _diagnostic_phase("httpfs_load"):
             load_public_http(con, INTERACTIVE_HTTP_RETRIES)
 
@@ -946,6 +949,10 @@ def _build_connection_inputs(con, publication):
     # temporary tables. Keep the pin alongside the views they actually query.
     con.execute("CREATE TABLE _spicy_publication (snapshot VARCHAR)")
     con.execute("INSERT INTO _spicy_publication VALUES (?)", [json.dumps(publication_index)])
+    if catalog_only:
+        receipt_columns = _selected_receipt_columns(publication_index)
+        con.execute(f"CREATE TABLE {_DISCOVERY_CATALOG} (snapshot VARCHAR)")
+        con.execute(f"INSERT INTO {_DISCOVERY_CATALOG} VALUES (?)", [json.dumps({"receipt_columns": receipt_columns})])
     if rulemaking is not None:
         con.execute("CREATE TABLE _spicy_rulemaking (snapshot VARCHAR)")
         con.execute("INSERT INTO _spicy_rulemaking VALUES (?)", [json.dumps(rulemaking)])
@@ -1022,6 +1029,8 @@ def _build_connection_inputs(con, publication):
             continue
         checkpoint()
         published = table_descriptor(publication_index, f"{name}.parquet")
+        if catalog_only and published is not None:
+            continue
         paths = [member.path for member in table_members(publication_index, f"{name}.parquet")]
         pinned = rulemaking["tables"].get(f"{name}.parquet") if rulemaking is not None and published is None else None
         if local is None and name in managed_only and published is None and pinned is None:
@@ -1070,6 +1079,9 @@ def _build_connection_inputs(con, publication):
                 kind = "Published generation member" if required else "Legacy table"
                 raise RuntimeError(f"{kind} unavailable: {name}") from exc
             logger.warning("table %s not available at %s; skipping view: %s", name, urls, exc)
+    if catalog_only and remote_sources:
+        with _diagnostic_phase("httpfs_load"):
+            load_public_http(con, INTERACTIVE_HTTP_RETRIES)
     try:
         admitted = _admit_remote_source_views(con, remote_sources)
     except BaseException:
@@ -1109,7 +1121,8 @@ def _build_connection_inputs(con, publication):
     # A requested shared log still means every captured family. Otherwise,
     # selected receipt-dependent adapters admit their own exact members; a
     # source-only query need not open unrelated receipt files or key indexes.
-    receipts = receipt_members(publication_index) if query_scope is None or "etl_receipts" in query_scope else ()
+    receipts = (receipt_members(publication_index)
+                if not catalog_only and (query_scope is None or "etl_receipts" in query_scope) else ())
     local_receipts = local.receipts if local is not None else None
     urls = (list(map(str, local_receipts.values())) if local_receipts is not None
             else [f"{R2_BASE_URL}/{member.path}" for member in receipts])
@@ -1164,7 +1177,7 @@ def _build_connection_inputs(con, publication):
                              {"sha256": _pin(value.receipts), "byteSize": value.receipts.stat().st_size,
                               "rows": pq.ParquetFile(value.receipts).metadata.num_rows})
                 allowed_paths.append(str(value.key_index))
-    if local is None and rulemaking is not None:
+    if local is None and rulemaking is not None and not catalog_only:
         from spicy_regs.sources.publication import rulemaking_receipt
 
         snapshot_receipt = rulemaking_receipt(rulemaking)
@@ -1372,7 +1385,7 @@ def _install_relationship_views(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def _publication_status(cursor: duckdb.DuckDBPyConnection) -> dict:
-    """Describe actual availability and pins from this connection's snapshot."""
+    """Describe selected or admitted relations and pins from this connection's snapshot."""
     index = _connection_index(cursor)
     rulemaking = _connection_rulemaking(cursor)
     available = _available_tables(cursor)
@@ -1466,6 +1479,16 @@ def _receipt_families(index: dict, local: dict | None) -> dict[str, dict]:
         for family, entry in index["families"].items()
         if (receipt := entry.get("etlReceipts")) and (selected is None or f"{entry['prefix']}/{receipt['key']}" in selected)
     }
+
+
+def _selected_receipt_columns(index: dict) -> list[list[str]] | None:
+    """The selected shared log declares one schema across all receipt members."""
+    schemas = [entry["etlReceipts"]["columns"] for entry in index["families"].values() if "etlReceipts" in entry]
+    if not schemas:
+        return None
+    if any(schema != schemas[0] for schema in schemas):
+        raise RuntimeError("Selected ETL receipt members declare different schemas")
+    return schemas[0]
 
 
 def _pinned_rows(index: dict, rulemaking: dict, name: str) -> int | None:
@@ -1734,6 +1757,9 @@ _refreshing = False
 _discovery_lock = threading.Lock()
 _cached_discovery_connection = None
 _cached_discovery_at = 0.0
+_receipt_lookup_lock = threading.Lock()
+_cached_receipt_connection = None
+_cached_receipt_at = 0.0
 # Explicit discovery and missing declared tables may check before the normal
 # TTL. Both caches share one refresh owner and cooldown, including failures.
 _EARLY_REFRESH_COOLDOWN_SECONDS = 5.0
@@ -1752,24 +1778,37 @@ def _bounded_lock(lock):
         lock.release()
 
 
+def _refresh_discovery(current, at):
+    checkpoint()
+    if current is None:
+        return _build_connection(), _monotonic(), None
+    timeout = None
+    if _claim_pointer_refresh(current, at):
+        try:
+            current = _refreshed(current)
+        except TimeoutError as exc:
+            timeout = exc
+        except Exception:
+            logger.exception("discovery refresh failed; keeping its pinned schemas")
+        finally:
+            at = _finish_pointer_refresh()
+    return current, at, timeout
+
+
 def _get_discovery_connection():
-    """A separately pinned schema-only connection never restores financial/citation rows."""
-    global _cached_discovery_connection, _cached_discovery_at
-    with _bounded_lock(_discovery_lock):
-        checkpoint()
-        if _cached_discovery_connection is None:
-            _cached_discovery_connection = _build_connection()
-            _cached_discovery_at = _monotonic()
-        elif _claim_pointer_refresh(_cached_discovery_connection, _cached_discovery_at):
-            try:
-                _cached_discovery_connection = _refreshed(_cached_discovery_connection)
-            except TimeoutError:
-                raise
-            except Exception:
-                logger.exception("discovery refresh failed; keeping its pinned schemas")
-            finally:
-                _cached_discovery_at = _finish_pointer_refresh()
-        return _cached_discovery_connection
+    """Keep catalog metadata separate from receipt lookups that can read subject rows."""
+    global _cached_discovery_connection, _cached_discovery_at, _cached_receipt_connection, _cached_receipt_at
+    if _physical_receipt_lookup.get():
+        with _bounded_lock(_receipt_lookup_lock):
+            current, _cached_receipt_at, timeout = _refresh_discovery(_cached_receipt_connection, _cached_receipt_at)
+            _cached_receipt_connection = current
+    else:
+        with _bounded_lock(_discovery_lock):
+            current, _cached_discovery_at, timeout = _refresh_discovery(_cached_discovery_connection, _cached_discovery_at)
+            _cached_discovery_connection = current
+    if timeout is not None:
+        raise timeout
+    return current
 
 
 def _claim_pointer_refresh(current, cached_at: float) -> bool:
@@ -1788,7 +1827,8 @@ def _claim_pointer_refresh(current, cached_at: float) -> bool:
                 known = {*TABLES, "etl_receipts"} | {
                     name for name, entry in relationships.items() if entry["status"] == "unavailable"
                 }
-                if not (requested & known) - _registered_tables(cursor):
+                present = set(_available_tables(cursor)) if _discovery_only.get() else _registered_tables(cursor)
+                if not (requested & known) - present:
                     return False
     if not _pointer_refresh_lock.acquire(blocking=False):
         return False
@@ -1914,11 +1954,14 @@ def _refreshed(current: duckdb.DuckDBPyConnection) -> duckdb.DuckDBPyConnection:
 def _reset_connection_cache() -> None:
     """Forget the cached connection so the next call rebuilds. For tests."""
     global _cached_connection, _cached_connection_at, _refreshing, _cached_discovery_connection, _cached_discovery_at
+    global _cached_receipt_connection, _cached_receipt_at
     global _last_pointer_refresh_at
     with _connection_lock:
         _cached_connection, _cached_connection_at, _refreshing = None, 0.0, False
     with _discovery_lock:
         _cached_discovery_connection, _cached_discovery_at = None, 0.0
+    with _receipt_lookup_lock:
+        _cached_receipt_connection, _cached_receipt_at = None, 0.0
     _last_pointer_refresh_at = None
 
 
@@ -2304,7 +2347,7 @@ def _registered_tables(cursor: duckdb.DuckDBPyConnection) -> set[str]:
 
 
 def _available_tables(cursor: duckdb.DuckDBPyConnection) -> list[str]:
-    """Tables/views registered in this connection, in declared display order."""
+    """Registered relations and, for remote discovery, selected publication entries."""
     registered = _registered_tables(cursor)
     managed = [
         key.removesuffix(".parquet")
@@ -2314,6 +2357,13 @@ def _available_tables(cursor: duckdb.DuckDBPyConnection) -> list[str]:
     snapshot = [key.removesuffix(".parquet") for key in _connection_rulemaking(cursor)["tables"]]
     local = _connection_local_selection(cursor) if DATA_DIR is not None else None
     selected = local["selected_tables"] if local is not None else []
+    if _DISCOVERY_CATALOG in registered:
+        catalog = _pinned_record(cursor, _DISCOVERY_CATALOG)
+        if catalog is None:
+            raise RuntimeError("Missing selected discovery metadata")
+        registered.update(managed)
+        if catalog["receipt_columns"] is not None:
+            registered.add("etl_receipts")
     relationships = _connection_relationships(cursor)
     archive = (_pinned_record(cursor, "_spicy_archive") or {}).get("views", {})
     return [
@@ -2622,8 +2672,9 @@ def _tools() -> list[Tool]:
                 name = getattr(fn, "__name__", None)
                 # Receipt lookups admit their selected index themselves. Keep local
                 # native row validation, without restoring unrelated remote views.
-                token = _discovery_only.set(name in ("list_sources", "describe_table") or
-                                            (name == "read_receipt_fields" and DATA_DIR is None))
+                remote_lookup = name == "read_receipt_fields" and DATA_DIR is None
+                lookup_token = _physical_receipt_lookup.set(remote_lookup)
+                token = _discovery_only.set(name in ("list_sources", "describe_table") or remote_lookup)
                 requested_token = None
                 try:
                     with bound.scope():
@@ -2642,6 +2693,7 @@ def _tools() -> list[Tool]:
                     if requested_token is not None:
                         _requested_relations.reset(requested_token)
                     _discovery_only.reset(token)
+                    _physical_receipt_lookup.reset(lookup_token)
             try:
                 with anyio.fail_after(STATEMENT_TIMEOUT_SECONDS):
                     result = await anyio.to_thread.run_sync(run, limiter=limiter, abandon_on_cancel=True)
@@ -2687,6 +2739,7 @@ def _tools() -> list[Tool]:
     def list_sources(subject: Annotated[str | None, Field(min_length=1, max_length=64)] = None) -> dict[str, Any]:
         """List subjects, then one subject's tables: call with no subject first, then list_sources(subject).
 
+        Managed table names come from the selected publication. Query admission checks the named files and schemas.
         No subject: each subject's table names (unassigned: no dictionary subject), view counts
         (unavailable_views: every declared view not loaded), the first
         unavailable_tables, receipt summary and fec_release.status_counts. A subject gives its tables (none if
@@ -2762,6 +2815,8 @@ def _tools() -> list[Tool]:
         unavailable_views = [name for name in unavailable if name not in declared]
         unavailable_tables = [name for name in unavailable if name in declared]
         identity = {**_source_details(cursor), "generation": _connection_generation(cursor)}
+        if _pinned_record(cursor, _DISCOVERY_CATALOG) is not None:
+            identity["discovery_basis"] = "Selected publication for managed tables. SQL admission checks their files and schemas."
 
         if subject is None:
             receipt_families = _receipt_families(index, local)
@@ -2819,8 +2874,10 @@ def _tools() -> list[Tool]:
         """Return columns, meanings, identity, coverage and joins.
 
         Coverage uses the bundled output ledger, not population or freshness. columns
-        gives meanings (declared if unavailable); schema_differences
-        compares loaded fields. publication pins rows and coverage;
+        gives meanings (declared if unavailable); schema_differences compares
+        the selected publication's columns for managed remote tables and the
+        loaded fields for other tables. SQL checks the physical schema when queried.
+        publication pins rows and coverage;
         published_at is a pointer move, not a source read. last_object_write
         bounds that move from below.
         inputs: recorded parents, with built_from beside live. No recorded
@@ -2862,7 +2919,17 @@ def _tools() -> list[Tool]:
             raise ValueError(f"Unknown table '{table}'.{hint} list_sources lists every table.")
         with _statement_timeout(cursor):
             available = table in status["tables"]
-            rows = cursor.execute(f'DESCRIBE "{table}"').fetchall() if available else []
+            catalog = _pinned_record(cursor, _DISCOVERY_CATALOG)
+            published_columns = None
+            if catalog is not None and available:
+                from spicy_regs.sources.publication import table_descriptor
+
+                if table == "etl_receipts":
+                    published_columns = catalog["receipt_columns"]
+                elif descriptor := table_descriptor(_connection_index(cursor), f"{table}.parquet"):
+                    published_columns = descriptor["columns"]
+            rows = (published_columns if published_columns is not None else
+                    cursor.execute(f'DESCRIBE "{table}"').fetchall() if available else [])
         entry: dict[str, Any]
         if table in relationships:
             from spicy_regs.relationship_views import view_columns
@@ -2935,6 +3002,7 @@ def _tools() -> list[Tool]:
             "metadata_basis": "Dictionary declarations and dated coverage notes; not live population measurements.",
             "schema_matches_declared": not any(differences.values()) if differences is not None else None,
             "schema_differences": differences,
+            **({"schema_basis": "selected_publication"} if published_columns is not None else {}),
             "columns": [
                 {"column_name": name, "column_type": dtype,
                  "description": legacy_meanings.get(name) or declared.get(name, {}).get("description")}
