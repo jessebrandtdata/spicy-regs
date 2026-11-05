@@ -22,13 +22,17 @@ import zipfile
 from pathlib import Path
 
 
-# Only this independently qualified private native build is admitted beside
-# numbered releases. A different local qualifier needs its own reviewed identity.
+# Only explicitly qualified private native builds are admitted beside numbered
+# releases. A different local qualifier needs its own reviewed identity.
 QUALIFIED_PRIVATE_NATIVE = {
     "0.68.0+rawguard.1": {
         "source_commit": "d456e9c7e4ba0d5df66366449a02b8bea9c327b9",
         "sha256": "61ebbefb2d3614f8dbc100e51f4eb94ca6a36809af1ea65256897580e07042c5",
-    }
+    },
+    "0.68.1+eomanifest.1": {
+        "source_commit": "ffecc57a329eaa82a914086ac24b06866a3062f8",
+        "sha256": "26ac42827e960fb93cc35526615151a2252f9321ef5bc1be97dcc30f2c43aa07",
+    },
 }
 
 

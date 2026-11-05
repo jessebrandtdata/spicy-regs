@@ -10,7 +10,8 @@ from spicy_docs.sources.federal_register.body_acquisition import FederalRegister
 from spicy_docs.sources.federal_register.body_captures import capture_body, load_body_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 
-from spicy_regs.source_evidence import CaptureEvidence
+from spicy_regs.pipelines.executive_orders import build
+from spicy_regs.source_evidence import CaptureEvidence, EvidenceMemberSource
 from spicy_regs.transforms.build_executive_orders import build_executive_orders
 from tests.test_executive_orders import Reader, captured, record
 
@@ -60,13 +61,51 @@ def test_saved_access_refusal_aborts_and_preserves_previous_output(tmp_path, sta
     denial = next(event for event in events if event.get("reason_code") == "access_refused")
     assert denial["status_code"] == status
     assert denial["body_retained"] is False
-    from spicy_regs.pipelines.executive_orders import build
-
     candidate = tmp_path / "generation-attempt"
     with pytest.raises(CredentialRefusedError, match="explicit retry"):
         build(reader, candidate, year=2025, body_paths=paths)
     assert not (candidate / "generation").exists()
     assert previous.read_bytes() == before
+
+
+def test_overlapping_retry_retains_the_manifest_that_caused_the_refusal(tmp_path):
+    source = record()
+    reader = Reader([source])
+    identity = reader.records[0]["sourceRecordId"]
+    path = tmp_path / "body" / "result.json"
+    output = tmp_path / "build"
+    statuses = iter((401, 403))
+
+    with FederalRegisterBodyAcquirer(
+        budget=FederalRegisterBodyBudget(2, 4096, 4096, 1, 0),
+        transport=httpx.MockTransport(lambda request: httpx.Response(next(statuses), content=b"Access denied")),
+    ) as acquirer:
+        with pytest.raises(CredentialRefusedError, match="401"):
+            capture_body(path, record=source, source_pin=reader.pin.as_dict(), acquirer=acquirer)
+        original = path.read_bytes()
+
+        def load_then_retry(selected, *, record):
+            result = load_body_capture(selected, record=record)
+            # Let the actual retry writer replace the selection before the builder retains it.
+            with pytest.raises(CredentialRefusedError, match="403"):
+                capture_body(path, record=record, source_pin=reader.pin.as_dict(), acquirer=acquirer,
+                             retry_failed=True)
+            return result
+
+        with pytest.raises(CredentialRefusedError, match="explicit retry"):
+            build(reader, output, year=2025, body_paths={identity: str(path)}, load_body=load_then_retry)
+
+    assert json.loads(path.read_bytes())["failure"]["status_code"] == 403
+    assert not (output / "generation").exists()
+    assert not (output / "executive_order_observations.parquet").exists()
+    journal, = output.glob("source-evidence/*/artifact/journal.jsonl")
+    events = [json.loads(line) for line in journal.read_text().splitlines()]
+    denial, = [event for event in events if event.get("reason_code") == "access_refused"]
+    assert denial["source_record_id"] == identity and denial["status_code"] == 401
+    receipt, = [event for event in events if event.get("stage") == "executive-order-body-result"]
+    assert receipt["source_record_id"] == identity
+    with EvidenceMemberSource(journal.parent).open(receipt["blob_member"]) as retained:
+        assert retained.read() == original
 
 
 def test_real_provider_capture_uses_injected_aware_clock(tmp_path):

@@ -1,5 +1,10 @@
 # Source reader wheels
 
+- **Private receipt snapshot wheel** `spicy_docs-0.68.1+eomanifest.1` keeps
+  the original bytes used to parse a saved Federal Register body receipt.
+  It changes only the body receipt loader from the numbered `0.68.1` product
+  files. See [the build receipt](spicy_docs-0.68.1+eomanifest.1.json).
+
 - **Locally staged release candidate** `spicy_docs-0.68.1` comes from
   `65ba61939cc57572b5ed11dcc4b0c42143c2b9cd`. Its product files equal the
   independently qualified `0.68.0+rawguard.1` wheel byte for byte. The new

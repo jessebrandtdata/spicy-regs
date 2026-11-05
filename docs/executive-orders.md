@@ -11,18 +11,21 @@ The builder accepts a normally admitted SpicyDocs Federal Register release whose
 scope is January 1 through December 31 with
 `presidentialDocumentType="executive_order"`. All returned source records must
 qualify, and every admitted order must have exactly one selected local body
-result. Failed body attempts remain rows with `body_status='source_failed'` and
-null text. Missing results, wrong identities and omitted metadata records refuse
-the build. A failed request does not establish body absence.
+result. Ordinary body failures remain rows with `body_status='source_failed'`
+and null text. A saved credential refusal aborts the build and records its
+status and exact acquisition receipt. Missing results, wrong identities and
+omitted metadata records also refuse the build. A failed request does not
+establish body absence.
 
 SpicyDocs owns capture and validation through `FederalRegisterBodyAcquirer` and
 `sources.federal_register.body_captures`. Successful retained bodies replay
 locally through the same source validator, preserving original bytes, URL and
 observation time. The domain build performs no acquisition or automatic retry.
 The shared `body_text` extractor supplies searchable text and its cleanup/version
-evidence. Original successful and refused responses stay in the generation's
-source-evidence artifact; the generated Parquet file is adopted without another
-retained copy.
+evidence. Successful and available refused responses stay in the source-evidence
+artifact. For credential refusals, the status and saved receipt come from the
+same manifest read even if a retry replaces the file. The generated Parquet
+file is adopted without another retained copy.
 
 The president identifier/name are publisher attribution, not independently
 established signer identity. History notes remain literal, including CRLF and

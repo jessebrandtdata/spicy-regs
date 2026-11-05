@@ -1,0 +1,15 @@
+{
+  "filename": "spicy_docs-0.68.1+eomanifest.1-py3-none-any.whl",
+  "version": "0.68.1+eomanifest.1",
+  "sha256": "26ac42827e960fb93cc35526615151a2252f9321ef5bc1be97dcc30f2c43aa07",
+  "byte_size": 2752136,
+  "source_commit": "ffecc57a329eaa82a914086ac24b06866a3062f8",
+  "source_branch": "codex/eo-manifest-provider-20261105",
+  "base_source_commit": "65ba61939cc57572b5ed11dcc4b0c42143c2b9cd",
+  "base_wheel": "spicy_docs-0.68.1-py3-none-any.whl",
+  "base_wheel_sha256": "bec715f3ae45a3503e93aa4ebccfd91b2717ebf0068fbe1ba26432e7894ba82e",
+  "build": "uv build --offline --wheel",
+  "changed_package_files": [
+    "spicy_docs/sources/federal_register/body_captures.py"
+  ]
+}

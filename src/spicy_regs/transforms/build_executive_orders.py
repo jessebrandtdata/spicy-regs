@@ -174,15 +174,16 @@ def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, l
                     evidence_blob_ref=ref,
                 )
                 retained.add(ref)
-            result = load_body(body_paths[identity], record=record)
+            body_path = body_paths[identity]
+            result = load_body(body_path, record=record)
             failure = result.manifest.get("failure")
             if isinstance(failure, dict) and failure.get("credential_refused"):
                 from spicy_docs.transport.credentials import CredentialRefusedError
 
-                # The provider's loader preserves this saved outcome without raising.
-                # Keep its exact receipt and require the same explicit retry as capture_body.
-                evidence.retain_file(
-                    Path(body_paths[identity]), stage="executive-order-body-result", source_record_id=identity
+                # A retry may replace the path after the provider has read the refusal.
+                evidence.retain_bytes(
+                    result.manifest_bytes, stage="executive-order-body-result", source_record_id=identity,
+                    original_location=str(Path(body_path).absolute()),
                 )
                 evidence.event(
                     "refusal", stage="executive-order-body", source_record_id=identity,
