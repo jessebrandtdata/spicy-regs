@@ -2751,29 +2751,30 @@ def _tools() -> list[Tool]:
 
     @tool
     def list_sources(subject: Annotated[str | None, Field(min_length=1, max_length=64)] = None) -> dict[str, Any]:
-        """List subjects, then one subject's tables: call with no subject first, then list_sources(subject).
+        """List table names by subject. Call without subject, then list_sources(subject).
 
-        Managed table names come from the selected publication. Query admission checks the named files and schemas.
-        No subject: each subject's table names (unassigned: no dictionary subject), view counts
-        (unavailable_views: every declared view not loaded), the first
-        unavailable_tables, receipt summary and fec_release.status_counts. A subject gives its tables (none if
-        declared but unloaded). views lists relationship views by shared summary, every unavailable table and
-        view, deferred views by the reason binding waits for query_sql's own connection, and the FEC release;
-        archive gives the archive release. Unknown subjects are refused. generation digests the connection's
-        pins: pages that differ in it came from different connections.
-        A table gives label, coverage and pinned rows. coverage is the dictionary's kind: true_range, window,
-        sampled, derived, not_a_range or empty; a window or a sample does not hold the source's full history.
-        rows is the pinned count (describe_table gives the pin): 0 means this generation publishes no rows;
-        null means no pointer pins the table. A later run can land after the pin; rows is not a freshness
-        claim. rows_basis comments_export_receipt marks a fixed-URL comments export's receipt count;
-        export_receipt_does_not_match_object means the file moved and rows is null. child_query entries
-        expose response or array-element rows and name source_tables. category marks diagnostics, evidence,
-        leads and samples; generic query_data is omitted and absent can mean undeclared.
-        Deferred views supply no output schema or execution claim. fec_release.status_counts summarizes
-        compatible and disabled views; it does not qualify raw financial totals. Call describe_table before
-        querying for columns, caveats, joins, data pins, ledger audit and each view's release evidence.
-        The default page omits declared intentional-empty and selected small retained sample tables.
-        Explicit subject pages, the views page, describe_table and query_sql retain their full access.
+        Managed names use publication metadata. SQL checks file schemas.
+        The default shows table names, unavailable_tables preview, view counts, receipt summary
+        and fec_release.status_counts. unavailable_views counts declared views still unloaded.
+        The default omits selected empty and sampled tables.
+        Explicit subject pages, views, describe_table and query_sql retain access.
+        Unassigned means no dictionary subject. Unknown subjects are refused.
+        views lists relationship groups, unavailable tables and views, deferred bindings
+        and the FEC release. archive gives the archive release. Match generation across pages
+        to use the same pinned inputs. A declared subject may have no loaded tables.
+
+        Subject pages give labels, coverage and pinned rows. Coverage kinds are true_range, window,
+        sampled, derived, not_a_range and empty. A window or sample covers part of the source history.
+        A zero count means this generation publishes no rows. Null means no pinned count.
+        Check freshness separately. rows_basis comments_export_receipt uses the fixed-URL
+        export receipt. export_receipt_does_not_match_object means the file moved and rows is null.
+        child_query entries describe response or array-element rows and name source_tables.
+        category marks diagnostics, evidence, leads and samples. Generic query_data omits category.
+
+        Deferred views await query binding and have no proven output schema. fec_release.status_counts
+        counts compatible and disabled
+        views. Raw financial totals need separate qualification. Use describe_table for columns,
+        caveats, joins, data pins, audit details and release evidence.
         """
         cursor = _get_connection().cursor()
         with _statement_timeout(cursor):
@@ -2896,11 +2897,9 @@ def _tools() -> list[Tool]:
     def describe_table(table: str, detail: bool = False) -> dict[str, Any]:
         """Return columns, meanings, identity, coverage and joins.
 
-        Coverage uses the bundled output ledger, not population or freshness. columns
-        gives meanings (declared if unavailable); schema_differences compares
-        the selected publication's columns for managed remote tables and the
-        loaded fields for other tables. SQL checks the physical schema when queried.
-        publication pins rows and coverage;
+        Coverage is scope, not current population or freshness. columns gives meanings.
+        schema_differences compares managed remote publication columns or loaded
+        fields. SQL checks physical schemas. publication pins rows and coverage;
         published_at is a pointer move, not a source read. last_object_write
         bounds that move from below.
         inputs: recorded parents, with built_from beside live. No recorded
@@ -2918,7 +2917,7 @@ def _tools() -> list[Tool]:
         appears per entry. Missing reason means empty; floor_pct, no measured
         floor; expected_cardinality, unspecified; measured_via, measure the child.
         detail=false: omissions in detail.omitted; receipt_fields names
-        read_receipt_fields inputs. Fields inherit source meanings or declarations.
+        read_receipt_fields inputs.
         FEC release_compatibility is in publication (relationship if unavailable).
         detail=false retains pins, reasons, generations and receipt count.
         pending_receipt_rows means row admission/output binding is deferred;
