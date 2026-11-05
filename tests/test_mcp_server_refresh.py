@@ -96,7 +96,11 @@ def test_new_family_is_visible_before_ttl_and_old_cursor_keeps_its_pins(publishe
     assert current is not None
     assert server._pinned_publication(current) == moved
     assert state.reads == 2  # initial pointer read plus one early check
-    assert old_cursor.execute("SELECT id FROM warm_source").fetchall() == [("old",)]
+    if tool_name == "query_sql":
+        assert old_cursor.execute("SELECT id FROM warm_source").fetchall() == [("old",)]
+    else:
+        assert "warm_source" in server._available_tables(old_cursor)
+        assert "warm_source" not in server._registered_tables(old_cursor)
     assert server._pinned_publication(old_cursor) != moved
     old_cursor.close()
     with pytest.raises(ToolError, match="read-only"):

@@ -1063,10 +1063,9 @@ tables:
     label: "Lobbying disclosure filings"
     subject: lobbying
     coverage: >-
-      True range: every filing of each filing year held, read whole from the LDA
-      API, from the earliest filing year the backfill has reached to date;
-      earlier years are added one year per dispatched run (owner decision 47).
-      Query min(filing_year) for the current start.
+      Sampled from retained Senate Lobbying Disclosure Act API captures.
+      The snapshot has known gaps in filing years 1999–2006. Later filings
+      may be absent. Some posting dates supplied by the publisher are anomalous.
     measured_on: "2026-10-30"
     data_quality: >-
       Filing years 1999-2006 are short of the LDA's declared totals: offset
@@ -1118,7 +1117,7 @@ tables:
     label: "Lobbying activities"
     subject: lobbying
     coverage: >-
-      True range, the same filings as `lobbying_filings`: one row per lobbying
+      Sampled from the filings held in `lobbying_filings`. One row per lobbying
       activity a filing reports. A filing that lists no activity has no rows
       here.
     measured_on: "2026-09-28"
@@ -1142,7 +1141,7 @@ tables:
     label: "Lobbyists named on lobbying activities"
     subject: lobbying
     coverage: >-
-      True range, the same filings as `lobbying_filings`: one row per lobbyist
+      Sampled from the filings held in `lobbying_filings`. One row per lobbyist
       named on each activity. An activity that names no lobbyist has no rows
       here.
     measured_on: "2026-09-28"
@@ -1171,7 +1170,7 @@ tables:
     label: "Foreign entities disclosed on lobbying filings"
     subject: lobbying
     coverage: >-
-      True range, the same filings as `lobbying_filings`: one row per foreign
+      Sampled from the filings held in `lobbying_filings`. One row per foreign
       entity a filing discloses. Most filings disclose none and have no rows
       here.
     measured_on: "2026-10-31"
@@ -1204,7 +1203,7 @@ tables:
     label: "Affiliated organizations disclosed on lobbying filings"
     subject: lobbying
     coverage: >-
-      True range, the same filings as `lobbying_filings`: one row per
+      Sampled from the filings held in `lobbying_filings`. One row per
       affiliated organization a filing discloses. Most filings disclose none
       and have no rows here.
     measured_on: "2026-10-31"
@@ -1240,7 +1239,7 @@ tables:
     label: "Lobbyist conviction disclosures on lobbying filings"
     subject: lobbying
     coverage: >-
-      True range, the same filings as `lobbying_filings`: one row per
+      Sampled from the filings held in `lobbying_filings`. One row per
       conviction a filing discloses. Very few filings disclose one; the rest
       have no rows here.
     measured_on: "2026-10-31"

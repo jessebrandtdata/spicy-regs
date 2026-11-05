@@ -6,7 +6,7 @@
 
 One row per lobbying activity an LDA filing reports: the issue area, the registrant's description of what was lobbied, foreign-entity interests, and the government entities contacted for that activity. Keyed `(filing_uuid, activity_index)`, the position in the filing's own list, which is stable because LDA never edits a filing (an amendment is a new filing). Joins to `lobbying_filings` on `filing_uuid`.
 
-**Coverage.** True range, the same filings as `lobbying_filings`: one row per lobbying activity a filing reports. A filing that lists no activity has no rows here. *(measured 2026-09-28)*
+**Coverage.** Sampled from the filings held in `lobbying_filings`. One row per lobbying activity a filing reports. A filing that lists no activity has no rows here. *(measured 2026-09-28)*
 
 - **Parquet file:** `lobbying_activities.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.

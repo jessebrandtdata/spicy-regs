@@ -1,0 +1,83 @@
+{
+  "generation": "sha256:784b23da0ea9ee7807e09715d38508cd8e0cd654af1047ae6a5b1fc63efb7300",
+  "tables": {
+    "fec_research_context_dispositions": {
+      "member": {
+        "sha256": "sha256:84beae61c60123900bb69c82a2f8a696ee91e84c9973568d287365c212fd5ab2",
+        "rows": 1517,
+        "byteSize": 91123
+      },
+      "metadata": {
+        "subject": "campaign_finance",
+        "label": "FEC source processing results",
+        "kind": "sampled",
+        "category": "diagnostics"
+      }
+    },
+    "fec_research_document_observations": {
+      "member": {
+        "sha256": "sha256:e3d56e7018a759bed4dab7efdba7a224151ad417c4f89162c6e6b616e1fd038a",
+        "rows": 9493,
+        "byteSize": 2213109
+      },
+      "metadata": {
+        "subject": "campaign_finance",
+        "label": "FEC research document and case references",
+        "kind": "sampled",
+        "category": "discovery_leads"
+      }
+    },
+    "fec_research_filing_feed_items": {
+      "member": {
+        "sha256": "sha256:e5a0c8ce6d3c80f64c6ed4c72a2f4b280b8d41a075ca4ec40b5504ad337683d0",
+        "rows": 794,
+        "byteSize": 145187
+      },
+      "metadata": {
+        "subject": "campaign_finance",
+        "label": "FEC filing feed items",
+        "kind": "sampled",
+        "category": "query_data"
+      }
+    },
+    "fec_research_response_outcomes": {
+      "member": {
+        "sha256": "sha256:283b39235c50414b47f91f0afb03288cfcbe036f23ad6e9c1799801ece1b1b40",
+        "rows": 42,
+        "byteSize": 20279
+      },
+      "metadata": {
+        "subject": "campaign_finance",
+        "label": "FEC API request outcomes",
+        "kind": "sampled",
+        "category": "diagnostics"
+      }
+    },
+    "fec_research_source_pages": {
+      "member": {
+        "sha256": "sha256:8c7809c596f1a8c8b12fda7b4dd1732497e77785ed169827fa16f3f2e3a85e09",
+        "rows": 30,
+        "byteSize": 77979
+      },
+      "metadata": {
+        "subject": "campaign_finance",
+        "label": "FEC source documentation pages",
+        "kind": "sampled",
+        "category": "query_data"
+      }
+    },
+    "fec_retained_csv_observations": {
+      "member": {
+        "sha256": "sha256:90ff31d04d4839ba969fa41c502d4032af0eaaae9469d9d06e9b57bbe9f505bb",
+        "rows": 33,
+        "byteSize": 29320
+      },
+      "metadata": {
+        "subject": "campaign_finance",
+        "label": "FEC CSV context observations",
+        "kind": "sampled",
+        "category": "bounded_samples"
+      }
+    }
+  }
+}

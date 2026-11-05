@@ -39,7 +39,7 @@ def test_subject_pages_preserve_independent_labels_kinds_and_unknown_values(disc
     ]
     assert _tool_data(discovery, "list_sources", {"subject": "lobbying"})["subjects"] == [
         {"subject": "lobbying", "tables": [
-            {"table": "lobbying_filings", "label": "Lobbying disclosure filings", "coverage": "true_range", "rows": None},
+            {"table": "lobbying_filings", "label": "Lobbying disclosure filings", "coverage": "sampled", "rows": None},
         ]},
     ]
     # An unknown retained name gets no invented current label or source kind.

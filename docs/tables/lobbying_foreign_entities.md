@@ -6,7 +6,7 @@
 
 The foreign entities an LDA filing discloses: a foreign entity that owns part of the client, controls or finances its activities, or is affiliated with it and has a direct interest in the outcome. Each row is the entity as stated on this filing, with its contribution and ownership share. Keyed `(filing_uuid, foreign_entity_index)`, the entry's position in the filing's own list; joins to `lobbying_filings` on `filing_uuid`.
 
-**Coverage.** True range, the same filings as `lobbying_filings`: one row per foreign entity a filing discloses. Most filings disclose none and have no rows here. *(measured 2026-10-31)*
+**Coverage.** Sampled from the filings held in `lobbying_filings`. One row per foreign entity a filing discloses. Most filings disclose none and have no rows here. *(measured 2026-10-31)*
 
 - **Parquet file:** `lobbying_foreign_entities.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.

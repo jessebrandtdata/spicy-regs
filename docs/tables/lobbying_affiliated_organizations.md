@@ -6,7 +6,7 @@
 
 The affiliated organizations an LDA filing discloses: organizations other than the client that contribute to the lobbying activities and actively participate in planning, supervising or controlling them. Each row is the organization as stated on this filing. Keyed `(filing_uuid, affiliated_organization_index)`, the entry's position in the filing's own list; joins to `lobbying_filings` on `filing_uuid`.
 
-**Coverage.** True range, the same filings as `lobbying_filings`: one row per affiliated organization a filing discloses. Most filings disclose none and have no rows here. *(measured 2026-10-31)*
+**Coverage.** Sampled from the filings held in `lobbying_filings`. One row per affiliated organization a filing discloses. Most filings disclose none and have no rows here. *(measured 2026-10-31)*
 
 - **Parquet file:** `lobbying_affiliated_organizations.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.

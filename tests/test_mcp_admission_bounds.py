@@ -15,7 +15,7 @@ from tests.test_mcp_server import _listed, _records, _tool_data
 def reset_connections():
     server._reset_connection_cache()
     yield
-    for con in (server._cached_connection, server._cached_discovery_connection):
+    for con in (server._cached_connection, server._cached_discovery_connection, server._cached_receipt_connection):
         if con is not None:
             con.close()
     server._reset_connection_cache()
@@ -344,6 +344,34 @@ def test_discovery_cache_age_does_not_restart_on_every_read(monkeypatch):
         server._reset_connection_cache()
 
 
+@pytest.mark.parametrize("receipt_lookup", [False, True])
+def test_discovery_refresh_timeout_preserves_connection_and_releases_owner(monkeypatch, receipt_lookup):
+    import duckdb
+
+    now = [10.0]
+    monkeypatch.setattr(server, "_monotonic", lambda: now[0])
+    con = duckdb.connect()
+    monkeypatch.setattr(server, "_build_connection", lambda: con)
+
+    def timeout(_):
+        raise TimeoutError("refresh timed out")
+
+    monkeypatch.setattr(server, "_refreshed", timeout)
+    discovery = server._discovery_only.set(True)
+    receipt = server._physical_receipt_lookup.set(receipt_lookup)
+    try:
+        assert server._get_connection() is con
+        now[0] += server._CONNECTION_TTL_SECONDS + 1
+        with pytest.raises(TimeoutError, match="refresh timed out"):
+            server._get_connection()
+        assert server._pointer_refresh_lock.acquire(blocking=False)
+        server._pointer_refresh_lock.release()
+        assert server._get_connection() is con
+    finally:
+        server._physical_receipt_lookup.reset(receipt)
+        server._discovery_only.reset(discovery)
+
+
 def test_old_receipt_only_discovery_is_hidden_without_payload_restore(tmp_path, monkeypatch):
     from spicy_regs import etl_receipts
     from spicy_regs.fec_receipt_adapter import ReceiptAdapter
@@ -426,9 +454,10 @@ def test_remote_indexed_receipt_lookup_skips_unrelated_admission_but_queries_do_
     assert reply['keys'][0]['fields']['filing_url']['value'].endswith('/100')
     assert counts == {'prepare': 0, 'prepare_qualified': 0, 'citations': 0}
     assert server._cached_connection is None
-    discovery = getattr(server, '_cached_discovery_connection')
-    assert discovery is not None
-    assert discovery.execute("SELECT current_setting('enable_external_access')").fetchone() == (False,)
+    receipt_connection = server._cached_receipt_connection
+    assert receipt_connection is not None
+    assert server._cached_discovery_connection is None
+    assert receipt_connection.execute("SELECT current_setting('enable_external_access')").fetchone() == (False,)
     with pytest.raises(ToolError, match='over the 0-row bound'):
         _tool_data(mcp, 'read_receipt_fields', {**arguments, 'keys': [{'id_submission': 'missing'}]})
     assert counts == {'prepare': 0, 'prepare_qualified': 0, 'citations': 0}
@@ -440,7 +469,7 @@ def test_remote_indexed_receipt_lookup_skips_unrelated_admission_but_queries_do_
     registry = server._connection_relationships(query_connection)
     assert registry[specs[0].view.name]['status'] == 'available'
     assert all(registry[spec.view.name]['status'] == 'deferred' for spec in specs[1:])
-    assert server._cached_connection is not server._cached_discovery_connection
+    assert server._cached_connection is not receipt_connection
 
 
 def test_local_native_receipt_lookup_keeps_full_row_admission(tmp_path, monkeypatch):
@@ -556,6 +585,58 @@ def test_remote_query_registers_only_lobbying_dependency_and_keeps_security(scop
             {"sql": f"SELECT * FROM lobbying_activities CROSS JOIN read_parquet('{tmp_path / 'other_rows.parquet'}')"},
         )
     assert admitted == ["lobbying_activities"]
+
+
+def test_remote_discovery_uses_selected_descriptors_without_opening_managed_files(scoped_remote, monkeypatch):
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    mcp, index, admitted = scoped_remote
+    index["families"]["fixture"]["etlReceipts"]["columns"] = [["dataset", "VARCHAR"]]
+    monkeypatch.setattr(server, "_bind_archive", lambda _: (None, None))
+    monkeypatch.setattr(server, "_family_parents", lambda *args: {})
+    monkeypatch.setattr(server, "load_public_http", lambda *args: pytest.fail("No files needed for this catalog"))
+    listing = _tool_data(mcp, "list_sources", {})
+    assert set().union(*(set(group["tables"]) for group in listing["subjects"])) == {
+        "lobbying_activities", "other_rows", "broken_rows", "etl_receipts",
+    }
+    assert listing["etl_receipts"]["available"]
+    assert "Selected publication" in listing["discovery_basis"]
+    described = _tool_data(mcp, "describe_table", {"table": "broken_rows"})
+    assert described["schema_basis"] == "selected_publication"
+    assert described["columns"] == [{"column_name": "wrong", "column_type": "VARCHAR", "description": None}]
+    assert described["publication"]["rows"] == 1
+    receipts = _tool_data(mcp, "describe_table", {"table": "etl_receipts"})
+    assert receipts["columns"][0]["column_name"] == "dataset"
+    assert receipts["publication"]["rows"] == 1
+    assert admitted == []
+    discovery = server._cached_discovery_connection
+    assert discovery is not None
+    assert not {"broken_rows", "etl_receipts"} & server._registered_tables(discovery)
+    assert server._cached_connection is None
+
+    monkeypatch.setattr(server, "load_public_http", lambda *args: None)
+    with pytest.raises(ToolError, match="Published schema differs"):
+        _tool_data(mcp, "query_sql", {"sql": "SELECT * FROM broken_rows"})
+    assert admitted == ["broken_rows"]
+    assert _records(_tool_data(mcp, "query_sql", {"sql": "SELECT * FROM other_rows"})) == [{"id": 7}]
+    assert server._cached_connection is not discovery
+
+
+def test_remote_discovery_keeps_actual_schema_fallback_for_unpinned_tables(scoped_remote, tmp_path, monkeypatch):
+    import shutil
+
+    mcp, index, admitted = scoped_remote
+    del index["families"]["fixture"]["etlReceipts"]
+    monkeypatch.setattr(server, "TABLES", ("legacy_rows",))
+    monkeypatch.setattr(server, "_bind_archive", lambda _: (None, None))
+    shutil.copyfile(tmp_path / "other_rows.parquet", tmp_path / "legacy_rows.parquet")
+    listing = _tool_data(mcp, "list_sources", {})
+    assert any("legacy_rows" in group["tables"] for group in listing["subjects"])
+    described = _tool_data(mcp, "describe_table", {"table": "legacy_rows"})
+    assert described["columns"] == [{"column_name": "id", "column_type": "INTEGER", "description": None}]
+    assert "schema_basis" not in described
+    assert described["publication"]["status"] == "legacy_unversioned"
+    assert admitted == ["legacy_rows"]
 
 
 def test_remote_base_expansion_keeps_pins_and_failed_replacement(scoped_remote, monkeypatch):
