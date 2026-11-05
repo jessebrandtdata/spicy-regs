@@ -2873,7 +2873,7 @@ def _tools() -> list[Tool]:
     def describe_table(table: str, detail: bool = False) -> dict[str, Any]:
         """Return columns, meanings, identity, coverage and joins.
 
-        Coverage is scope, not current population or freshness. columns gives meanings.
+        The bundled output ledger describes coverage scope. columns gives meanings.
         schema_differences compares managed remote publication columns or loaded
         fields. SQL checks physical schemas. publication pins rows and coverage;
         published_at is a pointer move, not a source read. last_object_write
