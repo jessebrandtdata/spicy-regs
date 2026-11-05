@@ -468,6 +468,18 @@ UNASSIGNED_SUBJECT = "unassigned"
 #: The default previews unavailable declared tables; the views page names them all.
 #: Keep the preview bounded so unavailable names cannot crowd out the loaded table names.
 UNAVAILABLE_TABLES_LISTED = 8
+#: Owner choice 2026-11-05 (ss-kj95/ss-qm55): omit these intentional-empty
+#: tables and the five audited small retained families from the default page.
+#: This is presentation only. Keep registration, explicit pages and queries.
+#: Generic coverage kind ``sampled`` includes many other useful populations.
+DEFAULT_DISCOVERY_EXCLUDED_TABLES = frozenset({
+    "financial_changes", "section_classifications", "bill_summaries", "diff_summaries",
+    "edis_documents", "edis_attachments", "edis_attachment_files",
+    "sec_rulemakings", "sec_comment_files",
+    "cftc_rule_observations", "cftc_comments", "cftc_comment_files",
+    "inspectors_general_report_metadata", "supreme_court_index_observations",
+    "supreme_court_opinion_observations", "supreme_court_pdf_observations",
+})
 #: Room a refusal keeps for the clause it asks the caller to add (ORDER BY, LIMIT, OFFSET), which the reply echoes.
 RE_ASK_CHARS = 100
 
@@ -2679,6 +2691,8 @@ def _tools() -> list[Tool]:
         Deferred views supply no output schema or execution claim. fec_release.status_counts summarizes
         compatible and disabled views; it does not qualify raw financial totals. Call describe_table before
         querying for columns, caveats, joins, data pins, ledger audit and each view's release evidence.
+        The default page omits declared intentional-empty and selected small retained sample tables.
+        Explicit subject pages, the views page, describe_table and query_sql retain their full access.
         """
         cursor = _get_connection().cursor()
         with _statement_timeout(cursor):
@@ -2739,14 +2753,21 @@ def _tools() -> list[Tool]:
 
         if subject is None:
             receipt_families = _receipt_families(index, local)
+            visible_subjects = [
+                {"subject": UNASSIGNED_SUBJECT if name is None else name, "tables": names}
+                for name, tables in subjects.items()
+                if (names := [table["table"] for table in tables
+                              if table["table"] not in DEFAULT_DISCOVERY_EXCLUDED_TABLES])
+            ]
+            visible_unavailable = [name for name in unavailable_tables
+                                   if name not in DEFAULT_DISCOVERY_EXCLUDED_TABLES]
             # Names only (owner decision 2026-10-31, ss-zt4p): one call shows what each subject holds;
             # its page adds label, coverage and rows. The default's budget is 10,000 characters.
             return {
                 **identity,
-                "subjects": [{"subject": UNASSIGNED_SUBJECT if name is None else name,
-                              "tables": [table["table"] for table in tables]} for name, tables in subjects.items()],
-                "unavailable_tables": unavailable_tables[:UNAVAILABLE_TABLES_LISTED],
-                "unavailable_table_count": len(unavailable_tables),
+                "subjects": visible_subjects,
+                "unavailable_tables": visible_unavailable[:UNAVAILABLE_TABLES_LISTED],
+                "unavailable_table_count": len(visible_unavailable),
                 "relationship_views": {"available": sum(len(names) for names in views.values())},
                 "unavailable_views": len(unavailable_views),
                 "deferred_views": [{"count": len(names), "reason": reason, "query_admission": admission}
