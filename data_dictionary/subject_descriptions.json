@@ -393,7 +393,7 @@
       "congress_basis": "`file` when the file states that Congress itself (the House file does), `caller` when it states none and the caller supplied it (the Senate file states only its update date).",
       "session": "The session the House file states; the Senate file states none.",
       "chamber": "Which file the seat came from: house or senate.",
-      "system_code": "Derived join code: House native standing/select type selects hs/hl; the Senate code is lowercased. House joint codes keep their unresolved legacy spelling and do not establish a Congress.gov join.",
+      "system_code": "Derived join code: House native standing/select type selects hs/hl; the Senate code is lowercased. Verified 119th Congress House joint codes use their Congress.gov counterparts; unresolved House joint codes keep their legacy spelling.",
       "committee_code": "The file's own committee code, verbatim.",
       "is_subcommittee": "true for a House subcommittee seat; the Senate file lists full committees only.",
       "parent_system_code": "The parent committee's systemCode for a subcommittee seat.",
