@@ -80,8 +80,9 @@ belongs to the chapter's historical naming system.
 This `query_sql` example finds the Code placement of section 706 of Public
 Law 88-352. It selects one archive and member, checks that the publisher's
 Congress and act number agree with the search key, and forms the same
-`congress-public-number` identity used by `laws.law_id`. The left join keeps
-each placement even when the reader's `laws` table lacks the act's metadata.
+`congress-public-number` identity used by `laws.law_id`. The reader must
+register a `laws` table with unique `law_id` values. The left join keeps each
+placement and returns `NULL` for `law_title` when no law row matches.
 
 ```sql
 WITH modern AS (

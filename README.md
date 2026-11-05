@@ -387,17 +387,20 @@ FEC subject tables are shaped at build time. Necessary response/array child view
 appear in the same table list with `role: child_query` and their `source_tables`.
 See [FEC tables and child rows](docs/fec-query-views.md) for grains, evidence and release limits.
 
-`list_sources` is used in two steps. With no argument it names each subject's
-tables (`unassigned` holds tables the dictionary gives no subject), the first
-declared tables without a loaded view in `unavailable_tables` with their count,
-relationship, unavailable and deferred view counts, the receipt summary and the
-FEC release status counts. `list_sources(subject)` then returns that subject's
-tables with their label, coverage kind (`true_range`, `window`, `sampled`,
-`derived`, `not_a_range` or `empty`) and pinned rows; a declared subject with
-no loaded table returns none, and an unknown subject is refused with the valid
-names. The `views` page lists the relationship views grouped under their shared
-summary, every unavailable table and view, the deferred view names and the FEC
-release; the `archive` page gives the bound archive release. Every reply carries
+`list_sources` with no argument shows the default table lists by subject
+(`unassigned` holds tables the dictionary gives no subject), a preview and
+count of declared tables without a loaded view (`unavailable_tables` and
+`unavailable_table_count`), relationship and deferred view counts, the receipt
+summary and FEC release status counts. The default excludes a designated set
+of intentionally empty tables and sample-sized datasets from its lists and
+unavailable count.
+`list_sources(subject)` returns all loaded tables in that subject, including
+those omitted by default, with their label, coverage kind (`true_range`,
+`window`, `sampled`, `derived`, `not_a_range` or `empty`) and pinned row count.
+A declared subject with no loaded tables returns none. An unknown subject returns
+an error with valid names. The `views` page lists relationship views under their
+shared summary, every unavailable table and view, deferred view names and the
+FEC release; the `archive` page gives the bound archive release. Every reply carries
 `generation`, a digest of the connection's pins: pages whose generations differ
 came from different connections (the connection refreshes every five minutes). The whole
 catalog in one reply had reached 39,135 of the 40,000-character reply budget

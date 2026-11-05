@@ -336,9 +336,11 @@ def _parse_timeout_seconds(raw: str) -> float | None:
 STATEMENT_TIMEOUT_SECONDS = _parse_timeout_seconds(STATEMENT_TIMEOUT)
 
 INSTRUCTIONS = (
-    "Query Spicy Regs public datasets across government and attributed third-party sources. Discover tables in two steps: "
-    "list_sources with no subject names each subject's tables, then list_sources(subject) gives "
-    "their labels, coverage and rows; unavailable_tables names declared outputs not loaded (all on the views page). Use describe_table for actual "
+    "Query Spicy Regs public datasets across government and attributed third-party sources. "
+    "With no subject, list_sources shows default table lists and an unavailable preview. "
+    "Both omit a designated set of intentionally empty tables and sample-sized datasets. "
+    "Use list_sources(subject) for all loaded tables in a subject, with labels, coverage and row counts. "
+    "Use list_sources('views') for the full unavailable list. Use describe_table for actual "
     "schemas, field meanings, identifiers and coverage caveats, and query_sql for "
     "read-only queries and joins. A declared output or coverage measurement does "
     "not establish publication or freshness. qualification reports the output "
@@ -2854,7 +2856,10 @@ def _tools() -> list[Tool]:
             known = list(dict.fromkeys((*TABLES, *status["tables"], *relationships)))
             close = difflib.get_close_matches(table, known, n=5, cutoff=0.6)
             hint = f" Close names: {', '.join(close)}." if close else ""
-            raise ValueError(f"Unknown table '{table}'.{hint} list_sources lists every table.")
+            raise ValueError(
+                f"Unknown table '{table}'.{hint} Use list_sources(subject) for loaded tables "
+                "or list_sources('views') for unavailable tables."
+            )
         with _statement_timeout(cursor):
             available = table in status["tables"]
             rows = cursor.execute(f'DESCRIBE "{table}"').fetchall() if available else []
