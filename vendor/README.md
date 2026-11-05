@@ -1,17 +1,13 @@
 # Source reader wheels
 
-- **Private receipt snapshot wheel** `spicy_docs-0.68.1+eomanifest.1` keeps
-  the original bytes used to parse a saved Federal Register body receipt.
-  It changes only the body receipt loader from the numbered `0.68.1` product
-  files. See [the build receipt](spicy_docs-0.68.1+eomanifest.1.json).
-
-- **Locally staged release candidate** `spicy_docs-0.68.1` comes from
+- **Selected provider** `spicy_docs-0.68.2` comes from
+  `d3cdb4842ed535df0e4667e3272b28ffa900bb52`. It includes the reviewed CBO
+  paragraph handling, roster code joins and Federal Register body receipt
+  bytes. See [the build receipt](spicy_docs-0.68.2.json).
+- **Previous release** `spicy_docs-0.68.1` comes from
   `65ba61939cc57572b5ed11dcc4b0c42143c2b9cd`. Its product files equal the
-  independently qualified `0.68.0+rawguard.1` wheel byte for byte. The new
-  numbered identity preserves the empty test-archive guard without moving
-  the existing `v0.68.0` tag. See [the build receipt](spicy_docs-0.68.1.json).
-  This candidate excludes the separate CBO and GPO prototypes. Publication,
-  remote refs and coordinated reader adoption remain held.
+  independently qualified `0.68.0+rawguard.1` wheel byte for byte.
+  See [the build receipt](spicy_docs-0.68.1.json).
 
 `uv sync --frozen` installs these through the default `source-readers` group.
 The optional `source-readers` extra enables the same readers for package installs;

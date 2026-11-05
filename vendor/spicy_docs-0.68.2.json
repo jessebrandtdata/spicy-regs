@@ -1,0 +1,25 @@
+{
+  "filename": "spicy_docs-0.68.2-py3-none-any.whl",
+  "version": "0.68.2",
+  "sha256": "aa0765c249936f6b33fd8c511a5fa9834889d976faf53c88123d63f4ee15f3cd",
+  "byte_size": 2752322,
+  "source_commit": "d3cdb4842ed535df0e4667e3272b28ffa900bb52",
+  "source_tree": "a973a97484af2ebe345e1a860d517b82147492b2",
+  "previous_released_source_commit": "65ba61939cc57572b5ed11dcc4b0c42143c2b9cd",
+  "build": "uv 0.13.7 build --offline --wheel",
+  "scope": "Versioned successor of reviewed development source with CBO absence handling, three verified roster joins, and exact Federal Register body receipt bytes.",
+  "dependency_declarations_unchanged": true,
+  "product_members_match_committed_source": 520,
+  "changed_product_files_since_0.68.1": [
+    "spicy_docs/interpretation/cbo_estimates.py",
+    "spicy_docs/schemas/roster_tables.py",
+    "spicy_docs/sources/congress/committee_rosters.py",
+    "spicy_docs/sources/federal_register/body_captures.py"
+  ],
+  "changed_product_files_since_qualified_roster_wheel": [
+    "spicy_docs/sources/federal_register/body_captures.py"
+  ],
+  "body_capture_member_matches_qualified_private_eo_wheel": true,
+  "wheel_record_hashes_verified": true,
+  "source_state_at_build": "Local candidate, pending coordinator promotion and exact remote CI"
+}
