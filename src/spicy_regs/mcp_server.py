@@ -2766,7 +2766,8 @@ def _tools() -> list[Tool]:
         Subject pages give labels, coverage and pinned rows. Coverage kinds are true_range, window,
         sampled, derived, not_a_range and empty. A window or sample covers part of the source history.
         A zero count means this generation publishes no rows. Null means no pinned count.
-        Check freshness separately. rows_basis comments_export_receipt uses the fixed-URL
+        Later runs can finish after the pin. Check freshness separately.
+        rows_basis comments_export_receipt uses the fixed-URL
         export receipt. export_receipt_does_not_match_object means the file moved and rows is null.
         child_query entries describe response or array-element rows and name source_tables.
         category marks diagnostics, evidence, leads and samples. Generic query_data omits category.
