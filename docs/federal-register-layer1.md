@@ -28,8 +28,9 @@ build-federal-register-layer1 --manifest selected-pages.json \
 The archive opens read-only. The output directory must be new and outside the
 archive, including through symlinks. A complete staged result becomes visible
 only after every table and the receipt are written. A failed write can be retried
-at the same destination. The command
-refuses missing or unused pages, repeated request cursors,
+at the same destination. Every retained request in the manifest, including
+each continuation, must carry the current source field set. The command
+refuses a different requested field set, missing or unused pages, repeated request cursors,
 conflicting observations of one document number and publication date, unsupported
 date or number spellings, and inputs exceeding the candidate row bound. Identical
 observations collapse; the same number on distinct publication dates survives.
@@ -37,7 +38,10 @@ The default and maximum candidate bound is 10,000 observed records, including
 duplicates. This route does not replace historical acquisition or scheduled
 publishing.
 
-`federal_register_documents.parquet` contains every requested source member.
+`federal_register_documents.parquet` has a typed column for each current
+source field. Retained pages requested under the earlier field set remain
+observations of that request. The ordinary `federal_register` table has its
+own [compatibility columns](tables/federal_register.md).
 Dates use `DATE`, page numbers and executive order numbers use `BIGINT`,
 `significant` uses `BOOLEAN`, and source arrays use `VARCHAR[]`. Object array
 elements contain JSON text; text array elements remain literal strings.

@@ -36,7 +36,8 @@ def inputs(tmp_path, records, *, repeated=False, body_changes=None):
 def test_typed_source_values_and_children(tmp_path):
     raw = document(cfr_references=[{"title": 40, "part": 60, "chapter": "I", "citation_url": None},
                                     {"title": 40, "part": "60a", "chapter": 2, "citation_url": "https://example.org"}],
-                   regulations_dot_gov_info={"docket_id": "EPA-HQ-OAR-2024-0001"})
+                   docket_ids=["Docket No. EPA-HQ-OAR-2024-0001"],
+                   regulations_dot_gov_info={"docket_id": "EPA-HQ-OAR-2024-0002"})
     manifest, archive, sha = inputs(tmp_path, [raw])
     out = tmp_path / "candidate"
     build_federal_register_layer1(manifest, archive, out)
@@ -54,8 +55,9 @@ def test_typed_source_values_and_children(tmp_path):
     receipt = json.loads((out / "inputs.json").read_text())
     assert all(c["present"] == 1 and c["absent"] == 0 and not c["unrequested"] for c in receipt["coverage"].values())
     row = pq.read_table(out / "federal_register_documents.parquet").to_pylist()[0]
-    assert json.loads(row["regulations_dot_gov_info"])["docket_id"] == "EPA-HQ-OAR-2024-0001"
-    assert pq.read_table(out / "federal_register_docket_candidates.parquet").to_pylist()[0]["docket_id"] == "EPA-HQ-OAR-2024-0001"
+    assert json.loads(row["regulations_dot_gov_info"])["docket_id"] == "EPA-HQ-OAR-2024-0002"
+    candidate, = pq.read_table(out / "federal_register_docket_candidates.parquet").to_pylist()
+    assert (candidate["label"], candidate["docket_id"]) == ("Docket No. EPA-HQ-OAR-2024-0001", "EPA-HQ-OAR-2024-0001")
 
 
 def test_dated_identity_duplicate_and_conflict(tmp_path):
@@ -103,6 +105,28 @@ def test_sparse_source_distinguishes_absent_from_null(tmp_path):
     coverage = json.loads((out / "inputs.json").read_text())["coverage"]
     assert coverage["title"] == {"present": 0, "null": 0, "populated": 0, "absent": 1, "unrequested": False}
     assert coverage["action"]["present"] == coverage["action"]["null"] == 1
+
+
+def test_refuses_changed_field_set_in_continuation(tmp_path):
+    scope = {"publishedFrom": "2024-03-01", "publishedThrough": "2024-03-02"}
+    initial = native.federal_register_documents_url(scope)
+    continuation = initial.replace("&fields%5B%5D=full_text_xml_url", "") + "&page=2"
+    manifest, archive, _ = inputs(tmp_path, [document()], body_changes={
+        "count": 2, "total_pages": 2, "next_page_url": continuation,
+    })
+    second = json.dumps({
+        "count": 2, "total_pages": 2, "results": [document(publication_date="2024-03-02")],
+    }).encode()
+    sha = "sha256:" + hashlib.sha256(second).hexdigest()
+    CentralRawArchiveStore(archive).put_blob(sha, len(second), [second])
+    selection = json.loads(manifest.read_text())
+    selection["pages"].append({"url": continuation, "sha256": sha})
+    manifest.write_text(json.dumps(selection))
+
+    destination = tmp_path / "refused"
+    with pytest.raises(ValueError, match="request field set differs from current fields"):
+        build_federal_register_layer1(manifest, archive, destination)
+    assert not destination.exists()
 
 
 @pytest.mark.parametrize("symlink", [False, True])

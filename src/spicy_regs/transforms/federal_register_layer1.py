@@ -13,6 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from urllib.parse import parse_qs, urlsplit
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -118,6 +119,11 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_reco
     by_url = {page["url"]: page for page in pages}
     if len(by_url) != len(pages):
         raise ValueError("Repeated Federal Register request cursor in retained manifest")
+    requested_fields = sorted(native.DOCUMENT_FIELDS)
+    for url in by_url:
+        fields = parse_qs(urlsplit(url).query, keep_blank_values=True).get("fields[]", [])
+        if sorted(fields) != requested_fields:
+            raise ValueError("Federal Register request field set differs from current fields")
     archive = CentralRawArchiveStore(archive_root, create=False)
     used: dict[str, dict] = {}
 
@@ -191,7 +197,7 @@ def build(manifest_path: Path, archive_root: Path, output_dir: Path, *, max_reco
     converted = {name: pa.Table.from_pylist(data, schema=table_schema) for name, (data, table_schema) in tables.items()}
     receipt = {"version": VERSION, "reader_schema": native.SCHEMA_VERSION, "reader_schema_digest": native.source_schema_digest(),
                "input_manifest_sha256": "sha256:" + hashlib.sha256(manifest_bytes).hexdigest(),
-               "requested_fields": sorted(native.DOCUMENT_FIELDS), "query_scope": manifest["query_scope"],
+               "requested_fields": requested_fields, "query_scope": manifest["query_scope"],
                "observed_records": observed_records, "duplicate_records": duplicate_records, "rows": len(rows),
                "coverage": {name: {"present": members[name], "null": nulls[name], "populated": populated[name],
                                     "absent": len(rows) - members[name], "unrequested": False} for name in sorted(native.DOCUMENT_FIELDS)},
