@@ -2,6 +2,9 @@
 
 import json
 from pathlib import Path
+import re
+import subprocess
+import sys
 
 import pytest
 
@@ -277,6 +280,208 @@ def test_public_rollback_does_not_hardlink_across_filesystems(prepared, monkeypa
     with pytest.raises(OSError, match="injected"):
         selection.select(**prepared)
     assert selected_bytes(prepared) == before
+
+
+def freeze_prepared_receipts(prepared, snapshot):
+    """Give the old selector fixture the content-addressed keys freeze-receipts requires."""
+    from spicy_regs.source_catalog.maintenance import freeze_receipts
+
+    raw = prepared["raw_root"]
+    original = raw / "acquisitions/sha256/ab/receipt.json"
+    sha = digest(original).removeprefix("sha256:")
+    receipt = raw / "acquisitions/sha256" / sha[:2] / sha
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    original.rename(receipt)
+    (raw / "objects/sha256").mkdir(parents=True)
+    index = prepared["cache"] / "index.sqlite"
+    for path, destination in [(index, prepared["public"]), (prepared["candidate"], prepared["staged_public"])]:
+        with connect(path) as db:
+            db.execute("UPDATE inputs SET path=? WHERE path=?", (str(receipt), str(original)))
+        export(path, destination)
+    for name in ("current.json", "selection.json"):
+        path = prepared["cache"] / name
+        value = json.loads(path.read_text())
+        value.update(selection.raw_selection(raw))
+        if name == "current.json":
+            value["index_sha256"] = digest(index).removeprefix("sha256:")
+            value["public_manifest_sha256"] = digest(prepared["public"] / "manifest.json").removeprefix("sha256:")
+        else:
+            value["files"] = selection.public_members(prepared["public"], prepared["expected_generation"])[0]
+        write(path, value)
+    freeze_receipts(index, snapshot, expected_generation=prepared["expected_generation"],
+                    expected_index_sha256=digest(index))
+
+
+@pytest.mark.parametrize("move", [3, 6, 7])
+@pytest.mark.parametrize("completed_export", [False, True])
+def test_process_exit_documented_recovery_preserves_retry_inputs(prepared, move, completed_export):
+    """A real process exit skips catch rollback; run the operator recipe verbatim."""
+    from spicy_regs.source_catalog.export_completion import export_completed
+    from spicy_regs.source_catalog.maintenance import freeze_receipts
+
+    if completed_export:
+        receipt_snapshot = prepared["cache"] / "receipts-before-crash.json"
+        freeze_prepared_receipts(prepared, receipt_snapshot)
+        admit_export(prepared)
+    before = selected_bytes(prepared)
+    candidate = prepared["candidate"].read_bytes()
+    staged = {path.relative_to(prepared["staged_public"]): path.read_bytes()
+              for path in prepared["staged_public"].rglob("*") if path.is_file()}
+    marker = prepared["cache"] / "crash-activated.json"
+    script = '''
+import json, os, sys
+from pathlib import Path
+from spicy_regs.source_catalog import selection
+arguments = json.loads(sys.argv[1])
+arguments = {k: v if k == "expected_generation" else Path(v) for k, v in arguments.items()}
+actual, calls = selection.os.replace, 0
+def crash(source, target):
+    global calls
+    actual(source, target)
+    calls += 1
+    if calls == int(sys.argv[2]):
+        with Path(sys.argv[3]).open("w") as stream:
+            json.dump({"move": calls, "source": str(source), "target": str(target)}, stream)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os._exit(86)
+selection.os.replace = crash
+selection.select(**arguments)
+'''
+    run = subprocess.run([sys.executable, "-B", "-c", script,
+                          json.dumps({k: str(v) for k, v in prepared.items()}), str(move), str(marker)],
+                         capture_output=True, text=True, timeout=10)
+    assert run.returncode == 86, run.stderr
+    backup, = prepared["cache"].glob("selection-backup-*")
+    recovery = json.loads((backup / "recovery.json").read_text())
+    activated = json.loads(marker.read_text())
+    assert activated == {"move": move, "source": recovery["moves"][move - 1]["source"],
+                         "target": recovery["moves"][move - 1]["destination"]}
+    with pytest.raises((OSError, ValueError)):
+        selection.select(**prepared)
+
+    document = (Path(__file__).parents[2] / "docs/shared-source-catalog.md").read_text()
+    section = document.split("<!-- selector-recovery:start -->")[1].split("<!-- selector-recovery:end -->")[0]
+    match = re.search(r"<<'PY'\n(.*?)\nPY", section, re.DOTALL)
+    assert match is not None
+    recipe = match.group(1)
+    interrupted = selected_bytes(prepared)
+    with selection.selection_lock(prepared["cache"]):
+        refused = subprocess.run([sys.executable, "-B", "-", str(backup)], input=recipe,
+                                 capture_output=True, text=True, timeout=10)
+    assert refused.returncode != 0 and "Another local catalog selection is running" in refused.stderr
+    assert selected_bytes(prepared) == interrupted
+    subprocess.run([sys.executable, "-B", "-", str(backup)], input=recipe,
+                   capture_output=True, text=True, timeout=10, check=True)
+    assert all(path.read_bytes() == body for path, body in before.items())
+    assert prepared["candidate"].read_bytes() == candidate
+    assert {path.relative_to(prepared["staged_public"]): path.read_bytes()
+            for path in prepared["staged_public"].rglob("*") if path.is_file()} == staged
+    assert not (prepared["public"] / "generations" / ("b" * 64)).exists()
+
+    if completed_export:
+        # A moved candidate has new custody. Do not waive or reseal the old admission.
+        with pytest.raises(ValueError, match="Export candidate changed"):
+            selection.select(**prepared)
+        with pytest.raises(ValueError, match="Qualified base catalog custody changed"):
+            selection.select(**prepared, receipt_snapshot=receipt_snapshot,
+                             receipt_snapshot_sha256=digest(receipt_snapshot))
+        prepared["staged_public"] = prepared["staged_public"].with_name("recovered-public")
+        export_completed(prepared["candidate"], prepared["staged_public"], prepared["cache"])
+        fresh = receipt_snapshot.with_name("receipts-after-recovery.json")
+        freeze_receipts(prepared["cache"] / "index.sqlite", fresh,
+                        expected_generation=prepared["expected_generation"],
+                        expected_index_sha256=digest(prepared["cache"] / "index.sqlite"))
+        options = {"receipt_snapshot": fresh, "receipt_snapshot_sha256": digest(fresh)}
+    else:
+        options = {}
+    result = selection.select(**prepared, **options)
+    assert result["status"] == "selected"
+    assert (prepared["cache"] / "index.sqlite").read_bytes() == candidate
+    for path in (prepared["cache"] / "current.json", prepared["cache"] / "selection.json",
+                 prepared["public"] / "manifest.json"):
+        assert json.loads(path.read_text())["generation"] == result["generation"]
+
+
+def test_foreign_base_report_is_refused_even_when_it_matches_candidate_metadata(prepared):
+    report = json.loads(prepared["reconciliation"].read_text())
+    report["baseGeneration"] = "sha256:" + "d" * 64
+    write(prepared["reconciliation"], report)
+    with connect(prepared["candidate"]) as db:
+        db.execute("UPDATE metadata SET value=? WHERE key='reconciliation'", (json.dumps(report),))
+    before = selected_bytes(prepared)
+    with pytest.raises(ValueError, match="another selected base"):
+        selection.select(**prepared)
+    assert selected_bytes(prepared) == before
+    assert prepared["candidate"].is_file()
+
+
+@pytest.mark.parametrize("alias", ["candidate", "staged_public"])
+def test_same_selected_output_alias_refuses_before_opening_indexes(prepared, monkeypatch, alias):
+    before = selected_bytes(prepared)
+    prepared[alias] = prepared["cache"] / "index.sqlite" if alias == "candidate" else prepared["public"]
+
+    def unexpected_index_open(*_args):
+        pytest.fail("An output alias reached index validation")
+
+    monkeypatch.setattr(selection, "metadata", unexpected_index_open)
+    with pytest.raises(ValueError, match="separate candidate outputs"):
+        selection.select(**prepared)
+    assert selected_bytes(prepared) == before
+
+
+def test_valid_report_cannot_add_unpinned_reconciliation_metadata(prepared):
+    report = json.loads(prepared["reconciliation"].read_text())
+    report["scope"] = "unrecorded qualification claim"
+    write(prepared["reconciliation"], report)
+    before = selected_bytes(prepared)
+    with pytest.raises(ValueError, match="differs from index metadata"):
+        selection.select(**prepared)
+    assert selected_bytes(prepared) == before
+    assert prepared["candidate"].is_file()
+
+
+def test_current_inventory_controls_must_match_the_unchanged_selected_pins(prepared):
+    path = prepared["cache"] / "current.json"
+    value = json.loads(path.read_text())
+    value["raw_acquisition_receipts"] += 1
+    write(path, value)
+    before = selected_bytes(prepared)
+    with pytest.raises(ValueError, match="raw inventory controls differ"):
+        selection.select(**prepared)
+    assert selected_bytes(prepared) == before
+    assert prepared["candidate"].is_file()
+
+
+def test_frozen_receipt_base_hash_must_equal_the_recorded_selected_index_hash(prepared, tmp_path):
+    snapshot = tmp_path / "receipts.json"
+    freeze_prepared_receipts(prepared, snapshot)
+    path = prepared["cache"] / "current.json"
+    value = json.loads(path.read_text())
+    value["index_sha256"] = "d" * 64
+    write(path, value)
+    before = selected_bytes(prepared)
+    with pytest.raises(ValueError, match="differs from selected index identity"):
+        selection.select(**prepared, receipt_snapshot=snapshot, receipt_snapshot_sha256=digest(snapshot))
+    assert selected_bytes(prepared) == before
+    assert prepared["candidate"].is_file()
+
+
+def test_candidate_change_after_backup_preparation_refuses_before_switch(prepared, monkeypatch):
+    before = selected_bytes(prepared)
+    original = selection.write
+
+    def change_after_preparation(path, value):
+        original(path, value)
+        if path.name == "recovery.json":
+            with connect(prepared["candidate"]) as db:
+                db.execute("INSERT INTO metadata VALUES('late-change','true')")
+
+    monkeypatch.setattr(selection, "write", change_after_preparation)
+    with pytest.raises(ValueError, match="Candidate changed during validation"):
+        selection.select(**prepared)
+    assert selected_bytes(prepared) == before
+    assert prepared["candidate"].is_file()
 
 
 def append_acquisition(prepared, *, update_candidate=True, change_snapshot=True):

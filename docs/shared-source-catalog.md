@@ -249,11 +249,68 @@ other `select` calls and writes `current.json` last. It updates the database, bo
 reconciliation reports, `selection.json`, the public generation and its manifest.
 It restores the previous files on a caught failure and retains a
 `selection-backup-*` directory whose `recovery.json` maps saved files and moves.
-After a process interruption, keep readers and writers paused and restore those
-saved targets before retrying. Keep the backup until the selected generation has
-been checked. After acceptance, remove only the backup directory named in this
-run's `selection-result.json`; retain the result and verification evidence. Do not
-remove other selections' backups.
+After a process interruption, keep readers and writers paused. Reverse completed
+moves **before** restoring the saved targets: restoring only the old index loses
+the moved candidate, and leaves its export under the public root. Use the exact
+`selection-backup-*` directory from this interrupted local run as `$BACKUP` below.
+The journal must be the trusted, unchanged file written by this selector; this is
+not an importer for recovery documents from another machine or an unknown source.
+The existing selection lock excludes other selectors, but does not pause readers
+or other writers. This procedure rolls back to the previous generation, including
+an interruption after the last pointer moved; it does not finish the new selection.
+
+<!-- selector-recovery:start -->
+```sh
+uv run --frozen python - "$BACKUP" <<'PY'
+import json
+import os
+from pathlib import Path
+import shutil
+import sys
+
+from spicy_regs.source_catalog.selection import plain, require, selection_lock
+
+backup = plain(Path(sys.argv[1]))
+recovery = json.loads((backup / "recovery.json").read_text())
+saved = [(plain(Path(item["target"])), plain(Path(item["backup"])))
+         for item in recovery["saved"]]
+moves = [(plain(Path(item["source"])), plain(Path(item["destination"])))
+         for item in recovery["moves"]]
+cache = saved[0][0].parent
+with selection_lock(cache):
+    require(all(previous.is_file() for _, previous in saved), "Missing saved selection")
+    require(all(source.exists() or target.exists() for source, target in moves), "Missing move endpoints")
+    for source, target in reversed(moves):
+        if not source.exists():
+            os.replace(target, source)
+    for target, previous in saved:
+        temporary = target.parent / (".restore-" + backup.name + "-" + previous.name)
+        if target == cache / "index.sqlite":
+            os.link(previous, temporary)
+        else:
+            shutil.copy2(previous, temporary)
+        os.replace(temporary, target)
+PY
+```
+<!-- selector-recovery:end -->
+
+The restored candidate and staging bytes remain available for a retry. Moving
+files can change their custody identity. An earlier exporter completion or frozen
+receipt qualification must still refuse if that identity changed; do not edit its
+pins or bypass the refusal. If the run used `--completion-cache`, use the ordinary
+`export` command on the recovered candidate into a **new, absent staging path**
+with the same cache, and retry `select` with that path. If it supplied a receipt
+snapshot, issue a fresh `freeze-receipts` qualification of the restored selected
+index using its recorded digest, and use the new snapshot and digest. This can
+repeat export validation and receipt qualification, but does not rebuild the
+candidate or repeat the catalog import. Keep the old completion and snapshot as
+evidence rather than reassigning their identity.
+
+Keep the backup until the selected generation has been checked. After acceptance,
+remove only the backup directory named in this run's `selection-result.json`;
+retain the result and verification evidence. Do not remove other selections'
+backups. Caught exceptions use the selector's own rollback; the procedure above
+is for process interruption and is not a multi-file or concurrent-reader transaction.
 
 ```sh
 uv run --frozen python -m spicy_regs.source_catalog select \
