@@ -282,19 +282,24 @@ def test_catch_up_refuses_when_an_output_child_points_to_the_prior(local_cli, mo
     assert verify_generation(prior).pin.artifact_digest == kwargs["expected_prior"]
 
 
-@pytest.mark.parametrize("lost", [("checkpoint.json",), ("selection.json",), ("checkpoint.json", "selection.json")])
+@pytest.mark.parametrize("lost", ["checkpoint", "selection", "both", "page-record"])
 def test_catch_up_refuses_when_a_retained_control_is_lost(local_cli, monkeypatch, lost):
     run, retained, work, kwargs = local_cli
     next_url = search_url(kind="o", q="cluster_id:[3 TO 6]", opinion_statuses=OPINION_STATUSES) + "&cursor=next"
     transport(monkeypatch, page([4], total=2, next_url=next_url), 429)
     with pytest.raises(ValueError, match="incomplete"):
         run()
-    for name in lost:
-        (retained / name).unlink()
+    checkpoint = retained / "checkpoint.json"
+    if lost == "page-record":
+        checkpoint.write_bytes(checkpoint.read_bytes().splitlines(keepends=True)[0])
+    if lost in {"checkpoint", "both"}:
+        checkpoint.unlink()
+    if lost in {"selection", "both"}:
+        (retained / "selection.json").unlink()
     remaining = {path: path.read_bytes() for path in retained.rglob("*") if path.is_file()}
     calls = transport(monkeypatch, page([4]))
 
-    with pytest.raises(ValueError, match="retained search controls are missing"):
+    with pytest.raises(ValueError, match="controls are missing|captures outside its checkpoint"):
         run()
 
     assert not calls

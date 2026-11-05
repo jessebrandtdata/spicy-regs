@@ -46,9 +46,10 @@ replays their original observation times through the original count/identity
 checks, then requests only the pending cursor. A saved `Retry-After` deadline
 refuses live dispatch until it elapses; the command does not schedule itself.
 Changed parent, edition/input pins, query/status selection, or missing/corrupt
-captures refuse. Keep failed attempts and the retained search directory. If the
-checkpoint or selection is lost after initialization, recover its original bytes
-before retrying with that directory.
+captures refuse. Retained bytes without a checkpoint entry also refuse because
+they lack a verified cursor and observation time. Keep the retained directory
+and recover its original controls before retrying, or choose a new directory
+when an intentional fresh walk is appropriate.
 
 Only complete source traversal reaches delta conversion and prior append.
 The native append preserves prior values/receipts and refuses overlapping IDs;

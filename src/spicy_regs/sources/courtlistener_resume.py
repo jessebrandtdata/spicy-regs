@@ -53,7 +53,11 @@ class RetainedCourtSearch:
             )
             checkpoint = retained.progress
             prefix_size = len(checkpoint.state["pages"])
-            paths = [retained.store / "sha256" / page["sha256"][7:] for page in checkpoint.state["pages"]]
+            capture_directory = retained.store / "sha256"
+            paths = [capture_directory / page["sha256"][7:] for page in checkpoint.state["pages"]]
+            # Bytes without a journal entry cannot establish their cursor or observation time.
+            if set(capture_directory.iterdir()).difference(paths):
+                raise ResumeError("Court retained search has captures outside its checkpoint. Preserve the directory")
 
             class LiveTransport(httpx.BaseTransport):
                 def handle_request(self, request):
