@@ -66,6 +66,54 @@ def tool_data(server, name, arguments):
     return data
 
 
+@pytest.mark.parametrize("selection", ["retained", "different_generation", "different_member", "unversioned"])
+def test_retired_fec_discovery_metadata_requires_exact_selection(monkeypatch, selection):
+    table = "fec_research_filing_feed_items"
+    member = {
+        "sha256": "sha256:e5a0c8ce6d3c80f64c6ed4c72a2f4b280b8d41a075ca4ec40b5504ad337683d0",
+        "byteSize": 145187,
+        "rows": 794,
+    }
+    generation = "sha256:784b23da0ea9ee7807e09715d38508cd8e0cd654af1047ae6a5b1fc63efb7300"
+    if selection == "different_generation":
+        generation = "sha256:" + "a" * 64
+    if selection == "different_member":
+        member["sha256"] = "sha256:" + "b" * 64
+    family = {"artifactDigest": generation, "tables": {table + ".parquet": member}}
+    index = {"families": {"fec-query": family} if selection != "unversioned" else {}}
+    # Use the managed-download branch to keep this tool test offline. The exact
+    # published population and descriptors are exercised in release readback.
+    local = {"directory": "fixture", "signatures": {}, "selected_tables": [table]}
+    monkeypatch.setattr(mcp_server, "DATA_DIR", dd.REPO_ROOT)
+    monkeypatch.setattr(mcp_server, "_connection_local_selection", lambda _: local)
+    with duckdb.connect(config={"threads": 1, "memory_limit": "64MB"}) as con:
+        con.execute("CREATE TABLE _spicy_publication (snapshot VARCHAR)")
+        con.execute("INSERT INTO _spicy_publication VALUES (?)", [json.dumps(index)])
+        con.execute(f"CREATE TABLE {table} (title VARCHAR)")
+        con.execute(f"INSERT INTO {table} VALUES ('retained row')")
+        monkeypatch.setattr(mcp_server, "_get_connection", lambda: con)
+        server = mcp_server.build_server()
+        sources = tool_data(server, "list_sources", {})
+        group = next(item for item in sources["subjects"] if table in item["tables"])
+        described = tool_data(server, "describe_table", {"table": table})
+        assert described["available"] is True
+        assert described["columns"][0]["column_name"] == "title"
+        if selection == "retained":
+            assert group["subject"] == "campaign_finance"
+            page = tool_data(server, "list_sources", {"subject": "campaign_finance"})
+            assert next(item for item in page["subjects"][0]["tables"] if item["table"] == table) == {
+                "table": table, "label": "FEC filing feed items", "coverage": "sampled", "rows": 794,
+            }
+            assert described["metadata"] == {
+                "subject": "campaign_finance", "label": "FEC filing feed items", "kind": "sampled", "category": "query_data",
+            }
+            assert described["publication"]["coverage"] == "sampled"
+        else:
+            assert group["subject"] == "unassigned"
+            assert described["metadata"] == {}
+            assert described["publication"]["coverage"] is None
+
+
 def schemas():
     document = json.loads(RESOURCE.read_text())
     return document, {

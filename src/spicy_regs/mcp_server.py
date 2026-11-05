@@ -1661,6 +1661,7 @@ def _reply_pins(cursor: duckdb.DuckDBPyConnection, publication: dict[str, dict],
         _connection_index(cursor), _connection_rulemaking(cursor), _connection_relationships(cursor)
     )
     exports = _export_rows(cursor)
+    metadata = _selected_table_metadata(index)
     pins = {}
     for name in names:
         pin = dict(publication[name])
@@ -1678,7 +1679,7 @@ def _reply_pins(cursor: duckdb.DuckDBPyConnection, publication: dict[str, dict],
                     **_snapshot_lineage(index, manifest)}
         elif name in exports:
             pin |= exports[name]
-        declared = _table_metadata().get(name) or relationships.get(name, {}).get("metadata", {})
+        declared = metadata.get(name) or relationships.get(name, {}).get("metadata", {})
         # A DocSpec snapshot does not establish the dictionary's population coverage.
         pins[name] = {**pin, "coverage": None if pin["status"] == "docspec_immutable_export" else declared.get("kind")}
     return pins
@@ -1975,6 +1976,31 @@ def _statement_timeout(cursor: duckdb.DuckDBPyConnection) -> Iterator[None]:
 def _table_metadata() -> dict[str, dict[str, Any]]:
     """Generated dictionary resource; requires neither spicy-docs nor a checkout."""
     return json.loads(files("spicy_regs").joinpath("table_metadata.json").read_text(encoding="utf-8"))
+
+
+@lru_cache(maxsize=1)
+def _retained_fec_discovery_metadata() -> dict:
+    """Discovery labels retained from the dictionary that served the old FEC generation."""
+    return json.loads(files("spicy_regs").joinpath("fec_retained_discovery_metadata.json").read_text(encoding="utf-8"))
+
+
+def _selected_table_metadata(index: Mapping) -> dict[str, dict[str, Any]]:
+    """Use historical labels only for their exact selected generation and member."""
+    metadata = _table_metadata()
+    family = index["families"].get("fec-query")
+    if family is None:
+        return metadata
+    retained = _retained_fec_discovery_metadata()
+    if family.get("artifactDigest") != retained["generation"]:
+        return metadata
+    historical = {}
+    for name, entry in retained["tables"].items():
+        descriptor = family["tables"].get(name + ".parquet")
+        if descriptor and "members" not in descriptor and all(
+            descriptor.get(key) == value for key, value in entry["member"].items()
+        ):
+            historical[name] = {"table": name, "columns": [], **entry["metadata"]}
+    return metadata | historical
 
 
 def _lineage_meanings(lineage: Mapping[str, Sequence[str]], *, cursor: duckdb.DuckDBPyConnection | None = None) -> dict[str, str]:
@@ -2683,9 +2709,9 @@ def _tools() -> list[Tool]:
         cursor = _get_connection().cursor()
         with _statement_timeout(cursor):
             available = _available_tables(cursor)
-        metadata = _table_metadata()
         relationships = _connection_relationships(cursor)
         index, rulemaking, exports = _connection_index(cursor), _connection_rulemaking(cursor), _export_rows(cursor)
+        metadata = _selected_table_metadata(index)
         local = _connection_local_selection(cursor) if DATA_DIR is not None else None
         # A relationship family's occurrence, pair and field-state views share one summary; list it once.
         views: dict[str, list[str]] = {}
@@ -2848,7 +2874,7 @@ def _tools() -> list[Tool]:
                      "columns": view_columns(rows, {**_table_metadata().get(table, {}).get("column_descriptions", {}),
                                                    **metadata.get("column_descriptions", {})}, inherited)}
         else:
-            entry = _table_metadata().get(table, {"table": table, "columns": []})
+            entry = _selected_table_metadata(_connection_index(cursor)).get(table, {"table": table, "columns": []})
         declared = {column["column_name"]: column for column in entry["columns"]}
         actual = {row[0]: row[1] for row in rows}
         legacy_meanings = _legacy_column_meanings(cursor, table, entry) if available else {}
