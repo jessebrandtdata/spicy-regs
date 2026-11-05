@@ -67,3 +67,43 @@ recipe, archive digest and release point. Public archive witnesses use content
 digests. The local `receipt.json` retains the physical source path and remains
 private; select only the subject and fresh ETL receipt Parquet members for a
 public artifact. Earlier path-bearing receipt history must not be inherited.
+
+## Join placements by modern public law
+
+Use the historical table when the SQL reader has a selected Table III member.
+Its `act_key` is the publisher's search key. Modern public laws in the
+`119-73` member run from the 85th through the 119th Congress. Date-and-chapter
+keys from earlier Congresses remain available as original evidence. Some
+chapters carry a session public-law number in `act_public_law`. That number
+belongs to the chapter's historical naming system.
+
+This `query_sql` example finds the Code placement of section 706 of Public
+Law 88-352. It selects one archive and member, checks that the publisher's
+Congress and act number agree with the search key, and forms the same
+`congress-public-number` identity used by `laws.law_id`. The left join keeps
+each placement even when the reader's `laws` table lacks the act's metadata.
+
+```sql
+WITH modern AS (
+    SELECT *, replace(act_key, '-', '-public-') AS law_id
+    FROM table3_historical_records
+    WHERE release_point = '119-73'
+      AND member_sha256 = 'sha256:985a9bb3dd328f98632530ce28bfbf2ae34f5b2eaad37b6088d983404c8ab681'
+      AND source_sha256 = 'sha256:93e1f233e081e47fc3680c4b699151c6d66329988fe21add3b6e9e62746aeea7'
+      AND regexp_full_match(act_key, '[1-9][0-9]{0,2}-[1-9][0-9]*')
+      AND split_part(act_key, '-', 1) = congress
+      AND act_key = act_number
+)
+SELECT m.law_id, l.title AS law_title, m.act_section, m.usc_title,
+       m.usc_section_key, m.usc_place, m.act_record_position
+FROM modern m
+LEFT JOIN laws l ON l.law_id = m.law_id
+WHERE m.law_id = '88-public-352' AND m.act_section = '706'
+ORDER BY m.act_record_position
+```
+
+For other snapshots, take all three source pins from the selected replay.
+Use `act_record_position` to order a law's placements. Each row represents
+an occurrence, so `DISTINCT` over placement fields alone can discard repeated
+source rows. Use `usc_place` to distinguish a Code section from a note or a
+preceding placement.
