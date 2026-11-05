@@ -37,4 +37,5 @@ This command supports bounded retained-page use. It does not establish a complet
 archive sweep, retrieve linked PDFs, create the PDF-only extraction path
 (`ss-938z`), or register/publish a warehouse generation. Wider archive acquisition
 and resume by WARC coordinates remain separate work. The original source review
-is [SpicyDocs D12](../../spicy-docs/docs/research/cbo-archive-visual-review-2026-10-30.md).
+is retained in SpicyDocs at `docs/research/cbo-archive-visual-review-2026-10-30.md`
+(D12).

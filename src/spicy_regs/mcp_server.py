@@ -2739,7 +2739,7 @@ def _tools() -> list[Tool]:
     def list_sources(subject: Annotated[str | None, Field(min_length=1, max_length=64)] = None) -> dict[str, Any]:
         """List subjects, then one subject's tables: call with no subject first, then list_sources(subject).
 
-        Managed table names come from the selected publication. Query admission checks the named files and schemas.
+        Managed names use metadata; SQL checks file schemas.
         No subject: each subject's table names (unassigned: no dictionary subject), view counts
         (unavailable_views: every declared view not loaded), the first
         unavailable_tables, receipt summary and fec_release.status_counts. A subject gives its tables (none if
@@ -2873,11 +2873,9 @@ def _tools() -> list[Tool]:
     def describe_table(table: str, detail: bool = False) -> dict[str, Any]:
         """Return columns, meanings, identity, coverage and joins.
 
-        Coverage uses the bundled output ledger, not population or freshness. columns
-        gives meanings (declared if unavailable); schema_differences compares
-        the selected publication's columns for managed remote tables and the
-        loaded fields for other tables. SQL checks the physical schema when queried.
-        publication pins rows and coverage;
+        Coverage is scope, not current population or freshness. columns gives meanings.
+        schema_differences compares managed remote publication columns or loaded
+        fields. SQL checks physical schemas. publication pins rows and coverage;
         published_at is a pointer move, not a source read. last_object_write
         bounds that move from below.
         inputs: recorded parents, with built_from beside live. No recorded
@@ -2895,7 +2893,7 @@ def _tools() -> list[Tool]:
         appears per entry. Missing reason means empty; floor_pct, no measured
         floor; expected_cardinality, unspecified; measured_via, measure the child.
         detail=false: omissions in detail.omitted; receipt_fields names
-        read_receipt_fields inputs. Fields inherit source meanings or declarations.
+        read_receipt_fields inputs.
         FEC release_compatibility is in publication (relationship if unavailable).
         detail=false retains pins, reasons, generations and receipt count.
         pending_receipt_rows means row admission/output binding is deferred;
