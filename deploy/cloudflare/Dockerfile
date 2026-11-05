@@ -46,6 +46,8 @@ RUN python /app/lock/lock_pins.py constraints /app/lock/uv.lock > /app/lock/cons
 # keeps boto3/polars/etc out of the image (so pip check runs before it).
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY packaging ./packaging
+COPY data_dictionary ./data_dictionary
 RUN pip install --no-deps . && python /app/lock/lock_pins.py check /app/lock/uv.lock
 # Exercise native receipt selection before checking the other runtime imports.
 RUN python /app/lock/runtime_readers.py
