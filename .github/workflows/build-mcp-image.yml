@@ -156,14 +156,29 @@ jobs:
           reference = references[0]
           digest = reference.split('@', 1)[1]
           assert re.fullmatch(r'sha256:[0-9a-f]{64}', digest), 'Invalid registry digest'
-          assert built['Id'] == pushed['Id'], 'Pushed image differs from the checked image'
-          assert (built['Os'], built['Architecture']) == ('linux', 'amd64'), 'Wrong image platform'
+          assert built['Id'] == pushed['Id'] and built['RootFS'] == pushed['RootFS'], \
+              'Pushed image differs from the checked image'
+          assert (built['Os'], built['Architecture']) == (pushed['Os'], pushed['Architecture']) == ('linux', 'amd64'), \
+              'Wrong image platform'
           remote = subprocess.run(['docker', 'manifest', 'inspect', reference],
                                   capture_output=True, text=True, check=True, timeout=60)
           (output / 'registry-manifest.json').write_text(remote.stdout)
           manifest = json.loads(remote.stdout)
-          assert manifest['schemaVersion'] == 2 and manifest['config']['digest'] == built['Id'], \
-              'Registry manifest does not bind the checked image config'
+          assert manifest['schemaVersion'] == 2, 'Unsupported registry manifest version'
+          config_digest = manifest['config']['digest']
+          assert re.fullmatch(r'sha256:[0-9a-f]{64}', config_digest), 'Invalid registry config digest'
+          descriptor = built.get('Descriptor')
+          assert descriptor == pushed.get('Descriptor'), 'Pushed image descriptor differs from the checked image'
+          if descriptor is None:
+              # The classic store uses the configuration digest as the image ID.
+              assert built['Id'] == config_digest, 'Registry manifest does not bind the checked image config'
+          else:
+              # A containerd store can use the manifest digest as the image ID.
+              assert descriptor['digest'] == digest and descriptor['mediaType'] == manifest['mediaType'], \
+                  'Registry manifest differs from the checked image descriptor'
+              assert descriptor.get('annotations', {}).get('config.digest') == config_digest, \
+                  'Registry manifest does not bind the checked image config'
+              assert built['Id'] in (digest, config_digest), 'Unexpected image ID for the checked descriptor'
           consumer = json.loads((output / 'installed-consumer.json').read_text())
           consumer['image_digest'] = digest
           association = {
@@ -171,7 +186,7 @@ jobs:
               'source_tree': (output / 'source-tree.txt').read_text().strip(),
               'uv_lock_sha256': hashlib.sha256(Path('uv.lock').read_bytes()).hexdigest(),
               'registry_image': reference, 'registry_manifest_digest': digest,
-              'config_digest': built['Id'], 'consumer': consumer,
+              'config_digest': config_digest, 'consumer': consumer,
               'scope': 'Checked image config matches the registry manifest; no deployment or serving qualification.',
           }
           (output / 'registry-association.json').write_text(json.dumps(association, indent=2) + '\n')
