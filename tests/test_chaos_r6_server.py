@@ -534,35 +534,50 @@ def test_list_sources_groups_tables_by_subject_with_unassigned_tables_last(monke
     assert ", spending, " in str(refused.value) and str(refused.value).endswith(", views.")
 
 
-def test_a_subject_page_carries_exactly_the_entries_the_whole_catalog_listed(monkeypatch):
-    """ss-ehe5: a consumer that passes the subject loses nothing; the whole reply is rebuilt from the pages."""
+def test_default_discovery_filters_the_complete_explicit_inventory(monkeypatch):
+    """Explicit pages retain every table and default discovery lists the visible subset in order."""
+    from tests.test_default_discovery_visibility import HIDDEN
     from tests.test_chaos_r3_server import _typed_tables
 
     with duckdb.connect() as con:
         metadata = server._table_metadata()
-        _typed_tables(con, [table for table in server.TABLES if table in metadata])
+        loaded = [table for table in server.TABLES if table in metadata]
+        _typed_tables(con, loaded)
         server._install_relationship_views(con)
         monkeypatch.setattr(server, "_get_connection", lambda: con)
         mcp = server.build_server()
         listed = _tool_data(mcp, "list_sources", {})
-        names = [*(group["subject"] for group in listed["subjects"]), *listed["pages"]]
+        subjects = dict.fromkeys(metadata[table].get("subject") or server.UNASSIGNED_SUBJECT for table in loaded)
+        if server.UNASSIGNED_SUBJECT in subjects:
+            subjects[server.UNASSIGNED_SUBJECT] = subjects.pop(server.UNASSIGNED_SUBJECT)
+        names = [*subjects, *listed["pages"]]
         pages = {name: _tool_data(mcp, "list_sources", {"subject": name}) for name in names}
         relationships = server._connection_relationships(con.cursor())
     groups = [group for name in names for group in pages[name].get("subjects", [])]
-    assert [(group["subject"] or "unassigned", [table["table"] for table in group["tables"]]) for group in groups] == [
-        (group["subject"], group["tables"]) for group in listed["subjects"]]
+    visible_groups = []
+    for group in groups:
+        visible_names = [table["table"] for table in group["tables"] if table["table"] not in HIDDEN]
+        if visible_names:
+            visible_groups.append({"subject": group["subject"] or server.UNASSIGNED_SUBJECT, "tables": visible_names})
+    assert listed["subjects"] == visible_groups
     # Every available table is on exactly one subject page, every relationship view on the views page.
     tables = [table["table"] for group in groups for table in group["tables"]]
     views = [name for group in pages["views"]["relationship_views"] for name in group["views"]]
+    child_queries = {name for name, entry in relationships.items()
+                     if entry["metadata"].get("view_role") == "child_query" and entry["status"] == "available"}
+    available_views = {name for name, entry in relationships.items()
+                       if entry["metadata"].get("view_role") != "child_query" and entry["status"] == "available"}
+    assert set(tables) == (set(loaded) | child_queries) - available_views
+    assert set(HIDDEN) <= set(tables)
     assert len(tables) == len(set(tables)) and not set(tables) & set(views)
     assert sum(len(group["views"]) for group in pages["views"]["deferred_views"]) == sum(
         group["count"] for group in listed["deferred_views"])
     assert listed["relationship_views"] == {"available": len(views)}
     assert listed["unavailable_views"] == len(pages["views"]["unavailable_views"])
-    assert listed["unavailable_tables"] == pages["views"]["unavailable_tables"][:server.UNAVAILABLE_TABLES_LISTED]
-    assert listed["unavailable_table_count"] == len(pages["views"]["unavailable_tables"])
-    assert {name for name, entry in relationships.items()
-            if entry["metadata"].get("view_role") != "child_query" and entry["status"] == "available"} <= set(views)
+    visible_unavailable = [name for name in pages["views"]["unavailable_tables"] if name not in HIDDEN]
+    assert listed["unavailable_tables"] == visible_unavailable[:server.UNAVAILABLE_TABLES_LISTED]
+    assert listed["unavailable_table_count"] == len(visible_unavailable)
+    assert available_views <= set(views)
     assert listed["etl_receipts"]["dataset_count"] == len(metadata["etl_receipts"]["datasets"])
     assert listed["fec_release"]["status_counts"] == pages["views"]["fec_release"]["status_counts"]
 
