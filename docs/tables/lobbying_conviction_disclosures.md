@@ -6,7 +6,7 @@
 
 The convictions an LDA filing discloses for a lobbyist it names: the lobbyist, the conviction date and the description the registrant filed. A disclosure is the registrant's statement on a public filing, not a court record; the same conviction recurs on each later filing that names the lobbyist. Keyed `(filing_uuid, conviction_disclosure_index)`, the entry's position in the filing's own list; joins to `lobbying_filings` on `filing_uuid`.
 
-**Coverage.** True range, the same filings as `lobbying_filings`: one row per conviction a filing discloses. Very few filings disclose one; the rest have no rows here. *(measured 2026-10-31)*
+**Coverage.** Sampled from the filings held in `lobbying_filings`. One row per conviction a filing discloses. Very few filings disclose one; the rest have no rows here. *(measured 2026-10-31)*
 
 - **Parquet file:** `lobbying_conviction_disclosures.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
