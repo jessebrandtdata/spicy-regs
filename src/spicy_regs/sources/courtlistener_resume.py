@@ -32,6 +32,19 @@ class RetainedCourtSearch:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as error:
                 raise ResumeError("Court retained search is already in use") from error
+            selection_path = self.directory / "selection.json"
+            checkpoint_path = self.directory / "checkpoint.json"
+            deadline_path = self.directory / "not-before.json"
+            if any(path.is_symlink() for path in (selection_path, checkpoint_path, deadline_path)):
+                raise ResumeError("Court retained search controls must be local files")
+            # The provider writes the selection before the journal, then creates the capture store.
+            # A selection alone can be a fresh setup interrupted before the first request.
+            missing_selection = checkpoint_path.exists() and not selection_path.is_file()
+            missing_checkpoint = not checkpoint_path.is_file() and (
+                (self.directory / "captures").exists() or deadline_path.exists()
+            )
+            if missing_selection or missing_checkpoint:
+                raise ResumeError("Court retained search controls are missing. Preserve the directory and recover its controls")
             retained = RetainedGetTraversal(
                 self.directory,
                 selection={**self.selection, "url": url, "max_page_bytes": max_page_bytes},
@@ -40,8 +53,11 @@ class RetainedCourtSearch:
             )
             checkpoint = retained.progress
             prefix_size = len(checkpoint.state["pages"])
-            paths = [retained.store / "sha256" / page["sha256"][7:] for page in checkpoint.state["pages"]]
-            deadline_path = self.directory / "not-before.json"
+            capture_directory = retained.store / "sha256"
+            paths = [capture_directory / page["sha256"][7:] for page in checkpoint.state["pages"]]
+            # Bytes without a journal entry cannot establish their cursor or observation time.
+            if set(capture_directory.iterdir()).difference(paths):
+                raise ResumeError("Court retained search has captures outside its checkpoint. Preserve the directory")
 
             class LiveTransport(httpx.BaseTransport):
                 def handle_request(self, request):

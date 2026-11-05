@@ -74,7 +74,7 @@ def test_dated_identity_duplicate_and_conflict(tmp_path):
     assert not (tmp_path / "refused").exists()
 
 
-@pytest.mark.parametrize("failure", ["cursor", "cyclic", "date", "inventory", "bounds", "extra"])
+@pytest.mark.parametrize("failure", ["cursor", "cyclic", "date", "inventory", "bounds"])
 def test_refuses_incomplete_or_ambiguous_inputs(tmp_path, failure):
     record = document()
     if failure == "date":
@@ -84,13 +84,22 @@ def test_refuses_incomplete_or_ambiguous_inputs(tmp_path, failure):
         scope = {"publishedFrom": "2024-03-01", "publishedThrough": "2024-03-02"}
         body_changes = {"next_page_url": native.federal_register_documents_url(scope)}
     manifest, archive, _ = inputs(tmp_path, [record], repeated=failure == "cursor", body_changes=body_changes)
-    if failure == "extra":
-        value = json.loads(manifest.read_text())
-        value["pages"].append({**value["pages"][0], "url": "https://example.org/unused"})
-        manifest.write_text(json.dumps(value))
     with pytest.raises(ValueError):
         build_federal_register_layer1(manifest, archive, tmp_path / "refused", max_records=0 if failure == "bounds" else 10000)
     assert not (tmp_path / "refused").exists()
+
+
+def test_refuses_unconsumed_page_with_current_fields(tmp_path):
+    manifest, archive, _ = inputs(tmp_path, [document()])
+    selection = json.loads(manifest.read_text())
+    first_page, = selection["pages"]
+    selection["pages"].append({**first_page, "url": f"{first_page['url']}&page=2"})
+    manifest.write_text(json.dumps(selection))
+
+    destination = tmp_path / "refused"
+    with pytest.raises(ValueError, match="Retained Federal Register manifest contains unconsumed pages"):
+        build_federal_register_layer1(manifest, archive, destination)
+    assert not destination.exists()
 
 
 def test_sparse_source_distinguishes_absent_from_null(tmp_path):
