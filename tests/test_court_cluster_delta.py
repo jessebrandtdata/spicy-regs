@@ -265,6 +265,66 @@ def test_catch_up_preserves_prior_when_writable_directory_aliases_it(local_cli, 
     assert verify_generation(prior).pin.artifact_digest == options["expected_prior"]
 
 
+@pytest.mark.parametrize("child", ["source-evidence", ".builds", "generation-inputs/court-opinion-clusters"])
+def test_catch_up_refuses_when_an_output_child_points_to_the_prior(local_cli, monkeypatch, child):
+    run, _, work, kwargs = local_cli
+    prior = kwargs["prior_directory"]
+    output = work / "aliased-output"
+    target = output / child
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.symlink_to(prior, target_is_directory=True)
+    calls = transport(monkeypatch, page([4]))
+
+    with pytest.raises(ValueError, match="output must be outside the selected prior"):
+        run(output_dir=output)
+
+    assert not calls
+    assert verify_generation(prior).pin.artifact_digest == kwargs["expected_prior"]
+
+
+@pytest.mark.parametrize("lost", [("checkpoint.json",), ("selection.json",), ("checkpoint.json", "selection.json")])
+def test_catch_up_refuses_when_a_retained_control_is_lost(local_cli, monkeypatch, lost):
+    run, retained, work, kwargs = local_cli
+    next_url = search_url(kind="o", q="cluster_id:[3 TO 6]", opinion_statuses=OPINION_STATUSES) + "&cursor=next"
+    transport(monkeypatch, page([4], total=2, next_url=next_url), 429)
+    with pytest.raises(ValueError, match="incomplete"):
+        run()
+    for name in lost:
+        (retained / name).unlink()
+    remaining = {path: path.read_bytes() for path in retained.rglob("*") if path.is_file()}
+    calls = transport(monkeypatch, page([4]))
+
+    with pytest.raises(ValueError, match="retained search controls are missing"):
+        run()
+
+    assert not calls
+    assert {path: path.read_bytes() for path in retained.rglob("*") if path.is_file()} == remaining
+    assert verify_generation(kwargs["prior_directory"]).pin.artifact_digest == kwargs["expected_prior"]
+    assert not (work / "generations").exists()
+
+
+def test_catch_up_can_resume_an_initialization_interrupted_before_the_journal(local_cli, monkeypatch):
+    from spicy_docs.transport import resume
+
+    run, retained, _, _ = local_cli
+    calls = transport(monkeypatch, page([4]))
+
+    def interrupted(*args, **kwargs):
+        raise OSError("interrupted before writing the checkpoint header")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(resume, "TraversalCheckpoint", interrupted)
+        with pytest.raises(OSError, match="interrupted before writing"):
+            run()
+    assert (retained / "selection.json").is_file()
+    assert not (retained / "checkpoint.json").exists()
+    assert not calls
+
+    run()
+
+    assert len(calls) == 1
+
+
 def test_normal_cli_retains_interruption_and_resumes_only_missing_page(local_cli, monkeypatch, tmp_path):
     from types import SimpleNamespace
     from spicy_docs.transport import capture

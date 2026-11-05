@@ -41,11 +41,20 @@ FAMILY = "court-opinion-clusters"
 def check_catch_up_directories(prior: Path, output: Path, retained_search: Path | None) -> None:
     """Refuse paths that could write checkpoints or output into the immutable prior."""
     prior = prior.resolve()
-    if output.resolve().is_relative_to(prior):
+    # Include the fixed write locations used by the rollup and direct transform.
+    # A disjoint output root can still contain a link into the prior.
+    output_targets = (output, *(output / name for name in (
+        "source-evidence", ".builds", "generations", "generation-inputs",
+        f"generation-inputs/{FAMILY}", ".catchup-pins", ".court-delta", ".court-etl",
+    )))
+    if any(target.resolve().is_relative_to(prior) for target in output_targets):
         raise ValueError("Court catch-up output must be outside the selected prior")
     if retained_search is not None:
         retained = retained_search.resolve()
-        if retained.is_relative_to(prior) or prior.is_relative_to(retained):
+        retained_targets = (retained, *(retained / name for name in (
+            "run.lock", "selection.json", "checkpoint.json", "not-before.json", "captures",
+        )))
+        if prior.is_relative_to(retained) or any(target.resolve().is_relative_to(prior) for target in retained_targets):
             raise ValueError("Court retained search must be outside the selected prior and use a separate directory")
 
 

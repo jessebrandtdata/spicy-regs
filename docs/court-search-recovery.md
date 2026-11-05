@@ -26,7 +26,8 @@ run-rollup-court-opinion-clusters catch-up \
   --retained-search-directory /retained/this-selected-search
 ```
 
-Choose a separate retained-search directory and keep the run output outside the selected prior.
+Choose a separate retained-search directory. Keep the run output and its evidence, build,
+and generation directories outside the selected prior, including any symlink targets.
 
 Set `R2_PUBLIC_URL` to the intended publication. The command preserves the existing
 `COURTLISTENER_API_TOKEN` prerequisite, including for replay. It does not read
@@ -45,7 +46,9 @@ replays their original observation times through the original count/identity
 checks, then requests only the pending cursor. A saved `Retry-After` deadline
 refuses live dispatch until it elapses; the command does not schedule itself.
 Changed parent, edition/input pins, query/status selection, or missing/corrupt
-captures refuse. Keep failed attempts and the retained search directory.
+captures refuse. Keep failed attempts and the retained search directory. If the
+checkpoint or selection is lost after initialization, recover its original bytes
+before retrying with that directory.
 
 Only complete source traversal reaches delta conversion and prior append.
 The native append preserves prior values/receipts and refuses overlapping IDs;
