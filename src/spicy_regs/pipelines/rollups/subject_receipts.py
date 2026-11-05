@@ -13,6 +13,9 @@ import shutil
 from pathlib import Path
 from typing import ClassVar
 
+import pyarrow.parquet as pq
+
+from spicy_regs import etl_bulk
 from spicy_regs.congress_subjects import INPUT_COLUMNS as CONGRESS
 from spicy_regs.congress_receipts import (
     ACQUISITION_POLICY,
@@ -364,6 +367,10 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
                     validate=False,  # the prior was admitted when selected; the new pair is admitted with its generation
                 )
             else:
+                etl_bulk.log_row_eligibility(
+                    "regulatory write", dataset=dataset, rows=pq.ParquetFile(path).metadata.num_rows,
+                    reason="bulk not requested by subject receipt rollup",
+                )
                 subject, receipt = write_held_dataset(
                     dataset, path, destination, generation_id=self.receipt_generation_id
                 )

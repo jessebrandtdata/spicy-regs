@@ -496,7 +496,8 @@ def test_forced_batch_ineligibility_logs_the_row_route_and_restores_identically(
 
     monkeypatch.setattr(regulations_bulk, "_materialize_selected", forced)
     row = bridge.restore(_restore_request(tmp_path, selected, "row"))
-    assert route_warnings == [f"regulatory restore route=row dataset={dataset} reason=forced for the test"]
+    rows = sum(pq.ParquetFile(path).metadata.num_rows for path in selected.subjects)
+    assert route_warnings == [f"regulatory restore route=row dataset={dataset} rows={rows} reason=forced for the test"]
     assert pq.read_table(row["urls"][0]).equals(pq.read_table(bulk["urls"][0]), check_metadata=True)
     assert row["rows"] == bulk["rows"]
 
@@ -507,7 +508,9 @@ def test_a_subject_schema_other_than_the_declared_one_logs_the_row_route_before_
     pq.write_table(subject.append_column("undeclared", pa.nulls(subject.num_rows, pa.string())), selected.subjects[0])
     with pytest.raises(ValueError, match="Subject schema differs from policy"):
         materialize_internal(selected, tmp_path / "refused.parquet", bulk=True)
-    assert route_warnings == ["regulatory restore route=row dataset=federal_register reason=subject-schema-differs"]
+    assert route_warnings == [
+        f"regulatory restore route=row dataset=federal_register rows={subject.num_rows} reason=subject-schema-differs"
+    ]
 
 
 def _corrupt(selected, change):

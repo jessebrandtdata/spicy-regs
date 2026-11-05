@@ -247,10 +247,12 @@ def materialize_internal(selected: ReceiptInput, destination: Path, *, bulk: boo
                 return regulations_bulk.materialize_internal(
                     selected, destination, source_schema=source_schema, scoped=scoped)
             except etl_bulk.NotBulkEligible as error:
-                etl_bulk.log_row_fallback("regulatory restore", error, dataset=selected.dataset)
+                etl_bulk.log_row_fallback("regulatory restore", error, dataset=selected.dataset,
+                                          rows=sum(pq.ParquetFile(path).metadata.num_rows for path in selected.subjects))
         else:
             etl_bulk.log_row_fallback("regulatory restore", etl_bulk.NotBulkEligible("subject-schema-differs"),
-                                      dataset=selected.dataset)
+                                      dataset=selected.dataset,
+                                      rows=sum(pq.ParquetFile(path).metadata.num_rows for path in selected.subjects))
     elif bulk:
         etl_bulk.log_row_eligibility("regulatory restore", dataset=selected.dataset,
                                     rows=sum(pq.ParquetFile(path).metadata.num_rows for path in selected.subjects),
