@@ -1,5 +1,7 @@
 """Full identity matching and raw-row amplification are distinct from key coverage."""
 from dataclasses import replace
+import json
+from pathlib import Path
 
 import duckdb
 import pyarrow as pa
@@ -43,7 +45,7 @@ def test_reused_component_does_not_amplify_full_key(tmp_path, columns, child_key
 
 def test_full_selected_receipts_cover_new_keys_and_populated_attributes():
     measured=[j for j in JOINS if j.measurement]
-    assert {j.child for j in measured} >= {"report_sections","hearing_transcripts",
+    assert {j.child for j in measured} >= {"hearing_transcripts",
                                          "document_attributes","docket_attributes"}
     for join in measured:
         assert join.measurement is not None
@@ -67,6 +69,21 @@ def test_full_selected_receipts_cover_new_keys_and_populated_attributes():
                 assert all(m['etag'] and m['byteSize'] > 0 for m in selected['members'])
             else:
                 assert all('/materialized/rulemaking/snapshots/snapshot_' in url for url in urls)
+
+
+def test_dated_report_keys_keep_the_undated_measurement_as_historical_evidence():
+    join = next(j for j in JOINS if j.child == "report_sections" and j.parent == "committee_reports")
+    assert join.child_columns == join.parent_columns == ("package_id", "part_id", "last_modified")
+    assert join.kind == "unmeasured" and join.measurement is None
+    assert (join.baseline_keys, join.baseline_missing, join.floor_pct) == (0, 0, None)
+    path = Path(__file__).parents[1] / "src/spicy_regs/join_measurements.json"
+    historical = next(row for row in json.loads(path.read_text())["results"]
+                      if row["join"] == "report_sections.package_id+part_id -> committee_reports.package_id+part_id")
+    assert historical["scope"] == "full_selected_inputs"
+    assert (historical["keys"], historical["missing"]) == (146, 0)
+    assert historical["parent_duplicate_keys"] == 0 and historical["max_parent_multiplicity"] == 1
+    assert historical["expected_cardinality"] == "one"
+    assert all("/generations/" in url for side in ("child", "parent") for url in historical[side + "_urls"])
 
 
 def test_changed_printing_keys_do_not_inherit_old_measurements():

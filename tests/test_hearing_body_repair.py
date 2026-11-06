@@ -126,7 +126,8 @@ def test_hearing_rule_change_replaces_full_parent_or_keeps_prior_rows(tmp_path, 
     old_state = dict(package_id=CHRG_ID, **OLD)
     _write_prior(tmp_path, READS_TABLE, READ_COLUMNS, [old_state])
     _write_prior(tmp_path, "hearing_transcripts", ("package_id", "last_modified"), [old_state])
-    old_link = dict(package_id=CHRG_ID, bill_id="119-hr-1", link_source="mods_cover", held_date="2025-01-01", link_rule_version="27acfc7cf7ae")
+    old_link = dict(package_id=CHRG_ID, last_modified=old_state["last_modified"], bill_id="119-hr-1",
+                    link_source="mods_cover", held_date="2025-01-01", link_rule_version="27acfc7cf7ae")
     _write_prior(tmp_path, "hearing_bill_links", HEARING_BILL_LINKS.columns, [old_link])
     files = _files(tmp_path, PlaceholderSource(fail=fail))
     [state] = pq.read_table(files[READS_TABLE]).to_pylist()
@@ -204,7 +205,10 @@ def test_unique_date_correction_replaces_nonnull_scalar_on_same_cover_identity(t
     old = dict(package_id=CHRG_ID, **OLD)
     _write_prior(tmp_path, READS_TABLE, READ_COLUMNS, [old])
     _write_prior(tmp_path, "hearing_transcripts", ("package_id", "last_modified"), [old])
-    _write_prior(tmp_path, "hearing_bill_links", HEARING_BILL_LINKS.columns, [dict(package_id=CHRG_ID, bill_id="119-hr-1", link_source="mods_cover", held_date="2025-01-01", link_rule_version="27acfc7cf7ae")])
+    _write_prior(tmp_path, "hearing_bill_links", HEARING_BILL_LINKS.columns, [dict(
+        package_id=CHRG_ID, last_modified=old["last_modified"], bill_id="119-hr-1", link_source="mods_cover",
+        held_date="2025-01-01", link_rule_version="27acfc7cf7ae",
+    )])
 
     class CompiledSource:
         def acquire(self, package_id, **kwargs):
@@ -218,6 +222,7 @@ def test_unique_date_correction_replaces_nonnull_scalar_on_same_cover_identity(t
     paths = _files(tmp_path, CompiledSource())
     [link] = pq.read_table(paths["hearing_bill_links"]).to_pylist()
     assert link["bill_id"] == "119-hr-1" and link["held_date"] is None
+    assert link["last_modified"] == old["last_modified"]
     assert json.loads(link["held_dates_json"]) == ["2025-01-01", "2025-01-02"]
 
 
