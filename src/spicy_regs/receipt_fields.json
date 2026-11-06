@@ -1090,6 +1090,7 @@
     "dump_date": "The CourtListener bulk export the row was copied from (ISO date)."
    }
   },
+  "crs_report_files": {},
   "crs_reports": {
    "containers": {
     "raw_record": [

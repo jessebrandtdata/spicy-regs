@@ -1771,6 +1771,56 @@ tables:
       update_date: "Source timestamp when the Congress.gov record was updated. Together with report_id, identifies one retained revision; separate from the discovery checkpoint."
       version: "Version number stated by the list endpoint. Detail enrichment requires an explicitly stated matching version."
       url: "Congress.gov API URL for the report's detail resource."
+  crs_report_files:
+    label: "Congressional Research Service report files"
+    subject: oversight
+    coverage: >-
+      Window. Explicitly selected numbered PDFs and complementary offered HTML only.
+      Retained files and metadata observations do not establish complete edition history.
+    measured_on: "2026-11-06"
+    summary: >-
+      File subjects linked to qualified CRS metadata revisions and exact original receipts.
+      Numbered PDF locators state an edition. Mutable HTML remains an unbound observation
+      even when offered beside a numbered PDF. Text is a derivative pinned to its original
+      digest and processor. Missing or corrupt retained bytes refuse reuse. Explicit
+      printed report/version footer mismatches withhold qualified version and usable text.
+    columns:
+      report_id: "Native CRS report identity, joined to crs_reports.report_id."
+      metadata_update_date: "Native metadata revision update instant, joined to crs_reports.update_date; not the file's cover date or capture time."
+      metadata_source_sha256: "Exact qualified detail original that stated the selected file URL."
+      rendition: "Selected PDF or complementary HTML."
+      source_family: "Publisher-stated family path, preserved even when it differs from the report id prefix."
+      publisher_version: "Edition stated by the numbered PDF locator; NULL for mutable HTML."
+      qualified_publisher_version: "PDF edition supported by an observed exact final URL or a matching explicit printed footer. NULL for historical files with neither proof, HTML, unavailable files, or a printed-identity mismatch."
+      file_validation_basis: "Observed final URL plus native shape, or historical retained-source association plus native shape. Historical PDFs need an explicit matching footer to qualify an edition when their final URL is unknown."
+      version_binding: "Numbered PDF locator or unbound current HTML observation; a cover date alone never establishes edition correspondence."
+      source_url: "Exact publisher-stated file URL."
+      resolved_url: "Observed final URL for a network capture; NULL when older retained evidence does not establish it."
+      source_sha256: "Actual original byte digest, used with CentralRawArchiveStore.open to retrieve the retained original."
+      source_bytes: "Measured original byte length."
+      body_state: "ok, unavailable, refused, or content_mismatch; an ok PDF without a printed footer still has only the locator's edition evidence."
+      capture_id: "Original CaptureEvidence observation identity when known; reuse does not create another network capture."
+      captured_at: "Original network observation time when known; historical custody reconciliation does not invent one."
+      capture_receipt_key: "Archive-relative immutable receipt retaining the original capture or historical source reconciliation."
+      capture_receipt_sha256: "Exact digest of the original capture/reference receipt."
+      capture_receipt_entry: "Zero-based index in the pinned archive receipt's files array; the catalog adapter converts the source catalog's one-based receipt ordinal."
+      association_receipt_key: "Archive-relative receipt associating this metadata revision with the retained file or recording its refusal."
+      association_receipt_sha256: "Exact association receipt digest; separate metadata observations can reuse one original body."
+      association_kind: "Captured original or retained-original reuse; association is separate from network acquisition."
+      provenance_basis: "Network capture or historical retained-source reconciliation."
+      original_receipts_json: "Historical original-receipt support, including its exact object and pointer, when supplied by the selected file catalog."
+      content_identity_state: "Explicit printed CRS footer matches, mismatches, or is unknown; no identity is invented when the footer is absent."
+      content_report_id: "Report id explicitly read from a printed CRS version footer, when singular."
+      content_publisher_version: "Edition explicitly read from a printed CRS version footer, when singular."
+      error: "Source, extraction, or printed-identity mismatch reason; no failure is treated as valid empty text."
+      text_content: "Available embedded PDF text or literal HTML text nodes; no OCR, and no usable text from an identity mismatch."
+      text_state: "not_requested, ok, empty, encrypted, error, or identity_mismatch; empty requires a successful parse."
+      text_sha256: "Digest of the UTF-8 text derivative, when available."
+      text_input_sha256: "Exact original byte digest supplied to the text processor."
+      text_processor: "Named text derivation rules."
+      text_processor_sha256: "Pin of the actual local rules, maintained byte readers, and PDF backend release."
+      provider_version: "Installed SpicyDocs release used when this file observation was processed."
+      page_count: "Parsed PDF page count; NULL for HTML."
   court_dockets:
     identity_columns: [cl_docket_id]
     label: "Court dockets of APA suits against agencies"

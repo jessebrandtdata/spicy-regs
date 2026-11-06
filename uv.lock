@@ -2138,7 +2138,7 @@ dependencies = [
     { name = "rulespec-artifacts" },
 ]
 wheels = [
-    { filename = "spicy_docs-0.71.0-py3-none-any.whl", hash = "sha256:2146cb271d32b20c5620ba5b4c74d662f30379083cdc9d6df7cdc3114528ae3f" },
+    { filename = "spicy_docs-0.71.0-py3-none-any.whl", hash = "sha256:e44325d5d9a67bc92af85852f2ca500ca54544aafe23e5cb694a928eea0b6642" },
 ]
 
 [package.optional-dependencies]
@@ -2207,7 +2207,7 @@ provides-extras = ["acquisition", "bill-diff", "courtlistener-local", "html", "p
 
 [[package]]
 name = "spicy-regs"
-version = "0.1.6+reconcile.20"
+version = "0.1.6+reconcile.21"
 source = { editable = "." }
 default-groups = ["dev", "source-readers"]
 dependencies = [
