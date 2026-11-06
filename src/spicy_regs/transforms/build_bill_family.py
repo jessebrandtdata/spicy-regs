@@ -1972,6 +1972,8 @@ def build_bill_family(
     download_members: Callable[[str, Path], Sequence[Path]] = download_prior_members,
     evidence: CaptureEvidence | None = None,
     receipt_build=None,
+    publication_package_ids: tuple[str, ...] = (),
+    publication_metadata_acquirer: Any = None,
 ) -> tuple[Path, ...]:
     """Build bill-family outputs, with a directory for each partitioned table.
 
@@ -2483,6 +2485,14 @@ def build_bill_family(
 
     paths = [publish(contract, getattr(folded, attr)) for contract, attr in FAMILY_TABLES]
     merged = dict(zip((contract for contract, _ in FAMILY_TABLES), paths, strict=True))
+    if publication_package_ids:
+        from spicy_regs.transforms.bill_publication import refresh_bill_publication
+
+        metadata_source = publication_metadata_acquirer or body_acquirer
+        if metadata_source is None:
+            raise ValueError("Bill publication refresh requires a metadata acquirer")
+        refresh_bill_publication(merged["bill_versions"], package_ids=publication_package_ids,
+                                 metadata_source=metadata_source, evidence=evidence)
     restaged = restage_held_rows(merged["congress_bills"], merged["bill_actions"], merged["bill_versions"])
     logger.info("Bill family: the running stage rule moves {:,} held bill rows and {:,} action rows", *restaged)
     if evidence is not None:

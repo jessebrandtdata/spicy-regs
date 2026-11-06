@@ -202,7 +202,7 @@
       "version_code": "The printing's code: its stage's sealed slug, or a numbered reprint's own package suffix (eas2).",
       "printing_id": "Which acquisition path supplied this row (govinfo, congress, govinfo-pdf, upload).",
       "label": "The publisher's version-type string verbatim, which is not unique per printing.",
-      "version_date": "The publisher's date for this printing; the merge prefers the larger value. An enrolled printing's date is empty at the publisher (BILLSTATUS `<date/>` and the printing's own dc:date), so version_date is '' (not NULL) on enrolled rows, which sorts before every date: order printings with printing_order or NULLIF(version_date, '').",
+      "version_date": "Congress textVersions action-associated date for this printing, not its online publication time; the merge prefers the larger value. An enrolled printing's date is empty at the publisher (BILLSTATUS `<date/>` and the printing's own dc:date), so version_date is '' (not NULL) on enrolled rows, which sorts before every date: order printings with printing_order or NULLIF(version_date, '').",
       "package_id": "The GovInfo BILLS package id, read from a stated format URL rather than derived by name.",
       "version_code_is_reprint_ambiguous": "True when the publisher's version-type string also names a numbered reprint, so the slug alone cannot tell the two printings apart.",
       "publisher_stage": "The root's own bill-stage or resolution-stage attribute: the publisher's word for it.",
@@ -212,7 +212,9 @@
       "kind": "Interpreted document kind: `full_text`, `kind_uncertain` (a full-text slug whose document is too thin to be sure), `procedural_amendments`, `procedural_summary`, or `unknown`.",
       "kind_label": "The display label for this kind, supplied by the caller that owns the vocabulary.",
       "kind_warning": "The inline warning this kind carries, for a version picker.  NULL for `full_text` and for `unknown`, which states none of its own.",
-      "body_version_id": "Stable identity of the substantive captured document body, independent of extraction processing."
+      "body_version_id": "Stable identity of the substantive captured document body, independent of extraction processing.",
+      "publication_dates": "Native SUMMARY/MODS date observations with original values, precision, attributes and exact evidence/capture locators.",
+      "publication_evidence_status": "Whether SUMMARY was bracketed or changed; every status leaves the metadata/body version link unverified."
     }
   },
   "bill_vote_references": {

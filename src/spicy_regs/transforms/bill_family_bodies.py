@@ -253,6 +253,7 @@ class Document:
     chosen: BillTextFormat | None = None
     link: str | None = None
     package_id: str | None = None
+    publication_evidence: Any = None
 
 
 @dataclass(slots=True)
@@ -656,7 +657,18 @@ class BodyPass:
             self._refuse(bill, printing, refusal="tree", sha256=body.sha256)
             return
         self.outcome.package_refusals.pop(printing.package_id, None)
-        documents[(bill.bill_id, code)] = Document(body, document, cleanup, chosen, package_id=printing.package_id)
+        publication = None
+        if printing.package_id.startswith("BILLS-") and hasattr(package, "summary_capture") and hasattr(package, "mods_capture"):
+            from spicy_docs.sources.govinfo.bill_publication import bill_publication_evidence
+
+            publication = bill_publication_evidence(
+                printing.package_id, body_sha256=body.sha256, body_url=body.resolved_url,
+                body_observed_at=body.observed_at, summary_capture=package.summary_capture,
+                mods_capture=package.mods_capture,
+            )
+        documents[(bill.bill_id, code)] = Document(
+            body, document, cleanup, chosen, package_id=printing.package_id, publication_evidence=publication
+        )
 
     # -- build ---------------------------------------------------------------
     def _parsed(self, bill: BillWork, code: str, read: Document | None) -> Document | None:
@@ -730,6 +742,7 @@ class BodyPass:
                 body=read.body,
                 document=read.document,
                 cleanup=read.cleanup,
+                publication_evidence=read.publication_evidence,
             )
             versions.append(entry)
             if context_only:

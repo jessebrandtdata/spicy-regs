@@ -61,7 +61,7 @@ def policy(dataset: str) -> DatasetPolicy:
         # GovInfo /3 defines dated keys for fresh builds; no implicit prior-key migration.
         policy_version="legislative-documents/3" if dataset in DATED_TABLES else "legislative-documents/2" if dataset in {
             "native_legal_references", "native_legal_reference_reads", "document_citations",
-            "bill_publisher_summaries",
+            "bill_publisher_summaries", "bill_versions",
         } else "legislative-documents/1",
         receipt_only=spec["processing_only"],
     )

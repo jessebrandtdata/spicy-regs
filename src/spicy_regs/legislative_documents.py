@@ -44,6 +44,12 @@ def _struct_list(spelling: str, fields: list[tuple[str, pa.DataType]]) -> None:
     TYPES[spelling] = pa.list_(pa.struct(fields))
 
 
+_struct_list("list<bill-publication-date/1>", [
+    *((name, S) for name in ("field", "value", "state", "precision", "locator", "source_sha256", "source_url", "observed_at")),
+    ("attributes", pa.list_(pa.struct([("name", S), ("value", S)]))),
+])
+
+
 _struct_list("list<struct<bill_id:string,context:string>>", [("bill_id", S), ("context", S)])
 _struct_list("list<struct<element:string,publisher_id:string,publisher_identifier:string,number:string,heading:string>>",
              [(name, S) for name in ("element", "publisher_id", "publisher_identifier", "number", "heading")])
