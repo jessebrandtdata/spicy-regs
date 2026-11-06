@@ -56,3 +56,6 @@ retained body SHA-256 values are documented beside it. Local admission, raw
 visual review, native candidate/receipts and the actual consumer result are in
 `~/Work/worktrees/crs-depth-p1-20261106/evidence/ss-m4r1/`. This is local source-to-query
 qualification, separate from hosted adoption or publication.
+
+The [final-text-to-first-summary feasibility investigation](final-text-summary-delay-feasibility.md)
+records why the bounded retained cohort does not yet support the requested delay.

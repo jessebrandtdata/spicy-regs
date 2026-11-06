@@ -69,3 +69,6 @@ does not mean the source changed. A rebuild that adds the previously unread
 field is a processing correction, keeps the original item clock and key, and
 does not invent a receipt predecessor. Build an exact affected subset into a
 separate candidate; keep selected generations and raw originals unchanged.
+
+The [final-text-to-first-summary feasibility investigation](final-text-summary-delay-feasibility.md)
+qualifies the remaining publication and stage-matching gaps in a bounded cohort.
