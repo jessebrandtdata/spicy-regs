@@ -115,7 +115,9 @@ def _shape_proceeding(raw: dict) -> dict:
 def _shape_filing(raw: dict) -> dict:
     """Map one raw ECFS filing onto the published column shape."""
     native_fields = json.dumps(
-        {key: raw[key] for key in ("proceedings", "filers", "authors", "lawfirms", "bureaus", "documents") if key in raw},
+        {key: raw[key] for key in (
+            "proceedings", "filers", "authors", "lawfirms", "bureaus", "documents", "express_comment"
+        ) if key in raw},
         sort_keys=True, separators=(",", ":"), ensure_ascii=False,
     )
     id_submission = str_or_none(raw.get("id_submission"))
@@ -586,7 +588,9 @@ def build_fcc_filings(
     if evidence is not None:
         evidence.credential = _resolve_api_key() or ""
         evidence.event("selection", stage="fcc-filings", since=since.isoformat(), proceedings=list(proceedings))
-        transport = evidence.transport(stage="fcc-filings-response", max_bytes=MAX_PAGE_BYTES)
+        transport = evidence.transport(
+            stage="fcc-filings-response", max_bytes=MAX_PAGE_BYTES, response_header_names=("total",)
+        )
     with closing(_fetch_fcc("filings", since=since, proceedings=proceedings, transport=transport)) as source:
         out = _merge_incremental(
             output_dir,

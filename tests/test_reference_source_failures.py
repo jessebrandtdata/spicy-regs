@@ -49,7 +49,10 @@ class Transport(httpx.MockTransport):
         status = value if isinstance(value, int) else 200
         raw = value if isinstance(value, bytes) else json.dumps(value).encode()
         content_type = "application/rss+xml" if request.url.path.endswith(".xml") else "application/json"
-        return httpx.Response(status, stream=httpx.ByteStream(raw), headers={"content-type": content_type})
+        headers = {"content-type": content_type}
+        if isinstance(value, dict) and "_fixture_total" in value:
+            headers["total"] = str(value["_fixture_total"])
+        return httpx.Response(status, stream=httpx.ByteStream(raw), headers=headers)
 
 
 @pytest.fixture(autouse=True)
@@ -77,6 +80,7 @@ def fcc_page(kind, records, *, counted=None):
     buckets = [{"key": 1, "doc_count": counted}] if counted else []
     return {
         key: records,
+        **({"_fixture_total": counted} if kind == "fcc-filings" else {}),
         "aggregations": {field: {"doc_count_error_upper_bound": 0, "sum_other_doc_count": 0, "buckets": buckets}},
     }
 
@@ -535,11 +539,10 @@ def test_fcc_filings_keep_filters_and_explicit_page_size_through_source_traversa
     assert request.headers["x-api-key"] == KEY and KEY not in str(request.url)
 
 
-def test_fcc_filings_missing_counted_flag_refuses_instead_of_inventing_a_count():
+def test_fcc_filings_missing_flag_uses_query_total_without_defaulting_false():
     missing_flag = {key: value for key, value in FCC_FILING.items() if key != "express_comment"}
     transport = Transport(fcc_page("fcc-filings", [missing_flag]))
-    with pytest.raises(PagedJsonSourceError, match="scalar express_comment flag"):
-        list(records("fcc-filings", transport))
+    assert list(records("fcc-filings", transport)) == [missing_flag]
     assert len(transport.calls) == 1
 
 

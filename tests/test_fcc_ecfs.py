@@ -235,3 +235,18 @@ def test_fcc_columns_have_one_owner(columns):
 
     dataset = {"PROCEEDING_COLUMNS": "fcc_proceedings", "FILING_COLUMNS": "fcc_filings"}[columns]
     assert getattr(build_fcc_ecfs, columns) is LEGACY_COLUMNS[dataset]
+
+
+@pytest.mark.parametrize("state,value", [("missing", None), ("null", None), ("value", 0), ("value", False), ("value", 1), ("value", True)])
+def test_native_filing_receipt_preserves_flag_presence_and_literal_type(state, value):
+    raw = dict(_RAW_FILING)
+    if state == "missing":
+        raw.pop("express_comment")
+    else:
+        raw["express_comment"] = value
+    shaped = _shape_filing(raw)
+    native = json.loads(shaped["native_fields_json"])
+    assert ("express_comment" in native) == (state != "missing")
+    if state != "missing":
+        assert native["express_comment"] == value
+        assert type(native["express_comment"]) is type(value)

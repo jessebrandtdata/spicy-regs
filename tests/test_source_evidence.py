@@ -848,3 +848,37 @@ def test_affiliation_refresh_replaces_digest_history_and_clears_empty(tmp_path, 
     assert rows[0]["affiliation_end"] > rows[1]["affiliation_start"]
     record["terms"][0]["party_affiliations"] = []
     assert pq.read_table(run([record])).num_rows == 0
+
+
+def test_selected_response_header_is_retained_without_other_response_headers(tmp_path):
+    evidence = CaptureEvidence(tmp_path, "fcc-filings")
+    transport = evidence.transport(
+        httpx.MockTransport(lambda _: httpx.Response(
+            200, stream=httpx.ByteStream(b"native"), headers={
+                "content-type": "application/json", "total": "594", "set-cookie": "private=secret", "x-api-key": "secret",
+            })), stage="fcc", max_bytes=100, response_header_names=("total",),
+    )
+    with httpx.Client(transport=transport) as client:
+        assert client.get("https://publicapi.fcc.gov/ecfs/filings").content == b"native"
+    event = next(row for row in journal(evidence) if row["event"] == "capture")
+    assert event["response_headers"] == [["total", "594"]]
+    assert "secret" not in json.dumps(journal(evidence))
+    evidence.finish()
+    verify_evidence(evidence.artifact_dir)
+
+
+@pytest.mark.parametrize("direct", [False, True])
+def test_selected_header_credential_echo_is_never_retained(tmp_path, direct):
+    evidence = CaptureEvidence(tmp_path, "fcc-filings")
+    evidence.credential = KEY
+    with pytest.raises(CredentialRefusedError):
+        if direct:
+            evidence.capture(capture(response_headers=(("total", KEY),)), stage="fcc")
+        else:
+            transport = evidence.transport(httpx.MockTransport(lambda _: httpx.Response(
+                200, stream=httpx.ByteStream(b"native"), headers={"total": KEY},
+            )), stage="fcc", max_bytes=100, response_header_names=("total",))
+            with httpx.Client(transport=transport) as client:
+                client.get("https://publicapi.fcc.gov/ecfs/filings")
+    assert KEY not in json.dumps(journal(evidence))
+    assert not any(row["event"] == "capture" for row in journal(evidence))

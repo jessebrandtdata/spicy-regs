@@ -65,6 +65,7 @@ _OWNER_FIELDS = frozenset(
         "blob_member",
         "blob_store",
         "request_body",
+        "response_headers",
     }
 )
 ARCHIVE_REFERENCE = "source-archive.json"
@@ -383,7 +384,10 @@ class CaptureEvidence:
         access_refused = capture.status_code in (401, 403)
         if access_refused or (
             self.credential
-            and any(self.credential.encode() in body for body in (capture.body, capture.request_body or b""))
+            and (
+                any(self.credential.encode() in body for body in (capture.body, capture.request_body or b""))
+                or any(self.credential in value for _name, value in capture.response_headers)
+            )
         ):
             # Never store a credential-refused original, including one returned
             # by an injected adapter that bypassed the owner's transport.
@@ -417,6 +421,8 @@ class CaptureEvidence:
             content_encoding=capture.content_encoding,
             method=capture.method,
             request_body=capture.request_body,
+            **({"response_headers": list(capture.response_headers)}
+               if capture.response_headers and self.policy == "full" else {}),
             **({"source_validation": source_validation} if source_validation is not None else {}),
             **{key: value for key, value in fields.items() if key not in _OWNER_FIELDS
                and key not in {"requested_url", "resolved_url", "observed_at", "status_code",
@@ -438,6 +444,7 @@ class CaptureEvidence:
         content_encoding: str | None,
         method: str,
         request_body: bytes | None,
+        response_headers: list[tuple[str, str]] | None = None,
     ) -> dict:
         """Retain a complete, already bounded and credential-scanned file in one read.
 
@@ -462,6 +469,7 @@ class CaptureEvidence:
             content_encoding=content_encoding,
             method=method,
             request_body=request_body,
+            **({"response_headers": response_headers} if response_headers else {}),
         )
 
     def _record_capture(self, response: dict, *, request_body: bytes | None, **metadata) -> dict:
@@ -570,7 +578,7 @@ class CaptureEvidence:
         # contexts publish only the bounded receipt, never local extraction names.
         return self._retained(blob, stage=stage, fields={"original_location": str(path.resolve()), **fields}, name=path.name)
 
-    def transport(self, transport=None, *, stage: str, max_bytes: int):
+    def transport(self, transport=None, *, stage: str, max_bytes: int, response_header_names: tuple[str, ...] = ()):
         """Observe streamed HTTP responses before owner parsing, including retries.
 
         The source still owns requests, pacing and validation. This wrapper only
@@ -609,12 +617,19 @@ class CaptureEvidence:
                     content_encoding=self.response.headers.get("content-encoding", "identity"),
                     method=self.request.method,
                     request_body=self.request_body,
+                    **({"response_headers": [
+                        (name, value) for name in response_header_names for value in self.response.headers.get_list(name)
+                    ]} if response_header_names and evidence.policy == "full" else {}),
                 )
                 try:
                     if evidence.artifact is not None:
                         raise SourceEvidenceError("Cannot append to sealed source evidence")
                     if self.response.status_code in (401, 403) or (
                         evidence.credential and self.request_body and evidence.credential.encode() in self.request_body
+                    ) or (
+                        evidence.credential and any(
+                            evidence.credential in value for _name, value in metadata.get("response_headers", ())
+                        )
                     ):
                         raise CredentialRefusedError(
                             "Source response refused; credential-bearing bytes were not retained"
