@@ -31,6 +31,10 @@ def read_source_pages(source, body, profile):
 
     module = import_module(reader_module(source["chamber"], profile))
     reader = getattr(module, READERS[source["chamber"], profile][1])
+    if source.get("structured_observations"):
+        if (source["chamber"], profile) != ("senate", "financial-summary"):
+            raise ValueError("Retained structured observations are supported only for Senate financial summaries")
+        return _structured_summary_pages(source, body, reader)
     options = {}
     if "reading_pages" in source:
         options["pages"] = source["reading_pages"]
@@ -42,6 +46,57 @@ def read_source_pages(source, body, profile):
     return reader(body, **options)
 
 
+def _structured_summary_pages(source, body, native_reader):
+    """Replay selected observations; no backend, new rendering or inferred boxes."""
+    import hashlib
+    from spicy_docs.extraction import DefaultReader
+    from spicy_regs.pipelines.congressional_disbursement_pages import processing_inputs
+
+    processing_inputs(source)
+    if (
+        len(body) != source["source_byte_size"]
+        or "sha256:" + hashlib.sha256(body).hexdigest() != source["source_sha256"]
+    ):
+        raise ValueError("Structured page original differs from its selected bytes")
+    with DefaultReader().open(body, "application/pdf") as document:
+        if document.page_count != source["physical_page_count"]:
+            raise ValueError("Structured page original physical page count differs")
+    selected = {item["page"]: item for item in source["structured_observations"]}
+    native_pages = [page for page in source["reading_pages"] if page not in selected]
+    native = native_reader(body, pages=native_pages) if native_pages else iter(())
+    try:
+        for page in source["reading_pages"]:
+            if page not in selected:
+                yield next(native)
+                continue
+            yield read_retained_summary_observation(selected[page])
+    finally:
+        close_native = getattr(native, "close", None)
+        if callable(close_native):
+            close_native()
+
+
+def read_retained_summary_observation(item):
+    """One bounded loader for initial reading and exact typed-page reconstruction."""
+    import json
+    from PIL import Image
+    from spicy_docs.extraction import Raster
+    from spicy_regs.pipelines.congressional_disbursement_pages import verify_pin
+
+    image_path = verify_pin(item["image"])
+    if image_path.stat().st_size > 16 * 1024**2 or item["result"]["bytes"] > 32 * 1024**2:
+        raise ValueError("Retained structured observation exceeds the bounded page input size")
+    with Image.open(image_path) as image:
+        if image.format != "PNG" or image.width * image.height > 40_000_000:
+            raise ValueError("Unsupported or oversized retained structured page raster")
+        raster = Raster(image_path.read_bytes(), image.width, image.height)
+    qualification = json.loads(verify_pin(item["qualification"]).read_text())
+    module = import_module(reader_module("senate", "financial-summary"))
+    return module.read_senate_summary_observation(
+        verify_pin(item["result"]).read_bytes(), raster, qualification=qualification
+    )
+
+
 def record_kind(row):
     return row.get("row_kind") or row.get("table_kind") or "unresolved_summary_kind"
 
@@ -50,6 +105,11 @@ def validate_page_content(page, profile):
     """Check retained indices and row occurrence identity, without reinterpreting cells."""
     if profile == "allowance-formula":
         import_module(reader_module("house", profile)).validate_formula_page(page)
+        return
+    if page.get("reading_method") == "qualified_structured_observation":
+        if profile != "financial-summary":
+            raise ValueError("Structured summary cannot enter another reading profile")
+        import_module(reader_module("senate", profile)).validate_senate_structured_summary(page)
         return
     if "words" in page:
         if [word["index"] for word in page["words"]] != list(range(len(page["words"]))):

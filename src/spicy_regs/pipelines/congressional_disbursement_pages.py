@@ -43,6 +43,44 @@ def verify_pin(value: dict) -> Path:
     return path
 
 
+def processing_inputs(source: dict) -> list[dict]:
+    """Verify the declared retained-observation and independent-review closure."""
+    retained = {}
+    selected = source.get("structured_observations", [])
+    pages = [item["page"] for item in selected]
+    if pages != sorted(set(pages)) or any(page not in source.get("reading_pages", []) for page in pages):
+        raise ValueError("Structured observations require distinct selected physical pages")
+    for item in selected:
+        qualification = json.loads(verify_pin(item["qualification"]).read_text())
+        if qualification.get("schema") != "source-qualified-structured-summary/1" or qualification.get(
+            "status"
+        ) not in {"accepted_observation", "accepted_with_reviewed_corrections"}:
+            raise ValueError("Structured observation has no accepted source qualification")
+        for key in ("source_sha256", "source_byte_size"):
+            if qualification[key] != source[key]:
+                raise ValueError("Structured qualification names a different original")
+        if qualification["page"] != item["page"] or qualification["physical_pages"] != source["physical_page_count"]:
+            raise ValueError("Structured qualification names a different original page")
+        if not qualification.get("review_evidence"):
+            raise ValueError("Structured qualification omits its independent source review")
+        for key in ("result", "image"):
+            if qualification[key] != {field: item[key][field] for field in ("sha256", "bytes")}:
+                raise ValueError("Structured qualification differs from its selected input pins")
+        for artifact in [
+            item["qualification"],
+            item["result"],
+            item["image"],
+            *item.get("evidence", []),
+            *qualification["review_evidence"],
+            *(review for rule in qualification.get("corrections", []) for review in rule["review_evidence"]),
+        ]:
+            verify_pin(artifact)
+            prior = retained.setdefault(artifact["path"], artifact)
+            if prior != artifact:
+                raise ValueError("Structured evidence path has conflicting byte identities")
+    return list(retained.values())
+
+
 def _retain_implementation(producer: dict, directory: Path) -> list[dict]:
     """Keep the small implementation inputs replayable after checkout edits."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -107,7 +145,8 @@ def implementation(chamber: str, profile: str = "ledger") -> dict:
     paths.append(paths[1].with_name(correction_file))
     selected_reader = importlib.import_module(source_reader)
     paths.extend(
-        Path(inspect.getfile(selected_reader)).with_name(name) for name in getattr(selected_reader, "SOURCE_RESOURCES", ())
+        Path(inspect.getfile(selected_reader)).with_name(name)
+        for name in getattr(selected_reader, "SOURCE_RESOURCES", ())
     )
     paths.append(Path(__file__))
     return {
@@ -181,6 +220,9 @@ def source_implementation(source: dict, producer: dict, *, retained_files: dict 
         result["reading_profile"] = producer["reading_profile"]
     if "reading_pages" in source:
         result["source"].update(reading_pages=source["reading_pages"], reading_scope=source["reading_scope"])
+    if source.get("structured_observations"):
+        processing_inputs(source)
+        result["source"]["structured_observations"] = source["structured_observations"]
     return result
 
 
