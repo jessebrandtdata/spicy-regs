@@ -131,7 +131,8 @@ def _legislative():
     from spicy_regs.legislative_receipts import mapped_record
 
     spec = field_registry()["hearing_transcripts"]
-    raw = {**dict.fromkeys(field["name"] for field in spec["fields"]), "package_id": "CHRG-119hhrg1", "congress": "119"}
+    raw = {**dict.fromkeys(field["name"] for field in spec["fields"]), "package_id": "CHRG-119hhrg1", "congress": "119",
+           "last_modified": "2026-06-25T12:00:00Z"}
     return "hearing_transcripts", mapped_record("hearing_transcripts", raw), {"congress": "119"}
 
 
