@@ -125,6 +125,7 @@ def test_crs_clock_policy_roundtrips_source_fields_and_refuses_earlier_priors(tm
             [{"source_id": "retained-old-reader-fixture", "sha256": "a" * 64}]))],
         tmp_path / "old", earlier,
     )
+    assert subject is not None
     old_bytes = old_receipts.read_bytes()
     with pytest.raises(ValueError, match="Subject schema differs from policy"):
         input_policy(dataset, [subject])

@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib
 import json
 import shutil
+from typing import Any, TypedDict
 
 import duckdb
 import httpx
@@ -23,13 +24,18 @@ DETAIL = {"id": "R1", "updateDate": LIST["updateDate"], "currentVersion": 2, "ti
           "unfamiliar": {"preserved": True}}
 
 
+class DetailResponse(TypedDict):
+    status: int
+    report: dict[str, Any]
+
+
 def setup_builder(tmp_path, monkeypatch):
     module = importlib.import_module("spicy_regs.transforms.build_crs_reports")
     monkeypatch.setenv("SPICYGOV_RAW_ROOT", str(tmp_path / "raw"))
     monkeypatch.setattr(module.r2, "download", lambda *_: False)
     incoming, asked = [dict(LIST)], []
     monkeypatch.setattr(module.CrsReportsReader, "iter_records", lambda self: iter(incoming))
-    response = {"status": 200, "report": dict(DETAIL)}
+    response: DetailResponse = {"status": 200, "report": dict(DETAIL)}
     def handler(request):
         asked.append(request)
         return httpx.Response(response["status"], json={"CRSReport": response["report"]})

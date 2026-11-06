@@ -82,11 +82,12 @@ def test_crs_failed_discovery_never_commits_a_cursor(tmp_path, monkeypatch, fail
     assert not (tmp_path / module.OUTPUT).exists()
 
 
-def test_committee_cursor_comes_from_selected_discovery(monkeypatch):
+def test_committee_cursor_comes_from_selected_discovery(tmp_path, monkeypatch):
     from spicy_regs.transforms.build_committee_reports import _since
 
     monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
-    evidence = Evidence({"cursor": "2026-11-05T13:00:00+00:00"})
+    evidence = CaptureEvidence(tmp_path, "committee-reports")
+    monkeypatch.setattr(evidence, "inherited_event", lambda *_: {"cursor": "2026-11-05T13:00:00+00:00"})
     assert _since(evidence=evidence) == "2026-11-04T13:00:00Z"
 
 
@@ -191,7 +192,7 @@ def test_committee_reconciliation_names_both_native_bounds(tmp_path):
     asked = []
 
     class Reader:
-        def packages(self, url, *, max_pages):
+        def packages(self, url: str, *, max_pages: int = 40):
             asked.append(url)
             return iter([])
 
@@ -222,7 +223,7 @@ def test_list_only_same_revision_conflict_preserves_prior_bytes(tmp_path, monkey
 def test_same_revision_list_absence_and_explicit_clearing_stay_distinct(tmp_path, monkeypatch, presence):
     module = importlib.import_module("spicy_regs.transforms.build_crs_reports")
     monkeypatch.setattr(r2, "download", lambda *_: False)
-    incoming = [dict(_RAW_REPORT)]
+    incoming: list[dict[str, str | int | None]] = [dict(_RAW_REPORT)]
     monkeypatch.setattr(module.CrsReportsReader, "iter_records", lambda _: iter(incoming))
     path = module.build_crs_reports(tmp_path, receipt_generation_id="list-initial")
     path.rename(tmp_path / "_crs_prior.parquet")
