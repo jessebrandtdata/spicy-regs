@@ -143,15 +143,9 @@ Reuse the retained measurements in `work/court-text-measure-20261030/` before a
 full build. `lengths-full.json` records 349,716,707,859 decompressed bytes for the
 selected opinions export. `markdown/sizes.json` estimates 31.87 GB of compressed
 Markdown under that measured layout; this is a model, not the final partitioned
-table size. The current builder's retained head measurement reports 0.60 GB of
-spill, 415 MB of members and 6.7 GB process-tree peak resident memory for 100,000
-records with three workers. These measurements describe different boundaries;
-none is a full multi-export capacity qualification.
+table size. These size controls do not qualify conversion time, peak live memory
+or spill for the history build; those remain resource-admission gaps.
 
-The retained full-length scan took 2,394.8 seconds in its recorded runtime;
-conversion, final writes and history admission add work. A straight-line scaling
-of the current builder's 216-second head run would be about 6.5 hours per export,
-but source layout and body skew make that an estimate, not a delivery promise.
 Use completed matching conversion results before charging that work again.
 
 Budget new output members, receipts, the live spill/receipt parts, largest decoded
