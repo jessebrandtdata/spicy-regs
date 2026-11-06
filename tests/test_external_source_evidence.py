@@ -397,13 +397,16 @@ def test_fcc_filings_retain_each_response_without_the_key(tmp_path, monkeypatch,
     def respond(request):
         rows = [filing] if int(request.url.params.get('offset', 0)) == 0 else []
         buckets = {'doc_count_error_upper_bound': 0, 'sum_other_doc_count': 0, 'buckets': [{'key': 1, 'doc_count': 1}]}
-        return json_response(json.dumps({'filing': rows, 'aggregations': {'express_comment': buckets}}).encode())
+        response = json_response(json.dumps({'filing': rows, 'aggregations': {'express_comment': buckets}}).encode())
+        response.headers['total'] = '1'
+        return response
 
     tee(evidence, respond)
     output = fcc.build_fcc_filings(tmp_path, evidence=evidence, since=date(2026, 9, 25))
     assert [row['id_submission'] for row in pq.read_table(output).to_pylist()] == ['f-1']
     retained = captures(evidence)
     assert retained and {capture['stage'] for capture in retained} == {'fcc-filings-response'}
+    assert all(capture['response_headers'] == [['total', '1']] for capture in retained)
     assert any(e['event'] == 'selection' and e['stage'] == 'fcc-filings' for e in journal(evidence))
     assert_no_secret(evidence, KEY)
 
