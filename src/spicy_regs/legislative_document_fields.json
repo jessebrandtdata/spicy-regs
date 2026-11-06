@@ -728,7 +728,7 @@
       {
         "name": "version_date",
         "source_type": "VARCHAR",
-        "meaning": "The publisher's date for this printing; the merge prefers the larger value.",
+        "meaning": "Congress textVersions action-associated date for this printing, not its online publication time; the merge prefers the larger value. An enrolled printing's date is empty at the publisher (BILLSTATUS `<date/>` and the printing's own dc:date), so version_date is '' (not NULL) on enrolled rows, which sorts before every date: order printings with printing_order or NULLIF(version_date, '').",
         "decision": "keep",
         "target": "version_date",
         "target_type": "string",
@@ -1003,6 +1003,33 @@
         "target": null,
         "target_type": "receipt exact typed value",
         "reason": "Processing, source locator, acquisition, quality, or diagnostic evidence; retain the exact original value in the matching shared ETL receipt."
+      },
+      {
+        "name": "publication_dates_json",
+        "source_type": "VARCHAR",
+        "meaning": "Native SUMMARY and MODS date observations, preserving values, precision, attributes and exact evidence locators.",
+        "decision": "native-list",
+        "target": "publication_dates",
+        "target_type": "list<bill-publication-date/1>",
+        "reason": "Source-native dates remain separate from action dates, captures and body publication claims."
+      },
+      {
+        "name": "publication_evidence_status",
+        "source_type": "VARCHAR",
+        "meaning": "Metadata request consistency and explicit limits of its association with retained body bytes.",
+        "decision": "keep",
+        "target": "publication_evidence_status",
+        "target_type": "string",
+        "reason": "A reader needs the unresolved metadata/body version association beside its date observations."
+      },
+      {
+        "name": "publication_evidence_json",
+        "source_type": "VARCHAR",
+        "meaning": "Exact body identity and metadata captures, observations and publication/availability limits.",
+        "decision": "move-to-receipt",
+        "target": null,
+        "target_type": "receipt exact typed value",
+        "reason": "Retain the complete body/capture association in the matching ETL receipt."
       }
     ],
     "derived_fields": {
