@@ -41,3 +41,21 @@ jobs:
       # capped 30-day catch-up reached admission only after 29 minutes (run 41232319025, 25,007 filings). Its watermark
       # moves only on publish, so a limit it cannot finish under would repeat every night.
       timeout_minutes: ${{ inputs.filing_year && 240 || 90 }}
+  freshness:
+    # Inspect the selected public data even when acquisition or publication failed.
+    # A successful empty interval must not leave an old posting watermark unnoticed.
+    needs: run
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --frozen
+      - name: Check newest public lobbying posting
+        env:
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL || format('https://data.{0}', vars.SPICYREGS_DOMAIN || 'spicy-regs.dev') }}
+        run: uv run --frozen python scripts/check_rollup_freshness.py --table lobbying_filings

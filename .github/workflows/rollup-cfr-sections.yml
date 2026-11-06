@@ -23,3 +23,7 @@ jobs:
       command: run-rollup-cfr-sections
       skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
       cfr_replace_all: ${{ github.event_name == 'workflow_dispatch' && inputs.replace_all || false }}
+      # 42104322158 was still listing 335,000 granules at the old 30-minute
+      # limit. A prior successful 334,625-granule run needed another 4 minutes
+      # for retained-row merge, receipt preparation, admission and publication.
+      timeout_minutes: 60

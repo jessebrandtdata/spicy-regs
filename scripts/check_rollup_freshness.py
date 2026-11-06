@@ -142,12 +142,15 @@ def _query(sources: Mapping[str, list[str]]) -> str:
     return "\nUNION ALL\n".join(branches)
 
 
-def read_freshness_rows(base_url: str) -> list[FreshnessRow]:
+def read_freshness_rows(base_url: str, selected_tables: Sequence[str] | None = None) -> list[FreshnessRow]:
     """Measure selected members; a broken managed target never falls back."""
-    tables = dict.fromkeys([check.table for check in DATE_CHECKS] + list(ROW_CHANGE_BUDGETS))
+    tables = dict.fromkeys(
+        selected_tables if selected_tables is not None else [check.table for check in DATE_CHECKS] + list(ROW_CHANGE_BUDGETS)
+    )
     rows: list[FreshnessRow] = []
     with publication.snapshot(base_url) as index:
-        tables.update(dict.fromkeys(publication.parquet_tables(index)))
+        if selected_tables is None:
+            tables.update(dict.fromkeys(publication.parquet_tables(index)))
         con = duckdb.connect()
         try:
             for table in tables:
@@ -300,6 +303,12 @@ def evaluate_row_changes(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url")
+    parser.add_argument(
+        "--table",
+        action="append",
+        choices=sorted({check.table for check in DATE_CHECKS} | set(ROW_CHANGE_BUDGETS)),
+        help="Check only this monitored table; repeat to select several. Omits unrelated tables and comment coverage.",
+    )
     parser.add_argument("--state-file", type=Path, default=Path(".rollup-freshness-state.json"))
     parser.add_argument("--today", type=date.fromisoformat, default=date.today(), help="Testing override (YYYY-MM-DD)")
     parser.add_argument(
@@ -308,6 +317,8 @@ def main() -> int:
         help="Rebaseline comment coverage to today's counts (after a deliberate removal)",
     )
     args = parser.parse_args()
+    if args.table and args.accept_comment_coverage:
+        parser.error("--accept-comment-coverage cannot be combined with --table")
     args.base_url = resolve_r2_base_url(args.base_url)
 
     try:
@@ -316,25 +327,30 @@ def main() -> int:
         state = {}
 
     try:
-        rows = read_freshness_rows(args.base_url)
-        comment_counts = read_comment_counts(args.base_url)
+        rows = read_freshness_rows(args.base_url, args.table)
+        comment_counts = read_comment_counts(args.base_url) if args.table is None else None
     except (duckdb.Error, httpx.HTTPError, publication.PublicationError) as exc:
         print(f"Freshness inputs could not be verified: {exc}", file=sys.stderr)
         return 1
 
     failures = evaluate_date_rows(rows, args.today)
     failures.extend(evaluate_row_changes(rows, state, args.today))
-    failures.extend(evaluate_comment_coverage(comment_counts, state, args.today, args.accept_comment_coverage))
+    if comment_counts is not None:
+        failures.extend(evaluate_comment_coverage(comment_counts, state, args.today, args.accept_comment_coverage))
     args.state_file.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
 
-    for table, reason in SKIPPED.items():
-        print(f"NO DATE BUDGET: {table} — {reason}")
+    if args.table is None:
+        for table, reason in SKIPPED.items():
+            print(f"NO DATE BUDGET: {table} — {reason}")
     if failures:
         print("\nFreshness failures:")
         for failure in failures:
             print(f"- {failure}")
         return 1
-    print("\nAll monitored base tables and external-source rollups are within budget.")
+    if args.table:
+        print("\nSelected monitored tables are within budget.")
+    else:
+        print("\nAll monitored base tables and external-source rollups are within budget.")
     return 0
 
 

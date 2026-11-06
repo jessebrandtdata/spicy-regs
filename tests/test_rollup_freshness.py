@@ -161,6 +161,41 @@ def test_freshness_keeps_legacy_resolution_when_index_is_absent(selected_files):
     assert calls == [str(root)]
 
 
+def test_selected_table_does_not_read_unrelated_managed_files(selected_files):
+    root, _member, index, calls = selected_files
+    index["families"]["unrelated"] = {
+        **index["families"]["bill-family"],
+        "prefix": "generations/unrelated/" + "a" * 64,
+        "tables": {"missing.parquet": {"columns": [["id", "VARCHAR"]], "rows": 1,
+                                      "sha256": "sha256:" + "c" * 64, "byteSize": 100}},
+    }
+    assert freshness.read_freshness_rows(str(root), ["congress_bills"]) == [
+        ("congress_bills", "update_date", "2026-09-21 00:00:00", 1),
+        ("congress_bills", "latest_action_date", "2026-09-20 00:00:00", 1),
+    ]
+    assert calls == [str(root)]
+
+
+@pytest.mark.parametrize("latest,expected", [("2026-11-03", 0), ("2026-11-02", 1), (None, 1)])
+def test_lobbying_cli_alerts_on_old_or_missing_newest_posting(tmp_path, monkeypatch, capsys, latest, expected):
+    from contextlib import nullcontext
+
+    pq.write_table(pa.table({"dt_posted": pa.array([latest], type=pa.string())}), tmp_path / "lobbying_filings.parquet")
+    monkeypatch.setattr(publication, "snapshot", lambda _: nullcontext(publication.empty_index()))
+    monkeypatch.setattr(freshness, "resolve_r2_base_url", lambda value: str(tmp_path))
+
+    def unrelated_comment_read(_):
+        pytest.fail("a single-table freshness check must not read comment coverage")
+
+    monkeypatch.setattr(freshness, "read_comment_counts", unrelated_comment_read)
+    monkeypatch.setattr("sys.argv", ["check-freshness", "--table", "lobbying_filings", "--today", "2026-11-06",
+                                    "--state-file", str(tmp_path / "history.json")])
+    assert freshness.main() == expected
+    output = capsys.readouterr().out
+    assert "lobbying_filings" in output
+    assert ("Freshness failures:" in output) == bool(expected)
+
+
 @pytest.mark.parametrize("damage", ["missing", "malformed", "schema", "row_count"])
 def test_broken_managed_member_refuses_instead_of_reading_bare_fallback(selected_files, damage):
     root, member, index, _calls = selected_files
