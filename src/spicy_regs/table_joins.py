@@ -1042,7 +1042,7 @@ JOINS = tuple(
             reason=join.reason if measurement.get("receipt") else f"Full selected-input measurement on {measurement.get('measured_on', _MEASUREMENTS['measured_on'])}; "
                    "immutable URLs, SQL and cardinality in join_measurements.json. "
                    + measurement.get("reason", "Full-key hardening does not assert prior production amplification."))
-    if (measurement := _MEASURED_BY_NAME.get(join.name)) is not None else join
+    if join.kind != "unmeasured" and (measurement := _MEASURED_BY_NAME.get(join.name)) is not None else join
     for join in JOINS
 )
 

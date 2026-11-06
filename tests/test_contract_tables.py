@@ -48,7 +48,7 @@ def _row(contract, **overrides) -> dict:
     """A full row for ``contract``: every identity column set, everything else NULL."""
     row = {column: None for column in contract.columns}
     for index, column in enumerate(contract.identity):
-        row[column] = f"id{index}"
+        row[column] = "2026-09-18T12:00:00Z" if column == "last_modified" else f"id{index}"
     row.update(overrides)
     return row
 

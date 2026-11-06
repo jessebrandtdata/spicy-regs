@@ -647,11 +647,14 @@ def build_committee_reports(
     logger.info("Committee reports: {} cover links; agenda deferred (no verified meeting-to-jacket join)", len(link_rows))
     # Replace only the successfully read package revision. A removed part or
     # child stays in its earlier revision; failed and unread scopes stay whole.
+    # Legacy report rows predate part_id and represent the package's one part.
+    # Keep that established backfill alongside the publisher revision key.
     replaced = {"committee_reports": evaluated_reports, "report_sections": evaluated_reports,
                 "committee_report_cbo_letters": evaluated_reports,
                 "hearing_bill_links": evaluated_hearings, "hearing_transcripts": evaluated_hearings}
     paths = {name: merge_contract_table(output_dir, name, rows, download_prior=download_prior,
                                         replace_parents=(("package_id", "last_modified"), replaced[name]),
+                                        backfill_prior={"part_id": "package_id"} if name in ("committee_reports", "report_sections") else None,
                                         prior_present=(prior_files[name] is not None) if name in prior_files else None)
              for name, rows in (("committee_reports", report_rows), ("report_sections", section_rows),
                                 ("hearing_transcripts", hearing_rows), ("hearing_bill_links", link_rows),

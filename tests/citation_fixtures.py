@@ -5,12 +5,14 @@ from tempfile import TemporaryDirectory
 from spicy_regs.citation_receipts import INPUT_RECORD, PROCESSING_PREFIX, SOURCE_DIGEST_PREFIX, PROCESSING_TABLES, install_citation_inputs
 from spicy_regs.etl_receipts import ReceiptContext, write_dataset
 from spicy_regs.fec_receipt_adapter import ReceiptAdapter
+from spicy_regs.govinfo_revisions import DATED_TABLES
 from spicy_regs.legislative_documents import field_registry
 from spicy_regs.legislative_receipts import mapped_record, policy
 
 DIGEST = "sha256:" + "1" * 64
 OTHER_DIGEST = "sha256:" + "2" * 64
 SECOND_DIGEST = "sha256:" + "3" * 64
+FIXTURE_REVISION = "2026-09-18T12:00:00Z"
 
 
 def prepare_citation_inputs(connection):
@@ -35,6 +37,11 @@ def prepare_citation_inputs(connection):
             cursor = connection.execute(f'SELECT * FROM "{table}"')
             names = [column[0] for column in cursor.description]
             source = [dict(zip(names, values, strict=True)) for values in cursor.fetchall()]
+            # These synthetic staging tables predate dated package keys. Give
+            # them one explicit fixture revision; an explicitly supplied null
+            # or invalid timestamp still reaches the normal refusal path.
+            if table in DATED_TABLES and "last_modified" not in names:
+                source = [row | {"last_modified": FIXTURE_REVISION} for row in source]
             if table == "comments":
                 from spicy_regs.transforms.regulations_receipts import policy as regulations_policy
                 from spicy_regs.transforms.regulations_shape import shape_record

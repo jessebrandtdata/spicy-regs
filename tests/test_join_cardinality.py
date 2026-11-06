@@ -7,7 +7,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from scripts.check_table_joins import measure
-from spicy_regs.table_joins import JOINS, Join
+from spicy_regs.table_joins import JOINS, SOURCE_JOINS, Join
 
 
 @pytest.mark.parametrize("columns, child_key, parent_keys", [
@@ -43,7 +43,7 @@ def test_reused_component_does_not_amplify_full_key(tmp_path, columns, child_key
 
 def test_full_selected_receipts_cover_new_keys_and_populated_attributes():
     measured=[j for j in JOINS if j.measurement]
-    assert {j.child for j in measured} >= {"report_sections","hearing_transcripts",
+    assert {j.child for j in measured} >= {"hearing_transcripts",
                                          "document_attributes","docket_attributes"}
     for join in measured:
         assert join.measurement is not None
@@ -73,3 +73,30 @@ def test_changed_printing_keys_do_not_inherit_old_measurements():
     native = [j for j in JOINS if j.child in {"bill_sections", "section_diffs"} and "printing_id" in " ".join((*j.child_columns, *j.parent_columns))]
     assert native
     assert all(j.measurement is None and j.baseline_keys == 0 for j in native)
+
+
+@pytest.mark.parametrize("parent", ["budget_volumes", "house_activity_reports"])
+def test_dated_metadata_body_can_match_multiple_parent_revisions(tmp_path, parent):
+    join = next(j for j in SOURCE_JOINS if j.child == "document_citations" and j.parent == parent)
+    assert join.kind == "unmeasured" and join.measurement is None
+    assert join.expected_cardinality == "many"
+    assert (join.baseline_keys, join.baseline_missing, join.floor_pct) == (0, 0, None)
+    child, parents = tmp_path / "citations.parquet", tmp_path / "parents.parquet"
+    pq.write_table(pa.table({"document_key": ["pkg"], "text_sha256": ["same-body"]}), child)
+    pq.write_table(pa.table({"package_id": ["pkg", "pkg"], "text_sha256": ["same-body", "same-body"],
+                            "last_modified": ["2026-08-01T00:00:00Z", "2026-09-01T00:00:00Z"]}), parents)
+    urls = {join.child: [str(child)], join.parent: [str(parents)]}
+    with duckdb.connect() as connection:
+        actual = measure(connection, join, urls.__getitem__)
+        assert actual["inner_join_rows"] == 2
+        assert actual["max_parent_multiplicity"] == 2
+        assert actual["status"] != "MULTIPLICITY"
+        wrong = measure(connection, replace(join, expected_cardinality="one"), urls.__getitem__)
+        assert wrong["status"] == "MULTIPLICITY"
+
+
+def test_dated_report_section_key_has_no_undated_measurement():
+    join, = [j for j in JOINS if j.child == "report_sections" and j.parent == "committee_reports"]
+    assert join.child_columns == join.parent_columns == ("package_id", "part_id", "last_modified")
+    assert join.kind == "unmeasured" and join.measurement is None
+    assert (join.baseline_keys, join.baseline_missing) == (0, 0)
