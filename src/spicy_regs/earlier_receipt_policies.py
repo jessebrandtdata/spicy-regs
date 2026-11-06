@@ -20,6 +20,20 @@ EARLIER_COLUMNS = {
 
 def earlier_policies(policy):
     from spicy_regs.etl_receipts import DatasetPolicy
+    if policy.dataset == "crs_reports" and policy.policy_version == "government-sources/3":
+        from spicy_regs.crs_report_detail import DETAIL_COLUMNS, RECEIPT_COLUMNS
+
+        earlier = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs").joinpath(
+            "crs_detail_policy_history.json").read_text()))
+        previous_schema = policy.subject_schema
+        for name in DETAIL_COLUMNS:
+            if name not in RECEIPT_COLUMNS:
+                previous_schema = previous_schema.remove(previous_schema.get_field_index(name.removesuffix("_json")))
+        if (earlier.policy_version != "government-sources/2" or earlier.identity_fields != policy.identity_fields
+                or earlier.receipt_fields != policy.receipt_fields
+                or not earlier.subject_schema.equals(previous_schema, check_metadata=True)):
+            raise ValueError("CRS detail policy changes previous metadata fields or revision identity")
+        return (earlier, *earlier_policies(earlier))
     if policy.dataset == "crs_reports" and policy.policy_version == "government-sources/2":
         history = json.loads(files("spicy_regs").joinpath("government_policy_history.json").read_text())
         earlier = DatasetPolicy.from_descriptor(history[policy.dataset])

@@ -20,13 +20,13 @@ def crs_revision_identity_migrations(policy, subject_mapper):
     from spicy_regs.etl_receipts import decode_exact_json, subject_identity
 
     registered = {
-        "bill_publisher_summaries": ("legislative-documents/2", "raw_source_row"),
-        "crs_reports": ("government-sources/2", "raw_record"),
+        "bill_publisher_summaries": (("legislative-documents/2",), "raw_source_row"),
+        "crs_reports": (("government-sources/2", "government-sources/3"), "raw_record"),
     }
     migration = registered.get(policy.dataset)
-    if migration is None or policy.policy_version != migration[0]:
+    if migration is None or policy.policy_version not in migration[0]:
         return {}
-    previous, = earlier_policies(policy)
+    previous = next(p for p in earlier_policies(policy) if p.identity_fields != policy.identity_fields)
 
     def record_id(processing_json, prior_record_id):
         source = decode_exact_json(processing_json)[migration[1]]
