@@ -1,0 +1,15 @@
+{
+  "filename": "spicy_docs-0.70.0-py3-none-any.whl",
+  "version": "0.70.0",
+  "sha256": "fa1b05a4e97e4d1b0de27b66dc58e08b74139fd8fc2463c8062bdb850e4ce27b",
+  "byte_size": 3480295,
+  "source_commit": "1df83c8b82852a0c925e592a028588c3f8dc3be6",
+  "source_tree": "3aab4d1c436cf90b835550ff2744a452a69c4fb9",
+  "source_state": "Committed local source; publication is not part of this task",
+  "build": "uv build --wheel --offline",
+  "scope": "Literal CRS summary clocks and schema context, revision-qualified CRS report details, and BILLS publication metadata with explicit body/availability limits. Includes the existing 0.69.0 source workflows.",
+  "wheel_record_hashes_verified": true,
+  "tracked_source_members_equal": true,
+  "verified_record_members": 554,
+  "verified_tracked_source_members": 551
+}
