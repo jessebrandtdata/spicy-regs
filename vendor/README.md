@@ -1,6 +1,10 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.68.2+crsrevisions.1` adds `update_date`
+- **Selected provider** `spicy_docs-0.68.3` counts FCC filings from the
+  documented query-wide `total` response header. It retains that header for
+  replay and preserves absent or null flags without inventing a false value.
+  It includes the dated CRS revisions below. See [the build receipt](spicy_docs-0.68.3.json).
+- **Previous provider** `spicy_docs-0.68.2+crsrevisions.1` adds `update_date`
   to the existing CRS summary key so later revisions retain earlier rows.
   Its product changes are limited to the summary schema and family admission.
   See [the build receipt](spicy_docs-0.68.2+crsrevisions.1.json).

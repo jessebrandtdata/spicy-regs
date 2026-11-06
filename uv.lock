@@ -2131,14 +2131,14 @@ wheels = [
 
 [[package]]
 name = "spicy-docs"
-version = "0.68.2+crsrevisions.1"
-source = { path = "vendor/spicy_docs-0.68.2+crsrevisions.1-py3-none-any.whl" }
+version = "0.68.3"
+source = { path = "vendor/spicy_docs-0.68.3-py3-none-any.whl" }
 dependencies = [
     { name = "jsonschema" },
     { name = "rulespec-artifacts" },
 ]
 wheels = [
-    { filename = "spicy_docs-0.68.2+crsrevisions.1-py3-none-any.whl", hash = "sha256:dde8d75590649694efb1092ffc1ec884a3ef7900935f4e1288ab96546afc25b3" },
+    { filename = "spicy_docs-0.68.3-py3-none-any.whl", hash = "sha256:47c170a3042c075915a8e7f7a9398828359232d5ceeb2c0216af53d904eee2b1" },
 ]
 
 [package.optional-dependencies]
@@ -2206,7 +2206,7 @@ provides-extras = ["acquisition", "bill-diff", "courtlistener-local", "html", "p
 
 [[package]]
 name = "spicy-regs"
-version = "0.1.6+reconcile.17"
+version = "0.1.6+reconcile.18"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
@@ -2288,7 +2288,7 @@ requires-dist = [
     { name = "rulespec-artifacts", marker = "extra == 'source-readers'", path = "vendor/rulespec_artifacts-1.1.2-py3-none-any.whl" },
     { name = "sentence-transformers", marker = "extra == 'embed'" },
     { name = "smart-open", extras = ["s3"], marker = "extra == 'source-readers'", specifier = "==8.0.1" },
-    { name = "spicy-docs", extras = ["acquisition", "html", "pdf", "pdf-pypdf", "bill-diff", "courtlistener-local", "yaml"], marker = "extra == 'source-readers'", path = "vendor/spicy_docs-0.68.2+crsrevisions.1-py3-none-any.whl" },
+    { name = "spicy-docs", extras = ["acquisition", "html", "pdf", "pdf-pypdf", "bill-diff", "courtlistener-local", "yaml"], marker = "extra == 'source-readers'", path = "vendor/spicy_docs-0.68.3-py3-none-any.whl" },
     { name = "torch", marker = "extra == 'embed'" },
     { name = "tqdm" },
 ]
@@ -2313,7 +2313,7 @@ source-readers = [
     { name = "pypdf", specifier = "==6.14.2" },
     { name = "rulespec-artifacts", path = "vendor/rulespec_artifacts-1.1.2-py3-none-any.whl" },
     { name = "smart-open", extras = ["s3"], specifier = "==8.0.1" },
-    { name = "spicy-docs", extras = ["acquisition", "html", "pdf", "pdf-pypdf", "bill-diff", "courtlistener-local", "yaml"], path = "vendor/spicy_docs-0.68.2+crsrevisions.1-py3-none-any.whl" },
+    { name = "spicy-docs", extras = ["acquisition", "html", "pdf", "pdf-pypdf", "bill-diff", "courtlistener-local", "yaml"], path = "vendor/spicy_docs-0.68.3-py3-none-any.whl" },
 ]
 
 [[package]]

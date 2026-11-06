@@ -1,0 +1,23 @@
+{
+  "filename": "spicy_docs-0.68.3-py3-none-any.whl",
+  "version": "0.68.3",
+  "sha256": "47c170a3042c075915a8e7f7a9398828359232d5ceeb2c0216af53d904eee2b1",
+  "byte_size": 2752685,
+  "source_commit": "3ba96ae3d45ffab832b31e4e4b69befa46091bc0",
+  "source_tree": "2e8c693ba70e965529aa6d7d15b9c718a81ae16f",
+  "source_state": "Committed source; release publication pending",
+  "build": "uv build --wheel --offline",
+  "scope": "FCC documented population total, opt-in captured total header and replay, missing/null flag preservation; retains dated CRS revisions.",
+  "changed_from": "0.68.2+crsrevisions.1",
+  "changed_product_files": {
+    "spicy_docs/reading/paged_json.py": "1116418d26e75b35726c15aa8e1473599d3e74d63e9d139fcc56fedadfe8e89f",
+    "spicy_docs/sources/fcc_ecfs.py": "0bc8d339df13d3ddb25290bac8098bc1648175bc5483fd8f01206490039e4b74",
+    "spicy_docs/sources/fcc_ecfs_capture.py": "afb6b72dbe0113628190ff1bf147487754f9e4cab146dad2968357dd519c3c58",
+    "spicy_docs/sources/fcc_ecfs_filings.py": "43be44be7282a8181c6909b91bca5f05d6205111695f991de892313fcc026f94",
+    "spicy_docs/transport/capture.py": "16f44fa602605e4552f35aed1895592e525737691715326cdb58546def47ca60",
+    "spicy_docs/transport/captured.py": "3eeb2285d410a2c305e5f84cb28858738efb49f76ee1bef1a7ff0af119a9f063",
+    "spicy_docs/transport/source_acquirer.py": "91b45d8bae1c4b9ef91e6423075b436a93de409eccf1c74c8f10248b8f360fe1"
+  },
+  "wheel_record_hashes_verified": true,
+  "tracked_source_members_equal": true
+}
