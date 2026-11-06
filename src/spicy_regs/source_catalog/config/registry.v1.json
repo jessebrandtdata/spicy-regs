@@ -302,13 +302,16 @@
       "publisher": "Congress.gov",
       "description": "A baseline preserves table facts that the retained original-source history does not establish.",
       "source_names": [
-        "crs-reports"
+        "crs-reports",
+        "crs-report-files"
       ],
       "families": [
-        "crs-reports"
+        "crs-reports",
+        "crs-report-files"
       ],
       "tables": [
-        "crs_reports"
+        "crs_reports",
+        "crs_report_files"
       ]
     },
     {

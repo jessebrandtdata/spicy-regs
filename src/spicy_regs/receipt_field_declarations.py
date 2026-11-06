@@ -121,6 +121,7 @@ FAMILIES: tuple[tuple[str, str, Callable[[str], dict[str, tuple[str, ...]]]], ..
     ("historical-regulations-", "historical regulations", _historical_regulations),
     ("uscode-editions-", "Code editions", _uscode_editions),
     ("table3-historical", "historical Table III", _table3_history),
+    ("crs-report-files/", "CRS report files", lambda table: {}),
 )
 
 

@@ -1136,6 +1136,19 @@
         ]
       },
       {
+        "dataset": "crs_report_files",
+        "receipt_only": false,
+        "policy_version": "crs-report-files/1",
+        "identity_columns": [
+          "report_id",
+          "metadata_update_date",
+          "rendition",
+          "source_url",
+          "association_receipt_sha256"
+        ],
+        "processing_fields": []
+      },
+      {
         "dataset": "crs_reports",
         "receipt_only": false,
         "policy_version": "government-sources/3",
@@ -10849,6 +10862,53 @@
         "text_source",
         "markdown",
         "converter_version"
+      ]
+    },
+    {
+      "table": "crs_report_files",
+      "label": "Congressional Research Service report files",
+      "summary": "File subjects linked to qualified CRS metadata revisions and exact original receipts. Numbered PDF locators state an edition. Mutable HTML remains an unbound observation even when offered beside a numbered PDF. Text is a derivative pinned to its original digest and processor. Missing or corrupt retained bytes refuse reuse. Explicit printed report/version footer mismatches withhold qualified version and usable text.",
+      "coverage": "Window. Explicitly selected numbered PDFs and complementary offered HTML only. Retained files and metadata observations do not establish complete edition history.",
+      "kind": "window",
+      "measured_on": "2026-11-06",
+      "data_quality": null,
+      "columns": [
+        "report_id",
+        "metadata_update_date",
+        "metadata_source_sha256",
+        "rendition",
+        "source_family",
+        "publisher_version",
+        "version_binding",
+        "source_url",
+        "resolved_url",
+        "source_sha256",
+        "body_state",
+        "capture_id",
+        "captured_at",
+        "capture_receipt_key",
+        "capture_receipt_sha256",
+        "association_receipt_key",
+        "association_receipt_sha256",
+        "association_kind",
+        "error",
+        "provenance_basis",
+        "original_receipts_json",
+        "content_identity_state",
+        "content_report_id",
+        "content_publisher_version",
+        "qualified_publisher_version",
+        "file_validation_basis",
+        "text_content",
+        "text_state",
+        "text_sha256",
+        "text_input_sha256",
+        "text_processor",
+        "text_processor_sha256",
+        "provider_version",
+        "source_bytes",
+        "page_count",
+        "capture_receipt_entry"
       ]
     },
     {

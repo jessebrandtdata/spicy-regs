@@ -40,6 +40,7 @@ def family_policies(datasets: frozenset[str] | None = None):
     from spicy_regs.transforms.historical_regulations import PUBLIC_POLICIES as historical
     from spicy_regs.sources.table3_history import POLICY as table3_history
     from spicy_regs.sources.uscode_editions import POLICIES as editions
+    from spicy_regs.transforms.build_crs_report_files import POLICY as crs_files
 
     if datasets is not None and not datasets:
         raise ValueError("Selected dataset declarations must be nonempty")
@@ -53,7 +54,7 @@ def family_policies(datasets: frozenset[str] | None = None):
         result[policy.dataset] = policy
     for policy in (*courts.values(), *scorecards.values(), *government.values(), *navigation_outcomes.values(), *shared_logs(),
                    *administration.values(), *retained_native.values(), *historical.values(), table3_history,
-                   *editions.values()):
+                   *editions.values(), crs_files):
         add(policy)
     for name in INPUT_COLUMNS:
         add(congress_policy(name))

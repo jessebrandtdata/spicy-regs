@@ -35347,6 +35347,206 @@
       "opinion_id"
     ]
   },
+  "crs_report_files": {
+    "table": "crs_report_files",
+    "label": "Congressional Research Service report files",
+    "summary": "File subjects linked to qualified CRS metadata revisions and exact original receipts. Numbered PDF locators state an edition. Mutable HTML remains an unbound observation even when offered beside a numbered PDF. Text is a derivative pinned to its original digest and processor. Missing or corrupt retained bytes refuse reuse. Explicit printed report/version footer mismatches withhold qualified version and usable text.",
+    "coverage": "Window. Explicitly selected numbered PDFs and complementary offered HTML only. Retained files and metadata observations do not establish complete edition history.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": null,
+    "columns": [
+      {
+        "column_name": "report_id",
+        "column_type": "VARCHAR",
+        "description": "Native CRS report identity, joined to crs_reports.report_id."
+      },
+      {
+        "column_name": "metadata_update_date",
+        "column_type": "VARCHAR",
+        "description": "Native metadata revision update instant, joined to crs_reports.update_date; not the file's cover date or capture time."
+      },
+      {
+        "column_name": "metadata_source_sha256",
+        "column_type": "VARCHAR",
+        "description": "Exact qualified detail original that stated the selected file URL."
+      },
+      {
+        "column_name": "rendition",
+        "column_type": "VARCHAR",
+        "description": "Selected PDF or complementary HTML."
+      },
+      {
+        "column_name": "source_family",
+        "column_type": "VARCHAR",
+        "description": "Publisher-stated family path, preserved even when it differs from the report id prefix."
+      },
+      {
+        "column_name": "publisher_version",
+        "column_type": "VARCHAR",
+        "description": "Edition stated by the numbered PDF locator; NULL for mutable HTML."
+      },
+      {
+        "column_name": "version_binding",
+        "column_type": "VARCHAR",
+        "description": "Numbered PDF locator or unbound current HTML observation; a cover date alone never establishes edition correspondence."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact publisher-stated file URL."
+      },
+      {
+        "column_name": "resolved_url",
+        "column_type": "VARCHAR",
+        "description": "Observed final URL for a network capture; NULL when older retained evidence does not establish it."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "Actual original byte digest, used with CentralRawArchiveStore.open to retrieve the retained original."
+      },
+      {
+        "column_name": "body_state",
+        "column_type": "VARCHAR",
+        "description": "ok, unavailable, refused, or content_mismatch; an ok PDF without a printed footer still has only the locator's edition evidence."
+      },
+      {
+        "column_name": "capture_id",
+        "column_type": "VARCHAR",
+        "description": "Original CaptureEvidence observation identity when known; reuse does not create another network capture."
+      },
+      {
+        "column_name": "captured_at",
+        "column_type": "VARCHAR",
+        "description": "Original network observation time when known; historical custody reconciliation does not invent one."
+      },
+      {
+        "column_name": "capture_receipt_key",
+        "column_type": "VARCHAR",
+        "description": "Archive-relative immutable receipt retaining the original capture or historical source reconciliation."
+      },
+      {
+        "column_name": "capture_receipt_sha256",
+        "column_type": "VARCHAR",
+        "description": "Exact digest of the original capture/reference receipt."
+      },
+      {
+        "column_name": "association_receipt_key",
+        "column_type": "VARCHAR",
+        "description": "Archive-relative receipt associating this metadata revision with the retained file or recording its refusal."
+      },
+      {
+        "column_name": "association_receipt_sha256",
+        "column_type": "VARCHAR",
+        "description": "Exact association receipt digest; separate metadata observations can reuse one original body."
+      },
+      {
+        "column_name": "association_kind",
+        "column_type": "VARCHAR",
+        "description": "Captured original or retained-original reuse; association is separate from network acquisition."
+      },
+      {
+        "column_name": "error",
+        "column_type": "VARCHAR",
+        "description": "Source, extraction, or printed-identity mismatch reason; no failure is treated as valid empty text."
+      },
+      {
+        "column_name": "provenance_basis",
+        "column_type": "VARCHAR",
+        "description": "Network capture or historical retained-source reconciliation."
+      },
+      {
+        "column_name": "original_receipts_json",
+        "column_type": "VARCHAR",
+        "description": "Historical original-receipt support, including its exact object and pointer, when supplied by the selected file catalog."
+      },
+      {
+        "column_name": "content_identity_state",
+        "column_type": "VARCHAR",
+        "description": "Explicit printed CRS footer matches, mismatches, or is unknown; no identity is invented when the footer is absent."
+      },
+      {
+        "column_name": "content_report_id",
+        "column_type": "VARCHAR",
+        "description": "Report id explicitly read from a printed CRS version footer, when singular."
+      },
+      {
+        "column_name": "content_publisher_version",
+        "column_type": "VARCHAR",
+        "description": "Edition explicitly read from a printed CRS version footer, when singular."
+      },
+      {
+        "column_name": "qualified_publisher_version",
+        "column_type": "VARCHAR",
+        "description": "PDF edition supported by an observed exact final URL or a matching explicit printed footer. NULL for historical files with neither proof, HTML, unavailable files, or a printed-identity mismatch."
+      },
+      {
+        "column_name": "file_validation_basis",
+        "column_type": "VARCHAR",
+        "description": "Observed final URL plus native shape, or historical retained-source association plus native shape. Historical PDFs need an explicit matching footer to qualify an edition when their final URL is unknown."
+      },
+      {
+        "column_name": "text_content",
+        "column_type": "VARCHAR",
+        "description": "Available embedded PDF text or literal HTML text nodes; no OCR, and no usable text from an identity mismatch."
+      },
+      {
+        "column_name": "text_state",
+        "column_type": "VARCHAR",
+        "description": "not_requested, ok, empty, encrypted, error, or identity_mismatch; empty requires a successful parse."
+      },
+      {
+        "column_name": "text_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the UTF-8 text derivative, when available."
+      },
+      {
+        "column_name": "text_input_sha256",
+        "column_type": "VARCHAR",
+        "description": "Exact original byte digest supplied to the text processor."
+      },
+      {
+        "column_name": "text_processor",
+        "column_type": "VARCHAR",
+        "description": "Named text derivation rules."
+      },
+      {
+        "column_name": "text_processor_sha256",
+        "column_type": "VARCHAR",
+        "description": "Pin of the actual local rules, maintained byte readers, and PDF backend release."
+      },
+      {
+        "column_name": "provider_version",
+        "column_type": "VARCHAR",
+        "description": "Installed SpicyDocs release used when this file observation was processed."
+      },
+      {
+        "column_name": "source_bytes",
+        "column_type": "BIGINT",
+        "description": "Measured original byte length."
+      },
+      {
+        "column_name": "page_count",
+        "column_type": "BIGINT",
+        "description": "Parsed PDF page count; NULL for HTML."
+      },
+      {
+        "column_name": "capture_receipt_entry",
+        "column_type": "BIGINT",
+        "description": "Original file position within the pinned archive receipt."
+      }
+    ],
+    "subject": "oversight",
+    "grain": null,
+    "identity_columns": [
+      "report_id",
+      "metadata_update_date",
+      "rendition",
+      "source_url",
+      "association_receipt_sha256"
+    ]
+  },
   "document_citation_read_outcomes": {
     "table": "document_citation_read_outcomes",
     "label": "Document citation read results",
@@ -38747,6 +38947,19 @@
           "raw_source_record",
           "source_observation"
         ]
+      },
+      {
+        "dataset": "crs_report_files",
+        "receipt_only": false,
+        "policy_version": "crs-report-files/1",
+        "identity_columns": [
+          "report_id",
+          "metadata_update_date",
+          "rendition",
+          "source_url",
+          "association_receipt_sha256"
+        ],
+        "processing_fields": []
       },
       {
         "dataset": "crs_reports",
