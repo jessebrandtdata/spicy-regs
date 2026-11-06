@@ -25,6 +25,7 @@ import pytest
 from spicy_docs.schemas import TABLE_CONTRACTS
 
 from spicy_regs import data_dictionary as dd
+from spicy_regs.govinfo_revisions import DATED_TABLES
 from spicy_regs.schemas.regulations import RECORD_TYPES
 from spicy_regs.transforms.table_merge import merge_contract_table
 
@@ -45,10 +46,14 @@ def _no_download(remote_key: str, local_path: Path) -> bool:
 
 
 def _row(contract, **overrides) -> dict:
-    """A full row for ``contract``: every identity column set, everything else NULL."""
+    """A full synthetic row with valid native identity dates and source-schema context."""
     row = {column: None for column in contract.columns}
     for index, column in enumerate(contract.identity):
         row[column] = f"id{index}"
+    if contract.name in DATED_TABLES and "last_modified" in contract.identity:
+        row["last_modified"] = "2026-09-18T12:00:00Z"
+    if contract.name == "bill_publisher_summaries":
+        row["source_schema_version"] = "3.0.0"
     row.update(overrides)
     return row
 

@@ -35,6 +35,11 @@ def prepare_citation_inputs(connection):
             cursor = connection.execute(f'SELECT * FROM "{table}"')
             names = [column[0] for column in cursor.description]
             source = [dict(zip(names, values, strict=True)) for values in cursor.fetchall()]
+            if table in ("house_activity_reports", "budget_volumes") and "last_modified" not in names:
+                # Minimal mutable staging fixtures predate native revision keys.
+                # Add fixture context without changing positional INSERT schemas;
+                # a supplied NULL or invalid date still reaches the real refusal.
+                source = [{**row, "last_modified": "2026-09-18T12:00:00Z"} for row in source]
             if table == "comments":
                 from spicy_regs.transforms.regulations_receipts import policy as regulations_policy
                 from spicy_regs.transforms.regulations_shape import shape_record
