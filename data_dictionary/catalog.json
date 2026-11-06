@@ -711,9 +711,10 @@
       {
         "dataset": "budget_volumes",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
-          "package_id"
+          "package_id",
+          "last_modified"
         ],
         "processing_fields": [
           "raw_source_row"
@@ -893,10 +894,11 @@
       {
         "dataset": "committee_report_cbo_letters",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
           "package_id",
           "part_id",
+          "last_modified",
           "letter_seq"
         ],
         "processing_fields": [
@@ -927,10 +929,11 @@
       {
         "dataset": "committee_reports",
         "receipt_only": false,
-        "policy_version": "legislative-documents/2",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
           "package_id",
-          "part_id"
+          "part_id",
+          "last_modified"
         ],
         "processing_fields": [
           "raw_source_row"
@@ -2275,9 +2278,10 @@
       {
         "dataset": "hearing_bill_links",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
           "package_id",
+          "last_modified",
           "bill_id",
           "link_id"
         ],
@@ -2288,9 +2292,10 @@
       {
         "dataset": "hearing_transcripts",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
-          "package_id"
+          "package_id",
+          "last_modified"
         ],
         "processing_fields": [
           "raw_source_row"
@@ -2299,9 +2304,10 @@
       {
         "dataset": "house_activity_reports",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
-          "package_id"
+          "package_id",
+          "last_modified"
         ],
         "processing_fields": [
           "raw_source_row"
@@ -2782,10 +2788,11 @@
       {
         "dataset": "report_sections",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
           "package_id",
           "part_id",
+          "last_modified",
           "seq"
         ],
         "processing_fields": [
@@ -8922,11 +8929,11 @@
     {
       "table": "committee_reports",
       "label": "Committee reports",
-      "summary": "One row per published part of a captured GovInfo committee report package, keyed `(package_id, part_id)`. `bill_id` is the measure the report accompanies, read from the package's own MODS metadata.",
+      "summary": "One row per published part of a captured GovInfo committee report package, keyed `(package_id, part_id, last_modified)`. `bill_id` is the measure the report accompanies, read from the package's own MODS metadata.",
       "coverage": "Sampled. Selected committee report packages from GovInfo, a mixed-Congress selection that grows as packages are added; not complete historical or constituent-granule coverage. committee_report_reads records each package read and its outcome.",
       "kind": "sampled",
       "measured_on": "2026-09-28",
-      "data_quality": "Only the MODS PRIMARY bill fills bill_id. The CBO columns come from spicy-docs read_cbo_estimate on the same body already acquired. The cover recital gates publication of a letter: a CBO heading alone is not an estimate. report_states_estimate=false records an absent recital; NULL means the rule has not run. cbo_letter_count counts the letters located in the part, each a committee_report_cbo_letters row; a positive recital with a count of 0 is a declared estimate no letter was located for, distinct from an extracted letter. The five per-letter columns this table carried until committee_reports legislative-documents/2 (the first letter's span, digest, end rule and signatory) are on committee_report_cbo_letters, one row per letter (ss-uep5). estimate_heading stays here with a two-sided meaning: the part's first estimate heading where no located letter opens on it, NULL where one does (that letter's row carries it). It keeps all 115 headings of live generation 670476640e83 that open no letter, among them 110 undeclared reports' \"Congressional Budget Office Cost Estimate\" sections saying none was received; the other 29 live headings opened a letter and are on its row. recital_bill_id comes from the printed recital and is retained beside the MODS bill_id. bill_id is the part's own PRIMARY bill: a multi-part package's root states none, so each part of CRPT-119hrpt494 carries the H.R. 3495 its constituent record names, where its row read before parts were keyed has NULL; its separate recital_bill_id is a text interpretation. Every part a record states is read, all or none: a package whose parts cannot all be read is refused in committee_report_reads and keeps its prior rows. Parts, by decision 29 (`docs/research/fork-delivery-decisions-2026-09-22.md`): a report published in one part is one row whose part_id is its package id and whose part_number is NULL; a report published as parts is one row per part, part_id the part's granule id (CRPT-119hrpt455-pt2) and part_number 1 to N, except that a Part 1 the publisher left unsuffixed (CRPT-119hrpt494) has part_id equal to the package id and part_number 1. A package whose one part is spelled -pt1 (CRPT-119hrpt811; spicy-docs `docs/tables.md` names the others it measured) is (package-pt1, 1), the same shape as Part 1 of two, so a reader counts a package's rows to tell a lone part from Part 1 of several. title, date_issued and last_modified are the package's and repeat on every part row. A row published before part_id existed is kept as its package's one part (part_id the package id, part_number NULL) until the package is read again, which replaces its rows as a set; the committee_report_reads rule version re-reads every report once for this, which is what re-keys the CRPT-119hrpt811 row published 2026-09-24 as (CRPT-119hrpt811-pt1, 1).",
+      "data_quality": "last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. Only the MODS PRIMARY bill fills bill_id. The CBO columns come from spicy-docs read_cbo_estimate on the same body already acquired. The cover recital gates publication of a letter: a CBO heading alone is not an estimate. report_states_estimate=false records an absent recital; NULL means the rule has not run. cbo_letter_count counts the letters located in the part, each a committee_report_cbo_letters row; a positive recital with a count of 0 is a declared estimate no letter was located for, distinct from an extracted letter. The five per-letter columns this table carried until committee_reports legislative-documents/2 (the first letter's span, digest, end rule and signatory) are on committee_report_cbo_letters, one row per letter (ss-uep5). estimate_heading stays here with a two-sided meaning: the part's first estimate heading where no located letter opens on it, NULL where one does (that letter's row carries it). It keeps all 115 headings of live generation 670476640e83 that open no letter, among them 110 undeclared reports' \"Congressional Budget Office Cost Estimate\" sections saying none was received; the other 29 live headings opened a letter and are on its row. recital_bill_id comes from the printed recital and is retained beside the MODS bill_id. bill_id is the part's own PRIMARY bill: a multi-part package's root states none, so each part of CRPT-119hrpt494 carries the H.R. 3495 its constituent record names, where its row read before parts were keyed has NULL; its separate recital_bill_id is a text interpretation. Every part a record states is read, all or none: a package whose parts cannot all be read is refused in committee_report_reads and keeps its prior rows. Parts, by decision 29 (`docs/research/fork-delivery-decisions-2026-09-22.md`): a report published in one part is one row whose part_id is its package id and whose part_number is NULL; a report published as parts is one row per part, part_id the part's granule id (CRPT-119hrpt455-pt2) and part_number 1 to N, except that a Part 1 the publisher left unsuffixed (CRPT-119hrpt494) has part_id equal to the package id and part_number 1. A package whose one part is spelled -pt1 (CRPT-119hrpt811; spicy-docs `docs/tables.md` names the others it measured) is (package-pt1, 1), the same shape as Part 1 of two, so a reader counts a package's rows to tell a lone part from Part 1 of several. title, date_issued and last_modified are the package's and repeat on every part row. A successful reread replaces the selected package revision as a set; earlier revisions keep their original parts and children.",
       "columns": [
         "package_id",
         "collection",
@@ -8951,11 +8958,11 @@
     {
       "table": "committee_report_cbo_letters",
       "label": "CBO letters in committee reports",
-      "summary": "One row per CBO cost-estimate letter reprinted in one committee report part, keyed `(package_id, part_id, letter_seq)`. The span indexes into the text the parent row's text_sha256 digests; letter_date is the letterhead's dateline.",
+      "summary": "One row per CBO cost-estimate letter reprinted in one committee report part, keyed `(package_id, part_id, last_modified, letter_seq)`. The span indexes into the text the parent row's text_sha256 digests; letter_date is the letterhead's dateline.",
       "coverage": "Sampled. Every CBO cost-estimate letter located in the report parts of committee_reports whose cover declares the estimate; an omnibus report reprints several (CRPT-105hrpt149 has 11). A declared part with no located letter has no row here and cbo_letter_count 0 on its committee_reports row.",
       "kind": "sampled",
       "measured_on": "2026-10-31",
-      "data_quality": "(package_id, part_id) names the committee_reports row the letter was read from and letter_seq counts from zero in reading order within that part. A 1997-2011 letter's span runs from its heading or CBO letterhead through the enclosed estimate's \"Estimate approved by ... Analysis.\" line; 118th-Congress letters end at the Director's attribution. letter_date is NULL where the letter prints no dateline, as every 118th-Congress letter does (its date is cbo_cost_estimates' publication date). Census 2026-10-31 over the 202 retained PDF and 199 committee-reports HTM bodies: 117 and 24 letters, 113 and 3 of them dated, 5 PDF letters a bare transmittal whose enclosure prints no approval line.",
+      "data_quality": "last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. (package_id, part_id, last_modified) names the committee_reports row the letter was read from and letter_seq counts from zero in reading order within that part. A 1997-2011 letter's span runs from its heading or CBO letterhead through the enclosed estimate's \"Estimate approved by ... Analysis.\" line; 118th-Congress letters end at the Director's attribution. letter_date is NULL where the letter prints no dateline, as every 118th-Congress letter does (its date is cbo_cost_estimates' publication date). Census 2026-10-31 over the 202 retained PDF and 199 committee-reports HTM bodies: 117 and 24 letters, 113 and 3 of them dated, 5 PDF letters a bare transmittal whose enclosure prints no approval line.",
       "columns": [
         "package_id",
         "part_id",
@@ -8971,11 +8978,11 @@
     {
       "table": "report_sections",
       "label": "Committee report heading and text blocks",
-      "summary": "One row per heading or unheaded text block in one part of a committee report, keyed `(package_id, part_id, seq)`. `heading` preserves the source title; agency identity fields remain unresolved. `pattern` records which header pattern fired, which is this table's provenance column.",
+      "summary": "One row per heading or unheaded text block in one part of a committee report, keyed `(package_id, part_id, last_modified, seq)`. `heading` preserves the source title; agency identity fields remain unresolved. `pattern` records which header pattern fired, which is this table's provenance column.",
       "coverage": "Sampled. Heading/text blocks of the reports in committee_reports. heading retains the source title while agency_label and agency_key remain unresolved NULLs. HTML bodies carry no page boundaries, so none are inferred.",
       "kind": "sampled",
       "measured_on": "2026-09-28",
-      "data_quality": "part_id names the committee_reports row a block was parsed from, so (package_id, part_id) is its parent, and seq counts from zero within that part. By decision 29 (`docs/research/fork-delivery-decisions-2026-09-22.md`) part_id is the package id for a report published in one part and the part's granule id for a report published as parts, CRPT-119hrpt494's unsuffixed Part 1 aside; a package whose one part is spelled -pt1 (CRPT-119hrpt811; spicy-docs `docs/tables.md` names the others it measured) carries that spelling, so the parent's row count tells a lone part from Part 1 of several. A block published before part_id existed carries its package id there until its report is read again, which replaces every block of the package.",
+      "data_quality": "last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. part_id names the committee_reports row a block was parsed from, so (package_id, part_id, last_modified) is its parent, and seq counts from zero within that part. By decision 29 (`docs/research/fork-delivery-decisions-2026-09-22.md`) part_id is the package id for a report published in one part and the part's granule id for a report published as parts, CRPT-119hrpt494's unsuffixed Part 1 aside; a package whose one part is spelled -pt1 (CRPT-119hrpt811; spicy-docs `docs/tables.md` names the others it measured) carries that spelling, so the parent's row count within one revision tells a lone part from Part 1 of several. A reread replaces the selected revision's blocks together.",
       "columns": [
         "package_id",
         "seq",
@@ -8991,11 +8998,11 @@
     {
       "table": "hearing_transcripts",
       "label": "Hearing transcripts",
-      "summary": "One row per captured GovInfo hearing transcript. bill_id is always NULL: a hearing can concern several bills, represented in hearing_bill_links.",
+      "summary": "One row per dated revision of a captured GovInfo hearing transcript. bill_id is always NULL: a hearing can concern several bills, represented in hearing_bill_links.",
       "coverage": "Sampled. Selected hearing packages from GovInfo, each with its native event identifiers checked: package and body metadata, not speaker turns or complete hearing history.",
       "kind": "sampled",
       "measured_on": "2026-09-28",
-      "data_quality": "Cover bills come from the package's MODS and cost no extra requests. BODY mentions do not become hearing links. event_id is the meeting the Congress.gov hearing record names (its associatedMeeting), carried as the publisher pairs them. NULL means that record names no meeting, or was refused, and `committee_report_reads` says which (its `outcome`). It does not mean no meeting exists: a meeting can list the transcript's jacket in `committee_meetings.hearing_jackets` without the hearing record naming it. That jacket route is the publisher's many-to-many listing, not a declared join: on committee-meetings generation 31e62420… (2026-10-03) 1,021 meetings list two or more distinct jackets and 1,075 (congress, jacket) values sit on two or more meetings. The declared event_id join reads `complete` because every event_id names a meeting row; that does not check the pairing: CHRG-118hhrg63377 names meeting 116369, an Oversight and Investigations hearing the same day, while its MODS and docs.house.gov place it at 116330. body_completeness says what the read text states about itself: a publisher_placeholder body is the publisher's notice that the document is only in the PDF. When the package offers that PDF it is read instead (pdf_extracted, with text_derivation naming the extraction); when it offers none, the notice is published as it stands. NULL on rows not re-read since the column was added.",
+      "data_quality": "last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. Cover bills come from the package's MODS and cost no extra requests. BODY mentions do not become hearing links. event_id is the meeting the Congress.gov hearing record names (its associatedMeeting), carried as the publisher pairs them. NULL means that record names no meeting, or was refused, and `committee_report_reads` says which (its `outcome`). It does not mean no meeting exists: a meeting can list the transcript's jacket in `committee_meetings.hearing_jackets` without the hearing record naming it. That jacket route is the publisher's many-to-many listing, not a declared join: on committee-meetings generation 31e62420… (2026-10-03) 1,021 meetings list two or more distinct jackets and 1,075 (congress, jacket) values sit on two or more meetings. The declared event_id join reads `complete` because every event_id names a meeting row; that does not check the pairing: CHRG-118hhrg63377 names meeting 116369, an Oversight and Investigations hearing the same day, while its MODS and docs.house.gov place it at 116330. body_completeness says what the read text states about itself: a publisher_placeholder body is the publisher's notice that the document is only in the PDF. When the package offers that PDF it is read instead (pdf_extracted, with text_derivation naming the extraction); when it offers none, the notice is published as it stands. NULL on rows not re-read since the column was added.",
       "columns": [
         "package_id",
         "collection",
@@ -9017,11 +9024,11 @@
     {
       "table": "hearing_bill_links",
       "label": "Hearing-to-bill links",
-      "summary": "One row per package, bill and link source, shaped by spicy-docs.",
+      "summary": "One row per package revision, bill and link source, keyed by package_id, last_modified, bill_id and link source.",
       "coverage": "Sampled. Bill references that the selected hearing packages' MODS records state on their cover. It does not show bills named only in constituent records, agendas, bill actions or transcript text, and does not measure recall; agenda acquisition remains deferred.",
       "kind": "sampled",
       "measured_on": "2026-09-28",
-      "data_quality": "mods_cover means held_on. The package measured confirmation on 19 of 20 cover pairs and 18 of 18 pairs where cover and agenda agreed. Agenda links mean noticed, not held_on: agenda-only pairs were confirmed 1 of 18, contradicted 1 and unverifiable 16. Recall is unmeasured. Only 2 of 20 sampled House hearings and 0 of 3 Senate hearings stated COVER bills; a missing row does not establish that a hearing concerned no bills. A successfully re-read cover replaces that hearing's prior links, including an empty result. Unread or refused bodies retain their prior links. held_date is the one date the hearing's MODS states. A compiled volume that states several dates has held_date NULL and every native date, in source order, in held_dates; the list does not establish that each bill was considered on each date. Before link rule d06e0bd80ca1 (2026-09-25) such a volume's links carried its first date (CHRG-117shrg56721 states eleven), and rows not re-read since keep held_dates NULL. committee_system_code is the first of its hearing's hearing_transcripts.committee_system_codes, set again every run, so a link and its hearing state one committee key.",
+      "data_quality": "last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. mods_cover means held_on. The package measured confirmation on 19 of 20 cover pairs and 18 of 18 pairs where cover and agenda agreed. Agenda links mean noticed, not held_on: agenda-only pairs were confirmed 1 of 18, contradicted 1 and unverifiable 16. Recall is unmeasured. Only 2 of 20 sampled House hearings and 0 of 3 Senate hearings stated COVER bills; a missing row does not establish that a hearing concerned no bills. A successfully re-read cover replaces only that package revision's prior links, including an empty result. Earlier revisions remain retained. Unread or refused bodies retain their prior links. held_date is the one date the hearing's MODS states. A compiled volume that states several dates has held_date NULL and every native date, in source order, in held_dates; the list does not establish that each bill was considered on each date. Before link rule d06e0bd80ca1 (2026-09-25) such a volume's links carried its first date (CHRG-117shrg56721 states eleven), and rows not re-read since keep held_dates NULL. committee_system_code is the first of its hearing's hearing_transcripts.committee_system_codes, set again every run, so a link and its hearing state one committee key.",
       "columns": [
         "package_id",
         "congress",
@@ -9033,7 +9040,8 @@
         "link_id",
         "relation",
         "evidence_text",
-        "held_dates"
+        "held_dates",
+        "last_modified"
       ]
     },
     {
@@ -9672,11 +9680,11 @@
     {
       "table": "house_activity_reports",
       "label": "Committee activity reports (House and Senate)",
-      "summary": "One row per captured end-of-Congress committee activity report package, House or Senate (the table's name predates its Senate rows; the package id's `hrpt`/`srpt` says which), with what its print adds to its own MODS index. Joins `document_citations` on `package_id` = `document_key` and `text_sha256`.",
+      "summary": "One row per dated package revision of an end-of-Congress committee activity report package, House or Senate (the table's name predates its Senate rows; the package id's `hrpt`/`srpt` says which), with what its print adds to its own MODS index. Joins `document_citations` on `package_id` = `document_key` and `text_sha256`.",
       "coverage": "Sampled. House committee activity reports: CRPT packages from the 2023-01-01 issue floor whose titles name activity under the shared title rule. Not an earlier-archive census.",
       "kind": "sampled",
       "measured_on": "2026-09-28",
-      "data_quality": "**The MODS is authoritative for bills, laws and Code sections, and this table's own columns say so.** Read at full page depth across the eight reports spicy-docs sampled, the print named 0 of 1,406 bills, 0 of 174 public laws, 0 of 37 U.S. Code sections and 0 of 7 Statutes at Large pages that the package MODS does not already state — so `distinct_bills_beyond_index`, `distinct_laws_beyond_index` and `distinct_usc_sections_beyond_index` are near zero, and a nonzero one is worth reading the evidence span for rather than taking as new yield. Measured here 2026-09-20 over **41** reports rather than eight, \"zero\" is very nearly right and not exactly right: 7 print-only bills of 7,686 distinct, 5 print-only laws of 990, and 6 print-only Code sections. The one apparent survivor, `188-11`, was the print's own misprint of `118-11`. What the print does add is committees beyond the submitting one (27 resolved codes), 87 RINs, 38 agency dockets and 5 GAO product ids. **Except for the Congress of a Senate report's bills.** A Senate committee files its report early in the following Congress, and GovInfo stamps the MODS's bills with that filing Congress; printed bills are keyed in `covered_congress`, the Congress the report itself states, so on a Senate report `bills_congress_mismatch` and `distinct_bills_beyond_index` count the MODS's wrong Congress, not new yield (2026-09-26 drift audit: the eight Senate reports on the 117th had published 1,915 citations under 118th-Congress bills before the fix). **And for a House report's bills printed under a Congress subheading.** CRPT-117hrpt705 and -118hrpt974 print a predecessor bill's history under `116th Congress` or `117th Congress` inside the current bill's entry, and -118hrpt967 heads each Congress of its committee history, 107th to 118th, the same way; since spicy-docs `bill_number` 004 those bills are keyed in the subheading's Congress until the next entry, while the MODS stamps them with the filing one, so `bills_congress_mismatch` and `distinct_bills_beyond_index` count them (45 on -117hrpt705, 225 on -118hrpt967; replay receipt `print-subheading-2026-09-26/`). Since `bill_number` 005 a bill the print sets its own Congress beside (`H.R. 6752, 115th Cong.`, `S. Res. 116, 112th Congress`) takes that one ahead of any subheading, and those count the same way (38 citations over the 40 reports; receipt `print-inline-congress-2026-09-26/`). A committee name both chambers hold (`Committee on the Judiciary`, `on the Budget`, `on Veterans' Affairs`, `on Armed Services`, `on Appropriations`) resolves to the chamber of the report's own committee, read off the package id; before 2026-09-26 the House won every such name, and the Senate reports published 1,746 House codes for their own committees, 1,718 of them `hsju00`. A chamber the print names before a committee (`Senate Committee on Armed Services`) selects that chamber's committees instead (76 rows moved, 24 of them `hshm00` to `ssga00`). **Limit:** 7 bare committee names in Senate reports reach a name only the House roster holds and keep the House's code, because the print names no chamber: 5 `hshm00` (a wrapped `Committee on Homeland Security and Governmental Affairs`, or its `Committee on Home-` fragment) and 2 `hsso00` (`Select Committee on Ethics`). Read them as ambiguous, not as House committees. Receipt: `fix-print-citations-2026-09-26/replay-qualified.json`. `committees_unresolved` is **a floor, not a defect count**: the Senate `cvc` roster states only the committees its listed senators sit on, so a name it does not reach stays unresolved rather than being guessed. `stated_page_count` is the publisher's own `pages` field and is never re-derived from the bytes; `pages_read` is what the extraction saw, and the two are reported separately on purpose (CRPT-118hrpt965 states 282 and a 60-page read saw 60). `submitted_by_bioguide_id` is NULL where the publisher states the member without an id, which CRPT-118hrpt965 does.",
+      "data_quality": "last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. **The MODS is authoritative for bills, laws and Code sections, and this table's own columns say so.** Read at full page depth across the eight reports spicy-docs sampled, the print named 0 of 1,406 bills, 0 of 174 public laws, 0 of 37 U.S. Code sections and 0 of 7 Statutes at Large pages that the package MODS does not already state — so `distinct_bills_beyond_index`, `distinct_laws_beyond_index` and `distinct_usc_sections_beyond_index` are near zero, and a nonzero one is worth reading the evidence span for rather than taking as new yield. Measured here 2026-09-20 over **41** reports rather than eight, \"zero\" is very nearly right and not exactly right: 7 print-only bills of 7,686 distinct, 5 print-only laws of 990, and 6 print-only Code sections. The one apparent survivor, `188-11`, was the print's own misprint of `118-11`. What the print does add is committees beyond the submitting one (27 resolved codes), 87 RINs, 38 agency dockets and 5 GAO product ids. **Except for the Congress of a Senate report's bills.** A Senate committee files its report early in the following Congress, and GovInfo stamps the MODS's bills with that filing Congress; printed bills are keyed in `covered_congress`, the Congress the report itself states, so on a Senate report `bills_congress_mismatch` and `distinct_bills_beyond_index` count the MODS's wrong Congress, not new yield (2026-09-26 drift audit: the eight Senate reports on the 117th had published 1,915 citations under 118th-Congress bills before the fix). **And for a House report's bills printed under a Congress subheading.** CRPT-117hrpt705 and -118hrpt974 print a predecessor bill's history under `116th Congress` or `117th Congress` inside the current bill's entry, and -118hrpt967 heads each Congress of its committee history, 107th to 118th, the same way; since spicy-docs `bill_number` 004 those bills are keyed in the subheading's Congress until the next entry, while the MODS stamps them with the filing one, so `bills_congress_mismatch` and `distinct_bills_beyond_index` count them (45 on -117hrpt705, 225 on -118hrpt967; replay receipt `print-subheading-2026-09-26/`). Since `bill_number` 005 a bill the print sets its own Congress beside (`H.R. 6752, 115th Cong.`, `S. Res. 116, 112th Congress`) takes that one ahead of any subheading, and those count the same way (38 citations over the 40 reports; receipt `print-inline-congress-2026-09-26/`). A committee name both chambers hold (`Committee on the Judiciary`, `on the Budget`, `on Veterans' Affairs`, `on Armed Services`, `on Appropriations`) resolves to the chamber of the report's own committee, read off the package id; before 2026-09-26 the House won every such name, and the Senate reports published 1,746 House codes for their own committees, 1,718 of them `hsju00`. A chamber the print names before a committee (`Senate Committee on Armed Services`) selects that chamber's committees instead (76 rows moved, 24 of them `hshm00` to `ssga00`). **Limit:** 7 bare committee names in Senate reports reach a name only the House roster holds and keep the House's code, because the print names no chamber: 5 `hshm00` (a wrapped `Committee on Homeland Security and Governmental Affairs`, or its `Committee on Home-` fragment) and 2 `hsso00` (`Select Committee on Ethics`). Read them as ambiguous, not as House committees. Receipt: `fix-print-citations-2026-09-26/replay-qualified.json`. `committees_unresolved` is **a floor, not a defect count**: the Senate `cvc` roster states only the committees its listed senators sit on, so a name it does not reach stays unresolved rather than being guessed. `stated_page_count` is the publisher's own `pages` field and is never re-derived from the bytes; `pages_read` is what the extraction saw, and the two are reported separately on purpose (CRPT-118hrpt965 states 282 and a 60-page read saw 60). `submitted_by_bioguide_id` is NULL where the publisher states the member without an id, which CRPT-118hrpt965 does.",
       "columns": [
         "package_id",
         "congress",
@@ -9713,11 +9721,11 @@
     {
       "table": "budget_volumes",
       "label": "President's budget volumes",
-      "summary": "One row per published volume of the President's budget, with what its print adds to its own MODS index. Thirteen measured package parts are accepted; only volumes offering a supported package-root body yield rows.",
+      "summary": "One row per dated package revision of a published volume of the President's budget, with what its print adds to its own MODS index. Thirteen measured package parts are accepted; only volumes offering a supported package-root body yield rows.",
       "coverage": "Sampled. BUDGET packages from the 2023-01-01 issue floor whose root PDF follows the provider's thirteen-part grammar, read under a per-run package cap. TAB, DB, CLIMATE and LRB have no root PDF; no granule route is attempted.",
       "kind": "sampled",
       "measured_on": "2026-09-28",
-      "data_quality": "**The bill counts are congress-blind and are not join keys.** A BUDGET package states no Congress anywhere — not in its id, not in its summary — so the print can only spell `HR7806` where the MODS states `119-hr-7806`. `distinct_bills` and `distinct_bills_beyond_index_congress_blind` therefore reduce **both** sides to `{bill_type}-{number}` before comparing, which is why the column carries `congress_blind` in its name; neither can join `congress_bills.bill_id`, which needs the Congress this family never states. For the same reason the per-row `stated_by_index` on a `bill_number` citation of a budget volume is **NULL, not `false`**: the comparison was not possible, and answering `false` would report a comparison nobody made. Measured across the eight volumes spicy-docs sampled at full page depth, 6 of the 8 distinct printed bills are print-only. The family's real yield is laws: **504 of 518** distinct public laws the prints name are absent from their own MODS at full page depth, against 43 of 69 at a 60-page cap. `fiscal_year` is not the issue year — `BUDGET-2026-MSR` was issued 2025-09-05 — and is stated twice, by the package id and by the MODS, which spicy-docs asserts agree. `associated_bills` is published whole because it is the only statement of this edge that carries a Congress.\n\n**Thirteen measured parts are accepted by spicy-docs 0.24.0.** The seven additions are `OBJCLASS`, `TAB`, `DB`, `CLIMATE`, `LRB`, `CROSSCUT` and `DOD`. On one measured volume per part, `TAB`, `DB` and `CLIMATE` offer PDF only at granule stems; `LRB` offers an XLS and no supported body. A `GovInfoFormatNotOfferedError` at the package root is counted and logged as the publisher's answer, not as a failed or missing volume. No granule route is attempted: `shape_budget_volume` takes package summary/MODS and does not support a granule identity. These observations remain eligible on the next run and produce no invented document row.",
+      "data_quality": "last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. **The bill counts are congress-blind and are not join keys.** A BUDGET package states no Congress anywhere — not in its id, not in its summary — so the print can only spell `HR7806` where the MODS states `119-hr-7806`. `distinct_bills` and `distinct_bills_beyond_index_congress_blind` therefore reduce **both** sides to `{bill_type}-{number}` before comparing, which is why the column carries `congress_blind` in its name; neither can join `congress_bills.bill_id`, which needs the Congress this family never states. For the same reason the per-row `stated_by_index` on a `bill_number` citation of a budget volume is **NULL, not `false`**: the comparison was not possible, and answering `false` would report a comparison nobody made. Measured across the eight volumes spicy-docs sampled at full page depth, 6 of the 8 distinct printed bills are print-only. The family's real yield is laws: **504 of 518** distinct public laws the prints name are absent from their own MODS at full page depth, against 43 of 69 at a 60-page cap. `fiscal_year` is not the issue year — `BUDGET-2026-MSR` was issued 2025-09-05 — and is stated twice, by the package id and by the MODS, which spicy-docs asserts agree. `associated_bills` is published whole because it is the only statement of this edge that carries a Congress.\n\n**Thirteen measured parts are accepted by spicy-docs 0.24.0.** The seven additions are `OBJCLASS`, `TAB`, `DB`, `CLIMATE`, `LRB`, `CROSSCUT` and `DOD`. On one measured volume per part, `TAB`, `DB` and `CLIMATE` offer PDF only at granule stems; `LRB` offers an XLS and no supported body. A `GovInfoFormatNotOfferedError` at the package root is counted and logged as the publisher's answer, not as a failed or missing volume. No granule route is attempted: `shape_budget_volume` takes package summary/MODS and does not support a granule identity. These observations remain eligible on the next run and produce no invented document row.",
       "columns": [
         "package_id",
         "fiscal_year",

@@ -1,0 +1,20 @@
+{
+  "filename": "spicy_docs-0.68.4-py3-none-any.whl",
+  "version": "0.68.4",
+  "sha256": "9bb0d6e48d19d44dbf483d58ccabe42ffca0ee0432f373dbcff9121f83e81eb4",
+  "byte_size": 2753068,
+  "source_commit": "31a620b80bd09f1c5425014096c0c11787a9b967",
+  "source_tree": "39e52e1ed55eb745c67b8578a4ed27768de4ba71",
+  "source_state": "Committed source; local wheel qualification, registry publication not performed",
+  "build": "uv build --wheel --offline",
+  "scope": "Dated GovInfo package and child identities; retains the previously qualified provider behavior.",
+  "changed_from": "0.68.3",
+  "changed_product_files": {
+    "spicy_docs/schemas/budget_volume_tables.py": "b1e08682a8a2181fa3a94388cdb534277f75dd0efbb923c82f7ff9e6a2ec7094",
+    "spicy_docs/schemas/committee_report_tables.py": "8e387f71122b9689192420ce21826bd649d76aad1be04a61e1e355624073e635",
+    "spicy_docs/schemas/document_citation_tables.py": "3f6014f2d8b3ca56f9534ceb54c0da8443239fe7dc32c50d290b27120967a877",
+    "spicy_docs/schemas/hearing_bill_link_tables.py": "f06fcdd41df1f1c3850ad3742d37a96b165fc2f83f134505a15f190a3c91510c"
+  },
+  "wheel_record_hashes_verified": true,
+  "tracked_source_members_equal": true
+}

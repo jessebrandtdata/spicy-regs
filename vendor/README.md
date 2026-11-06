@@ -1,6 +1,12 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.68.3` counts FCC filings from the
+- **Selected provider** `spicy_docs-0.68.4` adds GovInfo modification dates to
+  the existing budget, report-part and hearing-link identities. The matching
+  consumer preserves dated revisions and selects current rows explicitly.
+  It retains the qualified reader behavior below. See
+  [the build receipt](spicy_docs-0.68.4.json) and
+  [the revision rules](../docs/govinfo-revisions.md).
+- **Previous provider** `spicy_docs-0.68.3` counts FCC filings from the
   documented query-wide `total` response header. It retains that header for
   replay and preserves absent or null flags without inventing a false value.
   It includes the dated CRS revisions below. See [the build receipt](spicy_docs-0.68.3.json).

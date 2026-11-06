@@ -170,7 +170,7 @@ def main(tables=None):
     for table, item in overrides.items():
         if tables is not None and table not in tables:
             continue
-        item['columns'] = {name: dd.native_spelling(prose) for name, prose in item['columns'].items()}
+        item['columns'] = {name: dd.native_spelling(prose, table) for name, prose in item['columns'].items()}
     if unresolved:
         print('Unresolved field prose:',unresolved)
         raise SystemExit(1)

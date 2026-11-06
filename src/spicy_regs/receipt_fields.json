@@ -2962,7 +2962,8 @@
      "evidence_rule",
      "evidence_text",
      "link_rule_version",
-     "held_dates_json"
+     "held_dates_json",
+     "last_modified"
     ]
    },
    "renamed": {

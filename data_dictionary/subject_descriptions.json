@@ -3580,7 +3580,7 @@
       "committee_system_code": "The `authorityId` of the first `congCommittee` the MODS names: the committee whose activity this report is, already keyed the way `committees.system_code` is.  Never read off the printed cover, which the citation rules read for a different purpose.",
       "committee_name": "That committee's `authority-standard` name, as the MODS spells it.",
       "submitted_by_bioguide_id": "The `bioGuideId` of the member the MODS names with `role=\"SUBMITTEDBY\"`.  The one bioguide id any of these documents states -- the citation rules measured zero *printed* ones across ten families -- and NULL where the publisher states the member without an id, which CRPT-118hrpt965 does.",
-      "committee_count": "How many committees the MODS names; every one is in committees_json.",
+      "committee_count": "How many committees the MODS names; every one is in committees.",
       "committees": "Every `congCommittee` the MODS names, as a Native list of objects carrying the authority id, chamber, name and the Congress the authority record itself states -- which is the roster's Congress and not necessarily this report's. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
       "associated_bill_count": "How many bills the MODS names; every one is in associated_bills.",
       "associated_bills": "Every root-level `<bill>` the MODS names, as a Native list of objects carrying the bill's natural key and the publisher's own `context` marker, in document order.  The context is kept because document order is not priority order. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
