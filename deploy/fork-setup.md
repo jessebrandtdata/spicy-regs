@@ -134,13 +134,24 @@ cold discovery. Its script and receipts are in
 `~/Work/corpora/fork-execution-2026-09-21/r7-mcp-2026-09-25/`.
 
 The maintained [Worker template](cloudflare/wrangler.template.jsonc) pins the
-reader built from `67ef430e57b2ab55f09a66faaa9008e3bcfe8dc3` and its matching
+reader built from `7dd39d779737c900b5ab4d620a7b5ce9ba87642d` and its matching
 Federal Election Commission compatibility receipt. Keep the registry image and
 both runtime pins together when updating the template. Confirm the running
 container and live MCP response after deployment.
-[Reader image build and association](https://github.com/mikewolfd/spicy-regs/actions/runs/42077305450)
+[Reader image build and association](https://github.com/mikewolfd/spicy-regs/actions/runs/42133901602)
 
-On November 5, 2026, Cloudflare reported Worker version
+The November 5, 2026 successor uses Worker version
+`a2e0c9c1-2309-4e81-b0a2-d64852e2d5e4` and container app version `65`.
+The running container matched the image and receipt in the template. An ordinary
+MCP client passed cold and warm discovery, explicit access to the selected empty
+and sample tables, the corrected roster guidance, the known lobbying filing,
+protected campaign-finance queries, and query-error recovery within its unchanged
+20-second deadline. The automatic Explorer metadata publication matched this
+source and the selected lobbying data.
+[Exact reader CI](https://github.com/mikewolfd/spicy-regs/actions/runs/42133875652) ·
+[Metadata publication](https://github.com/mikewolfd/spicy-regs/actions/runs/42137138082)
+
+The earlier November 5 deployment remains a rollback reference. Cloudflare reported Worker version
 `8a25d4a5-8ba1-4bd9-9c41-116cac029969` and container app version `64`.
 The public MCP check verified discovery, table descriptions, and representative
 lobbying and campaign-finance queries. The public Explorer metadata matched the
