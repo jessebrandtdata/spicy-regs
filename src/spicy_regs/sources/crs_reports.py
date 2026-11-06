@@ -15,6 +15,8 @@ from __future__ import annotations
 from collections.abc import Iterator, Mapping
 from datetime import date
 from operator import itemgetter
+from pathlib import Path
+import hashlib
 
 from typing import TYPE_CHECKING
 
@@ -69,6 +71,7 @@ class CrsReportsReader(Reader):
         self.verbose = verbose
         self.transport = transport
         self.evidence = evidence
+        self.witnesses: dict[tuple, list[dict]] = {}
 
     def iter_records(self) -> Iterator[dict]:
         if not self.api_key:
@@ -97,7 +100,20 @@ class CrsReportsReader(Reader):
             self.evidence.credential = self.api_key
             self.evidence.event("selection", stage="crs", url=url, since=str(self.since), max_pages=_MAX_PAGES)
             transport = self.evidence.transport(transport, stage="crs-response", max_bytes=budget.max_page_bytes)
-        with CongressListingReader(budget=budget, api_key=self.api_key, transport=transport) as reader:
+        witnesses = self.witnesses
+        class WitnessedListingReader(CongressListingReader):
+            def records(self, *args, **kwargs):
+                for page in super().records(*args, **kwargs):
+                    for ordinal, report in enumerate(page.records):
+                        witness = {"source_id": "congress.gov:crs-list", "source_uri": page.capture.requested_url,
+                                   "sha256": page.sha256, "locator": f"/CRSReports/{ordinal}",
+                                   "body_version": str(report.get("version"))}
+                        key = (report.get("id"), report.get("updateDate"))
+                        held = witnesses.setdefault(key, [])
+                        if witness not in held:
+                            held.append(witness)
+                    yield page
+        with WitnessedListingReader(budget=budget, api_key=self.api_key, transport=transport) as reader:
             pooled = reader.pooled(
                 LIST_ROUTES["crsreport"],
                 url,
@@ -109,6 +125,63 @@ class CrsReportsReader(Reader):
             # Do not rely on the server's ignored sort parameter.
             if self.since is None or not _older_than(report, self.since):
                 yield dict(report)
+
+
+class CrsReportDetailReader:
+    """One bounded, captured official detail read for one selected metadata revision."""
+
+    def __init__(self, *, evidence, api_key=None, transport=None, retained: dict[str, tuple[Path, str]] | None = None):
+        self.evidence = evidence
+        self.api_key = api_key if api_key is not None else _resolve_api_key()
+        self.transport = transport
+        self.retained = retained
+
+    def read(self, selected: dict) -> dict:
+        from spicy_docs.sources.congress.crs_summaries import CrsRevisionMismatchError, fetch_one, read_report, report_version
+        from spicy_docs.transport.credentials import CredentialRefusedError, failure_reason
+
+        if self.retained is not None:
+            if selected["report_id"] not in self.retained:
+                raise CrsReportsError("Selected CRS detail has no explicitly supplied retained original")
+            path, digest = self.retained[selected["report_id"]]
+            with path.open("rb") as stream:
+                body = stream.read(2 * 1024 * 1024 + 1)
+            if len(body) > 2 * 1024 * 1024 or "sha256:" + hashlib.sha256(body).hexdigest() != digest:
+                raise CrsReportsError("Retained CRS detail differs from its pinned original")
+            self.evidence.retain_bytes(body, stage="crs-detail-retained", raw_source=True,
+                                       original_location=str(path), source_sha256=digest)
+            witnesses = [{"source_id": "congress.gov:crs-detail", "source_uri": str(path),
+                          "sha256": digest, "locator": "/CRSReport", "body_version": None}]
+            try:
+                report = read_report(body, selected["report_id"], update_date=selected["update_date"],
+                                     version=selected.get("version"))
+            except CrsRevisionMismatchError as error:
+                return {"state": "revision_mismatch", "witnesses": witnesses, "error": str(error)}
+            witnesses[-1]["body_version"] = str(report_version(report))
+            return {"state": "ok", "report": report, "witnesses": witnesses, "error": None}
+        if not self.api_key:
+            raise CrsReportsError("CRS details require an api.data.gov key")
+        self.evidence.credential = self.api_key
+        witnesses = []
+        def capture(response):
+            if response.byte_size > 2 * 1024 * 1024:
+                raise CrsReportsError("CRS detail exceeds 2 MiB byte bound")
+            witnesses.append({"source_id": "congress.gov:crs-detail", "source_uri": response.requested_url,
+                              "sha256": response.sha256, "locator": "/CRSReport" if response.status_code == 200 else None,
+                              "body_version": None})
+        transport = self.evidence.transport(self.transport, stage="crs-detail-response", max_bytes=2 * 1024 * 1024)
+        with httpx.Client(timeout=60, transport=transport, headers={"Accept-Encoding": "identity"}) as client:
+            try:
+                report = fetch_one(client, selected["report_id"], self.api_key,
+                                   update_date=selected["update_date"], version=selected.get("version"), capture=capture)
+            except CredentialRefusedError:
+                raise
+            except CrsRevisionMismatchError as error:
+                return {"state": "revision_mismatch", "witnesses": witnesses, "error": str(error)}
+            except (ValueError, TypeError, httpx.HTTPError) as error:
+                return {"state": "failed", "witnesses": witnesses, "error": failure_reason(error, self.api_key)}
+        witnesses[-1]["body_version"] = str(report_version(report))
+        return {"state": "ok", "report": report, "witnesses": witnesses, "error": None}
 
 
 def _older_than(report: Mapping, since: date) -> bool:

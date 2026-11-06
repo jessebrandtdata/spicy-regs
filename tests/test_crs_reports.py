@@ -32,7 +32,7 @@ _RAW_REPORT = {
 def test_shape_produces_exact_schema():
     row = _shape(_RAW_REPORT)
     assert set(row) == set(COLUMNS)
-    assert len(COLUMNS) == 8
+    assert "summary" in COLUMNS and "detail_state" in COLUMNS
 
 
 def test_shape_maps_and_serializes_fields():
@@ -123,11 +123,16 @@ def test_existing_report_key_migrates_without_losing_its_row(tmp_path, monkeypat
         monkeypatch.setattr(government_bulk, "write_dataset", row_path)
         monkeypatch.setattr(government_bulk, "restore_legacy", row_path)
     module = importlib.import_module("spicy_regs.transforms.build_crs_reports")
-    current, earlier = receipt_policies(gr.POLICIES["crs_reports"])
+    current, *history = receipt_policies(gr.POLICIES["crs_reports"])
+    earlier = history[-1]
     prior = tmp_path / "_crs_prior.parquet"
     pq.write_table(pa.Table.from_pylist([_shape(_RAW_REPORT)], schema=module._SCHEMA), prior)
     with monkeypatch.context() as patch:
         patch.setitem(gr.POLICIES, "crs_reports", earlier)
+        current_mapper = gr.map_subject
+        patch.setattr(gr, "map_subject", lambda dataset, raw, **kwargs: {
+            k: v for k, v in current_mapper(dataset, raw, **kwargs).items() if k in earlier.subject_schema.names
+        })
         gr.migrate_outputs((prior,), datasets=("crs_reports",), generation_id="old-policy")
     before = prior.read_bytes()
     [old] = pq.read_table(tmp_path / "etl_receipts.parquet").to_pylist()

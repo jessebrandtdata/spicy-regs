@@ -73,7 +73,11 @@ def _arrow_parser(dataset: str, name: str, dtype: pa.DataType):
         out = []
         for text in values.to_pylist():
             try:
-                native = list_value(name, text)
+                if dataset == "crs_reports":
+                    from spicy_regs.crs_report_detail import detail_array
+                    native = detail_array(name, text)
+                else:
+                    native = list_value(name, text)
                 # A control character in any string is spelled by DuckDB as the row code does not: the row decides.
                 ok = native is None or "\\u00" not in json.dumps(native, ensure_ascii=False)
             except (GovernmentShapeError, ValueError, TypeError, RecursionError):
@@ -143,6 +147,11 @@ def write_dataset(
     udfs = {field.name: field.type for field in policy.subject_schema if pa.types.is_list(field.type)}
     columns = [_column(dataset, field, names) for field in policy.subject_schema]
     flags = [flag for _, flag in columns if flag]
+    if dataset == "crs_reports":
+        # Source-role witnesses require the reference receipt writer. Legacy
+        # rows without those witnesses keep the existing columnar path.
+        flags.extend(f'{_q("s_" + name)} IS NOT NULL' for name in
+                     ("list_witness_json", "detail_witness_json", "detail_attempt_witness_json") if name in names)
     # The first identity field must be present and nonempty; the others, unless declared nullable, present.
     for index, key in enumerate(policy.identity_fields):
         if index == 0:

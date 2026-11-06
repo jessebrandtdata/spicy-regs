@@ -19,9 +19,10 @@ from typing import Any, Mapping
 import pyarrow as pa
 
 from spicy_regs.gao_citation_keys import citation_product_id
+from spicy_regs.crs_report_detail import DETAIL_ARRAYS, DETAIL_COLUMNS, RECEIPT_COLUMNS, detail_array
 
 RECEIPT_FIELDS = {
-    "crs_reports": ("url",),
+    "crs_reports": ("url", *RECEIPT_COLUMNS),
     "fcc_filings": ("filing_url", "native_fields_sha256", "pdf_extraction_results_json"),
     "gao_decisions": (),
     # How a letter value and a product-page value were read (rule, bytes, spans, each blank's reason) is processing:
@@ -99,7 +100,7 @@ IDENTITY_FIELDS = {
 }
 
 LEGACY_COLUMNS = {
-    "crs_reports": ("report_id", "title", "report_type", "status", "published_date", "update_date", "version", "url"),
+    "crs_reports": ("report_id", "title", "report_type", "status", "published_date", "update_date", "version", "url", *DETAIL_COLUMNS),
     "fcc_filings": (
         "id_submission",
         "proceeding_names_json",
@@ -465,7 +466,10 @@ def subject_schema(dataset: str) -> pa.Schema:
         if name in RECEIPT_FIELDS.get(dataset, ()) or name == "native_fields_json":
             continue
         target, dtype = name, pa.string()
-        if dataset == "fcc_filings" and name in FCC_LEGACY_ARRAYS:
+        if dataset == "crs_reports" and name.removesuffix("_json") in DETAIL_ARRAYS:
+            target = name.removesuffix("_json")
+            dtype = pa.list_(pa.struct(DETAIL_ARRAYS[target]))
+        elif dataset == "fcc_filings" and name in FCC_LEGACY_ARRAYS:
             target = FCC_LEGACY_ARRAYS[name]
             dtype = _list_type(tuple(field for field, _ in FCC_ARRAYS[target]))
         elif name in STRUCT_ARRAYS:
@@ -689,7 +693,8 @@ def map_subject(dataset: str, row: Mapping[str, Any], *, generation_id: str | No
         if name in fcc:
             value = fcc[name]
         elif pa.types.is_list(field.type):
-            value = list_value(name, row.get(name + "_json"))
+            value = (detail_array(name, row.get(name + "_json")) if dataset == "crs_reports"
+                     else list_value(name, row.get(name + "_json")))
         elif pa.types.is_integer(field.type):
             value = _integer(value)
         elif pa.types.is_boolean(field.type):

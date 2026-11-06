@@ -63,7 +63,7 @@ from spicy_regs.transforms.parquet_rows import write_rows
 #: the July 2026 column list left out by mistake; the four comment-window columns ECFS never filled dropped (owner,
 #: 2026-10-31).
 POLICY_VERSIONS = {
-    "crs_reports": "government-sources/2",
+    "crs_reports": "government-sources/3",
     "fcc_filings": "government-sources/3",
     "fcc_proceedings": "government-sources/2",
     "gao_decisions": "government-sources/3",
@@ -317,6 +317,16 @@ def attempt(
     try:
         subject = map_subject(dataset, raw, generation_id=generation_id)
         subject_identity(policy, subject)
+        if dataset == "crs_reports":
+            for column in ("list_witness_json", "detail_witness_json", "detail_attempt_witness_json"):
+                if raw.get(column):
+                    for witness in json.loads(raw[column]):
+                        if not isinstance(witness, dict) or set(witness) != {
+                            "source_id", "source_uri", "sha256", "locator", "body_version"
+                        }:
+                            raise GovernmentShapeError("CRS invalid source witness")
+                        if witness not in witnesses:
+                            witnesses.append(witness)
     except (GovernmentShapeError, ValueError, TypeError) as error:
         mapping_error = error  # Retain the complete failed conversion below.
     # The explicit page digest remains a second source witness. It is
