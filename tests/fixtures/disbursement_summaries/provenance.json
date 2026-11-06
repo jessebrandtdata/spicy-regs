@@ -1,0 +1,238 @@
+{
+  "scope": "Derived original-page excerpts copied from independently reviewed SpicyDocs fixtures; test acquisition uses a mock response, not a publisher capture.",
+  "files": [
+    {
+      "id": "house-financial",
+      "chamber": "house",
+      "profile": "financial-summary",
+      "fixture": "house-financial.pdf",
+      "fixture_sha256": "sha256:782e86bb3020034ad5ae12380928a47ed2be0214763e78166306abfc2fbad0a6",
+      "fixture_bytes": 93510,
+      "url": "https://www.house.gov/sites/default/files/uploads/documents/2009q3-singlevolume.pdf",
+      "period_start": "2009-07-01",
+      "period_end": "2009-09-30",
+      "reading_pages": [
+        1,
+        2,
+        3
+      ],
+      "reading_scope": "Bounded derived fixture; selected fixture pages only. Omitted pages remain outside this test.",
+      "source_provenance": [
+        {
+          "file": "house-2009-07-01.pdf",
+          "source_id": "house-2009-07-01-pdf-full",
+          "original": {
+            "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/04/0422eff2de0f94b42ab388dfbd68267d2572d70ce71361ac215ec593e52abdda",
+            "sha256": "sha256:0422eff2de0f94b42ab388dfbd68267d2572d70ce71361ac215ec593e52abdda",
+            "bytes": 9988756
+          },
+          "original_pages": [
+            6,
+            7,
+            8
+          ],
+          "report_period_start": "2009-07-01",
+          "report_period_end": "2009-09-30",
+          "sha256": "sha256:782e86bb3020034ad5ae12380928a47ed2be0214763e78166306abfc2fbad0a6",
+          "bytes": 93510,
+          "derivation": "Exact original page copy with native word/coordinate parity. Page7 retained for continuation checks; independent full oracle currently covers pages6/8."
+        },
+        {
+          "file": "house-2015-10-01.pdf",
+          "source_id": "house-2015-10-01-pdf-full",
+          "original": {
+            "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/cc/cc37ba832b4986e1b3bddeaa3364c5798a84b0f6141ceaff1dc21ec0ad624389",
+            "sha256": "sha256:cc37ba832b4986e1b3bddeaa3364c5798a84b0f6141ceaff1dc21ec0ad624389",
+            "bytes": 8340132
+          },
+          "original_pages": [
+            6,
+            7,
+            8
+          ],
+          "report_period_start": "2015-10-01",
+          "report_period_end": "2015-12-31",
+          "sha256": "sha256:faec889a9dfe2ee75d393896d9e42f92bdaf008a440378ac23c7a530fd6ab020",
+          "bytes": 70872,
+          "derivation": "Exact original page copy with native word/coordinate parity. Page7 retained for continuation checks; independent full oracle currently covers pages6/8."
+        }
+      ]
+    },
+    {
+      "id": "house-mailing",
+      "chamber": "house",
+      "profile": "mailing-summary",
+      "fixture": "house-mailing.pdf",
+      "fixture_sha256": "sha256:ee881db019d95cedd0fbf422a59c0b57245b95f586c039481bc45b43a0684f74",
+      "fixture_bytes": 58860,
+      "url": "https://www.house.gov/sites/default/files/uploads/documents/2009q3-singlevolume.pdf",
+      "period_start": "2009-07-01",
+      "period_end": "2009-09-30",
+      "reading_pages": [
+        2
+      ],
+      "reading_scope": "Bounded derived fixture; selected fixture pages only. Omitted pages remain outside this test.",
+      "source_provenance": [
+        {
+          "source_id": "house-2009-07-01-pdf-full",
+          "file": "house-2009-07-01.pdf",
+          "sha256": "sha256:ee881db019d95cedd0fbf422a59c0b57245b95f586c039481bc45b43a0684f74",
+          "bytes": 58860,
+          "original": {
+            "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/04/0422eff2de0f94b42ab388dfbd68267d2572d70ce71361ac215ec593e52abdda",
+            "sha256": "sha256:0422eff2de0f94b42ab388dfbd68267d2572d70ce71361ac215ec593e52abdda",
+            "bytes": 9988756
+          },
+          "original_pages": [
+            3321,
+            3334
+          ],
+          "derivation": "Exact PDF page copy; full native word and coordinate parity checked."
+        },
+        {
+          "source_id": "house-2012-01-01-pdf-full",
+          "file": "house-2012-01-01.pdf",
+          "sha256": "sha256:891ae1658cef4f2c9ffcc9a2b4fabe972ef308a1b7bc9e83a983ffd8a9d36ace",
+          "bytes": 67465,
+          "original": {
+            "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/a4/a409de1801fc1b20055088659fb694492e2714639811b44f5b4c647b6051586a",
+            "sha256": "sha256:a409de1801fc1b20055088659fb694492e2714639811b44f5b4c647b6051586a",
+            "bytes": 9637944
+          },
+          "original_pages": [
+            3204,
+            3209,
+            3212
+          ],
+          "derivation": "Exact PDF page copy; full native word and coordinate parity checked."
+        },
+        {
+          "source_id": "house-2013-10-01-pdf-full",
+          "file": "house-2013-10-01.pdf",
+          "sha256": "sha256:3a393c5eb4110a8702b4f3cabcb13390419ede7904620c70add0f764c3187876",
+          "bytes": 56394,
+          "original": {
+            "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/75/750b38d7087df8df98228796d43113d7cd78b4201bd2129098decf94c5960316",
+            "sha256": "sha256:750b38d7087df8df98228796d43113d7cd78b4201bd2129098decf94c5960316",
+            "bytes": 7141142
+          },
+          "original_pages": [
+            2361
+          ],
+          "derivation": "Exact PDF page copy; full native word and coordinate parity checked."
+        },
+        {
+          "source_id": "house-2014-04-01-pdf-full",
+          "file": "house-2014-04-01.pdf",
+          "sha256": "sha256:2782cc269cc1af9feeba6e26853667d30cfd2f2958ba871cd5aaca59e11a7319",
+          "bytes": 61339,
+          "original": {
+            "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/2a/2ab3bbbf10c75b28583713f22a803b64ddfbd852a749993d6695dbc22e3dcdba",
+            "sha256": "sha256:2ab3bbbf10c75b28583713f22a803b64ddfbd852a749993d6695dbc22e3dcdba",
+            "bytes": 7506428
+          },
+          "original_pages": [
+            2553
+          ],
+          "derivation": "Exact PDF page copy; full native word and coordinate parity checked."
+        },
+        {
+          "source_id": "house-2015-10-01-pdf-full",
+          "file": "house-2015-10-01.pdf",
+          "sha256": "sha256:1577fef570c4d1e3279d4e8698a34e0f889f64973132c0ba46c3be56537762bf",
+          "bytes": 80648,
+          "original": {
+            "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/cc/cc37ba832b4986e1b3bddeaa3364c5798a84b0f6141ceaff1dc21ec0ad624389",
+            "sha256": "sha256:cc37ba832b4986e1b3bddeaa3364c5798a84b0f6141ceaff1dc21ec0ad624389",
+            "bytes": 8340132
+          },
+          "original_pages": [
+            2505,
+            2518,
+            2531
+          ],
+          "derivation": "Exact PDF page copy; full native word and coordinate parity checked."
+        }
+      ]
+    },
+    {
+      "id": "senate-financial",
+      "chamber": "senate",
+      "profile": "financial-summary",
+      "fixture": "senate-financial.pdf",
+      "fixture_sha256": "sha256:1a9c9fbf0df6f9272c81d924f3695d0cb85a29118aa1394aa63b001ea65c9e90",
+      "fixture_bytes": 321495,
+      "url": "https://www.govinfo.gov/content/pkg/GPO-CDOC-112sdoc3/pdf/GPO-CDOC-112sdoc3.pdf",
+      "period_start": "2011-04-01",
+      "period_end": "2011-09-30",
+      "reading_pages": [
+        1
+      ],
+      "reading_scope": "Bounded derived fixture; selected fixture pages only. Omitted pages remain outside this test.",
+      "source_provenance": {
+        "schema": "senate-summary-fixtures/1",
+        "files": [
+          {
+            "fixture": "senate-2011-04-01-pdf-full.pdf",
+            "fixture_sha256": "sha256:1a9c9fbf0df6f9272c81d924f3695d0cb85a29118aa1394aa63b001ea65c9e90",
+            "bytes": 321495,
+            "original": {
+              "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/5a/5ab0b3abed2c89f0fd891367cb0ed568de1cef2c9bf4de181f74573939a70860",
+              "sha256": "sha256:5ab0b3abed2c89f0fd891367cb0ed568de1cef2c9bf4de181f74573939a70860",
+              "bytes": 14630781
+            },
+            "original_pages": [
+              15,
+              102
+            ],
+            "derivation": "Exact selected original pages copied with PyMuPDF; native words and coordinates verified against each complete original."
+          },
+          {
+            "fixture": "senate-2021-04-01-pdf-full.pdf",
+            "fixture_sha256": "sha256:92011478df5d21b95021b629758cd7915ea5fcbd289c028f13619f1eab5dccb5",
+            "bytes": 194893,
+            "original": {
+              "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/f9/f95f1f40b5f860ff0256a0ad2c57c28d777342aa73e57d5ebf2e5ad197aac940",
+              "sha256": "sha256:f95f1f40b5f860ff0256a0ad2c57c28d777342aa73e57d5ebf2e5ad197aac940",
+              "bytes": 9899121
+            },
+            "original_pages": [
+              306,
+              323
+            ],
+            "derivation": "Exact selected original pages copied with PyMuPDF; native words and coordinates verified against each complete original."
+          },
+          {
+            "fixture": "senate-2025-10-01-pdf-full.pdf",
+            "fixture_sha256": "sha256:0803ef51a780c186a798ad7c4e4ebd57bf258c659a47b5166f9b2a6adc15798a",
+            "bytes": 194960,
+            "original": {
+              "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/78/78a3980b193166e1e82eba53df5ec3134bbcf1f98bb04ee424e223080ad865ff",
+              "sha256": "sha256:78a3980b193166e1e82eba53df5ec3134bbcf1f98bb04ee424e223080ad865ff",
+              "bytes": 9605304
+            },
+            "original_pages": [
+              11,
+              15
+            ],
+            "derivation": "Exact selected original pages copied with PyMuPDF; native words and coordinates verified against each complete original."
+          },
+          {
+            "fixture": "senate-2025-04-01-pdf-full.pdf",
+            "fixture_sha256": "sha256:cf7c435336e735a211f417fbed9e038d45b466c66b03700cd9d3074992ad53a2",
+            "bytes": 168185,
+            "original": {
+              "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/b3/b332e128c82c54f1d377fce1574326b92733b4534be0b7fa642743fd4cc92f41",
+              "sha256": "sha256:b332e128c82c54f1d377fce1574326b92733b4534be0b7fa642743fd4cc92f41",
+              "bytes": 11659300
+            },
+            "original_pages": [
+              2818
+            ],
+            "derivation": "Exact selected original pages copied with PyMuPDF; native words and coordinates verified against each complete original."
+          }
+        ]
+      }
+    }
+  ]
+}

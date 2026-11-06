@@ -920,10 +920,37 @@
       ]
     },
     {
+      "id": "family:house-disbursements",
+      "title": "House Statement of Disbursements",
+      "publisher": "U.S. House of Representatives; historical copies retained by document archives",
+      "description": "Original quarterly CSVs and PDF reports retained with their source URLs, report periods and acquisition receipts. Native reading, normalized tables and pending OCR have separate evidence; held files do not establish complete historical coverage.",
+      "source_names": [
+        "house-disbursements"
+      ],
+      "families": [
+        "house-disbursements"
+      ],
+      "tables": [
+        "house_disbursements",
+        "house_disbursements_summary",
+        "house_disbursement_pdf_pages",
+        "house_disbursement_pdf_rows",
+        "house_financial_summary_pages",
+        "house_financial_summary_rows",
+        "house_financial_summary_values",
+        "house_mailing_summary_pages",
+        "house_mailing_summary_rows",
+        "house_mailing_summary_values",
+        "house_allowance_summary_pages",
+        "house_allowance_summary_rows",
+        "house_allowance_summary_values"
+      ]
+    },
+    {
       "id": "family:senate-expenditures",
       "title": "Senate expenditures",
       "publisher": "Secretary of the Senate expenditure reports; GovInfo congressional documents",
-      "description": "A baseline preserves table facts that the retained original-source history does not establish.",
+      "description": "Retained Senate expenditure report originals and their source inventory remain distinct from native readings, normalized tables and the historical baseline. Full reports and parts retain their identities; holdings do not establish complete historical coverage.",
       "source_names": [
         "senate-expenditures"
       ],
@@ -932,7 +959,12 @@
       ],
       "tables": [
         "senate_expenditures",
-        "senate_expenditures_document_file_outcomes"
+        "senate_expenditures_document_file_outcomes",
+        "senate_disbursement_pages",
+        "senate_disbursements",
+        "senate_financial_summary_pages",
+        "senate_financial_summary_rows",
+        "senate_financial_summary_values"
       ]
     },
     {
@@ -213298,6 +213330,11 @@
         "id": "family:senate-expenditures",
         "disposition": "active",
         "reason": "Current official publication explicitly selects these tables and exact versions."
+      },
+      {
+        "id": "family:house-disbursements",
+        "disposition": "active",
+        "reason": "The maintained House CSV and PDF readers consume these originals. Raw-file inventory and pending OCR remain independent of public table publication."
       },
       {
         "id": "family:treasury-fiscal",

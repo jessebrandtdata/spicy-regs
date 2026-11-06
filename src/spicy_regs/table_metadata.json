@@ -22809,6 +22809,2737 @@
       "source_record_number"
     ]
   },
+  "house_disbursement_pdf_rows": {
+    "table": "house_disbursement_pdf_rows",
+    "label": "House PDF financial rows",
+    "summary": "Monetary lines from selected historical House report PDFs, with transaction amounts separate from printed summaries and totals.",
+    "coverage": "Window. Explicitly selected retained House PDFs. Each physical page is visited; images and other financial grids have explicit pending page outcomes. These PDF occurrences are distinct from official CSV occurrences. Do not combine overlapping PDF and CSV periods without a source-qualified selection.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Exact signed decimals preserve quarterly and year-to-date values independently. Only transaction rows populate amount. Summary, subtotal and organization_total rows must not be added to transactions. Literal DO payees resolve only from a witnessed prior payee. Original cells, normalization witnesses and unresolved date or hierarchy issues remain available. Offices can change within a page.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the complete page-reading stream containing original words and positions."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line on this physical page."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Printed transaction, summary, subtotal or organization_total role."
+      },
+      {
+        "column_name": "organizational_group",
+        "column_type": "VARCHAR",
+        "description": "Outer printed group containing the reporting office."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed reporting office, distinct from an elected-member identity."
+      },
+      {
+        "column_name": "fiscal_or_legislative_year",
+        "column_type": "VARCHAR",
+        "description": "Literal fiscal or legislative year printed with the office heading."
+      },
+      {
+        "column_name": "program",
+        "column_type": "VARCHAR",
+        "description": "Printed program within the office hierarchy, null if its heading was not read."
+      },
+      {
+        "column_name": "cost_category",
+        "column_type": "VARCHAR",
+        "description": "Printed expense category for the transaction, null where unresolved."
+      },
+      {
+        "column_name": "transaction_date",
+        "column_type": "DATE",
+        "description": "Posted date using the report year for abbreviated month-day cells."
+      },
+      {
+        "column_name": "data_source",
+        "column_type": "VARCHAR",
+        "description": "Publisher AP, AR or GL accounting-system label when printed."
+      },
+      {
+        "column_name": "document",
+        "column_type": "VARCHAR",
+        "description": "Literal voucher identifier, preserving leading zeros and blank-date transfers."
+      },
+      {
+        "column_name": "vendor_name",
+        "column_type": "VARCHAR",
+        "description": "Printed payee or witnessed DO continuation; blank source identities remain null."
+      },
+      {
+        "column_name": "service_start_date",
+        "column_type": "DATE",
+        "description": "Normalized source service start date; invalid cells remain null with an issue."
+      },
+      {
+        "column_name": "service_end_date",
+        "column_type": "DATE",
+        "description": "Normalized source service end date, including valid future dates pending review."
+      },
+      {
+        "column_name": "description",
+        "column_type": "VARCHAR",
+        "description": "Printed expense description or summary/total label."
+      },
+      {
+        "column_name": "amount",
+        "column_type": "DECIMAL(38,2)",
+        "description": "Exact signed U.S. dollar quarterly amount for a transaction; null for aggregate rows."
+      },
+      {
+        "column_name": "ytd_amount",
+        "column_type": "DECIMAL(38,2)",
+        "description": "Exact signed year-to-date amount where printed; never add to quarterly values."
+      },
+      {
+        "column_name": "qtd_amount",
+        "column_type": "DECIMAL(38,2)",
+        "description": "Exact signed quarter-to-date amount where printed, including aggregate rows."
+      },
+      {
+        "column_name": "office_origin_json",
+        "column_type": "VARCHAR",
+        "description": "Physical page and positioned line witnessing the office heading."
+      },
+      {
+        "column_name": "raw_fields_json",
+        "column_type": "VARCHAR",
+        "description": "Literal cells before cleaning, date parsing or ditto resolution."
+      },
+      {
+        "column_name": "word_indices",
+        "column_type": "BIGINT[]",
+        "description": "Original page-word indices for this financial line in the reading stream."
+      },
+      {
+        "column_name": "normalizations_json",
+        "column_type": "VARCHAR",
+        "description": "Applied source rules, original values and witnesses, including printed DO resolution."
+      },
+      {
+        "column_name": "repairs_json",
+        "column_type": "VARCHAR",
+        "description": "Qualified source corrections with evidence; an empty list means no repair was applied."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Page and row issues, including unresolved context or date anomalies."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "source_line"
+    ]
+  },
+  "house_disbursement_pdf_pages": {
+    "table": "house_disbursement_pdf_pages",
+    "label": "House PDF page coverage",
+    "summary": "Every selected physical House report page, including pending images and financial grids outside the ledger.",
+    "coverage": "Window. The same selected PDFs as house_disbursement_pdf_rows. Visiting a page does not establish that image content or all financial tables were interpreted.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "A page can contain several offices, so office context belongs to individual financial rows. Native text is preserved even when no ledger is recognized. Header inheritance requires contiguous physical and printed pages with the same geometry. Pending image content remains distinct from empty success.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the complete page-reading stream containing original words and positions."
+      },
+      {
+        "column_name": "page_status",
+        "column_type": "VARCHAR",
+        "description": "Source-owned ledger_read, image_content_pending or non_ledger_content_pending outcome."
+      },
+      {
+        "column_name": "native_text",
+        "column_type": "VARCHAR",
+        "description": "Literal whole-page native text, not qualified image OCR."
+      },
+      {
+        "column_name": "native_word_count",
+        "column_type": "BIGINT",
+        "description": "Number of original words, each accounted for once in the reading stream."
+      },
+      {
+        "column_name": "image_count",
+        "column_type": "BIGINT",
+        "description": "Count of image references on the original page."
+      },
+      {
+        "column_name": "record_count",
+        "column_type": "BIGINT",
+        "description": "Number of financial lines emitted, including printed aggregate rows."
+      },
+      {
+        "column_name": "unassigned_line_count",
+        "column_type": "BIGINT",
+        "description": "Count of positioned ledger text lines whose roles remain unresolved."
+      },
+      {
+        "column_name": "unassigned_lines_json",
+        "column_type": "VARCHAR",
+        "description": "Original unresolved lines with their source word indices."
+      },
+      {
+        "column_name": "outside_ledger_word_indices",
+        "column_type": "BIGINT[]",
+        "description": "Original words outside the ledger, including page labels and other financial grids."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Page-level reading issues; row issues remain on the companion financial rows."
+      },
+      {
+        "column_name": "header_basis",
+        "column_type": "VARCHAR",
+        "description": "Whether columns were printed on this page or inherited from a contiguous printed page."
+      },
+      {
+        "column_name": "header_json",
+        "column_type": "VARCHAR",
+        "description": "Observed column positions and header word indices retained by the source reader."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page"
+    ]
+  },
+  "senate_disbursements": {
+    "table": "senate_disbursements",
+    "label": "Senate disbursement ledger observations",
+    "summary": "One monetary line in a selected Senate report's native ledger. Transactions, payroll, subtotals and unassigned amounts remain separate row kinds.",
+    "coverage": "Window. Explicitly selected retained Senate report PDFs, with every selected physical page visited. The companion page table records unread summaries, images and lines. Source-qualified full/part selection is required before reading overlapping reports.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Exact decimal money and each repeated occurrence survive. Invalid dates remain null with raw cells and flags. Qualified source repairs retain independent evidence. A future service date can be a genuine source value; a flag does not authorize a repair. Office labels describe reporting accounts, not resolved people. Select transaction and payroll row kinds separately from printed subtotals before calculating payment totals.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before any reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher GovInfo package identifier where stated by the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Literal printed page label, distinct from the physical page number."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the selected reporting interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Month in which the selected reporting interval starts; October reports extend into the following year."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the independently evidenced reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the independently evidenced reporting interval."
+      },
+      {
+        "column_name": "office",
+        "column_type": "VARCHAR",
+        "description": "Printed reporting office/account label, including witnessed contiguous-page inheritance."
+      },
+      {
+        "column_name": "account_label",
+        "column_type": "VARCHAR",
+        "description": "Separately printed account or resolution label where the layout states one."
+      },
+      {
+        "column_name": "funding_year",
+        "column_type": "VARCHAR",
+        "description": "Source fiscal-year label, including literal X for no-year accounts; null where unstated."
+      },
+      {
+        "column_name": "funding_year_end",
+        "column_type": "VARCHAR",
+        "description": "Last year of a source-stated funding span; null for a single or unstated year."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Printed appropriation title belonging to the office block."
+      },
+      {
+        "column_name": "context_basis",
+        "column_type": "VARCHAR",
+        "description": "Whether account context is printed on this page, inherited from a contiguous section, established by an independently reviewed page image or unresolved."
+      },
+      {
+        "column_name": "context_origin_json",
+        "column_type": "VARCHAR",
+        "description": "Original physical page and native word positions, or an explicit image origin with its source-bound correction and independent review evidence. Image origins have no fabricated native word positions."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the retained complete page-reading stream containing the full original word evidence."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned ledger line on this physical page; repeated payments keep distinct positions."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source line role: transaction, payroll, subtotal or unassigned_amount. Totals must not be added to payments."
+      },
+      {
+        "column_name": "document",
+        "column_type": "VARCHAR",
+        "description": "Literal voucher/document identifier, including a witnessed priced-continuation value; null for unstated payroll identifiers."
+      },
+      {
+        "column_name": "date_posted",
+        "column_type": "DATE",
+        "description": "Source posted date after qualified corrections; malformed values remain null with raw evidence."
+      },
+      {
+        "column_name": "payee",
+        "column_type": "VARCHAR",
+        "description": "Printed payee or witnessed continuing payee, preserving source punctuation and spelling."
+      },
+      {
+        "column_name": "service_start",
+        "column_type": "DATE",
+        "description": "Normalized service start; original malformed or abbreviated cells remain in raw_fields_json."
+      },
+      {
+        "column_name": "service_end",
+        "column_type": "DATE",
+        "description": "Normalized service end, retaining valid printed future dates even when flagged for review."
+      },
+      {
+        "column_name": "description",
+        "column_type": "VARCHAR",
+        "description": "Printed payment description or literal subtotal label."
+      },
+      {
+        "column_name": "amount",
+        "column_type": "DECIMAL(38,2)",
+        "description": "Exact signed U.S. dollar amount on this one monetary line."
+      },
+      {
+        "column_name": "group_notes",
+        "column_type": "VARCHAR",
+        "description": "Wrapped source notes belonging to the payment group, including itineraries and additional descriptions."
+      },
+      {
+        "column_name": "group_origin_json",
+        "column_type": "VARCHAR",
+        "description": "Physical page and line supplying this payment's explicit voucher/payee fields; null for totals."
+      },
+      {
+        "column_name": "payee_origin_json",
+        "column_type": "VARCHAR",
+        "description": "Source lines and word indices supporting a geometrically centered wrapped vendor or payroll name; the amount line's literal payee remains in raw_fields_json."
+      },
+      {
+        "column_name": "raw_fields_json",
+        "column_type": "VARCHAR",
+        "description": "Literal ledger fields before date normalization, repairs or continuation inheritance."
+      },
+      {
+        "column_name": "word_indices",
+        "column_type": "BIGINT[]",
+        "description": "Original page-word indices for this monetary line in the retained reading stream."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Page and row review flags; source facts and unresolved interpretation remain distinguishable."
+      },
+      {
+        "column_name": "repairs_json",
+        "column_type": "VARCHAR",
+        "description": "Exact source-qualified changes with original cells, corrected values and independent witnesses."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "source_line"
+    ]
+  },
+  "senate_disbursement_pages": {
+    "table": "senate_disbursement_pages",
+    "label": "Senate disbursement page coverage",
+    "summary": "Every physical page of the selected original reports, including unread image and summary content and pages yielding no payments.",
+    "coverage": "Window. Every physical page of each PDF in the same selected scope as senate_disbursements. Page visitation does not establish complete financial interpretation of other grids or images.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Native text can omit image content. A ledger_read outcome describes only the recognized ledger; native summaries outside it remain visible in native_text and the original reading. Empty ledger output is not proof of an empty report. Unassigned lines and image counts remain separate from successful monetary records.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before any reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher GovInfo package identifier where stated by the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Literal printed page label, distinct from the physical page number."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the selected reporting interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Month in which the selected reporting interval starts; October reports extend into the following year."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the independently evidenced reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the independently evidenced reporting interval."
+      },
+      {
+        "column_name": "office",
+        "column_type": "VARCHAR",
+        "description": "Printed reporting office/account label, including witnessed contiguous-page inheritance."
+      },
+      {
+        "column_name": "account_label",
+        "column_type": "VARCHAR",
+        "description": "Separately printed account or resolution label where the layout states one."
+      },
+      {
+        "column_name": "funding_year",
+        "column_type": "VARCHAR",
+        "description": "Source fiscal-year label, including literal X for no-year accounts; null where unstated."
+      },
+      {
+        "column_name": "funding_year_end",
+        "column_type": "VARCHAR",
+        "description": "Last year of a source-stated funding span; null for a single or unstated year."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Printed appropriation title belonging to the office block."
+      },
+      {
+        "column_name": "context_basis",
+        "column_type": "VARCHAR",
+        "description": "Whether account context is printed on this page, inherited from a contiguous section, established by an independently reviewed page image or unresolved."
+      },
+      {
+        "column_name": "context_origin_json",
+        "column_type": "VARCHAR",
+        "description": "Original physical page and native word positions, or an explicit image origin with its source-bound correction and independent review evidence. Image origins have no fabricated native word positions."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the retained complete page-reading stream containing the full original word evidence."
+      },
+      {
+        "column_name": "page_status",
+        "column_type": "VARCHAR",
+        "description": "Source-owned ledger_read, image_content_pending or non_ledger_content_pending outcome."
+      },
+      {
+        "column_name": "native_text",
+        "column_type": "VARCHAR",
+        "description": "Literal PDF text layer for the whole page; this is not qualified OCR of image content."
+      },
+      {
+        "column_name": "native_word_count",
+        "column_type": "BIGINT",
+        "description": "Number of retained native words, each accounted for once in the reading stream."
+      },
+      {
+        "column_name": "image_count",
+        "column_type": "BIGINT",
+        "description": "PDF image-reference count; text-layer presence does not prove that images were read."
+      },
+      {
+        "column_name": "record_count",
+        "column_type": "BIGINT",
+        "description": "Number of monetary ledger observations emitted from this page, including totals."
+      },
+      {
+        "column_name": "unassigned_line_count",
+        "column_type": "BIGINT",
+        "description": "Number of in-ledger text lines whose association remains unresolved."
+      },
+      {
+        "column_name": "unassigned_lines_json",
+        "column_type": "VARCHAR",
+        "description": "Exact unresolved positioned lines and their original word indices."
+      },
+      {
+        "column_name": "outside_ledger_word_indices",
+        "column_type": "BIGINT[]",
+        "description": "Word positions retained outside the recognized ledger, including account summaries and page labels."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Page-level reading and context issues; row-specific issues remain in the companion ledger."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page"
+    ]
+  },
+  "house_financial_summary_rows": {
+    "table": "house_financial_summary_rows",
+    "label": "House financial summary rows",
+    "summary": "Distinct printed summary rows with exact labels, periods and complete raw evidence.",
+    "coverage": "Window. Explicitly selected retained House report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. Appropriation accounts, accountability statements and receipt components are separate printed observations; repeated titles do not identify duplicate records.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial statements."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Source ruled-row ordinal within its table, where available; distinct from the record index and positioned text line."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line within the source reader's page or ruled row; use with table and source-row coordinates."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "Literal source table family, including appropriation summaries, accountability, receipts, mailings or communications."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source component, total, appropriation funding period or representative-summary role; these are not transaction payments."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Printed component or representative label. A source row without a name remains null."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly stated for this summary table; may differ from the containing report or be null."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly stated for this summary table, preserving January 2 endpoints and amended periods."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether this mailing table explicitly says amended; null when the source reader does not make this observation."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "values_json",
+        "column_type": "VARCHAR",
+        "description": "Source reader's normalized values, including exact decimal strings and explicit nulls."
+      },
+      {
+        "column_name": "raw_fields_json",
+        "column_type": "VARCHAR",
+        "description": "Literal original fields before numeric normalization; blanks remain distinct from printed zeros."
+      },
+      {
+        "column_name": "source_row_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source-owned summary record, retaining heading, coordinates, word references and interpretation evidence."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index"
+    ]
+  },
+  "house_financial_summary_values": {
+    "table": "house_financial_summary_values",
+    "label": "House financial summary values",
+    "summary": "Typed numeric cells with explicit metric, unit, precision and blank-cell status.",
+    "coverage": "Window. Explicitly selected retained House report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. Appropriation accounts, accountability statements and receipt components are separate printed observations; repeated titles do not identify duplicate records.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial statements."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Source ruled-row ordinal within its table, where available; distinct from the record index and positioned text line."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line within the source reader's page or ruled row; use with table and source-row coordinates."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "Literal source table family, including appropriation summaries, accountability, receipts, mailings or communications."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source component, total, appropriation funding period or representative-summary role; these are not transaction payments."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Printed component or representative label. A source row without a name remains null."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly stated for this summary table; may differ from the containing report or be null."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly stated for this summary table, preserving January 2 endpoints and amended periods."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether this mailing table explicitly says amended; null when the source reader does not make this observation."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "value_index",
+        "column_type": "INTEGER",
+        "description": "One-based numeric-column position in the source reader's declared value order."
+      },
+      {
+        "column_name": "value_name",
+        "column_type": "VARCHAR",
+        "description": "Declared monetary or distribution metric, such as net_disbursements, total_cost or total_distributed."
+      },
+      {
+        "column_name": "value_decimal",
+        "column_type": "DECIMAL(38,4)",
+        "description": "Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to interpret it. Null is not zero."
+      },
+      {
+        "column_name": "value_scale",
+        "column_type": "TINYINT",
+        "description": "Declared normalized fractional precision: zero for item counts, two for currency totals, or four for per-household averages."
+      },
+      {
+        "column_name": "value_unit",
+        "column_type": "VARCHAR",
+        "description": "USD, items, USD/household or items/household, according to the printed metric. Do not sum across units or metric roles."
+      },
+      {
+        "column_name": "value_status",
+        "column_type": "VARCHAR",
+        "description": "parsed for an exact normalized value; blank for an empty source cell; unresolved for a nonblank cell with no qualified numeric value."
+      },
+      {
+        "column_name": "raw_value",
+        "column_type": "VARCHAR",
+        "description": "Exact printed numeric cell, including signs, commas and currency symbols where observed; null or empty for a source blank."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index",
+      "value_name"
+    ]
+  },
+  "house_financial_summary_pages": {
+    "table": "house_financial_summary_pages",
+    "label": "House financial summary pages",
+    "summary": "Selected original summary pages, including unread or unrecognized content.",
+    "coverage": "Window. Explicitly selected retained House report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. Appropriation accounts, accountability statements and receipt components are separate printed observations; repeated titles do not identify duplicate records.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "page_status",
+        "column_type": "VARCHAR",
+        "description": "Source-owned summary outcome, including readable tables, unrecognized layouts and explicit pending image content."
+      },
+      {
+        "column_name": "native_text",
+        "column_type": "VARCHAR",
+        "description": "Retained native page text; it does not qualify image-only financial content."
+      },
+      {
+        "column_name": "native_word_count",
+        "column_type": "BIGINT",
+        "description": "Count of retained original word observations when supplied by this reader; null means the reader did not measure it."
+      },
+      {
+        "column_name": "image_count",
+        "column_type": "BIGINT",
+        "description": "Original image-reference count when supplied by this reader; null means unmeasured, not no images."
+      },
+      {
+        "column_name": "record_count",
+        "column_type": "BIGINT",
+        "description": "Number of distinct source summary records emitted on this selected physical page."
+      },
+      {
+        "column_name": "page_reading_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source page reading, including original tables, words or native text and explicit unread content."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page"
+    ]
+  },
+  "house_mailing_summary_rows": {
+    "table": "house_mailing_summary_rows",
+    "label": "House mailing summary rows",
+    "summary": "Distinct printed summary rows with exact labels, periods and complete raw evidence.",
+    "coverage": "Window. Explicitly selected retained House report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. These modern mailing and communications values describe total costs; legacy postage-only mass-mail tables require a separate reader.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial statements."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Source ruled-row ordinal within its table, where available; distinct from the record index and positioned text line."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line within the source reader's page or ruled row; use with table and source-row coordinates."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "Literal source table family, including appropriation summaries, accountability, receipts, mailings or communications."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source component, total, appropriation funding period or representative-summary role; these are not transaction payments."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Printed component or representative label. A source row without a name remains null."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly stated for this summary table; may differ from the containing report or be null."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly stated for this summary table, preserving January 2 endpoints and amended periods."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether this mailing table explicitly says amended; null when the source reader does not make this observation."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "values_json",
+        "column_type": "VARCHAR",
+        "description": "Source reader's normalized values, including exact decimal strings and explicit nulls."
+      },
+      {
+        "column_name": "raw_fields_json",
+        "column_type": "VARCHAR",
+        "description": "Literal original fields before numeric normalization; blanks remain distinct from printed zeros."
+      },
+      {
+        "column_name": "source_row_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source-owned summary record, retaining heading, coordinates, word references and interpretation evidence."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index"
+    ]
+  },
+  "house_mailing_summary_values": {
+    "table": "house_mailing_summary_values",
+    "label": "House mailing summary values",
+    "summary": "Typed numeric cells with explicit metric, unit, precision and blank-cell status.",
+    "coverage": "Window. Explicitly selected retained House report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. These modern mailing and communications values describe total costs; legacy postage-only mass-mail tables require a separate reader.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial statements."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Source ruled-row ordinal within its table, where available; distinct from the record index and positioned text line."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line within the source reader's page or ruled row; use with table and source-row coordinates."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "Literal source table family, including appropriation summaries, accountability, receipts, mailings or communications."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source component, total, appropriation funding period or representative-summary role; these are not transaction payments."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Printed component or representative label. A source row without a name remains null."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly stated for this summary table; may differ from the containing report or be null."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly stated for this summary table, preserving January 2 endpoints and amended periods."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether this mailing table explicitly says amended; null when the source reader does not make this observation."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "value_index",
+        "column_type": "INTEGER",
+        "description": "One-based numeric-column position in the source reader's declared value order."
+      },
+      {
+        "column_name": "value_name",
+        "column_type": "VARCHAR",
+        "description": "Declared monetary or distribution metric, such as net_disbursements, total_cost or total_distributed."
+      },
+      {
+        "column_name": "value_decimal",
+        "column_type": "DECIMAL(38,4)",
+        "description": "Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to interpret it. Null is not zero."
+      },
+      {
+        "column_name": "value_scale",
+        "column_type": "TINYINT",
+        "description": "Declared normalized fractional precision: zero for item counts, two for currency totals, or four for per-household averages."
+      },
+      {
+        "column_name": "value_unit",
+        "column_type": "VARCHAR",
+        "description": "USD, items, USD/household or items/household, according to the printed metric. Do not sum across units or metric roles."
+      },
+      {
+        "column_name": "value_status",
+        "column_type": "VARCHAR",
+        "description": "parsed for an exact normalized value; blank for an empty source cell; unresolved for a nonblank cell with no qualified numeric value."
+      },
+      {
+        "column_name": "raw_value",
+        "column_type": "VARCHAR",
+        "description": "Exact printed numeric cell, including signs, commas and currency symbols where observed; null or empty for a source blank."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index",
+      "value_name"
+    ]
+  },
+  "house_mailing_summary_pages": {
+    "table": "house_mailing_summary_pages",
+    "label": "House mailing summary pages",
+    "summary": "Selected original summary pages, including unread or unrecognized content.",
+    "coverage": "Window. Explicitly selected retained House report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. These modern mailing and communications values describe total costs; legacy postage-only mass-mail tables require a separate reader.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "page_status",
+        "column_type": "VARCHAR",
+        "description": "Source-owned summary outcome, including readable tables, unrecognized layouts and explicit pending image content."
+      },
+      {
+        "column_name": "native_text",
+        "column_type": "VARCHAR",
+        "description": "Retained native page text; it does not qualify image-only financial content."
+      },
+      {
+        "column_name": "native_word_count",
+        "column_type": "BIGINT",
+        "description": "Count of retained original word observations when supplied by this reader; null means the reader did not measure it."
+      },
+      {
+        "column_name": "image_count",
+        "column_type": "BIGINT",
+        "description": "Original image-reference count when supplied by this reader; null means unmeasured, not no images."
+      },
+      {
+        "column_name": "record_count",
+        "column_type": "BIGINT",
+        "description": "Number of distinct source summary records emitted on this selected physical page."
+      },
+      {
+        "column_name": "page_reading_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source page reading, including original tables, words or native text and explicit unread content."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page"
+    ]
+  },
+  "house_allowance_summary_rows": {
+    "table": "house_allowance_summary_rows",
+    "label": "House annual allowance summary rows",
+    "summary": "Distinct annual allowance table rows with original recipient, jurisdiction, district and governed-year evidence.",
+    "coverage": "Window. Explicitly selected retained native House report pages. Completion covers that selection only. Formula quantities, historical scanned tables and unselected pages remain outside normalized annual allowance coverage.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Annual allowance observations repeat across report quarters; do not add repeated annual tables or current and amended sections. Recipient labels can name people, vacant districts or caucuses. Preserve literal state/district codes, exact amount precision and source occurrences. A reviewed governed-year correction retains the printed header and title years with its source evidence. Formula pages retain source text and explicit unnormalized status.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned allowance-summary reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial statements."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Source ruled-row ordinal within its table, where available; distinct from the record index and positioned text line."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line within the source reader's page or ruled row; use with table and source-row coordinates."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "Source table family: members_representational_allowance."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Annual allowance observation; it is not a transaction payment or a formula component."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Printed allowance recipient label, which may name a person, vacant district or caucus."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly printed for an amended allowance section; null when only an annual allowance year is stated."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly printed for an amended allowance section; the annual allowance year is a separate field."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether the observed allowance-section introduction explicitly identifies an amendment; null when the section has not been read."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "values_json",
+        "column_type": "VARCHAR",
+        "description": "Source reader's normalized values, including exact decimal strings and explicit nulls."
+      },
+      {
+        "column_name": "raw_fields_json",
+        "column_type": "VARCHAR",
+        "description": "Literal original fields before numeric normalization; blanks remain distinct from printed zeros."
+      },
+      {
+        "column_name": "source_row_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source-owned summary record, retaining heading, coordinates, word references and interpretation evidence."
+      },
+      {
+        "column_name": "allowance_title",
+        "column_type": "VARCHAR",
+        "description": "Printed annual allowance table title, including a continued label when present."
+      },
+      {
+        "column_name": "allowance_year",
+        "column_type": "INTEGER",
+        "description": "Source-qualified governed calendar year of the annual allowance. Separate from the report quarter, printed header year and a formula funding-year reference."
+      },
+      {
+        "column_name": "printed_title_year",
+        "column_type": "INTEGER",
+        "description": "Year literally printed in the annual allowance table title."
+      },
+      {
+        "column_name": "printed_column_year",
+        "column_type": "INTEGER",
+        "description": "Year literally printed in the MRA column header, inherited only from a witnessed contiguous table header; may differ from allowance_year after a source-bound repair."
+      },
+      {
+        "column_name": "state_literal",
+        "column_type": "VARCHAR",
+        "description": "Original state or jurisdiction column without postal-code normalization; retains NMI, caucus codes and printed punctuation."
+      },
+      {
+        "column_name": "district_literal",
+        "column_type": "VARCHAR",
+        "description": "Original district column, preserving leading zeros and nonnumeric caucus codes."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index"
+    ]
+  },
+  "house_allowance_summary_values": {
+    "table": "house_allowance_summary_values",
+    "label": "House annual allowance summary values",
+    "summary": "Exact annual allowance amounts in dollars, separate from ledger payments and formula components.",
+    "coverage": "Window. Explicitly selected retained native House report pages. Completion covers that selection only. Formula quantities, historical scanned tables and unselected pages remain outside normalized annual allowance coverage.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Annual allowance observations repeat across report quarters; do not add repeated annual tables or current and amended sections. Recipient labels can name people, vacant districts or caucuses. Preserve literal state/district codes, exact amount precision and source occurrences. A reviewed governed-year correction retains the printed header and title years with its source evidence. Formula pages retain source text and explicit unnormalized status.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned allowance-summary reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial statements."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Source ruled-row ordinal within its table, where available; distinct from the record index and positioned text line."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line within the source reader's page or ruled row; use with table and source-row coordinates."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "Source table family: members_representational_allowance."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Annual allowance observation; it is not a transaction payment or a formula component."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Printed allowance recipient label, which may name a person, vacant district or caucus."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly printed for an amended allowance section; null when only an annual allowance year is stated."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly printed for an amended allowance section; the annual allowance year is a separate field."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether the observed allowance-section introduction explicitly identifies an amendment; null when the section has not been read."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "value_index",
+        "column_type": "INTEGER",
+        "description": "One-based numeric-column position in the source reader's declared value order."
+      },
+      {
+        "column_name": "value_name",
+        "column_type": "VARCHAR",
+        "description": "Declared monetary or distribution metric, such as net_disbursements, total_cost or total_distributed."
+      },
+      {
+        "column_name": "value_decimal",
+        "column_type": "DECIMAL(38,4)",
+        "description": "Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to interpret it. Null is not zero."
+      },
+      {
+        "column_name": "value_scale",
+        "column_type": "TINYINT",
+        "description": "Declared normalized fractional precision: zero for item counts, two for currency totals, or four for per-household averages."
+      },
+      {
+        "column_name": "value_unit",
+        "column_type": "VARCHAR",
+        "description": "USD, items, USD/household or items/household, according to the printed metric. Do not sum across units or metric roles."
+      },
+      {
+        "column_name": "value_status",
+        "column_type": "VARCHAR",
+        "description": "parsed for an exact normalized value; blank for an empty source cell; unresolved for a nonblank cell with no qualified numeric value."
+      },
+      {
+        "column_name": "raw_value",
+        "column_type": "VARCHAR",
+        "description": "Exact printed numeric cell, including signs, commas and currency symbols where observed; null or empty for a source blank."
+      },
+      {
+        "column_name": "allowance_title",
+        "column_type": "VARCHAR",
+        "description": "Printed annual allowance table title, including a continued label when present."
+      },
+      {
+        "column_name": "allowance_year",
+        "column_type": "INTEGER",
+        "description": "Source-qualified governed calendar year of the annual allowance. Separate from the report quarter, printed header year and a formula funding-year reference."
+      },
+      {
+        "column_name": "printed_title_year",
+        "column_type": "INTEGER",
+        "description": "Year literally printed in the annual allowance table title."
+      },
+      {
+        "column_name": "printed_column_year",
+        "column_type": "INTEGER",
+        "description": "Year literally printed in the MRA column header, inherited only from a witnessed contiguous table header; may differ from allowance_year after a source-bound repair."
+      },
+      {
+        "column_name": "state_literal",
+        "column_type": "VARCHAR",
+        "description": "Original state or jurisdiction column without postal-code normalization; retains NMI, caucus codes and printed punctuation."
+      },
+      {
+        "column_name": "district_literal",
+        "column_type": "VARCHAR",
+        "description": "Original district column, preserving leading zeros and nonnumeric caucus codes."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index",
+      "value_name"
+    ]
+  },
+  "house_allowance_summary_pages": {
+    "table": "house_allowance_summary_pages",
+    "label": "House annual allowance summary pages",
+    "summary": "Selected original allowance table and formula-introduction pages with complete source readings and explicit unnormalized scope.",
+    "coverage": "Window. Explicitly selected retained native House report pages. Completion covers that selection only. Formula quantities, historical scanned tables and unselected pages remain outside normalized annual allowance coverage.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Annual allowance observations repeat across report quarters; do not add repeated annual tables or current and amended sections. Recipient labels can name people, vacant districts or caucuses. Preserve literal state/district codes, exact amount precision and source occurrences. A reviewed governed-year correction retains the printed header and title years with its source evidence. Formula pages retain source text and explicit unnormalized status.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned allowance-summary reading selected for these pages."
+      },
+      {
+        "column_name": "page_status",
+        "column_type": "VARCHAR",
+        "description": "Source-owned summary outcome, including readable tables, unrecognized layouts and explicit pending image content."
+      },
+      {
+        "column_name": "native_text",
+        "column_type": "VARCHAR",
+        "description": "Retained native page text; it does not qualify image-only financial content."
+      },
+      {
+        "column_name": "native_word_count",
+        "column_type": "BIGINT",
+        "description": "Count of retained original word observations when supplied by this reader; null means the reader did not measure it."
+      },
+      {
+        "column_name": "image_count",
+        "column_type": "BIGINT",
+        "description": "Original image-reference count when supplied by this reader; null means unmeasured, not no images."
+      },
+      {
+        "column_name": "record_count",
+        "column_type": "BIGINT",
+        "description": "Number of distinct source summary records emitted on this selected physical page."
+      },
+      {
+        "column_name": "page_reading_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source page reading, including original tables, words or native text and explicit unread content."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page"
+    ]
+  },
+  "senate_financial_summary_rows": {
+    "table": "senate_financial_summary_rows",
+    "label": "Senate financial summary rows",
+    "summary": "Distinct printed summary rows with exact labels, periods and complete raw evidence.",
+    "coverage": "Window. Explicitly selected retained Senate report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. Appropriation accounts, accountability statements and receipt components are separate printed observations; repeated titles do not identify duplicate records.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial statements."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Source ruled-row ordinal within its table, where available; distinct from the record index and positioned text line."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line within the source reader's page or ruled row; use with table and source-row coordinates."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "Literal source table family, including appropriation summaries, accountability, receipts, mailings or communications."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source component, total, appropriation funding period or representative-summary role; these are not transaction payments."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Printed component or representative label. A source row without a name remains null."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly stated for this summary table; may differ from the containing report or be null."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly stated for this summary table, preserving January 2 endpoints and amended periods."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether this mailing table explicitly says amended; null when the source reader does not make this observation."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "values_json",
+        "column_type": "VARCHAR",
+        "description": "Source reader's normalized values, including exact decimal strings and explicit nulls."
+      },
+      {
+        "column_name": "raw_fields_json",
+        "column_type": "VARCHAR",
+        "description": "Literal original fields before numeric normalization; blanks remain distinct from printed zeros."
+      },
+      {
+        "column_name": "source_row_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source-owned summary record, retaining heading, coordinates, word references and interpretation evidence."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index"
+    ]
+  },
+  "senate_financial_summary_values": {
+    "table": "senate_financial_summary_values",
+    "label": "Senate financial summary values",
+    "summary": "Typed numeric cells with explicit metric, unit, precision and blank-cell status.",
+    "coverage": "Window. Explicitly selected retained Senate report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. Appropriation accounts, accountability statements and receipt components are separate printed observations; repeated titles do not identify duplicate records.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial statements."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Source ruled-row ordinal within its table, where available; distinct from the record index and positioned text line."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "One-based positioned financial line within the source reader's page or ruled row; use with table and source-row coordinates."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "Literal source table family, including appropriation summaries, accountability, receipts, mailings or communications."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source component, total, appropriation funding period or representative-summary role; these are not transaction payments."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Printed component or representative label. A source row without a name remains null."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly stated for this summary table; may differ from the containing report or be null."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly stated for this summary table, preserving January 2 endpoints and amended periods."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether this mailing table explicitly says amended; null when the source reader does not make this observation."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "value_index",
+        "column_type": "INTEGER",
+        "description": "One-based numeric-column position in the source reader's declared value order."
+      },
+      {
+        "column_name": "value_name",
+        "column_type": "VARCHAR",
+        "description": "Declared monetary or distribution metric, such as net_disbursements, total_cost or total_distributed."
+      },
+      {
+        "column_name": "value_decimal",
+        "column_type": "DECIMAL(38,4)",
+        "description": "Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to interpret it. Null is not zero."
+      },
+      {
+        "column_name": "value_scale",
+        "column_type": "TINYINT",
+        "description": "Declared normalized fractional precision: zero for item counts, two for currency totals, or four for per-household averages."
+      },
+      {
+        "column_name": "value_unit",
+        "column_type": "VARCHAR",
+        "description": "USD, items, USD/household or items/household, according to the printed metric. Do not sum across units or metric roles."
+      },
+      {
+        "column_name": "value_status",
+        "column_type": "VARCHAR",
+        "description": "parsed for an exact normalized value; blank for an empty source cell; unresolved for a nonblank cell with no qualified numeric value."
+      },
+      {
+        "column_name": "raw_value",
+        "column_type": "VARCHAR",
+        "description": "Exact printed numeric cell, including signs, commas and currency symbols where observed; null or empty for a source blank."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index",
+      "value_name"
+    ]
+  },
+  "senate_financial_summary_pages": {
+    "table": "senate_financial_summary_pages",
+    "label": "Senate financial summary pages",
+    "summary": "Selected original summary pages, including unread or unrecognized content.",
+    "coverage": "Window. Explicitly selected retained Senate report pages. Completion covers that page selection only. Other pages, historical image tables and unsupported layouts remain outside the qualified reading.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated historical parts without a separately qualified source selection. Appropriation accounts, accountability statements and receipt components are separate printed observations; repeated titles do not identify duplicate records.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned financial-summary or mailing-summary reading selected for these pages."
+      },
+      {
+        "column_name": "page_status",
+        "column_type": "VARCHAR",
+        "description": "Source-owned summary outcome, including readable tables, unrecognized layouts and explicit pending image content."
+      },
+      {
+        "column_name": "native_text",
+        "column_type": "VARCHAR",
+        "description": "Retained native page text; it does not qualify image-only financial content."
+      },
+      {
+        "column_name": "native_word_count",
+        "column_type": "BIGINT",
+        "description": "Count of retained original word observations when supplied by this reader; null means the reader did not measure it."
+      },
+      {
+        "column_name": "image_count",
+        "column_type": "BIGINT",
+        "description": "Original image-reference count when supplied by this reader; null means unmeasured, not no images."
+      },
+      {
+        "column_name": "record_count",
+        "column_type": "BIGINT",
+        "description": "Number of distinct source summary records emitted on this selected physical page."
+      },
+      {
+        "column_name": "page_reading_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source page reading, including original tables, words or native text and explicit unread content."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page"
+    ]
+  },
   "fec_financial_profiles": {
     "table": "fec_financial_profiles",
     "label": "Reported candidate and committee financial profiles",

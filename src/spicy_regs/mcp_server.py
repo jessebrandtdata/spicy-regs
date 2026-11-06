@@ -9,6 +9,7 @@ reading either the public R2 bucket or an explicitly configured local directory
 from __future__ import annotations
 
 from spicy_regs.subject_catalog import subject_tables
+from spicy_regs.schemas.disbursement_summaries import TABLES as DISBURSEMENT_SUMMARY_TABLES
 
 import base64
 import difflib
@@ -96,6 +97,11 @@ TABLES = (
     "executive_order_observations",
     "house_disbursements",
     "house_disbursements_summary",
+    "house_disbursement_pdf_rows",
+    "house_disbursement_pdf_pages",
+    "senate_disbursements",
+    "senate_disbursement_pages",
+    *DISBURSEMENT_SUMMARY_TABLES,
     "fec_financial_profiles",
     "treasury_debt_observations",
     "treasury_statement_periods",
@@ -1012,6 +1018,11 @@ def _build_connection_inputs(con, publication):
         "executive_order_observations",
         "house_disbursements",
         "house_disbursements_summary",
+        "house_disbursement_pdf_rows",
+        "house_disbursement_pdf_pages",
+        "senate_disbursements",
+        "senate_disbursement_pages",
+        *DISBURSEMENT_SUMMARY_TABLES,
         "fec_financial_profiles",
         "census_acs_county_observations",
         "administration_policy_bill_links", "administration_policy_statements",

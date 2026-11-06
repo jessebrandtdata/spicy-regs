@@ -11192,3 +11192,871 @@ tables:
       ytd_amount: "Exact signed publisher year-to-date U.S. dollar amount; never sum this with qtd_amount."
       qtd_amount: "Exact signed publisher quarter-to-date U.S. dollar amount; summary totals remain separate row levels."
 
+  senate_disbursements:
+    label: Senate disbursement ledger observations
+    summary: "One monetary line in a selected Senate report's native ledger. Transactions, payroll, subtotals and unassigned amounts remain separate row kinds."
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: >-
+      Window. Explicitly selected retained Senate report PDFs, with every selected physical
+      page visited. The companion page table records unread summaries, images and lines.
+      Source-qualified full/part selection is required before reading overlapping reports.
+    identity_columns: [source_sha256, source_page, source_line]
+    data_quality: >-
+      Exact decimal money and each repeated occurrence survive. Invalid dates remain null
+      with raw cells and flags. Qualified source repairs retain independent evidence.
+      A future service date can be a genuine source value; a flag does not authorize a repair.
+      Office labels describe reporting accounts, not resolved people. Select transaction and
+      payroll row kinds separately from printed subtotals before calculating payment totals.
+    columns:
+      <<: &senate_disbursement_common_columns
+        source_file_id: Selected retained report file identifier.
+        source_url: Exact selected publisher PDF URL.
+        source_sha256: SHA-256 of the complete original PDF before any reading or repair.
+        package_id: Publisher GovInfo package identifier where stated by the selected source.
+        source_page: One-based physical page in the complete original PDF.
+        printed_page: Literal printed page label, distinct from the physical page number.
+        report_year: Calendar year in which the selected reporting interval starts.
+        report_start_month: Month in which the selected reporting interval starts; October reports extend into the following year.
+        report_period_start: First day of the independently evidenced reporting interval.
+        report_period_end: Last day of the independently evidenced reporting interval.
+        office: Printed reporting office/account label, including witnessed contiguous-page inheritance.
+        account_label: Separately printed account or resolution label where the layout states one.
+        funding_year: Source fiscal-year label, including literal X for no-year accounts; null where unstated.
+        funding_year_end: Last year of a source-stated funding span; null for a single or unstated year.
+        appropriation_title: Printed appropriation title belonging to the office block.
+        context_basis: Whether account context is printed on this page, inherited from a contiguous section, established by an independently reviewed page image or unresolved.
+        context_origin_json: Original physical page and native word positions, or an explicit image origin with its source-bound correction and independent review evidence. Image origins have no fabricated native word positions.
+        reader_version: Version of the source-owned PDF reading rule.
+        reading_sha256: Digest of the retained complete page-reading stream containing the full original word evidence.
+      source_line: One-based positioned ledger line on this physical page; repeated payments keep distinct positions.
+      row_kind: "Source line role: transaction, payroll, subtotal or unassigned_amount. Totals must not be added to payments."
+      document: Literal voucher/document identifier, including a witnessed priced-continuation value; null for unstated payroll identifiers.
+      date_posted: Source posted date after qualified corrections; malformed values remain null with raw evidence.
+      payee: Printed payee or witnessed continuing payee, preserving source punctuation and spelling.
+      service_start: Normalized service start; original malformed or abbreviated cells remain in raw_fields_json.
+      service_end: Normalized service end, retaining valid printed future dates even when flagged for review.
+      description: Printed payment description or literal subtotal label.
+      amount: Exact signed U.S. dollar amount on this one monetary line.
+      group_notes: Wrapped source notes belonging to the payment group, including itineraries and additional descriptions.
+      group_origin_json: Physical page and line supplying this payment's explicit voucher/payee fields; null for totals.
+      payee_origin_json: Source lines and word indices supporting a geometrically centered wrapped vendor or payroll name; the amount line's literal payee remains in raw_fields_json.
+      raw_fields_json: Literal ledger fields before date normalization, repairs or continuation inheritance.
+      word_indices: Original page-word indices for this monetary line in the retained reading stream.
+      issue_codes: Page and row review flags; source facts and unresolved interpretation remain distinguishable.
+      repairs_json: Exact source-qualified changes with original cells, corrected values and independent witnesses.
+
+  senate_disbursement_pages:
+    label: Senate disbursement page coverage
+    summary: Every physical page of the selected original reports, including unread image and summary content and pages yielding no payments.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: >-
+      Window. Every physical page of each PDF in the same selected scope as senate_disbursements.
+      Page visitation does not establish complete financial interpretation of other grids or images.
+    identity_columns: [source_sha256, source_page]
+    data_quality: >-
+      Native text can omit image content. A ledger_read outcome describes only the recognized
+      ledger; native summaries outside it remain visible in native_text and the original reading.
+      Empty ledger output is not proof of an empty report. Unassigned lines and image counts
+      remain separate from successful monetary records.
+    columns:
+      <<: *senate_disbursement_common_columns
+      page_status: Source-owned ledger_read, image_content_pending or non_ledger_content_pending outcome.
+      native_text: Literal PDF text layer for the whole page; this is not qualified OCR of image content.
+      native_word_count: Number of retained native words, each accounted for once in the reading stream.
+      image_count: PDF image-reference count; text-layer presence does not prove that images were read.
+      record_count: Number of monetary ledger observations emitted from this page, including totals.
+      unassigned_line_count: Number of in-ledger text lines whose association remains unresolved.
+      unassigned_lines_json: Exact unresolved positioned lines and their original word indices.
+      outside_ledger_word_indices: Word positions retained outside the recognized ledger, including account summaries and page labels.
+      issue_codes: Page-level reading and context issues; row-specific issues remain in the companion ledger.
+
+  house_disbursement_pdf_rows:
+    label: House PDF financial rows
+    summary: Monetary lines from selected historical House report PDFs, with transaction amounts separate from printed summaries and totals.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: >-
+      Window. Explicitly selected retained House PDFs. Each physical page is visited;
+      images and other financial grids have explicit pending page outcomes.
+      These PDF occurrences are distinct from official CSV occurrences. Do not combine
+      overlapping PDF and CSV periods without a source-qualified selection.
+    identity_columns: [source_sha256, source_page, source_line]
+    data_quality: >-
+      Exact signed decimals preserve quarterly and year-to-date values independently.
+      Only transaction rows populate amount. Summary, subtotal and organization_total
+      rows must not be added to transactions. Literal DO payees resolve only from a
+      witnessed prior payee. Original cells, normalization witnesses and unresolved
+      date or hierarchy issues remain available. Offices can change within a page.
+    columns:
+      <<: &house_disbursement_pdf_common_columns
+        source_file_id: Selected retained report file identifier.
+        source_url: Exact selected publisher PDF URL.
+        source_sha256: SHA-256 of the complete original PDF before reading or repair.
+        package_id: Publisher package identifier where present in the selected source.
+        source_page: One-based physical page in the complete original PDF.
+        printed_page: Printed page label, distinct from its physical position.
+        report_year: Calendar year in which the report interval starts.
+        report_start_month: Calendar month in which the report interval starts.
+        report_period_start: First day of the selected reporting interval.
+        report_period_end: Last day of the selected reporting interval.
+        reader_version: Version of the source-owned PDF reading rule.
+        reading_sha256: Digest of the complete page-reading stream containing original words and positions.
+      source_line: One-based positioned financial line on this physical page.
+      row_kind: Printed transaction, summary, subtotal or organization_total role.
+      organizational_group: Outer printed group containing the reporting office.
+      organization: Printed reporting office, distinct from an elected-member identity.
+      fiscal_or_legislative_year: Literal fiscal or legislative year printed with the office heading.
+      program: Printed program within the office hierarchy, null if its heading was not read.
+      cost_category: Printed expense category for the transaction, null where unresolved.
+      transaction_date: Posted date using the report year for abbreviated month-day cells.
+      data_source: Publisher AP, AR or GL accounting-system label when printed.
+      document: Literal voucher identifier, preserving leading zeros and blank-date transfers.
+      vendor_name: Printed payee or witnessed DO continuation; blank source identities remain null.
+      service_start_date: Normalized source service start date; invalid cells remain null with an issue.
+      service_end_date: Normalized source service end date, including valid future dates pending review.
+      description: Printed expense description or summary/total label.
+      amount: Exact signed U.S. dollar quarterly amount for a transaction; null for aggregate rows.
+      ytd_amount: Exact signed year-to-date amount where printed; never add to quarterly values.
+      qtd_amount: Exact signed quarter-to-date amount where printed, including aggregate rows.
+      office_origin_json: Physical page and positioned line witnessing the office heading.
+      raw_fields_json: Literal cells before cleaning, date parsing or ditto resolution.
+      word_indices: Original page-word indices for this financial line in the reading stream.
+      normalizations_json: Applied source rules, original values and witnesses, including printed DO resolution.
+      repairs_json: Qualified source corrections with evidence; an empty list means no repair was applied.
+      issue_codes: Page and row issues, including unresolved context or date anomalies.
+
+  house_disbursement_pdf_pages:
+    label: House PDF page coverage
+    summary: Every selected physical House report page, including pending images and financial grids outside the ledger.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: >-
+      Window. The same selected PDFs as house_disbursement_pdf_rows. Visiting a page
+      does not establish that image content or all financial tables were interpreted.
+    identity_columns: [source_sha256, source_page]
+    data_quality: >-
+      A page can contain several offices, so office context belongs to individual
+      financial rows. Native text is preserved even when no ledger is recognized.
+      Header inheritance requires contiguous physical and printed pages with the
+      same geometry. Pending image content remains distinct from empty success.
+    columns:
+      <<: *house_disbursement_pdf_common_columns
+      page_status: Source-owned ledger_read, image_content_pending or non_ledger_content_pending outcome.
+      native_text: Literal whole-page native text, not qualified image OCR.
+      native_word_count: Number of original words, each accounted for once in the reading stream.
+      image_count: Count of image references on the original page.
+      record_count: Number of financial lines emitted, including printed aggregate rows.
+      unassigned_line_count: Count of positioned ledger text lines whose roles remain unresolved.
+      unassigned_lines_json: Original unresolved lines with their source word indices.
+      outside_ledger_word_indices: Original words outside the ledger, including page labels and other financial grids.
+      issue_codes: Page-level reading issues; row issues remain on the companion financial rows.
+      header_basis: Whether columns were printed on this page or inherited from a contiguous printed page.
+      header_json: Observed column positions and header word indices retained by the source reader.
+
+  house_financial_summary_rows:
+    label: House financial summary rows
+    summary: Distinct printed summary rows with exact labels, periods and complete raw evidence.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained House report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. Appropriation accounts, accountability statements
+      and receipt components are separate printed observations; repeated titles do not identify duplicate records.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding years
+        as separate occurrences.
+      source_table: Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial
+        statements.
+      source_row: Source ruled-row ordinal within its table, where available; distinct from the record index and positioned
+        text line.
+      source_line: One-based positioned financial line within the source reader's page or ruled row; use with table
+        and source-row coordinates.
+      summary_kind: Literal source table family, including appropriation summaries, accountability, receipts, mailings
+        or communications.
+      row_kind: Source component, total, appropriation funding period or representative-summary role; these are not
+        transaction payments.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Printed component or representative label. A source row without a name remains null.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly stated for this summary table; may differ from the containing report
+        or be null.
+      summary_period_end: Last day explicitly stated for this summary table, preserving January 2 endpoints and amended
+        periods.
+      amended: Whether this mailing table explicitly says amended; null when the source reader does not make this
+        observation.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      values_json: Source reader's normalized values, including exact decimal strings and explicit nulls.
+      raw_fields_json: Literal original fields before numeric normalization; blanks remain distinct from printed zeros.
+      source_row_json: Complete source-owned summary record, retaining heading, coordinates, word references and interpretation
+        evidence.
+
+  house_financial_summary_values:
+    label: House financial summary values
+    summary: Typed numeric cells with explicit metric, unit, precision and blank-cell status.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained House report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    - value_name
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. Appropriation accounts, accountability statements
+      and receipt components are separate printed observations; repeated titles do not identify duplicate records.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding years
+        as separate occurrences.
+      source_table: Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial
+        statements.
+      source_row: Source ruled-row ordinal within its table, where available; distinct from the record index and positioned
+        text line.
+      source_line: One-based positioned financial line within the source reader's page or ruled row; use with table
+        and source-row coordinates.
+      summary_kind: Literal source table family, including appropriation summaries, accountability, receipts, mailings
+        or communications.
+      row_kind: Source component, total, appropriation funding period or representative-summary role; these are not
+        transaction payments.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Printed component or representative label. A source row without a name remains null.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly stated for this summary table; may differ from the containing report
+        or be null.
+      summary_period_end: Last day explicitly stated for this summary table, preserving January 2 endpoints and amended
+        periods.
+      amended: Whether this mailing table explicitly says amended; null when the source reader does not make this
+        observation.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      value_index: One-based numeric-column position in the source reader's declared value order.
+      value_name: Declared monetary or distribution metric, such as net_disbursements, total_cost or total_distributed.
+      value_decimal: Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to interpret
+        it. Null is not zero.
+      value_scale: 'Declared normalized fractional precision: zero for item counts, two for currency totals, or four
+        for per-household averages.'
+      value_unit: USD, items, USD/household or items/household, according to the printed metric. Do not sum across
+        units or metric roles.
+      value_status: parsed for an exact normalized value; blank for an empty source cell; unresolved for a nonblank
+        cell with no qualified numeric value.
+      raw_value: Exact printed numeric cell, including signs, commas and currency symbols where observed; null or
+        empty for a source blank.
+
+  house_financial_summary_pages:
+    label: House financial summary pages
+    summary: Selected original summary pages, including unread or unrecognized content.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained House report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. Appropriation accounts, accountability statements
+      and receipt components are separate printed observations; repeated titles do not identify duplicate records.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      page_status: Source-owned summary outcome, including readable tables, unrecognized layouts and explicit pending
+        image content.
+      native_text: Retained native page text; it does not qualify image-only financial content.
+      native_word_count: Count of retained original word observations when supplied by this reader; null means the
+        reader did not measure it.
+      image_count: Original image-reference count when supplied by this reader; null means unmeasured, not no images.
+      record_count: Number of distinct source summary records emitted on this selected physical page.
+      page_reading_json: Complete source page reading, including original tables, words or native text and explicit
+        unread content.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+
+  house_mailing_summary_rows:
+    label: House mailing summary rows
+    summary: Distinct printed summary rows with exact labels, periods and complete raw evidence.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained House report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. These modern mailing and communications values
+      describe total costs; legacy postage-only mass-mail tables require a separate reader.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding years
+        as separate occurrences.
+      source_table: Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial
+        statements.
+      source_row: Source ruled-row ordinal within its table, where available; distinct from the record index and positioned
+        text line.
+      source_line: One-based positioned financial line within the source reader's page or ruled row; use with table
+        and source-row coordinates.
+      summary_kind: Literal source table family, including appropriation summaries, accountability, receipts, mailings
+        or communications.
+      row_kind: Source component, total, appropriation funding period or representative-summary role; these are not
+        transaction payments.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Printed component or representative label. A source row without a name remains null.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly stated for this summary table; may differ from the containing report
+        or be null.
+      summary_period_end: Last day explicitly stated for this summary table, preserving January 2 endpoints and amended
+        periods.
+      amended: Whether this mailing table explicitly says amended; null when the source reader does not make this
+        observation.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      values_json: Source reader's normalized values, including exact decimal strings and explicit nulls.
+      raw_fields_json: Literal original fields before numeric normalization; blanks remain distinct from printed zeros.
+      source_row_json: Complete source-owned summary record, retaining heading, coordinates, word references and interpretation
+        evidence.
+
+  house_mailing_summary_values:
+    label: House mailing summary values
+    summary: Typed numeric cells with explicit metric, unit, precision and blank-cell status.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained House report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    - value_name
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. These modern mailing and communications values
+      describe total costs; legacy postage-only mass-mail tables require a separate reader.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding years
+        as separate occurrences.
+      source_table: Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial
+        statements.
+      source_row: Source ruled-row ordinal within its table, where available; distinct from the record index and positioned
+        text line.
+      source_line: One-based positioned financial line within the source reader's page or ruled row; use with table
+        and source-row coordinates.
+      summary_kind: Literal source table family, including appropriation summaries, accountability, receipts, mailings
+        or communications.
+      row_kind: Source component, total, appropriation funding period or representative-summary role; these are not
+        transaction payments.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Printed component or representative label. A source row without a name remains null.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly stated for this summary table; may differ from the containing report
+        or be null.
+      summary_period_end: Last day explicitly stated for this summary table, preserving January 2 endpoints and amended
+        periods.
+      amended: Whether this mailing table explicitly says amended; null when the source reader does not make this
+        observation.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      value_index: One-based numeric-column position in the source reader's declared value order.
+      value_name: Declared monetary or distribution metric, such as net_disbursements, total_cost or total_distributed.
+      value_decimal: Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to interpret
+        it. Null is not zero.
+      value_scale: 'Declared normalized fractional precision: zero for item counts, two for currency totals, or four
+        for per-household averages.'
+      value_unit: USD, items, USD/household or items/household, according to the printed metric. Do not sum across
+        units or metric roles.
+      value_status: parsed for an exact normalized value; blank for an empty source cell; unresolved for a nonblank
+        cell with no qualified numeric value.
+      raw_value: Exact printed numeric cell, including signs, commas and currency symbols where observed; null or
+        empty for a source blank.
+
+  house_mailing_summary_pages:
+    label: House mailing summary pages
+    summary: Selected original summary pages, including unread or unrecognized content.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained House report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. These modern mailing and communications values
+      describe total costs; legacy postage-only mass-mail tables require a separate reader.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      page_status: Source-owned summary outcome, including readable tables, unrecognized layouts and explicit pending
+        image content.
+      native_text: Retained native page text; it does not qualify image-only financial content.
+      native_word_count: Count of retained original word observations when supplied by this reader; null means the
+        reader did not measure it.
+      image_count: Original image-reference count when supplied by this reader; null means unmeasured, not no images.
+      record_count: Number of distinct source summary records emitted on this selected physical page.
+      page_reading_json: Complete source page reading, including original tables, words or native text and explicit
+        unread content.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+
+  senate_financial_summary_rows:
+    label: Senate financial summary rows
+    summary: Distinct printed summary rows with exact labels, periods and complete raw evidence.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained Senate report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. Appropriation accounts, accountability statements
+      and receipt components are separate printed observations; repeated titles do not identify duplicate records.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding years
+        as separate occurrences.
+      source_table: Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial
+        statements.
+      source_row: Source ruled-row ordinal within its table, where available; distinct from the record index and positioned
+        text line.
+      source_line: One-based positioned financial line within the source reader's page or ruled row; use with table
+        and source-row coordinates.
+      summary_kind: Literal source table family, including appropriation summaries, accountability, receipts, mailings
+        or communications.
+      row_kind: Source component, total, appropriation funding period or representative-summary role; these are not
+        transaction payments.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Printed component or representative label. A source row without a name remains null.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly stated for this summary table; may differ from the containing report
+        or be null.
+      summary_period_end: Last day explicitly stated for this summary table, preserving January 2 endpoints and amended
+        periods.
+      amended: Whether this mailing table explicitly says amended; null when the source reader does not make this
+        observation.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      values_json: Source reader's normalized values, including exact decimal strings and explicit nulls.
+      raw_fields_json: Literal original fields before numeric normalization; blanks remain distinct from printed zeros.
+      source_row_json: Complete source-owned summary record, retaining heading, coordinates, word references and interpretation
+        evidence.
+
+  senate_financial_summary_values:
+    label: Senate financial summary values
+    summary: Typed numeric cells with explicit metric, unit, precision and blank-cell status.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained Senate report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    - value_name
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. Appropriation accounts, accountability statements
+      and receipt components are separate printed observations; repeated titles do not identify duplicate records.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding years
+        as separate occurrences.
+      source_table: Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial
+        statements.
+      source_row: Source ruled-row ordinal within its table, where available; distinct from the record index and positioned
+        text line.
+      source_line: One-based positioned financial line within the source reader's page or ruled row; use with table
+        and source-row coordinates.
+      summary_kind: Literal source table family, including appropriation summaries, accountability, receipts, mailings
+        or communications.
+      row_kind: Source component, total, appropriation funding period or representative-summary role; these are not
+        transaction payments.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Printed component or representative label. A source row without a name remains null.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly stated for this summary table; may differ from the containing report
+        or be null.
+      summary_period_end: Last day explicitly stated for this summary table, preserving January 2 endpoints and amended
+        periods.
+      amended: Whether this mailing table explicitly says amended; null when the source reader does not make this
+        observation.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      value_index: One-based numeric-column position in the source reader's declared value order.
+      value_name: Declared monetary or distribution metric, such as net_disbursements, total_cost or total_distributed.
+      value_decimal: Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to interpret
+        it. Null is not zero.
+      value_scale: 'Declared normalized fractional precision: zero for item counts, two for currency totals, or four
+        for per-household averages.'
+      value_unit: USD, items, USD/household or items/household, according to the printed metric. Do not sum across
+        units or metric roles.
+      value_status: parsed for an exact normalized value; blank for an empty source cell; unresolved for a nonblank
+        cell with no qualified numeric value.
+      raw_value: Exact printed numeric cell, including signs, commas and currency symbols where observed; null or
+        empty for a source blank.
+
+  senate_financial_summary_pages:
+    label: Senate financial summary pages
+    summary: Selected original summary pages, including unread or unrecognized content.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained Senate report pages. Completion covers that page selection only.
+      Other pages, historical image tables and unsupported layouts remain outside the qualified reading.
+    identity_columns:
+    - source_sha256
+    - source_page
+    data_quality: Preserve source occurrences, signed values, real zeros and blank cells. Components, totals, report
+      periods and amended summary periods have different meanings. Do not sum overlapping metrics or combine repeated
+      historical parts without a separately qualified source selection. Appropriation accounts, accountability statements
+      and receipt components are separate printed observations; repeated titles do not identify duplicate records.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned financial-summary or mailing-summary reading selected for these pages.
+      page_status: Source-owned summary outcome, including readable tables, unrecognized layouts and explicit pending
+        image content.
+      native_text: Retained native page text; it does not qualify image-only financial content.
+      native_word_count: Count of retained original word observations when supplied by this reader; null means the
+        reader did not measure it.
+      image_count: Original image-reference count when supplied by this reader; null means unmeasured, not no images.
+      record_count: Number of distinct source summary records emitted on this selected physical page.
+      page_reading_json: Complete source page reading, including original tables, words or native text and explicit
+        unread content.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+
+  house_allowance_summary_rows:
+    label: House annual allowance summary rows
+    summary: Distinct annual allowance table rows with original recipient, jurisdiction, district and governed-year
+      evidence.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained native House report pages. Completion covers that selection
+      only. Formula quantities, historical scanned tables and unselected pages remain outside normalized annual
+      allowance coverage.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    data_quality: Annual allowance observations repeat across report quarters; do not add repeated annual tables
+      or current and amended sections. Recipient labels can name people, vacant districts or caucuses. Preserve
+      literal state/district codes, exact amount precision and source occurrences. A reviewed governed-year correction
+      retains the printed header and title years with its source evidence. Formula pages retain source text and
+      explicit unnormalized status.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned allowance-summary reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding
+        years as separate occurrences.
+      source_table: Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial
+        statements.
+      source_row: Source ruled-row ordinal within its table, where available; distinct from the record index and
+        positioned text line.
+      source_line: One-based positioned financial line within the source reader's page or ruled row; use with
+        table and source-row coordinates.
+      summary_kind: 'Source table family: members_representational_allowance.'
+      row_kind: Annual allowance observation; it is not a transaction payment or a formula component.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Printed allowance recipient label, which may name a person, vacant district or caucus.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly printed for an amended allowance section; null when only an annual
+        allowance year is stated.
+      summary_period_end: Last day explicitly printed for an amended allowance section; the annual allowance year
+        is a separate field.
+      amended: Whether the observed allowance-section introduction explicitly identifies an amendment; null when
+        the section has not been read.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      values_json: Source reader's normalized values, including exact decimal strings and explicit nulls.
+      raw_fields_json: Literal original fields before numeric normalization; blanks remain distinct from printed
+        zeros.
+      source_row_json: Complete source-owned summary record, retaining heading, coordinates, word references and
+        interpretation evidence.
+      allowance_title: Printed annual allowance table title, including a continued label when present.
+      allowance_year: Source-qualified governed calendar year of the annual allowance. Separate from the report
+        quarter, printed header year and a formula funding-year reference.
+      printed_title_year: Year literally printed in the annual allowance table title.
+      printed_column_year: Year literally printed in the MRA column header, inherited only from a witnessed contiguous
+        table header; may differ from allowance_year after a source-bound repair.
+      state_literal: Original state or jurisdiction column without postal-code normalization; retains NMI, caucus
+        codes and printed punctuation.
+      district_literal: Original district column, preserving leading zeros and nonnumeric caucus codes.
+  house_allowance_summary_values:
+    label: House annual allowance summary values
+    summary: Exact annual allowance amounts in dollars, separate from ledger payments and formula components.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained native House report pages. Completion covers that selection
+      only. Formula quantities, historical scanned tables and unselected pages remain outside normalized annual
+      allowance coverage.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    - value_name
+    data_quality: Annual allowance observations repeat across report quarters; do not add repeated annual tables
+      or current and amended sections. Recipient labels can name people, vacant districts or caucuses. Preserve
+      literal state/district codes, exact amount precision and source occurrences. A reviewed governed-year correction
+      retains the printed header and title years with its source evidence. Formula pages retain source text and
+      explicit unnormalized status.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned allowance-summary reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding
+        years as separate occurrences.
+      source_table: Zero-based source table ordinal when the reader observes ruled tables; null for unruled financial
+        statements.
+      source_row: Source ruled-row ordinal within its table, where available; distinct from the record index and
+        positioned text line.
+      source_line: One-based positioned financial line within the source reader's page or ruled row; use with
+        table and source-row coordinates.
+      summary_kind: 'Source table family: members_representational_allowance.'
+      row_kind: Annual allowance observation; it is not a transaction payment or a formula component.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Printed allowance recipient label, which may name a person, vacant district or caucus.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly printed for an amended allowance section; null when only an annual
+        allowance year is stated.
+      summary_period_end: Last day explicitly printed for an amended allowance section; the annual allowance year
+        is a separate field.
+      amended: Whether the observed allowance-section introduction explicitly identifies an amendment; null when
+        the section has not been read.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      value_index: One-based numeric-column position in the source reader's declared value order.
+      value_name: Declared monetary or distribution metric, such as net_disbursements, total_cost or total_distributed.
+      value_decimal: Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to
+        interpret it. Null is not zero.
+      value_scale: 'Declared normalized fractional precision: zero for item counts, two for currency totals, or
+        four for per-household averages.'
+      value_unit: USD, items, USD/household or items/household, according to the printed metric. Do not sum across
+        units or metric roles.
+      value_status: parsed for an exact normalized value; blank for an empty source cell; unresolved for a nonblank
+        cell with no qualified numeric value.
+      raw_value: Exact printed numeric cell, including signs, commas and currency symbols where observed; null
+        or empty for a source blank.
+      allowance_title: Printed annual allowance table title, including a continued label when present.
+      allowance_year: Source-qualified governed calendar year of the annual allowance. Separate from the report
+        quarter, printed header year and a formula funding-year reference.
+      printed_title_year: Year literally printed in the annual allowance table title.
+      printed_column_year: Year literally printed in the MRA column header, inherited only from a witnessed contiguous
+        table header; may differ from allowance_year after a source-bound repair.
+      state_literal: Original state or jurisdiction column without postal-code normalization; retains NMI, caucus
+        codes and printed punctuation.
+      district_literal: Original district column, preserving leading zeros and nonnumeric caucus codes.
+  house_allowance_summary_pages:
+    label: House annual allowance summary pages
+    summary: Selected original allowance table and formula-introduction pages with complete source readings and
+      explicit unnormalized scope.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained native House report pages. Completion covers that selection
+      only. Formula quantities, historical scanned tables and unselected pages remain outside normalized annual
+      allowance coverage.
+    identity_columns:
+    - source_sha256
+    - source_page
+    data_quality: Annual allowance observations repeat across report quarters; do not add repeated annual tables
+      or current and amended sections. Recipient labels can name people, vacant districts or caucuses. Preserve
+      literal state/district codes, exact amount precision and source occurrences. A reviewed governed-year correction
+      retains the printed header and title years with its source evidence. Formula pages retain source text and
+      explicit unnormalized status.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned allowance-summary reading selected for these pages.
+      page_status: Source-owned summary outcome, including readable tables, unrecognized layouts and explicit
+        pending image content.
+      native_text: Retained native page text; it does not qualify image-only financial content.
+      native_word_count: Count of retained original word observations when supplied by this reader; null means
+        the reader did not measure it.
+      image_count: Original image-reference count when supplied by this reader; null means unmeasured, not no
+        images.
+      record_count: Number of distinct source summary records emitted on this selected physical page.
+      page_reading_json: Complete source page reading, including original tables, words or native text and explicit
+        unread content.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.

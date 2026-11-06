@@ -1,0 +1,31 @@
+{
+  "fixture": "house-2021-10-01-allowance-merged-page.json.gz",
+  "fixture_sha256": "sha256:7fb153bdf0aa5b5265a52c9c562f00389b37c33c6a7aa5c6f52b2291aff5198c",
+  "original": {
+    "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/3a/3a386afe75dc38aa09bcec09262e01761c1500603d90075ad7d1299e1c3326bb",
+    "sha256": "sha256:3a386afe75dc38aa09bcec09262e01761c1500603d90075ad7d1299e1c3326bb",
+    "bytes": 9391697
+  },
+  "source_page": 2835,
+  "source_reading": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/full-run-variant-review/bounded-candidate-v2/house-2021-10-01-pdf-full-p2835.json",
+    "sha256": "sha256:9fa39625e2d924e41c296bef9fc1e7bd6033399fc64c9a17dfd6873dbda8b494",
+    "bytes": 102426
+  },
+  "bounded_manifest": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/full-run-variant-review/bounded-candidate-v2/manifest.json",
+    "sha256": "sha256:4d7336e6f68c921f36c38887655812f8b120ff6233d846df331a6dee040c0374",
+    "bytes": 31366
+  },
+  "source_review": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-allowance-full-variants-independent/source-review.json",
+    "sha256": "sha256:7973b42520bb6e4cd30a397a559ac9d81588f1801ff9552b0ceeb73cec64b8c8",
+    "bytes": 100253
+  },
+  "actual_output_review": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-allowance-variants-actual-independent/review.json",
+    "sha256": "sha256:27d0d3dba46890e5f147f6197efa37b142608100a02ba925bcbd9916816d1f02",
+    "bytes": 35676
+  },
+  "scope": "Exact decoded actual source-owned page output for the host validation boundary, including every original detector cell and native line. It is not an excerpt PDF or a new acquisition. Full extraction and typed consumer are covered separately."
+}

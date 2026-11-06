@@ -1,0 +1,43 @@
+{
+  "schema": "house-ledger-review-excerpts/1",
+  "excerpts": [
+    {
+      "file": "house-2009-07-01-pdf-full.pdf",
+      "sha256": "sha256:6636b7a68e83aa8424eba4980a2df983bf7cab56ca4d7c699644fecdd5634202",
+      "bytes": 69536,
+      "original_sha256": "sha256:0422eff2de0f94b42ab388dfbd68267d2572d70ce71361ac215ec593e52abdda",
+      "original_path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/04/0422eff2de0f94b42ab388dfbd68267d2572d70ce71361ac215ec593e52abdda",
+      "original_url": "https://www.house.gov/sites/default/files/uploads/documents/2009q3-singlevolume.pdf",
+      "original_pages": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        50
+      ],
+      "report_period_start": "2009-07-01",
+      "report_period_end": "2009-09-30",
+      "derivation": "Exact selected PDF pages copied with PyMuPDF; native words and positions matched to the complete original."
+    },
+    {
+      "file": "house-2015-10-01-pdf-full.pdf",
+      "sha256": "sha256:b2ff4a6e12f0ca4c10d1fe898a2b6d395270577ed5a8d87e141e10c112282929",
+      "bytes": 71600,
+      "original_sha256": "sha256:cc37ba832b4986e1b3bddeaa3364c5798a84b0f6141ceaff1dc21ec0ad624389",
+      "original_path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/cc/cc37ba832b4986e1b3bddeaa3364c5798a84b0f6141ceaff1dc21ec0ad624389",
+      "original_url": "https://www.house.gov/sites/default/files/uploads/documents/2015q4_singlevolume.pdf",
+      "original_pages": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        50
+      ],
+      "report_period_start": "2015-10-01",
+      "report_period_end": "2015-12-31",
+      "derivation": "Exact selected PDF pages copied with PyMuPDF; native words and positions matched to the complete original."
+    }
+  ]
+}

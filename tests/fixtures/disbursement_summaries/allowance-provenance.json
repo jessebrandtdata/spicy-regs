@@ -1,0 +1,175 @@
+{
+  "scope": "Bounded native extraction fixtures with exact words, table cells and coordinates. The 2017 copied pages have raster color differences; their images are not interchangeable with original renders or eligible for original-image OCR replay. Both original and copied table renders were viewed. Initial strict pixel-equality failure is retained. Mocked acquisition and local generations are not publisher captures or publication claims.",
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/qualify_allowance_host_fixtures_v2.py",
+    "sha256": "sha256:08efc36e8df58cb7d4a44ad730adda4e2e8248078d2c0354c089454a3d62bb1e",
+    "bytes": 4245
+  },
+  "files": [
+    {
+      "id": "house-2009-07-01-pdf-full-allowance",
+      "chamber": "house",
+      "profile": "allowance-summary",
+      "fixture": "house-2009-07-01-allowance.pdf",
+      "fixture_sha256": "sha256:5c196c581d0f947193bd3b59fb14f2b36c7a7d063828dc2ffa0c3c70ad621eb1",
+      "fixture_bytes": 99262,
+      "url": "https://www.house.gov/sites/default/files/uploads/documents/2009q3-singlevolume.pdf",
+      "period_start": "2009-07-01",
+      "period_end": "2009-09-30",
+      "reading_pages": [
+        1,
+        2,
+        3
+      ],
+      "reading_scope": "Bounded derived PDF fixture. Complete source-page identity is retained in provenance; the test hosts the fixture under its own digest and page numbers.",
+      "source_original": {
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/04/0422eff2de0f94b42ab388dfbd68267d2572d70ce71361ac215ec593e52abdda",
+        "sha256": "sha256:0422eff2de0f94b42ab388dfbd68267d2572d70ce71361ac215ec593e52abdda",
+        "bytes": 9988756
+      },
+      "source_pages": [
+        3337,
+        3338,
+        3339
+      ],
+      "derivation_proofs": [
+        {
+          "fixture_page": 1,
+          "original_page": 3337,
+          "native_word_coordinate_parity": true,
+          "native_table_cell_geometry_parity": true,
+          "render_pixel_equal_at_96dpi": true,
+          "differing_rgb_components_at_96dpi": 0,
+          "original_render_pixel_sha256_at_96dpi": "sha256:d0571187d0bfd7caeccd6a63c517b789c594bad7be3e6ac861d7a2d2ee220294",
+          "render_pixel_sha256_at_96dpi": "sha256:d0571187d0bfd7caeccd6a63c517b789c594bad7be3e6ac861d7a2d2ee220294",
+          "render": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/fixture-validation-v2/house-2009-07-01-pdf-full-fixture-p1.png",
+            "sha256": "sha256:a86ab0e338bc694a95f74505a670142642d088883efcc005784247a7f0dbfe11",
+            "bytes": 184787
+          }
+        },
+        {
+          "fixture_page": 2,
+          "original_page": 3338,
+          "native_word_coordinate_parity": true,
+          "native_table_cell_geometry_parity": true,
+          "render_pixel_equal_at_96dpi": true,
+          "differing_rgb_components_at_96dpi": 0,
+          "original_render_pixel_sha256_at_96dpi": "sha256:39a5e58a3be7cfa666826dc240e572da13bdd83a2758b0bfa94b9ecaa56a68c8",
+          "render_pixel_sha256_at_96dpi": "sha256:39a5e58a3be7cfa666826dc240e572da13bdd83a2758b0bfa94b9ecaa56a68c8",
+          "render": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/fixture-validation-v2/house-2009-07-01-pdf-full-fixture-p2.png",
+            "sha256": "sha256:b960127bfe114f0471d33f88655c952a766a6b3c0b86468363f4888b24b40db1",
+            "bytes": 194648
+          }
+        },
+        {
+          "fixture_page": 3,
+          "original_page": 3339,
+          "native_word_coordinate_parity": true,
+          "native_table_cell_geometry_parity": true,
+          "render_pixel_equal_at_96dpi": true,
+          "differing_rgb_components_at_96dpi": 0,
+          "original_render_pixel_sha256_at_96dpi": "sha256:23aa80474eec1b88c7aa576183c7eea2806b1a36913612e24928e54d5d28fd44",
+          "render_pixel_sha256_at_96dpi": "sha256:23aa80474eec1b88c7aa576183c7eea2806b1a36913612e24928e54d5d28fd44",
+          "render": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/fixture-validation-v2/house-2009-07-01-pdf-full-fixture-p3.png",
+            "sha256": "sha256:e6cec43dd11a44e1acdb6ae946782d3f98adc428ad1c4ab4538be239efad837a",
+            "bytes": 196114
+          }
+        }
+      ]
+    },
+    {
+      "id": "house-2017-10-01-pdf-full-allowance",
+      "chamber": "house",
+      "profile": "allowance-summary",
+      "fixture": "house-2017-10-01-allowance.pdf",
+      "fixture_sha256": "sha256:ed9e67fb37113a0d60f89807c4f285ffbd5bbf939e02a7e4fffee07959a83ee8",
+      "fixture_bytes": 322853,
+      "url": "https://www.house.gov/sites/default/files/uploads/documents/SODs/2017q4_singlevolume.pdf",
+      "period_start": "2017-10-01",
+      "period_end": "2017-12-31",
+      "reading_pages": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "reading_scope": "Bounded derived PDF fixture. Complete source-page identity is retained in provenance; the test hosts the fixture under its own digest and page numbers.",
+      "source_original": {
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/fd/fde2a41229dddd71c1ebfe40b17de6dff4c64d2f3c55af2d0b4947906f6eed88",
+        "sha256": "sha256:fde2a41229dddd71c1ebfe40b17de6dff4c64d2f3c55af2d0b4947906f6eed88",
+        "bytes": 8648331
+      },
+      "source_pages": [
+        2498,
+        2499,
+        2514,
+        2515
+      ],
+      "derivation_proofs": [
+        {
+          "fixture_page": 1,
+          "original_page": 2498,
+          "native_word_coordinate_parity": true,
+          "native_table_cell_geometry_parity": true,
+          "render_pixel_equal_at_96dpi": false,
+          "differing_rgb_components_at_96dpi": 84144,
+          "original_render_pixel_sha256_at_96dpi": "sha256:3e31ca2912f4bfa1786e11cfa5bd27d8aa4ad3e877034a5e0be04c865b9254bd",
+          "render_pixel_sha256_at_96dpi": "sha256:11d27260b87548fbd21266c9c92555f3d368f7fadcf563a731cdb4c3ab7fe738",
+          "render": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/fixture-validation-v2/house-2017-10-01-pdf-full-fixture-p1.png",
+            "sha256": "sha256:64d14a012389cd721121a0d5dc080548b239f10acdea789767ddf3108de55df4",
+            "bytes": 190357
+          }
+        },
+        {
+          "fixture_page": 2,
+          "original_page": 2499,
+          "native_word_coordinate_parity": true,
+          "native_table_cell_geometry_parity": true,
+          "render_pixel_equal_at_96dpi": false,
+          "differing_rgb_components_at_96dpi": 123318,
+          "original_render_pixel_sha256_at_96dpi": "sha256:e9f5c32ba2568e7c1f27ec2f2160f90817bd31a68e7a18d110e67d5631896560",
+          "render_pixel_sha256_at_96dpi": "sha256:85da92b9d3a139c760b348bc8195d1afe96cc9c3924c41f223d17ff0ca6811c0",
+          "render": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/fixture-validation-v2/house-2017-10-01-pdf-full-fixture-p2.png",
+            "sha256": "sha256:9630946fb8e80c0bfd5beefcbe2eca06acee2a24d18e117169bc8812b5229795",
+            "bytes": 198476
+          }
+        },
+        {
+          "fixture_page": 3,
+          "original_page": 2514,
+          "native_word_coordinate_parity": true,
+          "native_table_cell_geometry_parity": true,
+          "render_pixel_equal_at_96dpi": false,
+          "differing_rgb_components_at_96dpi": 86451,
+          "original_render_pixel_sha256_at_96dpi": "sha256:d1980d07570b687052d9c7cef61a3c7671c05ba106ee09f6271bc70b7a4b7089",
+          "render_pixel_sha256_at_96dpi": "sha256:f30a12c2a2cd93a6fb0f4d849d2ccc4a262608442d2e481755aa7710fd6b8919",
+          "render": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/fixture-validation-v2/house-2017-10-01-pdf-full-fixture-p3.png",
+            "sha256": "sha256:8f567f72aff8b4779540bd8dd4f90b4ddd8bd380b25839c940a88f9522f98c92",
+            "bytes": 195793
+          }
+        },
+        {
+          "fixture_page": 4,
+          "original_page": 2515,
+          "native_word_coordinate_parity": true,
+          "native_table_cell_geometry_parity": true,
+          "render_pixel_equal_at_96dpi": false,
+          "differing_rgb_components_at_96dpi": 127452,
+          "original_render_pixel_sha256_at_96dpi": "sha256:851b9b506272e25290abf80da07413475cd3e4df96c7f155c5806c5c24943500",
+          "render_pixel_sha256_at_96dpi": "sha256:9da05ce9a8969545fb6a31d3181d64dc5dcca744b1500a734814013b6755abd2",
+          "render": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-native-appendix-census-v1/fixture-validation-v2/house-2017-10-01-pdf-full-fixture-p4.png",
+            "sha256": "sha256:0bac2f6992b49ccb6b878fcba9a30f7090736698d9eff25a35f2da7c53b53b7c",
+            "bytes": 198389
+          }
+        }
+      ]
+    }
+  ]
+}

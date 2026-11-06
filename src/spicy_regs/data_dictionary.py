@@ -29,6 +29,7 @@ Usage::
 from __future__ import annotations
 
 from spicy_regs.subject_catalog import subject_tables, policies as subject_policies
+from spicy_regs.schemas.disbursement_summaries import TABLES as DISBURSEMENT_SUMMARY_TABLES
 
 import argparse
 import hashlib
@@ -590,6 +591,11 @@ TABLES: tuple[str, ...] = (
     "executive_order_observations",
     "house_disbursements",
     "house_disbursements_summary",
+    "house_disbursement_pdf_rows",
+    "house_disbursement_pdf_pages",
+    "senate_disbursements",
+    "senate_disbursement_pages",
+    *DISBURSEMENT_SUMMARY_TABLES,
     "fec_financial_profiles",
     "treasury_debt_observations",
     "treasury_statement_periods",
@@ -673,6 +679,11 @@ MCP_QUERYABLE: frozenset[str] = frozenset(
         "executive_order_observations",
         "house_disbursements",
         "house_disbursements_summary",
+        "house_disbursement_pdf_rows",
+        "house_disbursement_pdf_pages",
+        "senate_disbursements",
+        "senate_disbursement_pages",
+        *DISBURSEMENT_SUMMARY_TABLES,
         "fec_financial_profiles",
         "treasury_debt_observations",
         "treasury_statement_periods",
@@ -893,6 +904,9 @@ def expected_schemas(*, native: bool = True) -> dict[str, list[tuple[str, str]]]
     from spicy_regs.transforms.build_ofac import SCHEMAS as OFAC_SCHEMAS
     from spicy_regs.transforms.build_executive_orders import SCHEMA as EXECUTIVE_ORDER_SCHEMA
     from spicy_regs.schemas.house_disbursements import SCHEMAS as HOUSE_DISBURSEMENT_SCHEMAS
+    from spicy_regs.schemas.senate_disbursements import SCHEMAS as SENATE_DISBURSEMENT_SCHEMAS
+    from spicy_regs.schemas.house_disbursement_pages import SCHEMAS as HOUSE_PDF_SCHEMAS
+    from spicy_regs.schemas.disbursement_summaries import SCHEMAS as DISBURSEMENT_SUMMARY_SCHEMAS
     from spicy_regs.transforms.build_fec_financial_profiles import SCHEMA as FEC_PROFILE_SCHEMA
     from spicy_regs.transforms.build_census_acs import SCHEMA as CENSUS_ACS_SCHEMA
     from spicy_regs.transforms.build_agency_lifecycle_stats import SCHEMA as AGENCY_LIFECYCLE_STATS_SCHEMA
@@ -999,6 +1013,9 @@ def expected_schemas(*, native: bool = True) -> dict[str, list[tuple[str, str]]]
         **OFAC_SCHEMAS,
         "executive_order_observations": EXECUTIVE_ORDER_SCHEMA,
         **HOUSE_DISBURSEMENT_SCHEMAS,
+        **SENATE_DISBURSEMENT_SCHEMAS,
+        **HOUSE_PDF_SCHEMAS,
+        **DISBURSEMENT_SUMMARY_SCHEMAS,
         "fec_financial_profiles": FEC_PROFILE_SCHEMA,
         "census_acs_county_observations": CENSUS_ACS_SCHEMA,
         "fec_collections": COLLECTION_SCHEMA,

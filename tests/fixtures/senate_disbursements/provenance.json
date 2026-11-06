@@ -1,0 +1,11 @@
+{
+  "fixture_sha256": "sha256:eadd861f5e9691dacb48738cb1e96b397ac93b9797fdf69b19b041a539cdb9eb",
+  "original_sha256": "sha256:5ab0b3abed2c89f0fd891367cb0ed568de1cef2c9bf4de181f74573939a70860",
+  "original_path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/5a/5ab0b3abed2c89f0fd891367cb0ed568de1cef2c9bf4de181f74573939a70860",
+  "original_url": "https://www.govinfo.gov/content/pkg/GPO-CDOC-112sdoc4/pdf/GPO-CDOC-112sdoc4.pdf",
+  "original_pages": [
+    1499,
+    1500
+  ],
+  "derivation": "Exact original pages copied with PyMuPDF; native words and coordinates compared. The fixture is not a complete original report."
+}
