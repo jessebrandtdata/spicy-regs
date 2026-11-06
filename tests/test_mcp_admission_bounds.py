@@ -304,10 +304,12 @@ def test_hosted_discovery_budget_returns_terminal_error_and_same_client_recovers
 
     def connection():
         if stalled[0]:
+            stop_at = monotonic() + 18
             try:
-                while True:
+                while monotonic() < stop_at:
                     sleep(.005)
                     checkpoint()
+                raise AssertionError("Discovery did not enforce its request deadline")
             finally:
                 stopped.set()
         held = current_bound()
