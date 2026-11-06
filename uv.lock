@@ -2206,7 +2206,7 @@ provides-extras = ["acquisition", "bill-diff", "courtlistener-local", "html", "p
 
 [[package]]
 name = "spicy-regs"
-version = "0.1.6+reconcile.18"
+version = "0.1.6+reconcile.19"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
