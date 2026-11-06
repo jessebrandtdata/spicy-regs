@@ -1,0 +1,703 @@
+{
+  "research_conclusion": "No informative final-text-to-first-corresponding-summary delay is identifiable in the declared retained-evidence investigation. The requested metric remains unavailable.",
+  "metric_delivered": false,
+  "cohort_frozen_before_delay_calculation": true,
+  "selection_rule": "Select one exact latest offered BILLS candidate per frozen source, preserving numbered suffixes. Qualify terminal enrolled identity only where the source and retained body support it. Treat other finalness as unresolved. Choose a later summary stage only as a named candidate; do not infer exact printing correspondence from stage labels or use an earlier stage by default.",
+  "counts": {
+    "frozen_bills": 5,
+    "enrolled_final_identity_qualified": 1,
+    "final_identity_unresolved": 4,
+    "measurement_eligible": 0,
+    "unmatched_final_printing_summary_pairs": 5,
+    "absent_summary_files_in_selected_originals": 0,
+    "only_earlier_stage_observed_in_selected_original": 2,
+    "candidate_later_stage_observed": 3,
+    "exact_lags": 0,
+    "bounded_lags": 0,
+    "unknown_lags": 5
+  },
+  "count_dimensions": "Eligibility, correspondence, source absence and lag are separate dimensions; counts across dimensions are not additive. Unmatched means no qualified exact-printing correspondence, not no summary. Absent files counts only selected original files; all five contain summaries. Later-stage omissions are observations in these members, not global publisher absence.",
+  "cases": [
+    {
+      "bill_id": "119-hjres-25",
+      "selected_final_printing_candidate": "BILLS-119hjres25enr",
+      "final_identity_status": "enrolled_final_identity_qualified",
+      "selection_reason": "Public Law 119-5 is stated. Select the enrolled BILLS printing, not the later PLAW rendition or enactment date. The public-law summary is a candidate; exact enrolled-text correspondence remains unqualified.",
+      "selected_candidate_summary_stage": "49",
+      "selected_candidate_summary": {
+        "version_code": "49",
+        "action_date": "2025-04-10",
+        "action_desc": "Public Law",
+        "update_date": "2026-06-17T12:47:01Z",
+        "last_summary_update_date": null,
+        "source_schema_version": "3.0.0",
+        "text_sha256": "sha256:d56ff2e55e2d2f453fc705f8970665d549af659c57e90803c33b6a185d473d5e",
+        "ordinal": 1,
+        "source_locator": "/bill/summaries/summary[2]"
+      },
+      "observed_summary_stages": [
+        "00",
+        "49"
+      ],
+      "summary_file_state": "present_nonempty",
+      "summary_correspondence": "unqualified",
+      "printing_body_evidence": {
+        "package_id": "BILLS-119hjres25enr",
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/69/690ca61f34b0927bf8da34addcf721e4fd704c22c98cf99aaccfbd26e31889e4",
+        "sha256": "sha256:690ca61f34b0927bf8da34addcf721e4fd704c22c98cf99aaccfbd26e31889e4",
+        "bytes": 2751,
+        "body_observed_at": "2026-09-12T12:29:18.332855+00:00",
+        "action_version_date": "",
+        "version_code": "enrolled-bill",
+        "body_observation_limit": null
+      },
+      "printing_body_evidence_state": "retained_pinned_prior_review",
+      "native_printing_dates": [
+        {
+          "attributes": [],
+          "field": "SUMMARY/dateIssued",
+          "locator": "/dateIssued",
+          "observed_at": "2026-11-06T18:14:14.154468Z",
+          "precision": "day",
+          "source_sha256": "sha256:2579dafe23d4e7696105f75d1b938824514bbce3ca97c82353bfda41c5186156",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hjres25enr/summary",
+          "state": "value",
+          "value": "2025-03-28"
+        },
+        {
+          "attributes": [],
+          "field": "SUMMARY/lastModified",
+          "locator": "/lastModified",
+          "observed_at": "2026-11-06T18:14:14.154468Z",
+          "precision": "second",
+          "source_sha256": "sha256:2579dafe23d4e7696105f75d1b938824514bbce3ca97c82353bfda41c5186156",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hjres25enr/summary",
+          "state": "value",
+          "value": "2026-07-10T15:22:17Z"
+        },
+        {
+          "attributes": [
+            {
+              "name": "encoding",
+              "value": "w3cdtf"
+            }
+          ],
+          "field": "MODS/originInfo/dateIssued",
+          "locator": "element-child-path:1/10/2",
+          "observed_at": "2026-11-06T18:14:14.334973Z",
+          "precision": "day",
+          "source_sha256": "sha256:77a25ef6de36364c558a79ca46f1057b0156d949073fc22e2e845c214fd5c987",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hjres25enr/mods",
+          "state": "value",
+          "value": "2025-03-28"
+        },
+        {
+          "attributes": [
+            {
+              "name": "encoding",
+              "value": "w3cdtf"
+            }
+          ],
+          "field": "MODS/recordInfo/recordCreationDate",
+          "locator": "element-child-path:1/25/2",
+          "observed_at": "2026-11-06T18:14:14.334973Z",
+          "precision": "day",
+          "source_sha256": "sha256:77a25ef6de36364c558a79ca46f1057b0156d949073fc22e2e845c214fd5c987",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hjres25enr/mods",
+          "state": "value",
+          "value": "2025-03-28"
+        },
+        {
+          "attributes": [
+            {
+              "name": "encoding",
+              "value": "w3cdtf"
+            }
+          ],
+          "field": "MODS/recordInfo/recordChangeDate",
+          "locator": "element-child-path:1/25/3",
+          "observed_at": "2026-11-06T18:14:14.334973Z",
+          "precision": "day",
+          "source_sha256": "sha256:77a25ef6de36364c558a79ca46f1057b0156d949073fc22e2e845c214fd5c987",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hjres25enr/mods",
+          "state": "value",
+          "value": "2026-07-10"
+        },
+        {
+          "attributes": [],
+          "field": "MODS/extension/dateIngested",
+          "locator": "element-child-path:1/7/6",
+          "observed_at": "2026-11-06T18:14:14.334973Z",
+          "precision": "day",
+          "source_sha256": "sha256:77a25ef6de36364c558a79ca46f1057b0156d949073fc22e2e845c214fd5c987",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hjres25enr/mods",
+          "state": "value",
+          "value": "2025-03-28"
+        }
+      ],
+      "printing_evidence_status": "stable_summary_bracket_body_unverified",
+      "first_text_publication": {
+        "status": "unknown",
+        "reason": "Later native issue/ingest/update metadata and captures do not bind an original first-publication event to these exact final bytes."
+      },
+      "first_corresponding_summary_publication": {
+        "status": "unknown",
+        "reason": "Retained stage clocks are updates, with no requested successful absence/presence bracket or qualified stage-specific first-publication event. Only earlier-stage observations cannot establish global summary absence."
+      },
+      "measurement_eligible": false,
+      "lag_classification": "unknown",
+      "lag_value": null,
+      "lag_range": null,
+      "source_witness": {
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/a2/a23cdc5c06d3444dfbe4af11720b6e3071a33c280a3c3f97c1023c11e7d52691",
+        "container_sha256": "sha256:a23cdc5c06d3444dfbe4af11720b6e3071a33c280a3c3f97c1023c11e7d52691",
+        "container_bytes": 671227,
+        "member": "BILLSTATUS-119hjres25.xml",
+        "member_sha256": "sha256:6e80c3a45c5a782868b75ec9398b11ad5094f9ec98b26b1f77e432a67019ed36",
+        "decoded_bytes": 31195,
+        "manifest": {
+          "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-archives.json",
+          "bytes": 52008,
+          "sha256": "sha256:b3183da6d5b72e929edf9cddb81b02d2d0df88e9a1756b830bff9e671fb222d2"
+        },
+        "archive_identity_check": "Prior qualified manifest pin and present length; ZIP CRC plus new member SHA-256. Container not rehashed.",
+        "acquired_at": null,
+        "source_url": null
+      },
+      "source_schema_version": "3.0.0",
+      "visual_review": {
+        "bill_id": "119-hjres-25",
+        "selection_ordinal": 0,
+        "image": {
+          "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/original-119-hjres-25-0.png",
+          "bytes": 120437,
+          "sha256": "sha256:c2eef0d57bc408c12b77ca919aceb521aac2372dcf7751dc8d9b8ad9a9d07655"
+        },
+        "line_start": 649,
+        "line_end": 664,
+        "witness": {
+          "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/a2/a23cdc5c06d3444dfbe4af11720b6e3071a33c280a3c3f97c1023c11e7d52691",
+          "container_sha256": "sha256:a23cdc5c06d3444dfbe4af11720b6e3071a33c280a3c3f97c1023c11e7d52691",
+          "container_bytes": 671227,
+          "member": "BILLSTATUS-119hjres25.xml",
+          "member_sha256": "sha256:6e80c3a45c5a782868b75ec9398b11ad5094f9ec98b26b1f77e432a67019ed36",
+          "decoded_bytes": 31195,
+          "manifest": {
+            "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-archives.json",
+            "bytes": 52008,
+            "sha256": "sha256:b3183da6d5b72e929edf9cddb81b02d2d0df88e9a1756b830bff9e671fb222d2"
+          },
+          "archive_identity_check": "Prior qualified manifest pin and present length; ZIP CRC plus new member SHA-256. Container not rehashed.",
+          "acquired_at": null,
+          "source_url": null
+        }
+      }
+    },
+    {
+      "bill_id": "119-hr-6028",
+      "selected_final_printing_candidate": "BILLS-119hr6028eh",
+      "final_identity_status": "final_identity_unresolved",
+      "selection_reason": "Latest offered text is engrossed House; the already qualified ih body is superseded in this snapshot. No terminal final bill is established. Do not pair the introduced body with the passed-House summary.",
+      "selected_candidate_summary_stage": "53",
+      "selected_candidate_summary": {
+        "version_code": "53",
+        "action_date": "2026-06-08",
+        "action_desc": "Passed House",
+        "update_date": "2026-06-12T20:14:08Z",
+        "last_summary_update_date": null,
+        "source_schema_version": "3.0.0",
+        "text_sha256": "sha256:69f52882c20473275989e46239fc7955f722bb32e99da8fb564617b39223f8f1",
+        "ordinal": 1,
+        "source_locator": "/bill/summaries/summary[2]"
+      },
+      "observed_summary_stages": [
+        "00",
+        "53"
+      ],
+      "summary_file_state": "present_nonempty",
+      "summary_correspondence": "unqualified",
+      "printing_body_evidence": null,
+      "printing_body_evidence_state": "not_selected_for_body_or_metadata_in_this_investigation",
+      "native_printing_dates": [],
+      "printing_evidence_status": null,
+      "first_text_publication": {
+        "status": "unknown",
+        "reason": "Exact candidate body and first-publication evidence were not selected; not evidence of publisher absence."
+      },
+      "first_corresponding_summary_publication": {
+        "status": "unknown",
+        "reason": "Retained stage clocks are updates, with no requested successful absence/presence bracket or qualified stage-specific first-publication event. Only earlier-stage observations cannot establish global summary absence."
+      },
+      "measurement_eligible": false,
+      "lag_classification": "unknown",
+      "lag_value": null,
+      "lag_range": null,
+      "source_witness": {
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/7a/7a8b53165be6e5686f05cc7d672a921d6838c6c2112fa5107b03ebb3628387f2",
+        "container_sha256": "sha256:7a8b53165be6e5686f05cc7d672a921d6838c6c2112fa5107b03ebb3628387f2",
+        "container_bytes": 31777573,
+        "member": "BILLSTATUS-119hr6028.xml",
+        "member_sha256": "sha256:df8b68b8fffa1112623cecac0d24f1cd0cc80ca3affdab2d10191c9512f66429",
+        "decoded_bytes": 23371,
+        "manifest": {
+          "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-archive-extension.json",
+          "bytes": 4927,
+          "sha256": "sha256:c5d92cc5a10ccf294f6b7c8a4c1f3ef480a2d718ccc5d8075813791834bc8bc0"
+        },
+        "archive_identity_check": "Prior qualified manifest pin and present length; ZIP CRC plus new member SHA-256. Container not rehashed.",
+        "acquired_at": null,
+        "source_url": null
+      },
+      "source_schema_version": "3.0.0",
+      "visual_review": {
+        "bill_id": "119-hr-6028",
+        "selection_ordinal": 2,
+        "image": {
+          "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/original-119-hr-6028-2.png",
+          "bytes": 261714,
+          "sha256": "sha256:9a30a5549f4480a1fa503123629114ed803baa8f90e45453e7f8602b4c22a399"
+        },
+        "line_start": 402,
+        "line_end": 417,
+        "witness": {
+          "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/7a/7a8b53165be6e5686f05cc7d672a921d6838c6c2112fa5107b03ebb3628387f2",
+          "container_sha256": "sha256:7a8b53165be6e5686f05cc7d672a921d6838c6c2112fa5107b03ebb3628387f2",
+          "container_bytes": 31777573,
+          "member": "BILLSTATUS-119hr6028.xml",
+          "member_sha256": "sha256:df8b68b8fffa1112623cecac0d24f1cd0cc80ca3affdab2d10191c9512f66429",
+          "decoded_bytes": 23371,
+          "manifest": {
+            "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-archive-extension.json",
+            "bytes": 4927,
+            "sha256": "sha256:c5d92cc5a10ccf294f6b7c8a4c1f3ef480a2d718ccc5d8075813791834bc8bc0"
+          },
+          "archive_identity_check": "Prior qualified manifest pin and present length; ZIP CRC plus new member SHA-256. Container not rehashed.",
+          "acquired_at": null,
+          "source_url": null
+        }
+      }
+    },
+    {
+      "bill_id": "119-hr-3426",
+      "selected_final_printing_candidate": "BILLS-119hr3426rfs2",
+      "final_identity_status": "final_identity_unresolved",
+      "selection_reason": "Keep exact numbered rfs2 identity, distinct from rfs. The current-Congress bill has no terminal finalness proof; only introduced-stage summary 00 is in the selected complete member.",
+      "selected_candidate_summary_stage": null,
+      "selected_candidate_summary": null,
+      "observed_summary_stages": [
+        "00"
+      ],
+      "summary_file_state": "present_nonempty",
+      "summary_correspondence": "only_earlier_stage_observed",
+      "printing_body_evidence": {
+        "package_id": "BILLS-119hr3426rfs2",
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/3f/3fc874bcfc32edf4014d8b4a2f6d03c80b1d3bfb55ab2a9d491a44fda69922e8",
+        "sha256": "sha256:3fc874bcfc32edf4014d8b4a2f6d03c80b1d3bfb55ab2a9d491a44fda69922e8",
+        "bytes": 7367,
+        "body_observed_at": null,
+        "action_version_date": "2025-12-01T05:00:00Z",
+        "version_code": "rfs2",
+        "body_observation_limit": "Exact original retained; original acquisition instant unavailable."
+      },
+      "printing_body_evidence_state": "retained_pinned_prior_review",
+      "native_printing_dates": [
+        {
+          "attributes": [],
+          "field": "SUMMARY/dateIssued",
+          "locator": "/dateIssued",
+          "observed_at": "2026-11-06T18:14:16.084636Z",
+          "precision": "day",
+          "source_sha256": "sha256:1333f04d46dcf825d70eab866144811e501131d15a2abd0f77cbcdb680812536",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hr3426rfs2/summary",
+          "state": "value",
+          "value": "2025-12-01"
+        },
+        {
+          "attributes": [],
+          "field": "SUMMARY/lastModified",
+          "locator": "/lastModified",
+          "observed_at": "2026-11-06T18:14:16.084636Z",
+          "precision": "second",
+          "source_sha256": "sha256:1333f04d46dcf825d70eab866144811e501131d15a2abd0f77cbcdb680812536",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hr3426rfs2/summary",
+          "state": "value",
+          "value": "2026-07-10T22:07:33Z"
+        },
+        {
+          "attributes": [
+            {
+              "name": "encoding",
+              "value": "w3cdtf"
+            }
+          ],
+          "field": "MODS/originInfo/dateIssued",
+          "locator": "element-child-path:1/11/2",
+          "observed_at": "2026-11-06T18:14:16.381953Z",
+          "precision": "day",
+          "source_sha256": "sha256:a79a5c6ce25c58a1274b20d1063a352c3f8d59bc0be01ffef72d9ad90cc667e2",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hr3426rfs2/mods",
+          "state": "value",
+          "value": "2025-12-01"
+        },
+        {
+          "attributes": [
+            {
+              "name": "encoding",
+              "value": "w3cdtf"
+            }
+          ],
+          "field": "MODS/recordInfo/recordCreationDate",
+          "locator": "element-child-path:1/26/2",
+          "observed_at": "2026-11-06T18:14:16.381953Z",
+          "precision": "day",
+          "source_sha256": "sha256:a79a5c6ce25c58a1274b20d1063a352c3f8d59bc0be01ffef72d9ad90cc667e2",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hr3426rfs2/mods",
+          "state": "value",
+          "value": "2025-12-02"
+        },
+        {
+          "attributes": [
+            {
+              "name": "encoding",
+              "value": "w3cdtf"
+            }
+          ],
+          "field": "MODS/recordInfo/recordChangeDate",
+          "locator": "element-child-path:1/26/3",
+          "observed_at": "2026-11-06T18:14:16.381953Z",
+          "precision": "day",
+          "source_sha256": "sha256:a79a5c6ce25c58a1274b20d1063a352c3f8d59bc0be01ffef72d9ad90cc667e2",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hr3426rfs2/mods",
+          "state": "value",
+          "value": "2026-07-10"
+        },
+        {
+          "attributes": [],
+          "field": "MODS/extension/dateIngested",
+          "locator": "element-child-path:1/7/6",
+          "observed_at": "2026-11-06T18:14:16.381953Z",
+          "precision": "day",
+          "source_sha256": "sha256:a79a5c6ce25c58a1274b20d1063a352c3f8d59bc0be01ffef72d9ad90cc667e2",
+          "source_url": "https://api.govinfo.gov/packages/BILLS-119hr3426rfs2/mods",
+          "state": "value",
+          "value": "2025-12-02"
+        }
+      ],
+      "printing_evidence_status": "stable_summary_bracket_body_unverified",
+      "first_text_publication": {
+        "status": "unknown",
+        "reason": "Later native issue/ingest/update metadata and captures do not bind an original first-publication event to these exact final bytes."
+      },
+      "first_corresponding_summary_publication": {
+        "status": "unknown",
+        "reason": "Retained stage clocks are updates, with no requested successful absence/presence bracket or qualified stage-specific first-publication event. Only earlier-stage observations cannot establish global summary absence."
+      },
+      "measurement_eligible": false,
+      "lag_classification": "unknown",
+      "lag_value": null,
+      "lag_range": null,
+      "source_witness": {
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/7a/7a8b53165be6e5686f05cc7d672a921d6838c6c2112fa5107b03ebb3628387f2",
+        "container_sha256": "sha256:7a8b53165be6e5686f05cc7d672a921d6838c6c2112fa5107b03ebb3628387f2",
+        "container_bytes": 31777573,
+        "member": "BILLSTATUS-119hr3426.xml",
+        "member_sha256": "sha256:def222e997018709ce12ecdea282e2a30049e7f3f0a41d33d0d7e93c11b35f85",
+        "decoded_bytes": 24161,
+        "manifest": {
+          "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-archive-extension.json",
+          "bytes": 4927,
+          "sha256": "sha256:c5d92cc5a10ccf294f6b7c8a4c1f3ef480a2d718ccc5d8075813791834bc8bc0"
+        },
+        "archive_identity_check": "Prior qualified manifest pin and present length; ZIP CRC plus new member SHA-256. Container not rehashed.",
+        "acquired_at": null,
+        "source_url": null
+      },
+      "source_schema_version": "3.0.0",
+      "visual_review": {
+        "bill_id": "119-hr-3426",
+        "selection_ordinal": 3,
+        "image": {
+          "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/original-119-hr-3426-3.png",
+          "bytes": 122849,
+          "sha256": "sha256:ddc6cbad4803be9ff2482ff9cfdfb84db74b7479c5ef133dc7aa798f76c04312"
+        },
+        "line_start": 455,
+        "line_end": 463,
+        "witness": {
+          "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/7a/7a8b53165be6e5686f05cc7d672a921d6838c6c2112fa5107b03ebb3628387f2",
+          "container_sha256": "sha256:7a8b53165be6e5686f05cc7d672a921d6838c6c2112fa5107b03ebb3628387f2",
+          "container_bytes": 31777573,
+          "member": "BILLSTATUS-119hr3426.xml",
+          "member_sha256": "sha256:def222e997018709ce12ecdea282e2a30049e7f3f0a41d33d0d7e93c11b35f85",
+          "decoded_bytes": 24161,
+          "manifest": {
+            "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-archive-extension.json",
+            "bytes": 4927,
+            "sha256": "sha256:c5d92cc5a10ccf294f6b7c8a4c1f3ef480a2d718ccc5d8075813791834bc8bc0"
+          },
+          "archive_identity_check": "Prior qualified manifest pin and present length; ZIP CRC plus new member SHA-256. Container not rehashed.",
+          "acquired_at": null,
+          "source_url": null
+        }
+      }
+    },
+    {
+      "bill_id": "113-hr-4200",
+      "selected_final_printing_candidate": "BILLS-113hr4200rfs",
+      "final_identity_status": "final_identity_unresolved",
+      "selection_reason": "This closed-Congress source lists rfs last. Treat it as the latest offered candidate, not proof of exhaustive printing history. Passed-House-without-amendment summary 81 does not itself bind to the exact rfs bytes.",
+      "selected_candidate_summary_stage": "81",
+      "selected_candidate_summary": {
+        "version_code": "81",
+        "action_date": "2014-12-02",
+        "action_desc": "Passed House without amendment",
+        "update_date": "2014-12-02T11:35:43Z",
+        "last_summary_update_date": "2014-12-03T19:28:27Z",
+        "source_schema_version": "1.0.0",
+        "text_sha256": "sha256:cbfb66ec0336b983406c84b5a58f3b597a224ade458c6ec9df62e7d23727a112",
+        "ordinal": 1,
+        "source_locator": "/bill/summaries/billSummaries/item[2]"
+      },
+      "observed_summary_stages": [
+        "00",
+        "81"
+      ],
+      "summary_file_state": "present_nonempty",
+      "summary_correspondence": "unqualified",
+      "printing_body_evidence": null,
+      "printing_body_evidence_state": "not_selected_for_body_or_metadata_in_this_investigation",
+      "native_printing_dates": [],
+      "printing_evidence_status": null,
+      "first_text_publication": {
+        "status": "unknown",
+        "reason": "Exact candidate body and first-publication evidence were not selected; not evidence of publisher absence."
+      },
+      "first_corresponding_summary_publication": {
+        "status": "unknown",
+        "reason": "Retained stage clocks are updates, with no requested successful absence/presence bracket or qualified stage-specific first-publication event. Only earlier-stage observations cannot establish global summary absence."
+      },
+      "measurement_eligible": false,
+      "lag_classification": "unknown",
+      "lag_value": null,
+      "lag_range": null,
+      "source_witness": {
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/01/0182b94de536510f06828eb33cdfda80d2cf4efb5d8345bc2799c1d63592bbc5",
+        "container_sha256": "sha256:0182b94de536510f06828eb33cdfda80d2cf4efb5d8345bc2799c1d63592bbc5",
+        "container_bytes": 24696449,
+        "member": "BILLSTATUS-113hr4200.xml",
+        "member_sha256": "sha256:5ded9108df5a08e1a0653f5cdb5cfeb5121c838700100d385ca609098abb78c2",
+        "decoded_bytes": 25948,
+        "manifest": {
+          "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-archives.json",
+          "bytes": 52008,
+          "sha256": "sha256:b3183da6d5b72e929edf9cddb81b02d2d0df88e9a1756b830bff9e671fb222d2"
+        },
+        "archive_identity_check": "Prior qualified manifest pin and present length; ZIP CRC plus new member SHA-256. Container not rehashed.",
+        "acquired_at": null,
+        "source_url": "https://www.govinfo.gov/bulkdata/BILLSTATUS/113/hr/BILLSTATUS-113-hr.zip"
+      },
+      "source_schema_version": "1.0.0",
+      "visual_review": {
+        "bill_id": "113-hr-4200",
+        "selection_ordinal": 4,
+        "image": {
+          "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/original-113-hr-4200-4.png",
+          "bytes": 158398,
+          "sha256": "sha256:7a7531e4d903a0aa9a920ee53f05c0f5e41106c9ebde1a67641a44db7f00ee77"
+        },
+        "line_start": 571,
+        "line_end": 596,
+        "witness": {
+          "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/01/0182b94de536510f06828eb33cdfda80d2cf4efb5d8345bc2799c1d63592bbc5",
+          "container_sha256": "sha256:0182b94de536510f06828eb33cdfda80d2cf4efb5d8345bc2799c1d63592bbc5",
+          "container_bytes": 24696449,
+          "member": "BILLSTATUS-113hr4200.xml",
+          "member_sha256": "sha256:5ded9108df5a08e1a0653f5cdb5cfeb5121c838700100d385ca609098abb78c2",
+          "decoded_bytes": 25948,
+          "manifest": {
+            "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-archives.json",
+            "bytes": 52008,
+            "sha256": "sha256:b3183da6d5b72e929edf9cddb81b02d2d0df88e9a1756b830bff9e671fb222d2"
+          },
+          "archive_identity_check": "Prior qualified manifest pin and present length; ZIP CRC plus new member SHA-256. Container not rehashed.",
+          "acquired_at": null,
+          "source_url": "https://www.govinfo.gov/bulkdata/BILLSTATUS/113/hr/BILLSTATUS-113-hr.zip"
+        }
+      }
+    },
+    {
+      "bill_id": "119-s-1377",
+      "selected_final_printing_candidate": "BILLS-119s1377rfh",
+      "final_identity_status": "final_identity_unresolved",
+      "selection_reason": "Latest offered text is referred House; only introduced-Senate summary 00 is in this source. Current-Congress finalness and correspondence remain unqualified.",
+      "selected_candidate_summary_stage": null,
+      "selected_candidate_summary": null,
+      "observed_summary_stages": [
+        "00"
+      ],
+      "summary_file_state": "present_nonempty",
+      "summary_correspondence": "only_earlier_stage_observed",
+      "printing_body_evidence": null,
+      "printing_body_evidence_state": "not_selected_for_body_or_metadata_in_this_investigation",
+      "native_printing_dates": [],
+      "printing_evidence_status": null,
+      "first_text_publication": {
+        "status": "unknown",
+        "reason": "Exact candidate body and first-publication evidence were not selected; not evidence of publisher absence."
+      },
+      "first_corresponding_summary_publication": {
+        "status": "unknown",
+        "reason": "Retained stage clocks are updates, with no requested successful absence/presence bracket or qualified stage-specific first-publication event. Only earlier-stage observations cannot establish global summary absence."
+      },
+      "measurement_eligible": false,
+      "lag_classification": "unknown",
+      "lag_value": null,
+      "lag_range": null,
+      "source_witness": {
+        "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/0c/0c467e90880c2b2d0a26fcb430ddc2feebf317176272dccd00bccf71a508f7c5",
+        "container_sha256": "sha256:0c467e90880c2b2d0a26fcb430ddc2feebf317176272dccd00bccf71a508f7c5",
+        "container_bytes": 15348,
+        "member": null,
+        "member_sha256": "sha256:0c467e90880c2b2d0a26fcb430ddc2feebf317176272dccd00bccf71a508f7c5",
+        "decoded_bytes": 15348,
+        "manifest": {
+          "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-xml.json",
+          "bytes": 10755,
+          "sha256": "sha256:2f686874e9395d4ef9dbab37401804fc66e134c45e5886b7d95571245f1e3542"
+        },
+        "archive_identity_check": "New complete-object SHA-256 equals retained pin.",
+        "acquired_at": null,
+        "source_url": null
+      },
+      "source_schema_version": "3.0.0",
+      "visual_review": {
+        "bill_id": "119-s-1377",
+        "selection_ordinal": 5,
+        "image": {
+          "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/original-119-s-1377-5.png",
+          "bytes": 83232,
+          "sha256": "sha256:1a29cea442197fb7a161c6a488d707961709c7ceaf4fce2028df7b089c7300a9"
+        },
+        "line_start": 302,
+        "line_end": 310,
+        "witness": {
+          "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/0c/0c467e90880c2b2d0a26fcb430ddc2feebf317176272dccd00bccf71a508f7c5",
+          "container_sha256": "sha256:0c467e90880c2b2d0a26fcb430ddc2feebf317176272dccd00bccf71a508f7c5",
+          "container_bytes": 15348,
+          "member": null,
+          "member_sha256": "sha256:0c467e90880c2b2d0a26fcb430ddc2feebf317176272dccd00bccf71a508f7c5",
+          "decoded_bytes": 15348,
+          "manifest": {
+            "path": "/Users/mikewolfd/Work/worktrees/revision-retention-20261106/rebuild/crs/bill-status-xml.json",
+            "bytes": 10755,
+            "sha256": "sha256:2f686874e9395d4ef9dbab37401804fc66e134c45e5886b7d95571245f1e3542"
+          },
+          "archive_identity_check": "New complete-object SHA-256 equals retained pin.",
+          "acquired_at": null,
+          "source_url": null
+        }
+      }
+    }
+  ],
+  "repeat_witness": {
+    "selections": [
+      0,
+      1
+    ],
+    "same_member_sha256": true,
+    "limit": "Different retained ZIP containers contain identical bill XML. Capture times and complete HTTP response status are not established, so these do not form an availability interval."
+  },
+  "raw_review": "All six selected summary original-source images actually viewed on 2026-11-06. Exact prior bill-body/metadata visual review reused from ss-m4r1; raw originals unchanged.",
+  "retained_evidence_root": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1",
+  "evidence_pins": [
+    {
+      "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/ADMISSION.json",
+      "bytes": 1470,
+      "sha256": "sha256:c14b720b48ac2b8352e444f785f3f2b7c5f2af7e5e3dbaddc5aaac06fd098670"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/selected-originals.json",
+      "bytes": 26638,
+      "sha256": "sha256:1e6b14f4ca753adcf64dde22a2320dbdf38f4ff8f8a4a0bd9ecabb0df1966a2f"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/visual-originals.json",
+      "bytes": 7755,
+      "sha256": "sha256:a561fe67cafda4fab53f174eeb0e348631cb5179865c69392471d5bab0dea254"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-azn1/catalog-witnesses.json",
+      "bytes": 691735,
+      "sha256": "sha256:0e7452aa48b746d28ab24aa874a949073d324a0dca3cc5f681d0beac439df5fb"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-m4r1/REPORT.md",
+      "bytes": 3322,
+      "sha256": "sha256:b75e2f28b541408aa3ec18313d48923f343f9a021e3685a81001cb473dba501c"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-m4r1/VISUAL-REVIEW.md",
+      "bytes": 5266,
+      "sha256": "sha256:17cf0b9d0c83c36f2375ce6b3df1f431a9a5739b611012972c4039261827fd04"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-m4r1/metadata-captures.json",
+      "bytes": 5967,
+      "sha256": "sha256:2410286802805632a381d33bc0bef1c7d7d22691e38128a67d4e9aa4d0929efa"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/worktrees/crs-depth-p1-20261106/evidence/ss-m4r1/result.json",
+      "bytes": 14359,
+      "sha256": "sha256:00a5e476f9a30c85cad3a62494ca2362f1827302bfe9715b55f46fb1bb3977a6"
+    }
+  ],
+  "processing_source_pins": [
+    {
+      "path": "/Users/mikewolfd/.codex/worktrees/crs-dates-docs/spicy-docs/src/spicy_docs/sources/congress/bill_status.py",
+      "bytes": 33324,
+      "sha256": "sha256:7f375ca6b0a339564869b637bf89ae40522dd483555617c3d855f2c1edbbceb3"
+    }
+  ],
+  "source_heads_at_probe_completion": {
+    "/Users/mikewolfd/.codex/worktrees/crs-dates-docs/spicy-docs": "4d0d2ea613ee84fe6a1df9e006f7317e07b9824e",
+    "/Users/mikewolfd/.codex/worktrees/bill-evidence-regs/spicy-regs": "17dbcc198f4544f5da67be6c8b5d32d215c34547"
+  },
+  "resource_observations": {
+    "decoded_original_bytes": 151218,
+    "original_records": 6,
+    "publisher_data_requests": 0,
+    "elapsed_seconds": 1.0850323750055395,
+    "peak_rss_bytes": 63504384
+  },
+  "missing_input_owners": [
+    {
+      "owner": "SpicyDocs source acquisition and literal reading",
+      "needed": "Exact final-printing original, source-backed publication event or qualified availability bracket, original capture receipts, and completeness witnesses. Preserve first evidence through later republication."
+    },
+    {
+      "owner": "SpicyDocs CRS/BILLSUM acquisition and literal reading",
+      "needed": "Stage-specific first-publication evidence or requested complete successful before/after observations; BILLSUM bill-file orig-publish-date alone cannot timestamp a later summary item."
+    },
+    {
+      "owner": "SpicyRegs legislative analysis",
+      "needed": "Reviewed selection rule for finalness and exact printing-to-summary-stage correspondence; implement a precision-aware recipe only after real endpoint evidence permits a result."
+    }
+  ],
+  "primary_sources_consulted": [
+    {
+      "url": "https://github.com/LibraryOfCongress/api.congress.gov/blob/main/Documentation/BillEndpoint.md#text-level",
+      "checked": "2026-11-06",
+      "meaning": "Text date belongs to action, not printing; summary update may be publication or republication."
+    },
+    {
+      "url": "https://github.com/LibraryOfCongress/api.congress.gov/blob/main/Documentation/SummariesEndpoint.md",
+      "checked": "2026-11-06",
+      "meaning": "Summary stage is action-associated; lastSummaryUpdateDate includes republication."
+    },
+    {
+      "url": "https://github.com/usgpo/bulk-data/blob/main/Bills-Summary-XML-User-Guide.md#22-attributes",
+      "checked": "2026-11-06",
+      "meaning": "orig-publish-date is a day-precision item attribute for first publication of the bill summary file; summary-id and update-date belong to individual summaries. The guide sample has multiple stages with distinct dates."
+    }
+  ]
+}
