@@ -436,6 +436,34 @@ def test_prior_rows_are_backfilled_as_their_package_and_none_is_dropped(tmp_path
     assert again.requested == [REFUSED]
 
 
+def test_legacy_part_backfill_preserves_each_publisher_revision(tmp_path):
+    """An unread legacy package keeps both dated versions when its part id is recovered."""
+    revisions = ("2026-08-18T12:00:00Z", "2026-09-18T12:00:00Z")
+    reports = [
+        {"package_id": UNREAD, "last_modified": revision, "title": f"Retained title {index}"}
+        for index, revision in enumerate(revisions)
+    ]
+    sections = [
+        {"package_id": UNREAD, "last_modified": revision, "seq": "0", "body": f"Retained text {index}"}
+        for index, revision in enumerate(revisions)
+    ]
+    _write_prior(tmp_path, "committee_reports", COMMITTEE_REPORTS.columns, reports)
+    _write_prior(tmp_path, "report_sections", REPORT_SECTIONS.columns, sections)
+    _checkpoints(tmp_path, {UNREAD: "complete"})
+    acquirer = ReportsAcquirer()
+
+    tables = _run(tmp_path, acquirer)
+
+    assert acquirer.requested == []
+    for name, expected, content in (
+        ("committee_reports", reports, "title"),
+        ("report_sections", sections, "body"),
+    ):
+        assert sorted(
+            (row["package_id"], row["part_id"], row["last_modified"], row[content]) for row in tables[name]
+        ) == [(UNREAD, UNREAD, row["last_modified"], row[content]) for row in expected]
+
+
 def _two_part_priors(directory):
     """Three prior part rows of ``TWO_PARTS``, one a part its record no longer states, each with a block."""
     parts = {f"{TWO_PARTS}-pt{number}": str(number) for number in (1, 2, 3)}

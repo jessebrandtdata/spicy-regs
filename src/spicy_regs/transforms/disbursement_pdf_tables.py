@@ -10,12 +10,17 @@ from pathlib import Path
 from spicy_regs.parquet_rows import write_rows
 from spicy_regs.pipelines.congressional_disbursement_pages import (
     pin,
+    processing_inputs,
     retained_implementation,
     selected_sources,
     source_implementation,
     verify_pin,
 )
-from spicy_regs.pipelines.disbursement_page_profiles import record_kind, validate_page_content
+from spicy_regs.pipelines.disbursement_page_profiles import (
+    record_kind,
+    validate_page_content,
+    read_retained_summary_observation,
+)
 
 
 def json_value(value):
@@ -73,6 +78,7 @@ def pages(source, entry):
     pages = records = repairs = 0
     selected = entry.get("selected_pages")
     profile = entry.get("reading_profile", "ledger")
+    observations = {item["page"]: item for item in source.get("structured_observations", [])}
     with gzip.open(verify_pin(entry["output"]), "rt", encoding="utf-8") as stream:
         for line in stream:
             page = json.loads(line)
@@ -88,6 +94,12 @@ def pages(source, entry):
             if page["physical_pages"] != entry.get("physical_pages", entry["pages"]):
                 raise ValueError("Disbursement PDF original physical page count differs from its manifest")
             validate_page_content(page, profile)
+            if expected_page in observations:
+                expected = read_retained_summary_observation(observations[expected_page])
+                if page != json.loads(json.dumps(expected)):
+                    raise ValueError("Structured page differs from its exact retained input and approved corrections")
+            elif page.get("structured_provenance"):
+                raise ValueError("Structured page lacks a selected retained observation")
             counts[page["status"]] += 1
             kinds.update(record_kind(row) for row in page["records"])
             records += len(page["records"])
@@ -135,7 +147,7 @@ def build_pdf_tables(
     retained_files = retained_implementation(manifest)
     for artifact in retained_files.values():
         evidence.retain_file(verify_pin(artifact), stage=chamber + "-reader-implementation")
-    used, partitions = [], set()
+    used, partitions, retained_processing = [], set(), set()
     for entry in entries:
         source = sources[entry["id"]]
         if entry.get("reading_profile", "ledger") != profile or entry.get("selected_pages") != source.get(
@@ -146,6 +158,11 @@ def build_pdf_tables(
             source, manifest["implementation"], retained_files=retained_files
         ):
             raise ValueError("Disbursement PDF source-specific reading implementation differs")
+        for artifact in processing_inputs(source):
+            identity = artifact["sha256"], artifact["bytes"]
+            if identity not in retained_processing:
+                evidence.retain_file(verify_pin(artifact), stage=chamber + "-structured-page-input")
+                retained_processing.add(identity)
         if entry["status"] != "read" or (entry["source_sha256"], entry["source_byte_size"]) != (
             source["source_sha256"],
             source["source_byte_size"],

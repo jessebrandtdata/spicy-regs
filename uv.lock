@@ -2131,14 +2131,14 @@ wheels = [
 
 [[package]]
 name = "spicy-docs"
-version = "0.70.0"
-source = { path = "vendor/spicy_docs-0.70.0-py3-none-any.whl" }
+version = "0.71.0"
+source = { path = "vendor/spicy_docs-0.71.0-py3-none-any.whl" }
 dependencies = [
     { name = "jsonschema" },
     { name = "rulespec-artifacts" },
 ]
 wheels = [
-    { filename = "spicy_docs-0.70.0-py3-none-any.whl", hash = "sha256:fa1b05a4e97e4d1b0de27b66dc58e08b74139fd8fc2463c8062bdb850e4ce27b" },
+    { filename = "spicy_docs-0.71.0-py3-none-any.whl", hash = "sha256:2146cb271d32b20c5620ba5b4c74d662f30379083cdc9d6df7cdc3114528ae3f" },
 ]
 
 [package.optional-dependencies]
@@ -2183,6 +2183,7 @@ requires-dist = [
     { name = "duckdb", marker = "extra == 'courtlistener-local'", specifier = ">=1.5.5,<2" },
     { name = "httpx", marker = "extra == 'acquisition'" },
     { name = "httpx", marker = "extra == 'pdf-gemini'", specifier = ">=0.28,<1" },
+    { name = "httpx", marker = "extra == 'pdf-openai'", specifier = ">=0.28,<1" },
     { name = "indexed-bzip2", marker = "extra == 'courtlistener-local'", specifier = ">=1.7,<2" },
     { name = "jsonschema", specifier = ">=4.23" },
     { name = "loguru", marker = "extra == 'acquisition'" },
@@ -2202,7 +2203,7 @@ requires-dist = [
     { name = "tqdm", marker = "extra == 'acquisition'" },
     { name = "warcio", marker = "extra == 'acquisition'", specifier = "==1.7.5" },
 ]
-provides-extras = ["acquisition", "bill-diff", "courtlistener-local", "html", "pdf", "pdf-apple", "pdf-docling", "pdf-gemini", "pdf-mlx", "pdf-pypdf", "pdf-rapidocr", "public-table", "reconstruct", "record-speeches", "yaml"]
+provides-extras = ["acquisition", "bill-diff", "courtlistener-local", "html", "pdf", "pdf-apple", "pdf-docling", "pdf-gemini", "pdf-mlx", "pdf-openai", "pdf-pypdf", "pdf-rapidocr", "public-table", "reconstruct", "record-speeches", "yaml"]
 
 [[package]]
 name = "spicy-regs"
@@ -2289,7 +2290,7 @@ requires-dist = [
     { name = "rulespec-artifacts", marker = "extra == 'source-readers'", path = "vendor/rulespec_artifacts-1.1.2-py3-none-any.whl" },
     { name = "sentence-transformers", marker = "extra == 'embed'" },
     { name = "smart-open", extras = ["s3"], marker = "extra == 'source-readers'", specifier = "==8.0.1" },
-    { name = "spicy-docs", extras = ["acquisition", "html", "pdf", "pdf-pypdf", "bill-diff", "courtlistener-local", "yaml"], marker = "extra == 'source-readers'", path = "vendor/spicy_docs-0.70.0-py3-none-any.whl" },
+    { name = "spicy-docs", extras = ["acquisition", "html", "pdf", "pdf-pypdf", "bill-diff", "courtlistener-local", "yaml"], marker = "extra == 'source-readers'", path = "vendor/spicy_docs-0.71.0-py3-none-any.whl" },
     { name = "torch", marker = "extra == 'embed'" },
     { name = "tqdm" },
 ]
@@ -2314,7 +2315,7 @@ source-readers = [
     { name = "pypdf", specifier = "==6.14.2" },
     { name = "rulespec-artifacts", path = "vendor/rulespec_artifacts-1.1.2-py3-none-any.whl" },
     { name = "smart-open", extras = ["s3"], specifier = "==8.0.1" },
-    { name = "spicy-docs", extras = ["acquisition", "html", "pdf", "pdf-pypdf", "bill-diff", "courtlistener-local", "yaml"], path = "vendor/spicy_docs-0.70.0-py3-none-any.whl" },
+    { name = "spicy-docs", extras = ["acquisition", "html", "pdf", "pdf-pypdf", "bill-diff", "courtlistener-local", "yaml"], path = "vendor/spicy_docs-0.71.0-py3-none-any.whl" },
 ]
 
 [[package]]

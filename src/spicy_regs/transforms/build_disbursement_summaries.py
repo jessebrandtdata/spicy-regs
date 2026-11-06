@@ -5,7 +5,7 @@ from datetime import date
 from functools import partial
 from pathlib import Path
 
-from spicy_regs.schemas.disbursement_summaries import family_tables
+from spicy_regs.schemas.disbursement_summaries import FORMULA_COLUMNS, family_tables
 from spicy_regs.transforms.disbursement_pdf_tables import (
     build_pdf_tables,
     exact_decimal,
@@ -72,6 +72,9 @@ def summary_rows(source, entry, table, *, chamber, profile, tables):
                     state_literal=row["values"]["state_literal"],
                     district_literal=row["values"]["district_literal"],
                 )
+            elif profile == "allowance-formula":
+                context.update({name: row.get(source_key) for name, source_key, _ in FORMULA_COLUMNS})
+                context["formula_effective_date"] = _date(row.get("effective_date"))
             if table == tables[0]:
                 yield {
                     **context,
@@ -81,6 +84,10 @@ def summary_rows(source, entry, table, *, chamber, profile, tables):
                 }
                 continue
             fields = PROFILE_VALUES.get(profile) or {key: (2, "USD") for key in row["values"]}
+            if profile == "allowance-formula":
+                # A formula's omitted bound or unsupplied external input is not
+                # a blank numeric cell. Emit only its observed numeric fields.
+                fields = {key: (spec["scale"], spec["unit"]) for key, spec in row["value_specs"].items()}
             for index, (field, (scale, unit)) in enumerate(fields.items(), 1):
                 value = row["values"][field]
                 raw = row["raw_fields"][field]

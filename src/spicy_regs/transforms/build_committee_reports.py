@@ -640,6 +640,8 @@ def build_committee_reports(
     logger.info("Committee reports: {} cover links; agenda deferred (no verified meeting-to-jacket join)", len(link_rows))
     # Replace only the successfully read package revision. A removed part or
     # child stays in its earlier revision; failed and unread scopes stay whole.
+    # Legacy report rows predate part_id and represent the package's one part.
+    # Keep that established backfill alongside the publisher revision key.
     replaced = {"committee_reports": evaluated_reports, "report_sections": evaluated_reports,
                 "committee_report_cbo_letters": evaluated_reports,
                 "hearing_bill_links": evaluated_hearings, "hearing_transcripts": evaluated_hearings}

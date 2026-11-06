@@ -25097,6 +25097,715 @@
       "source_page"
     ]
   },
+  "house_allowance_formula_rows": {
+    "table": "house_allowance_formula_rows",
+    "label": "House allowance formula rows",
+    "summary": "Distinct source formula parameters, relationships, adjustments and external-input references with original wording and source witnesses.",
+    "coverage": "Window. Explicitly selected retained native House formula occurrences and any declared adjacent context pages. Historical scanned formulas and unselected pages remain outside this profile's qualification.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Repeated report formulas remain separate occurrences. Preserve target years, adjustment basis years, external-input years and amended periods. Source-bound relationship corrections retain printed literals and evidence. Unstated bounds are absent, not zero; external inputs remain unsupplied. Newer unit-incomplete travel wording is retained without inventing monetary conversions or replacement annual allowances.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned allowance-formula reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Null for formula text; no ruled-table geometry is invented."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Null for formula text; use formula_occurrence and retained native span witnesses."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "Null for formula text; exact displayed native blocks are retained in the source record."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "allowance_formula; distinct from annual allowance observations and ledger payments."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Formula parameter, rate band, adjustment, relationship, context, external-input reference or printed authority."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Readable source-owned parameter label; not a member name or an annual allowance amount."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly printed for an amended formula section; distinct from the containing report interval and governed annual year."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly printed for an amended formula section; null when no interval is stated."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether the observed formula-section introduction explicitly identifies an amendment."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "values_json",
+        "column_type": "VARCHAR",
+        "description": "Source reader's normalized values, including exact decimal strings and explicit nulls."
+      },
+      {
+        "column_name": "raw_fields_json",
+        "column_type": "VARCHAR",
+        "description": "Literal original fields before numeric normalization; blanks remain distinct from printed zeros."
+      },
+      {
+        "column_name": "source_row_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source-owned summary record, retaining heading, coordinates, word references and interpretation evidence."
+      },
+      {
+        "column_name": "formula_occurrence",
+        "column_type": "BIGINT",
+        "description": "Zero-based formula observation position within its physical page; repeated formula occurrences remain separate."
+      },
+      {
+        "column_name": "formula_parameter",
+        "column_type": "VARCHAR",
+        "description": "Source-owned formula parameter, rate band, relationship, context or external-input reference name."
+      },
+      {
+        "column_name": "formula_component",
+        "column_type": "VARCHAR",
+        "description": "Formula component governed by this observation, such as travel, staffing or official_mail."
+      },
+      {
+        "column_name": "formula_target_year",
+        "column_type": "INTEGER",
+        "description": "Governed year supported by the selected native formula or an explicitly retained adjacent annual-heading witness. Null when that context was not observed."
+      },
+      {
+        "column_name": "formula_target_year_basis",
+        "column_type": "VARCHAR",
+        "description": "Additional source-context basis where the governed year is read from a separately retained adjacent annual title; null for the ordinary printed formula context."
+      },
+      {
+        "column_name": "formula_basis_year",
+        "column_type": "INTEGER",
+        "description": "Prior authorization, member or district amount year used as the adjustment basis; distinct from the governed target year."
+      },
+      {
+        "column_name": "formula_reference_year",
+        "column_type": "INTEGER",
+        "description": "Normalized funding, component-basis, staffing or salary-analysis reference year, according to formula_parameter."
+      },
+      {
+        "column_name": "printed_reference_year",
+        "column_type": "VARCHAR",
+        "description": "Exact reference-year literal before a reviewed source-bound correction."
+      },
+      {
+        "column_name": "formula_operation",
+        "column_type": "VARCHAR",
+        "description": "Normalized source relationship, such as product or sum; null where the literal expression is not qualified for execution."
+      },
+      {
+        "column_name": "printed_operation",
+        "column_type": "VARCHAR",
+        "description": "Literal source operation or complete expression before a reviewed relationship correction."
+      },
+      {
+        "column_name": "formula_evaluation_status",
+        "column_type": "VARCHAR",
+        "description": "Why the relationship has not been evaluated, including missing external inputs or unit-incomplete source wording."
+      },
+      {
+        "column_name": "formula_approximate",
+        "column_type": "BOOLEAN",
+        "description": "Whether the source describes an adjustment as approximate; null for other observations."
+      },
+      {
+        "column_name": "lower_inclusive",
+        "column_type": "BOOLEAN",
+        "description": "Whether the printed mileage lower bound is inclusive; null when no lower bound is stated."
+      },
+      {
+        "column_name": "upper_inclusive",
+        "column_type": "BOOLEAN",
+        "description": "Whether the printed mileage upper bound is inclusive; null when no upper bound is stated."
+      },
+      {
+        "column_name": "formula_bound",
+        "column_type": "VARCHAR",
+        "description": "Role of a single printed bound, such as the travel minimum's lower bound."
+      },
+      {
+        "column_name": "bound_inclusive",
+        "column_type": "BOOLEAN",
+        "description": "Whether a single printed limit is inclusive; null where no such limit is observed."
+      },
+      {
+        "column_name": "formula_effective_date",
+        "column_type": "DATE",
+        "description": "Complete source-stated effective date of an adjustment; never completed from a month-only statement."
+      },
+      {
+        "column_name": "formula_effective_month",
+        "column_type": "VARCHAR",
+        "description": "Source-stated effective year and month when no day is printed."
+      },
+      {
+        "column_name": "external_input_status",
+        "column_type": "VARCHAR",
+        "description": "not_supplied when the formula names an external input without providing its district-specific value."
+      },
+      {
+        "column_name": "external_input_year",
+        "column_type": "INTEGER",
+        "description": "Year explicitly attached to an external-input reference, where printed."
+      },
+      {
+        "column_name": "source_expression",
+        "column_type": "VARCHAR",
+        "description": "Whitespace-normalized source expression; exact native fragments and displayed block positions remain in source_row_json."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index"
+    ]
+  },
+  "house_allowance_formula_values": {
+    "table": "house_allowance_formula_values",
+    "label": "House allowance formula values",
+    "summary": "Exact observed formula quantities, mileage bounds and rates with their own units; no replacement annual allowances are calculated.",
+    "coverage": "Window. Explicitly selected retained native House formula occurrences and any declared adjacent context pages. Historical scanned formulas and unselected pages remain outside this profile's qualification.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Repeated report formulas remain separate occurrences. Preserve target years, adjustment basis years, external-input years and amended periods. Source-bound relationship corrections retain printed literals and evidence. Unstated bounds are absent, not zero; external inputs remain unsupplied. Newer unit-incomplete travel wording is retained without inventing monetary conversions or replacement annual allowances.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned allowance-formula reading selected for these pages."
+      },
+      {
+        "column_name": "summary_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based record position in this page reading; preserves repeated labels and funding years as separate occurrences."
+      },
+      {
+        "column_name": "source_table",
+        "column_type": "BIGINT",
+        "description": "Null for formula text; no ruled-table geometry is invented."
+      },
+      {
+        "column_name": "source_row",
+        "column_type": "BIGINT",
+        "description": "Null for formula text; use formula_occurrence and retained native span witnesses."
+      },
+      {
+        "column_name": "source_line",
+        "column_type": "BIGINT",
+        "description": "Null for formula text; exact displayed native blocks are retained in the source record."
+      },
+      {
+        "column_name": "summary_kind",
+        "column_type": "VARCHAR",
+        "description": "allowance_formula; distinct from annual allowance observations and ledger payments."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Formula parameter, rate band, adjustment, relationship, context, external-input reference or printed authority."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Printed Senate reporting office where the page reader has a source witness; otherwise null."
+      },
+      {
+        "column_name": "label",
+        "column_type": "VARCHAR",
+        "description": "Readable source-owned parameter label; not a member name or an annual allowance amount."
+      },
+      {
+        "column_name": "appropriation_title",
+        "column_type": "VARCHAR",
+        "description": "Complete printed appropriation title, including witnessed wrapped lines; repeated titles stay separate."
+      },
+      {
+        "column_name": "appropriation_number",
+        "column_type": "VARCHAR",
+        "description": "Literal printed appropriation account number, when present."
+      },
+      {
+        "column_name": "funding_period_literal",
+        "column_type": "VARCHAR",
+        "description": "Printed fiscal-year label, span or no-year designation, separate from the containing report interval."
+      },
+      {
+        "column_name": "summary_period_start",
+        "column_type": "DATE",
+        "description": "First day explicitly printed for an amended formula section; distinct from the containing report interval and governed annual year."
+      },
+      {
+        "column_name": "summary_period_end",
+        "column_type": "DATE",
+        "description": "Last day explicitly printed for an amended formula section; null when no interval is stated."
+      },
+      {
+        "column_name": "amended",
+        "column_type": "BOOLEAN",
+        "description": "Whether the observed formula-section introduction explicitly identifies an amendment."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      },
+      {
+        "column_name": "value_index",
+        "column_type": "INTEGER",
+        "description": "One-based numeric-column position in the source reader's declared value order."
+      },
+      {
+        "column_name": "value_name",
+        "column_type": "VARCHAR",
+        "description": "Numeric field within one formula observation, such as value, lower, upper or rate."
+      },
+      {
+        "column_name": "value_decimal",
+        "column_type": "DECIMAL(38,4)",
+        "description": "Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to interpret it. Null is not zero."
+      },
+      {
+        "column_name": "value_scale",
+        "column_type": "TINYINT",
+        "description": "Exact normalized fractional precision declared by this formula field; padding never rounds source digits."
+      },
+      {
+        "column_name": "value_unit",
+        "column_type": "VARCHAR",
+        "description": "Declared formula unit, including USD, USD/mile, miles, square_feet, percent, factor, trips, days, years or component counts. Do not sum across units or roles."
+      },
+      {
+        "column_name": "value_status",
+        "column_type": "VARCHAR",
+        "description": "parsed for an exact observed numeric field. Missing bounds and unsupplied external inputs produce no synthetic value row."
+      },
+      {
+        "column_name": "raw_value",
+        "column_type": "VARCHAR",
+        "description": "Exact printed numeric cell, including signs, commas and currency symbols where observed; null or empty for a source blank."
+      },
+      {
+        "column_name": "formula_occurrence",
+        "column_type": "BIGINT",
+        "description": "Zero-based formula observation position within its physical page; repeated formula occurrences remain separate."
+      },
+      {
+        "column_name": "formula_parameter",
+        "column_type": "VARCHAR",
+        "description": "Source-owned formula parameter, rate band, relationship, context or external-input reference name."
+      },
+      {
+        "column_name": "formula_component",
+        "column_type": "VARCHAR",
+        "description": "Formula component governed by this observation, such as travel, staffing or official_mail."
+      },
+      {
+        "column_name": "formula_target_year",
+        "column_type": "INTEGER",
+        "description": "Governed year supported by the selected native formula or an explicitly retained adjacent annual-heading witness. Null when that context was not observed."
+      },
+      {
+        "column_name": "formula_target_year_basis",
+        "column_type": "VARCHAR",
+        "description": "Additional source-context basis where the governed year is read from a separately retained adjacent annual title; null for the ordinary printed formula context."
+      },
+      {
+        "column_name": "formula_basis_year",
+        "column_type": "INTEGER",
+        "description": "Prior authorization, member or district amount year used as the adjustment basis; distinct from the governed target year."
+      },
+      {
+        "column_name": "formula_reference_year",
+        "column_type": "INTEGER",
+        "description": "Normalized funding, component-basis, staffing or salary-analysis reference year, according to formula_parameter."
+      },
+      {
+        "column_name": "printed_reference_year",
+        "column_type": "VARCHAR",
+        "description": "Exact reference-year literal before a reviewed source-bound correction."
+      },
+      {
+        "column_name": "formula_operation",
+        "column_type": "VARCHAR",
+        "description": "Normalized source relationship, such as product or sum; null where the literal expression is not qualified for execution."
+      },
+      {
+        "column_name": "printed_operation",
+        "column_type": "VARCHAR",
+        "description": "Literal source operation or complete expression before a reviewed relationship correction."
+      },
+      {
+        "column_name": "formula_evaluation_status",
+        "column_type": "VARCHAR",
+        "description": "Why the relationship has not been evaluated, including missing external inputs or unit-incomplete source wording."
+      },
+      {
+        "column_name": "formula_approximate",
+        "column_type": "BOOLEAN",
+        "description": "Whether the source describes an adjustment as approximate; null for other observations."
+      },
+      {
+        "column_name": "lower_inclusive",
+        "column_type": "BOOLEAN",
+        "description": "Whether the printed mileage lower bound is inclusive; null when no lower bound is stated."
+      },
+      {
+        "column_name": "upper_inclusive",
+        "column_type": "BOOLEAN",
+        "description": "Whether the printed mileage upper bound is inclusive; null when no upper bound is stated."
+      },
+      {
+        "column_name": "formula_bound",
+        "column_type": "VARCHAR",
+        "description": "Role of a single printed bound, such as the travel minimum's lower bound."
+      },
+      {
+        "column_name": "bound_inclusive",
+        "column_type": "BOOLEAN",
+        "description": "Whether a single printed limit is inclusive; null where no such limit is observed."
+      },
+      {
+        "column_name": "formula_effective_date",
+        "column_type": "DATE",
+        "description": "Complete source-stated effective date of an adjustment; never completed from a month-only statement."
+      },
+      {
+        "column_name": "formula_effective_month",
+        "column_type": "VARCHAR",
+        "description": "Source-stated effective year and month when no day is printed."
+      },
+      {
+        "column_name": "external_input_status",
+        "column_type": "VARCHAR",
+        "description": "not_supplied when the formula names an external input without providing its district-specific value."
+      },
+      {
+        "column_name": "external_input_year",
+        "column_type": "INTEGER",
+        "description": "Year explicitly attached to an external-input reference, where printed."
+      },
+      {
+        "column_name": "source_expression",
+        "column_type": "VARCHAR",
+        "description": "Whitespace-normalized source expression; exact native fragments and displayed block positions remain in source_row_json."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page",
+      "summary_row_index",
+      "value_name"
+    ]
+  },
+  "house_allowance_formula_pages": {
+    "table": "house_allowance_formula_pages",
+    "label": "House allowance formula pages",
+    "summary": "Complete selected formula-page readings and any explicitly selected adjacent context, retaining native text and unread scope.",
+    "coverage": "Window. Explicitly selected retained native House formula occurrences and any declared adjacent context pages. Historical scanned formulas and unselected pages remain outside this profile's qualification.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Repeated report formulas remain separate occurrences. Preserve target years, adjustment basis years, external-input years and amended periods. Source-bound relationship corrections retain printed literals and evidence. Unstated bounds are absent, not zero; external inputs remain unsupplied. Newer unit-incomplete travel wording is retained without inventing monetary conversions or replacement annual allowances.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected retained report file identifier."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact selected publisher PDF URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the complete original PDF before reading or repair."
+      },
+      {
+        "column_name": "package_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher package identifier where present in the selected source."
+      },
+      {
+        "column_name": "source_page",
+        "column_type": "BIGINT",
+        "description": "One-based physical page in the complete original PDF."
+      },
+      {
+        "column_name": "printed_page",
+        "column_type": "VARCHAR",
+        "description": "Printed page label, distinct from its physical position."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year in which the report interval starts."
+      },
+      {
+        "column_name": "report_start_month",
+        "column_type": "INTEGER",
+        "description": "Calendar month in which the report interval starts."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the selected reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the selected reporting interval."
+      },
+      {
+        "column_name": "reader_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned PDF reading rule."
+      },
+      {
+        "column_name": "reading_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained stream for the explicitly selected source pages."
+      },
+      {
+        "column_name": "chamber",
+        "column_type": "VARCHAR",
+        "description": "House or Senate publisher of this retained report."
+      },
+      {
+        "column_name": "reading_profile",
+        "column_type": "VARCHAR",
+        "description": "Source-owned allowance-formula reading selected for these pages."
+      },
+      {
+        "column_name": "page_status",
+        "column_type": "VARCHAR",
+        "description": "Source-owned summary outcome, including readable tables, unrecognized layouts and explicit pending image content."
+      },
+      {
+        "column_name": "native_text",
+        "column_type": "VARCHAR",
+        "description": "Retained native page text; it does not qualify image-only financial content."
+      },
+      {
+        "column_name": "native_word_count",
+        "column_type": "BIGINT",
+        "description": "Count of retained original word observations when supplied by this reader; null means the reader did not measure it."
+      },
+      {
+        "column_name": "image_count",
+        "column_type": "BIGINT",
+        "description": "Original image-reference count when supplied by this reader; null means unmeasured, not no images."
+      },
+      {
+        "column_name": "record_count",
+        "column_type": "BIGINT",
+        "description": "Number of distinct source summary records emitted on this selected physical page."
+      },
+      {
+        "column_name": "page_reading_json",
+        "column_type": "VARCHAR",
+        "description": "Complete source page reading, including original tables, words or native text and explicit unread content."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Preserved page and row issues. A readable row can retain unresolved context or numeric cells."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_page"
+    ]
+  },
   "senate_financial_summary_rows": {
     "table": "senate_financial_summary_rows",
     "label": "Senate financial summary rows",
