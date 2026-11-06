@@ -302,7 +302,7 @@
       {
         "name": "update_date",
         "source_type": "VARCHAR",
-        "meaning": "The publisher's update date for this revision; distinct dates retain separate summary rows.",
+        "meaning": "Literal updateDate of the summary item. In BILLSTATUS 1.0.0 it dates the billSummaries item, not the summary itself; 3.0.0 states it within summary. It does not establish first publication.",
         "decision": "keep",
         "target": "update_date",
         "target_type": "string",
@@ -326,6 +326,25 @@
         "target": "summary_chars",
         "target_type": "int64",
         "reason": "A declared count or ordinal; convert strict integer text without rounding and retain original input in the receipt."
+      },
+      {
+        "name": "last_summary_update_date",
+        "source_type": "VARCHAR",
+        "meaning": "Literal lastSummaryUpdateDate, which dates the summary itself in BILLSTATUS 1.0.0. NULL means absent; empty and malformed source strings remain unchanged. No first-publication claim.",
+        "decision": "keep",
+        "target": "last_summary_update_date",
+        "target_type": "string",
+        "reason": "Keep literal source clocks and their schema context; never infer a first-publication date."
+      },
+      {
+        "name": "source_schema_version",
+        "source_type": "VARCHAR",
+        "meaning": "The source BILLSTATUS version that gives the two native summary clocks their context.",
+        "decision": "keep",
+        "target": "source_schema_version",
+        "target_type": "string",
+        "reason": "Keep literal source clocks and their schema context; never infer a first-publication date.",
+        "nullable": false
       }
     ]
   },

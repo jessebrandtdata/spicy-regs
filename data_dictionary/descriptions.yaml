@@ -2416,9 +2416,11 @@ tables:
       One row per retained CRS summary revision, keyed by bill, summary version,
       action date and publisher update date. Later update dates preserve earlier
       rows; repeated copies of the same dated revision merge into one row.
-      `summary_html` is kept exactly as the publisher escaped it. MIN(update_date)
-      gives the earliest retained CRS date, which may follow the original posting
-      when earlier revisions were not captured.
+      `summary_html` is kept exactly as the publisher escaped it. `update_date`
+      preserves the native item clock; legacy `last_summary_update_date` dates
+      the summary itself. `source_schema_version` qualifies those meanings.
+      Neither clock nor its minimum establishes first publication. See
+      docs/bill-summary-clocks.md for the schema-qualified query and replay limits.
     columns_from: spicy_docs
 
   bill_versions:

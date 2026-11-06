@@ -57,11 +57,11 @@ def policy(dataset: str) -> DatasetPolicy:
         () if spec["processing_only"] else tuple(spec["identity_fields"]),
         (RAW,),
         # committee_reports/2 moves per-letter columns to committee_report_cbo_letters (ss-uep5).
-        # CRS /2 adds update_date to the key; the earlier policy still reads existing summaries.
+        # Summary /3 retains both source clocks and schema context. Earlier readers dropped
+        # the legacy summary clock, so only a replay of retained originals can qualify it.
         # GovInfo /3 defines dated keys for fresh builds; no implicit prior-key migration.
-        policy_version="legislative-documents/3" if dataset in DATED_TABLES else "legislative-documents/2" if dataset in {
+        policy_version="legislative-documents/3" if dataset in DATED_TABLES or dataset == "bill_publisher_summaries" else "legislative-documents/2" if dataset in {
             "native_legal_references", "native_legal_reference_reads", "document_citations",
-            "bill_publisher_summaries",
         } else "legislative-documents/1",
         receipt_only=spec["processing_only"],
     )
@@ -80,7 +80,7 @@ def input_policy(dataset: str, subjects: Sequence[Path]) -> DatasetPolicy:
 
 
 def _processor(dataset: str) -> str:
-    if dataset in {"native_legal_references", "native_legal_reference_reads"}:
+    if dataset in {"native_legal_references", "native_legal_reference_reads", "bill_publisher_summaries"}:
         return "legislative-documents/3"
     # The citation routing namespace is now retained on main rows.
     return "legislative-documents/3" if dataset == "document_citations" else "legislative-documents/1"
@@ -325,8 +325,13 @@ def write_legislative_outputs(
                 for path in prior_receipts:
                     with pq.ParquetFile(path) as previous:
                         for batch in previous.iter_batches(batch_size=2000):
-                            writer.write_table(pa.Table.from_batches([batch]).filter(
-                                ds.field("dataset").isin(active)))
+                            scoped_rows = pa.Table.from_batches([batch]).filter(ds.field("dataset").isin(active))
+                            if scoped_rows.filter(
+                                (ds.field("dataset") == "bill_publisher_summaries") &
+                                (ds.field("policy_version") != policy("bill_publisher_summaries").policy_version)
+                            ).num_rows:
+                                raise ValueError("CRS summary prior uses an incompatible clock policy; replay retained originals")
+                            writer.write_table(scoped_rows)
             identities, migrations = {}, {}
             for name in manifest["datasets"]:
                 current_policy = policy(name)

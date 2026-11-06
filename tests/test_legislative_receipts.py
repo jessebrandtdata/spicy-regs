@@ -69,66 +69,106 @@ def test_roundtrip_preserves_checkpoint_only_rows_and_exact_parquet_metadata(tmp
 
 
 @pytest.mark.parametrize("bulk", [False, True])
-def test_crs_revisions_migrate_existing_receipts_and_roundtrip(tmp_path, monkeypatch, bulk):
-    from spicy_regs import legislative_receipts
-    from spicy_regs.etl_receipts import decode_exact_json, receipt_policies, resolve_receipt_witness, subject_identity
+def test_crs_clock_policy_roundtrips_source_fields_and_refuses_earlier_priors(tmp_path, bulk):
+    from dataclasses import replace
+
+    from spicy_regs.etl_receipts import decode_exact_json, write_dataset
+    from spicy_regs.legislative_receipts import input_policy, mapped_record
 
     dataset = "bill_publisher_summaries"
     current = policy(dataset)
-    _, earlier = receipt_policies(current)
     original = row(
-        dataset, bill_id="119-hr-1", summary_version_code="49", action_date="2025-07-04",
-        action_desc="Public Law", update_date="2025-07-07T12:00:00Z",
+        dataset, bill_id="113-hr-4200", summary_version_code="00", action_date="2014-03-11",
+        action_desc="Introduced in House", update_date="2014-03-11T04:00:00Z",
+        last_summary_update_date="2014-09-08T21:32:48Z", source_schema_version="1.0.0",
         summary_html="<p>Original summary.</p>", summary_chars="24",
     )
-    old_input = retained(tmp_path / "old-input", dataset, [original])
-    with monkeypatch.context() as patch:
-        patch.setattr(legislative_receipts, "policy", lambda name: earlier if name == dataset else policy(name))
-        write_legislative_outputs(
-            [old_input], tmp_path / "old", generation_id="old", bulk=bulk,
-            source_witnesses=[{"source_id": "original-capture", "sha256": "a" * 64}],
-        )
-    old_receipts = tmp_path / "old/etl_receipts.parquet"
-    old_bytes = old_receipts.read_bytes()
-    [old] = [receipt for receipt in pq.read_table(old_receipts).to_pylist()
-             if receipt["dataset"] == dataset and receipt["outcome"] == "accepted"]
-    restored = restore_prior(tmp_path / "old", tmp_path / "old-restored", bulk=bulk)
-    assert pq.read_table(restored[dataset]).to_pylist() == [original]
-
-    revised = {**original, "update_date": "2025-07-09T12:00:00Z", "summary_html": "<p>Revised summary.</p>",
-               "summary_chars": "23"}
+    initial = retained(tmp_path / "initial-input", dataset, [original])
+    write_legislative_outputs([initial], tmp_path / "initial", generation_id="initial", bulk=bulk)
+    initial_receipts = tmp_path / "initial/etl_receipts.parquet"
+    before = initial_receipts.read_bytes()
+    revised = {**original, "update_date": "2014-09-10T12:00:00Z",
+               "last_summary_update_date": "2014-09-10T12:00:00Z",
+               "summary_html": "<p>Revised summary.</p>", "summary_chars": "23"}
     new_input = retained(tmp_path / "new-input", dataset, [original, revised])
-    write_legislative_outputs(
-        [new_input], tmp_path / "new", generation_id="new",
-        prior_receipts=[tmp_path / "old/etl_receipts.parquet"], bulk=bulk,
-    )
+    write_legislative_outputs([new_input], tmp_path / "new", generation_id="new",
+                              prior_receipts=[initial_receipts], bulk=bulk)
     published = pq.read_table(tmp_path / f"new/{dataset}.parquet")
     assert published.schema.equals(current.subject_schema)
-    assert not published.schema.field("update_date").nullable
-    assert [record["update_date"] for record in published.to_pylist()] == [original["update_date"], revised["update_date"]]
+    assert published.num_rows == 2
+    assert [(r["update_date"], r["last_summary_update_date"], r["source_schema_version"])
+            for r in published.to_pylist()] == [
+                (r["update_date"], r["last_summary_update_date"], r["source_schema_version"])
+                for r in (original, revised)]
     restored = restore_prior(tmp_path / "new", tmp_path / "new-restored", bulk=bulk)
     assert pq.read_table(restored[dataset]).to_pylist() == [original, revised]
     receipts = pq.read_table(tmp_path / "new/etl_receipts.parquet").to_pylist()
-    dated = {dict(decode_exact_json(receipt["identity_json"]))["update_date"]: receipt for receipt in receipts
-             if receipt["dataset"] == dataset and receipt["outcome"] == "accepted"}
-    migrated = dated[original["update_date"]]
-    assert migrated["policy_version"] == current.policy_version
-    assert migrated["record_id"] == subject_identity(current, published.to_pylist()[0])[0] != old["record_id"]
-    assert migrated["receipt_id"] != old["receipt_id"]
-    assert migrated["processing_json"] == old["processing_json"]
-    reference = decode_exact_json(migrated["diagnostic_json"])["prior_receipt"]
-    assert {key: reference[key] for key in ("receipt_id", "generation_id", "policy_version", "record_id")} == {
-        key: old[key] for key in ("receipt_id", "generation_id", "policy_version", "record_id")}
-    assert all(witness in migrated["witnesses"] for witness in old["witnesses"])
-    inherited = next(w for w in migrated["witnesses"] if w["source_id"] == "prior-etl-processing")
-    assert resolve_receipt_witness(migrated, inherited) == old["processing_json"].encode()
-    assert "prior_receipt" not in decode_exact_json(dated[revised["update_date"]]["diagnostic_json"])
-    assert old_receipts.read_bytes() == old_bytes
-    write_legislative_outputs(
-        [new_input], tmp_path / "repeated", generation_id="repeated",
-        prior_receipts=[tmp_path / "new/etl_receipts.parquet"], bulk=bulk,
-    )
+    accepted = [r for r in receipts if r["dataset"] == dataset and r["outcome"] == "accepted"]
+    assert all(r["policy_version"] == "legislative-documents/3" for r in accepted)
+    assert {decode_exact_json(r["processing_json"])[RAW]["last_summary_update_date"]
+            for r in accepted} == {original["last_summary_update_date"], revised["last_summary_update_date"]}
+    write_legislative_outputs([new_input], tmp_path / "repeated", generation_id="repeated",
+                              prior_receipts=[tmp_path / "new/etl_receipts.parquet"], bulk=bulk)
     assert pq.read_table(tmp_path / "repeated/etl_receipts.parquet").to_pylist() == receipts
+    assert initial_receipts.read_bytes() == before
+
+    # Earlier processing omitted the legacy clock. Neither NULL-filling nor
+    # an invented receipt predecessor can qualify a correction from originals.
+    old_schema = current.subject_schema
+    for name in ("last_summary_update_date", "source_schema_version"):
+        old_schema = old_schema.remove(old_schema.get_field_index(name))
+    earlier = replace(current, subject_schema=old_schema, policy_version="legislative-documents/2")
+    old_raw = {k: v for k, v in original.items() if k in old_schema.names}
+    old_native = {k: v for k, v in mapped_record(dataset, original).items() if k in old_schema.names}
+    subject, old_receipts = write_dataset(
+        [(old_native | {RAW: old_raw}, ReceiptContext("old", "old/0", "old-reader",
+            [{"source_id": "retained-old-reader-fixture", "sha256": "a" * 64}]))],
+        tmp_path / "old", earlier,
+    )
+    old_bytes = old_receipts.read_bytes()
+    with pytest.raises(ValueError, match="Subject schema differs from policy"):
+        input_policy(dataset, [subject])
+    with pytest.raises(ValueError, match="incompatible clock policy"):
+        write_legislative_outputs([new_input], tmp_path / "incompatible", generation_id="incompatible",
+                                  prior_receipts=[old_receipts], bulk=bulk)
+    assert not (tmp_path / "incompatible").exists()
+    assert old_receipts.read_bytes() == old_bytes
+
+
+def test_summary_clock_consumer_preserves_unknown_and_literal_source_states(tmp_path):
+    from pathlib import Path
+    import duckdb
+
+    dataset = "bill_publisher_summaries"
+    item_date = "2014-03-11T04:00:00Z"
+    states = [("1.0.0", None, item_date, "absent"), ("1.0.0", "", item_date, "empty"),
+              ("1.0.0", "not-a-date", item_date, "malformed"),
+              ("1.0.0", "2014-09-08T21:32:48Z", item_date, "valid"),
+              ("3.0.0", None, item_date, "valid"), ("3.0.0", None, "", "empty"),
+              ("3.0.0", None, "not-a-date", "malformed"),
+              ("4.0.0", "2014-09-08T21:32:48Z", item_date, "unknown_schema")]
+    rows = [row(dataset, bill_id=f"113-hr-{index + 1}", summary_version_code="00", action_date="2014-03-11",
+                update_date=update, last_summary_update_date=literal,
+                source_schema_version=schema, summary_html="retained source text", summary_chars="20")
+            for index, (schema, literal, update, _) in enumerate(states)]
+    source = retained(tmp_path / "input", dataset, rows)
+    write_legislative_outputs([source], tmp_path / "bundle", generation_id="states")
+    sql = (Path(__file__).parents[1] / "docs/bill-summary-clocks.md").read_text().split("```sql\n")[1].split("```")[0]
+    with duckdb.connect() as con:
+        con.read_parquet(tmp_path / f"bundle/{dataset}.parquet").create_view(dataset)
+        results = con.execute(sql).fetchall()
+        columns = [column[0] for column in con.description]
+    decoded = [dict(zip(columns, result, strict=True)) for result in results]
+    assert [(r["source_schema_version"], r["last_summary_update_date"], r["update_date"], r["summary_update_status"])
+            for r in decoded] == [state for state in states if state[2] != ""]
+    from spicy_regs.etl_receipts import decode_exact_json
+    refused = [r for r in pq.read_table(tmp_path / "bundle/etl_receipts.parquet").to_pylist()
+               if r["dataset"] == dataset and r["outcome"] == "refused"]
+    assert len(refused) == 1
+    assert decode_exact_json(refused[0]["processing_json"])[RAW]["update_date"] == ""
+    assert decoded[3]["summary_update_field"] == "lastSummaryUpdateDate"
+    assert decoded[4]["summary_update_field"] == "updateDate"
+    assert all(r["summary_update_instant"] is None for r in decoded[5:])
 
 
 @pytest.mark.parametrize(

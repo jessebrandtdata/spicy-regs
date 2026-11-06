@@ -89,7 +89,6 @@ def test_merge_keeps_prior_only_rows(tmp_path):
 def test_crs_summary_merge_preserves_revisions_and_deduplicates_rereads(tmp_path):
     import shutil
 
-    import duckdb
     from spicy_docs.schemas import TABLE_CONTRACTS
 
     name = "bill_publisher_summaries"
@@ -98,10 +97,11 @@ def test_crs_summary_merge_preserves_revisions_and_deduplicates_rereads(tmp_path
         bill_id="119-hr-1", summary_version_code="49", action_date="2025-07-04",
         action_desc="Public Law", update_date="2025-07-07T12:00:00Z",
         summary_html="<p>Original summary.</p>", summary_chars="24",
+        last_summary_update_date=None, source_schema_version="3.0.0",
     )
     revision = {**original, "update_date": "2025-07-09T12:00:00Z", "summary_html": "<p>Revised summary.</p>",
                 "summary_chars": "23"}
-    # The existing table already contains update_date, so its row needs no backfill.
+    # Both native clock fields were read from originals under the current policy.
     pq.write_table(pa.Table.from_pylist([original], schema=pa.schema([(c, pa.string()) for c in contract.columns])),
                    prior_scratch_path(tmp_path, name))
     output = table_merge.merge_contract_table(tmp_path, name, [revision], download_prior=_never_called)
@@ -112,9 +112,67 @@ def test_crs_summary_merge_preserves_revisions_and_deduplicates_rereads(tmp_path
         shutil.copyfile(output, prior_scratch_path(tmp_path, name))
         output = table_merge.merge_contract_table(tmp_path, name, incoming, download_prior=_never_called)
         assert _read(output) == [revision, original]
-    with duckdb.connect() as con:
-        first = con.execute("SELECT min(update_date) FROM read_parquet(?) GROUP BY bill_id", [str(output)]).fetchone()
-    assert first == (original["update_date"],)
+    # Metadata update dates select retained revisions; no first-publication inference.
+    assert _read(output)[0]["update_date"] == revision["update_date"]
+
+
+@pytest.mark.parametrize("change", [
+    {"summary_html": "<p>Unclocked source revision.</p>"},
+    {"last_summary_update_date": "2014-09-09T00:00:00Z"},
+])
+@pytest.mark.parametrize("prior", [False, True])
+def test_crs_summary_same_key_conflict_refuses_without_replacing_prior(tmp_path, change, prior):
+    from spicy_docs.schemas import TABLE_CONTRACTS
+
+    name = "bill_publisher_summaries"
+    original = dict(bill_id="113-hr-4200", summary_version_code="00", action_date="2014-03-11",
+                    action_desc="Introduced in House", update_date="2014-03-11T04:00:00Z",
+                    last_summary_update_date="2014-09-08T21:32:48Z", source_schema_version="1.0.0",
+                    summary_html="<p>Original summary.</p>", summary_chars="24")
+    scratch = prior_scratch_path(tmp_path, name)
+    if prior:
+        pq.write_table(pa.Table.from_pylist([original], schema=pa.schema([
+            (c, pa.string()) for c in TABLE_CONTRACTS[name].columns])), scratch)
+        before = scratch.read_bytes()
+    with pytest.raises(ValueError, match="contradictory source evidence"):
+        table_merge.merge_contract_table(tmp_path, name,
+            ([original] if not prior else []) + [{**original, **change}],
+            download_prior=_never_called if prior else lambda *_: False)
+    if prior:
+        assert scratch.read_bytes() == before
+    assert not (tmp_path / f"{name}.parquet").exists()
+
+
+def test_crs_summary_schema_context_enrichment_is_not_a_source_conflict(tmp_path):
+    from spicy_docs.schemas import TABLE_CONTRACTS
+
+    name = "bill_publisher_summaries"
+    original = dict.fromkeys(TABLE_CONTRACTS[name].columns)
+    original.update(bill_id="119-hr-1", summary_version_code="00", action_date="2025-01-03",
+                    update_date="2025-01-07T00:00:00Z", summary_html="same source text",
+                    source_schema_version="3.0.0")
+    pq.write_table(pa.Table.from_pylist([original], schema=pa.schema([
+        (c, pa.string()) for c in original])), prior_scratch_path(tmp_path, name))
+    output = table_merge.merge_contract_table(tmp_path, name, [{**original, "source_schema_version": "3.0.1"}],
+                                             download_prior=_never_called)
+    assert _read(output) == [{**original, "source_schema_version": "3.0.1"}]
+
+
+def test_crs_summary_prior_requires_native_clock_replay(tmp_path):
+    from spicy_docs.schemas import TABLE_CONTRACTS
+
+    name = "bill_publisher_summaries"
+    columns = [c for c in TABLE_CONTRACTS[name].columns if c not in {
+        "last_summary_update_date", "source_schema_version"}]
+    original = dict.fromkeys(columns)
+    original.update(bill_id="113-hr-4200", summary_version_code="00", action_date="2014-03-11",
+                    update_date="2014-03-11T04:00:00Z")
+    prior = prior_scratch_path(tmp_path, name)
+    pq.write_table(pa.Table.from_pylist([original], schema=pa.schema([(c, pa.string()) for c in columns])), prior)
+    before = prior.read_bytes()
+    with pytest.raises(ValueError, match="incompatible clock policy"):
+        table_merge.merge_contract_table(tmp_path, name, [], download_prior=_never_called)
+    assert prior.read_bytes() == before
 
 
 def test_crs_revision_key_refuses_to_drop_an_undated_prior(tmp_path):

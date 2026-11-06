@@ -294,6 +294,12 @@ def map_subject(dataset: str, row: Mapping[str, Any]) -> dict[str, Any] | None:
     spec = field_registry()[dataset]
     from spicy_regs.govinfo_revisions import DATED_TABLES, revision_instant
 
+    if dataset == "bill_publisher_summaries" and (
+        not isinstance(row.get("source_schema_version"), str) or not row["source_schema_version"]
+        or "last_summary_update_date" not in row
+    ):
+        raise LegislativeShapeError("CRS summary requires both source clock fields and schema context; replay retained originals")
+
     if dataset in DATED_TABLES:
         try:
             revision_instant(row.get("last_modified"))

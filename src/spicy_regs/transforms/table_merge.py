@@ -622,6 +622,12 @@ def merge_table(
             ).fetchone()[0]:
                 con.close()
                 raise ValueError("CRS summary prior has missing update_date; cannot migrate without losing rows")
+            if not {"last_summary_update_date", "source_schema_version"} <= prior_cols or con.execute(
+                "SELECT EXISTS(SELECT 1 FROM read_parquet(?) WHERE source_schema_version IS NULL "
+                "OR source_schema_version = '')", [str(prior_file)]
+            ).fetchone()[0]:
+                con.close()
+                raise ValueError("CRS summary prior uses an incompatible clock policy; replay retained originals")
         absent = [c for c in columns if c not in prior_cols]
         if absent:
             logger.info(
@@ -681,6 +687,17 @@ def merge_table(
             )
         else:
             union = f"SELECT {cols}, 1 AS _src FROM read_parquet('{new_file}')"
+        if name == "bill_publisher_summaries":
+            # Schema context can be enriched without creating a source revision.
+            # Contradictory text or native summary clocks cannot share this key;
+            # retained samples did not justify widening it. Keep all inputs for review.
+            conflict = con.execute(
+                f"SELECT {key_cols} FROM ({union}) GROUP BY {key_cols} "
+                "HAVING count(DISTINCT row(summary_html, last_summary_update_date)) > 1 LIMIT 1"
+            ).fetchone()
+            if conflict:
+                con.close()
+                raise ValueError(f"CRS summary has contradictory source evidence at one revision key: {conflict}")
         selection = f"""
             SELECT {cols} FROM (
                 SELECT {cols}, ROW_NUMBER() OVER (
