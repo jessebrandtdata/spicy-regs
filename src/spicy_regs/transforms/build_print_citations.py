@@ -564,6 +564,7 @@ def build_print_citations(
     max_packages: int = MAX_PACKAGES_PER_RUN,
     download_prior: Callable[[str, Path], bool] = r2.download,
     evidence: CaptureEvidence | None = None,
+    coverage: dict | None = None,
 ) -> tuple[Path, Path, Path, Path]:
     """Build the two document tables, the bill-action table and the shared citation link table."""
     if reader is None or acquirer is None:
@@ -645,12 +646,27 @@ def build_print_citations(
         for name in _OUTPUTS[collection]:
             for package_id, state in checkpoints[name].items():
                 if _collection(package_id) == collection:
-                    known.setdefault(package_id, state.get("last_modified"))
+                    if state.get("pending_last_modified"):
+                        known[package_id] = state["pending_last_modified"]
+                    else:
+                        known.setdefault(package_id, state.get("last_modified"))
         pending = {package_id: modified for package_id, modified in known.items()
                    if not complete(package_id, collection, modified)}
         listed = _listed(reader, collection, since, keep)
-        pending.update({package_id: modified for package_id, modified in listed
-                        if not complete(package_id, collection, modified)})
+        for package_id, modified in listed:
+            if not complete(package_id, collection, modified):
+                # An older archive observation cannot replace newer retry work.
+                pending[package_id] = latest_read(
+                    {"last_modified": pending.get(package_id)}, {"last_modified": modified},
+                )["last_modified"]
+        # Retain every discovered unresolved package before applying the body cap.
+        # A later inventory omission must not erase deferred or refused work.
+        for package_id, modified in pending.items():
+            for name in _OUTPUTS[collection]:
+                checkpoints[name][package_id] = {
+                    **checkpoints[name].get(package_id, {"package_id": package_id}),
+                    "pending_last_modified": modified,
+                }
         outstanding[collection] = _queue(pending, held[table], checkpoints[table])
         unchanged += sum(package_id not in pending for package_id, _modified in listed)
 
@@ -786,7 +802,13 @@ def build_print_citations(
                  "source_sha256": source_sha256, "text_sha256": provenance.text_sha256,
                  "processing_version": processing_versions[collection], "read_at": _now()}
         for name in _OUTPUTS[collection]:
-            checkpoints[name][package_id] = latest_read(checkpoints[name].get(package_id, {}), state)
+            previous = checkpoints[name].get(package_id, {})
+            selected = latest_read(previous, state)
+            # Completing an older selected read clears that pending coordinate,
+            # while keeping the later successful checkpoint and other retry work.
+            if previous.get("pending_last_modified") == state["last_modified"]:
+                selected.pop("pending_last_modified", None)
+            checkpoints[name][package_id] = selected
 
         depth = len(derived.pages) if derived.pages is not None else 0
         pages_read += depth
@@ -827,7 +849,7 @@ def build_print_citations(
         name: checkpoint_metadata(priors[name], CHECKPOINT_NAMESPACE, list(states.values()))
         for name, states in checkpoints.items()
     }
-    return (
+    paths = (
         merge_contract_table(
             output_dir,
             ACTIVITY_REPORTS,
@@ -867,3 +889,13 @@ def build_print_citations(
             parquet_metadata=metadata[CITATIONS],
         ),
     )
+    status = {"discovery": "complete", "scope": "issue-date-window", "since": since,
+              "unchanged": unchanged, "fetched": fetched, "refused": sum(refusals.values()),
+              "deferred": sum(map(len, outstanding.values())) - len(scheduled),
+              "publisher_root_not_offered": root_not_offered, "shorter_than_stated": capped,
+              "table_generation": "prepared", "atomic_snapshot": False, "whole_history_complete": False}
+    if coverage is not None:
+        coverage.update(status)
+    if evidence is not None:
+        evidence.event("acquisition-coverage", **status)
+    return paths

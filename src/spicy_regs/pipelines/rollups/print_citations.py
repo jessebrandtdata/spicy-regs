@@ -35,11 +35,16 @@ class PrintCitationsRollup(LegislativeReceiptRollup):
     retain_source_evidence: ClassVar[bool] = True
 
     def build(self, output_dir: Path) -> tuple[Path, ...]:
+        self.acquisition_status = {}
+
         def builder(work, **kwargs):
-            paths = build_print_citations(work, **kwargs)
+            paths = build_print_citations(work, coverage=self.acquisition_status, **kwargs)
             return (*paths, write_citation_reads(work, paths[3]))
 
-        return self.build_receipts(output_dir, builder, evidence=self.source_evidence)
+        result = self.build_receipts(output_dir, builder, evidence=self.source_evidence)
+        if self.acquisition_status.get("refused") or self.acquisition_status.get("deferred"):
+            self.deferred_failure = RuntimeError("Print tables generated with pending acquisition; see acquisition-coverage")
+        return result
 
 
 app = make_rollup_app(PrintCitationsRollup)

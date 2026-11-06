@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import shutil
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 import duckdb
 import pyarrow as pa
@@ -84,7 +84,7 @@ def test_build_retains_revisions_and_repeated_imports_deduplicate(tmp_path, monk
     revised = {**original, "updateDate": "2026-07-17T23:59:59Z", "title": "Revised title"}
     new_edition = {**revised, "updateDate": "2026-07-20T12:00:00Z",
                    "publishDate": "2026-07-20T04:00:00Z", "version": 16}
-    corrected = {**new_edition, "title": "Fresh copy of the same revision"}
+    corrected = dict(new_edition)  # repeated observations must agree at the same revision
     output = tmp_path / module.OUTPUT
     for index, reports in enumerate(([original], [revised], [new_edition], [corrected, corrected], [], [original])):
         if output.exists():
@@ -106,7 +106,7 @@ def test_build_retains_revisions_and_repeated_imports_deduplicate(tmp_path, monk
             "SELECT report_id, min(published_date), count(*) FROM read_parquet(?) GROUP BY report_id", [str(output)],
         ).fetchall() == [(original["id"], datetime(2026, 7, 16, 4, tzinfo=timezone.utc), 3)]
     assert windows[0] is None
-    assert windows[-1] == date(2026, 7, 17)  # max update date minus the existing overlap
+    assert windows[-1] is None  # imported rows alone do not establish a live discovery cursor
 
 
 @pytest.mark.parametrize("bulk", [False, True])

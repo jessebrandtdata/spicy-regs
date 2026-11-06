@@ -325,14 +325,14 @@ def test_a_linkage_only_row_is_not_treated_as_held(tmp_path, monkeypatch):
 # --------------------------------------------------------------------------- #
 # Committee reports: watermark, and held packages are not re-fetched.
 # --------------------------------------------------------------------------- #
-def test_committee_reports_window_starts_at_the_prior_watermark(tmp_path, monkeypatch):
+def test_committee_reports_history_does_not_establish_a_live_watermark(tmp_path, monkeypatch):
     from spicy_regs.transforms.build_committee_reports import _since
 
     monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
     seed(tmp_path, "committee_reports", [{"package_id": "CRPT-119hrpt1", "last_modified": "2026-09-10T12:00:00Z"}])
-    since = _since(prior_scratch_path(tmp_path, "committee_reports"))
-    # The watermark minus the 24-hour overlap.
-    assert since.startswith("2026-09-09T12:00:00"), since
+    from datetime import UTC, datetime
+    since = _since(prior_scratch_path(tmp_path, "committee_reports"), now=datetime(2026, 11, 6, tzinfo=UTC))
+    assert since == "2026-10-07T00:00:00Z"
 
 
 def test_committee_reports_cold_start_uses_the_default_window(tmp_path, monkeypatch):
