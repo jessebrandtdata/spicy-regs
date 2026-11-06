@@ -118,7 +118,8 @@ with `npx wrangler secret put R2_CATALOG_TOKEN`. The Worker explicitly forwards
 these settings and the optional secret to its Python container.
 
 Run `npm run check` before deployment. This generates types, checks TypeScript,
-and builds the container locally. It does not deploy it or populate the bucket.
+and bundles the Worker for a dry run. Image qualification and live reader checks
+remain separate steps.
 
 The fork's server is live at `https://mcp.spicygov.ai/mcp` (custom domain since 2026-09-29) and
 `https://spicy-regs-mcp.mdeeb.workers.dev/mcp`
@@ -134,13 +135,37 @@ cold discovery. Its script and receipts are in
 `~/Work/corpora/fork-execution-2026-09-21/r7-mcp-2026-09-25/`.
 
 The maintained [Worker template](cloudflare/wrangler.template.jsonc) pins the
-reader built from `7dd39d779737c900b5ab4d620a7b5ce9ba87642d` and its matching
+reader built from `e7cb16abdfb5dc9519bae61a7a5ae16cff87f148` and its matching
 Federal Election Commission compatibility receipt. Keep the registry image and
 both runtime pins together when updating the template. Confirm the running
 container and live MCP response after deployment.
-[Reader image build and association](https://github.com/mikewolfd/spicy-regs/actions/runs/42133901602)
+[Reader image build and association](https://github.com/mikewolfd/spicy-regs/actions/runs/42174944381)
 
-The November 5, 2026 successor uses Worker version
+The November 6, 2026 successor uses Worker version
+`12a2f56c-1a0a-4830-a6e5-e544d18baa64` and container app version `68`.
+Completed replacement, the running singleton and the ordinary MCP client all
+matched the template's image and receipt. Discovery, the known lobbying filing,
+protected campaign-finance queries and query-error recovery passed under the
+unchanged 20-second client deadline. A separate isolated hosted exercise on the
+same image returned an explicit discovery timeout and recovered in the same
+session. It does not establish the cause of the historical stream-ending incident.
+
+Repository acceptance uses `c42bd0e0bf2e607f5dcfc09d277f4c9933b5408e`, whose
+only change after the image build corrects a synthetic FCC response in a test.
+All image inputs remain unchanged; retain the actual image build revision above.
+Automatic Explorer metadata publication executed on the accepted source and
+matched the selected public family generations.
+[Corrective source CI](https://github.com/mikewolfd/spicy-regs/actions/runs/42176189881) ·
+[Metadata publication](https://github.com/mikewolfd/spicy-regs/actions/runs/42182398557)
+
+A successful deploy command starts container replacement. Observe that exact
+rollout through completion before testing the selected reader. Worker settings,
+application configuration and an existing process can differ during replacement.
+Use a bounded operator wait, then verify the running singleton and actual MCP
+receipt sequentially. A snapshot taken during replacement is not a terminal
+acceptance result. Observe rollback completion in the same way when needed.
+
+The November 5, 2026 reader remains a rollback reference. It used Worker version
 `a2e0c9c1-2309-4e81-b0a2-d64852e2d5e4` and container app version `65`.
 The running container matched the image and receipt in the template. An ordinary
 MCP client passed cold and warm discovery, explicit access to the selected empty
