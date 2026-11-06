@@ -46,7 +46,9 @@ SCRIPT = "scripts/convert_family_to_native.py"
 NOTHING_PUBLISHED = "nothing was published; the family's pointer is unchanged"
 #: Journal events a later run reads back from its prior (``CaptureEvidence.inherited_event``). A conversion reads no
 #: source, so it journals each one again unchanged; otherwise the next run would treat every held row as never read.
-INHERITED_EVENTS = ("congress-index-selection", "scorecard-source-attempt")
+INHERITED_EVENTS = (
+    "congress-index-selection", "scorecard-source-attempt", "crs-discovery", "committee-discovery",
+)
 #: The receipt outcomes of a row or observation that converted; any other outcome stops the conversion.
 CONVERTED_OUTCOMES = frozenset({"accepted", "observed"})
 #: The shape of a sealed prepared receipt's digest, as the preparation prints it for the operator.

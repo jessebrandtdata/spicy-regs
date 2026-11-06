@@ -800,8 +800,10 @@ def test_a_converted_family_keeps_its_evidence_lineage(tmp_path, monkeypatch, bu
         return evidence, lineage["evidence_status"]
 
     remainder = {"table": "treaties", "unevidenced": [["119-1"]], "shape_version": 2}
+    crs_discovery = {"cursor": "2026-11-05T13:00:00+00:00", "since": "2026-11-02", "mode": "refresh"}
     old = {"courtlistener": old_with_evidence("courtlistener", "court_dockets", [DOCKET]),
-           "treaties": old_with_evidence("treaties", "treaties", [{"treaty_id": "119-1"}], congress_index_selection=remainder)}
+           "treaties": old_with_evidence("treaties", "treaties", [{"treaty_id": "119-1"}],
+                                         congress_index_selection=remainder, crs_discovery=crs_discovery)}
     for family in old:
         receipt = convert(family, tmp_path / "work" / family, publish=True)
         entry = publication.current_index(BASE)["families"][family]
@@ -811,9 +813,14 @@ def test_a_converted_family_keeps_its_evidence_lineage(tmp_path, monkeypatch, bu
         evidence, status = next_run(family)
         assert status == "Inherited pins; prior source coverage is not requalified by this run."
         if family == "treaties":
-            assert receipt["lineage"]["handed_on_events"] == 1
+            assert receipt["lineage"]["handed_on_events"] == 2
             handed = evidence.inherited_event("congress-index-selection", table="treaties")
             assert handed is not None and handed["unevidenced"] == [["119-1"]] and handed["shape_version"] == 2
+            # The data-independent copy path retains the CRS cursor for its actual
+            # discovery consumer; conversion must not replace it with its own time.
+            from spicy_regs.transforms.build_crs_reports import _discovery_state
+            state = _discovery_state(evidence)
+            assert {name: value for name, value in state.items() if name not in {"event", "recorded_at"}} == crs_discovery
 
 
 def publish_old_with_evidence(
@@ -1325,8 +1332,21 @@ def test_checkpoint_source_rows_convert_and_restore_in_their_declared_main_shape
              if read_dataset == "committee_report_reads" else row(
                  read_dataset, scope_id="scope", source_family="uscode", source_record_key="record",
                  read_status="complete", occurrence_count="0", source_bytes="0", rule_version="r1"))
-    source_reads = [reads, reads | ({"package_id": "CRPT-119hrpt2"} if read_dataset == "committee_report_reads"
-                                   else {"scope_id": "second-scope"})]
+    discovery = {"cursor": "2026-11-05T13:00:00+00:00", "since": "2026-11-04T13:00:00Z", "mode": "refresh"}
+    evidence = None
+    if processing_only:
+        from spicy_regs.source_evidence import CaptureEvidence
+        from spicy_regs.transforms.committee_report_reads import RULE_VERSIONS
+
+        reads.update(last_modified="2026-11-03T12:00:00Z", observed_at="2026-11-05T13:00:00+00:00",
+                     rule_version=RULE_VERSIONS["CRPT"])
+        source_reads = [reads, reads | {"package_id": "CRPT-119hrpt2", "outcome": "pending"},
+                        reads | {"package_id": "CRPT-119hrpt3", "outcome": "refused"}]
+        evidence = CaptureEvidence(tmp_path / "source-evidence", family)
+        evidence.inherit(publication.current_index(BASE), public_url=BASE)
+        evidence.event("committee-discovery", **discovery)
+    else:
+        source_reads = [reads, reads | {"scope_id": "second-scope"}]
     files = []
     for key in cls.source_outputs:
         dataset = key.removesuffix(".parquet")
@@ -1336,13 +1356,17 @@ def test_checkpoint_source_rows_convert_and_restore_in_their_declared_main_shape
     with monkeypatch.context() as patch:
         patch.setattr(etl_policy_registry, "require_registered_receipts", lambda *_: None)
         build_generation(tmp_path / "old-generation" / family, family=family, files=files,
-                         expected_keys=list(cls.source_outputs))
+                         expected_keys=list(cls.source_outputs), inputs=evidence.inputs() if evidence else (),
+                         read_snapshot=publication.current_index(BASE))
         old = publication.publish_generation(tmp_path / "old-generation" / family, client=bucket,
-                                             bucket=BUCKET, prior_index=publication.current_index(BASE))["families"][family]
+                                             bucket=BUCKET, prior_index=publication.current_index(BASE),
+                                             evidence_directories=(evidence.artifact_dir,) if evidence else ())["families"][family]
+    if evidence:
+        evidence.finish()
     prepared = convert(family, tmp_path / "work", publish=False)
     assert prepared["published"] is None
     assert prepared["captured"]["entry"] == old
-    assert prepared["tables"][read_dataset]["retained_rows"] == 2
+    assert prepared["tables"][read_dataset]["retained_rows"] == len(source_reads)
     assert not any(prepared["tables"][read_dataset][name] for name in
                    ("type_changes", "metadata_changes", "rows_only_in_restored", "rows_only_in_retained"))
     conversion.publish_prepared(tmp_path / "work" / conversion.RECEIPT, allowed=[family], expected_main=MAIN,
@@ -1355,6 +1379,23 @@ def test_checkpoint_source_rows_convert_and_restore_in_their_declared_main_shape
     restored = SelectedPriors(tmp_path / "anonymous", index=current, public_url=BASE).get(read_dataset)
     assert pq.read_table(restored).to_pylist() == source_reads
     assert pq.read_schema(restored).equals(pq.read_schema(tmp_path / "old" / reads_key), check_metadata=True)
+    if processing_only:
+        from spicy_regs.transforms.build_committee_reports import _settled, _since
+        from spicy_regs.transforms.committee_report_reads import prior_reads
+
+        assert prepared["lineage"]["handed_on_events"] == 1
+        next_evidence = CaptureEvidence(tmp_path / "next", family)
+        next_evidence.inherit(current, public_url=BASE)
+        handed = next_evidence.inherited_event("committee-discovery")
+        assert handed is not None
+        assert {name: value for name, value in handed.items() if name not in {"event", "recorded_at"}} == discovery
+        monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
+        assert _since(evidence=next_evidence) == "2026-11-04T13:00:00Z"
+        states = prior_reads(restored, {})
+        assert _settled(states["CRPT-119hrpt1"], "CRPT")
+        assert {key: row["outcome"] for key, row in states.items() if not _settled(row, "CRPT")} == {
+            "CRPT-119hrpt2": "pending", "CRPT-119hrpt3": "refused",
+        }
 
 
 def test_conversion_compares_all_datasets_with_one_reader_per_actual_generation(tmp_path, monkeypatch, bucket):
