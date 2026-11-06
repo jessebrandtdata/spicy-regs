@@ -111,11 +111,23 @@ def _check_content_identity(row: dict) -> None:
 
 
 def _witnesses(row: Mapping) -> list[dict]:
-    return [{"source_id": row["report_id"], "source_uri": row["source_url"],
-             "sha256": row.get("source_sha256") or row["metadata_source_sha256"],
-             "locator": None, "body_version": row.get("publisher_version")},
-            {"source_id": "congress.gov:crs-detail", "source_uri": None,
-             "sha256": row["metadata_source_sha256"], "locator": "/CRSReport", "body_version": None}]
+    files = [{"source_id": row["report_id"], "source_uri": row["source_url"],
+              "sha256": row["source_sha256"], "locator": None,
+              "body_version": row.get("publisher_version")}] if row.get("source_sha256") else []
+    return [*files, {"source_id": "congress.gov:crs-detail", "source_uri": None,
+                    "sha256": row["metadata_source_sha256"], "locator": "/CRSReport", "body_version": None}]
+
+
+def _replace_association(rows: list[dict], row: dict, *, max_rows: int) -> None:
+    """One insertion rule for successful files and refused file associations."""
+    key = tuple(row[name] for name in POLICY.identity_fields)
+    for index, held in enumerate(rows):
+        if tuple(held[name] for name in POLICY.identity_fields) == key:
+            rows[index] = row
+            return
+    if len(rows) >= max_rows:
+        raise ValueError("CRS merged file subjects exceed the declared row bound")
+    rows.append(row)
 
 
 def _write(rows: Sequence[dict], directory: Path, generation_id: str) -> Path:
@@ -348,6 +360,7 @@ def build_crs_report_files(
         crs_file_locator, crs_html_locator,
     )
     from spicy_docs.transport.captured import attached_capture
+    from spicy_docs.reading.refusals import RefusedResponse
 
     limits = (max_reports, max_requests, max_file_bytes, max_total_bytes, max_prior_bytes, max_prior_rows)
     if any(type(value) is not int or value <= 0 for value in limits):
@@ -439,7 +452,10 @@ def build_crs_report_files(
                             except CrsFileSourceError as error:
                                 evidence.refusal(error, stage="crs-file")
                                 capture = attached_capture(error)
-                                refused_bytes = len(capture.body) if capture is not None else 0
+                                refused = getattr(error, "refused_response", None)
+                                refused_body = (capture.body if capture is not None else refused.response_bytes
+                                                if isinstance(refused, RefusedResponse) else None)
+                                refused_bytes = len(refused_body) if refused_body is not None else 0
                                 decoded_bytes += refused_bytes
                                 downloaded_bytes += refused_bytes
                                 row.update(body_state="unavailable" if isinstance(error, CrsFileUnavailableError) else "refused",
@@ -450,7 +466,7 @@ def build_crs_report_files(
                                     "body_state": row["body_state"]})
                                 row.update(association_receipt_key=refusal["object"],
                                            association_receipt_sha256="sha256:" + refusal["sha256"])
-                                rows.append(row)
+                                _replace_association(rows, row, max_rows=max_prior_rows)
                                 continue
                             capture = acquired.capture
                             body = capture.body
@@ -502,17 +518,11 @@ def build_crs_report_files(
                             _write([row], text_phase, generation_id)
                     # Replace only the exact association; distinct numbered files
                     # and metadata observations remain independently queryable.
-                    key = tuple(row[name] for name in POLICY.identity_fields)
-                    rows = [held for held in rows if tuple(held[name] for name in POLICY.identity_fields) != key]
-                    rows.append(row)
-                    if len(rows) > max_prior_rows:
-                        raise ValueError("CRS merged file subjects exceed the declared row bound")
+                    _replace_association(rows, row, max_rows=max_prior_rows)
         evidence.finish()
     except BaseException as error:
         evidence.finish(error)
         raise
-    if len(rows) > max_prior_rows:
-        raise ValueError("CRS merged file subjects exceed the declared row bound")
     bundle = output_dir / ("bundle-" + generation_id)
     subject = _write(rows, bundle, generation_id)
     generation = output_dir / ("generation-" + generation_id)

@@ -154,6 +154,72 @@ def test_unavailable_and_content_mismatch_are_explicit(tmp_path, source, status)
     assert row["association_receipt_key"].endswith(row["association_receipt_sha256"][7:])
 
 
+@pytest.mark.parametrize("status", [404, 200])
+def test_unavailable_and_refused_receipts_witness_only_the_actual_metadata_original(tmp_path, source, status):
+    _, _transport = source
+    transport = httpx.MockTransport(lambda _: httpx.Response(status,
+        stream=httpx.ByteStream(b"<html>missing or mismatched file</html>"), headers={"Content-Type": "text/html"}))
+    result = files.build_crs_report_files(tmp_path / "run", [report()], allow_network=True, transport=transport)
+    [row] = rows(result)
+    [receipt] = pq.read_table(Path(result["bundle"]) / "etl_receipts.parquet").to_pylist()
+    assert receipt["witnesses"] == [{"source_id": "congress.gov:crs-detail", "source_uri": None,
+        "sha256": row["metadata_source_sha256"], "locator": "/CRSReport", "body_version": None}]
+
+
+def test_named_html_challenge_counts_retained_bytes_and_stops_at_whole_run_bound(tmp_path, source):
+    asked, _ = source
+    challenge = b"blocked" + b" " * (4096 - len("blocked"))
+    def handler(request):
+        asked.append(str(request.url))
+        if request.url.path.endswith(".html"):
+            return httpx.Response(403, stream=httpx.ByteStream(challenge), headers={"Content-Type": "text/html"})
+        return httpx.Response(200, stream=httpx.ByteStream(PDF), headers={"Content-Type": "application/pdf"})
+    transport = httpx.MockTransport(handler)
+    first = files.build_crs_report_files(tmp_path / "one", [report()], include_html=True,
+        allow_network=True, transport=transport, max_file_bytes=4096, max_total_bytes=8192)
+    assert first["downloaded_bytes"] == len(PDF) + len(challenge)
+    assert first["decoded_body_bytes"] == len(PDF) + len(challenge)
+    asked.clear()
+    with pytest.raises(ValueError, match="budget exhausted"):
+        files.build_crs_report_files(tmp_path / "bounded", [report(), report(update="2026-10-02T00:00:00Z")],
+            include_html=True, allow_network=True, transport=transport, max_file_bytes=4096, max_total_bytes=8192)
+    assert asked == [PDF_URL, HTML_URL]
+
+
+@pytest.mark.parametrize("status", [404, 200])
+def test_repeated_refusal_replaces_same_association_and_retains_each_observation(tmp_path, source, status):
+    from spicy_docs.storage.raw_archive import iter_acquisition_receipts
+
+    asked, _ = source
+    def handler(request):
+        asked.append(str(request.url))
+        return httpx.Response(status, stream=httpx.ByteStream(b"<html>missing or mismatched file</html>"),
+                              headers={"Content-Type": "text/html"})
+    transport = httpx.MockTransport(handler)
+    first = files.build_crs_report_files(tmp_path / "first", [report()], allow_network=True, transport=transport)
+    second = files.build_crs_report_files(tmp_path / "second", [report()], prior_bundle=Path(first["bundle"]),
+                                          allow_network=True, transport=transport)
+    assert len(asked) == 2 and rows(second) == rows(first)
+    observations = [document["receipt"] for _, document in iter_acquisition_receipts(tmp_path / "raw")
+                    if document["receipt"].get("event") == "capture"
+                    and document["receipt"].get("requested_url") == PDF_URL]
+    assert len(observations) == 2 and len({observation["capture_id"] for observation in observations}) == 2
+    files.verify_generation(Path(first["generation_directory"]))
+
+
+def test_unavailable_then_success_preserves_failure_and_reuses_recovered_body(tmp_path, source):
+    asked, transport = source
+    unavailable = httpx.MockTransport(lambda _: httpx.Response(404, stream=httpx.ByteStream(b"missing"),
+                                                               headers={"Content-Type": "text/html"}))
+    first = files.build_crs_report_files(tmp_path / "first", [report()], allow_network=True, transport=unavailable)
+    second = files.build_crs_report_files(tmp_path / "second", [report()], prior_bundle=Path(first["bundle"]),
+                                          allow_network=True, transport=transport)
+    assert [row["body_state"] for row in rows(second)] == ["unavailable", "ok"]
+    third = files.build_crs_report_files(tmp_path / "third", [report()], prior_bundle=Path(second["bundle"]),
+                                         transport=transport)
+    assert len(asked) == 1 and third["requests"] == 0 and rows(third) == rows(second)
+
+
 def test_no_unbounded_or_unqualified_acquisition(tmp_path, source):
     asked, transport = source
     with pytest.raises(ValueError, match="explicit bounded network"):
