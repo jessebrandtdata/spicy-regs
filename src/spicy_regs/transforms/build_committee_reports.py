@@ -645,6 +645,8 @@ def build_committee_reports(
                 "hearing_bill_links": evaluated_hearings, "hearing_transcripts": evaluated_hearings}
     paths = {name: merge_contract_table(output_dir, name, rows, download_prior=download_prior,
                                         replace_parents=(("package_id", "last_modified"), replaced[name]),
+                                        backfill_prior={"part_id": "package_id"} if name in
+                                        ("committee_reports", "report_sections", "committee_report_cbo_letters") else None,
                                         prior_present=(prior_files[name] is not None) if name in prior_files else None)
              for name, rows in (("committee_reports", report_rows), ("report_sections", section_rows),
                                 ("hearing_transcripts", hearing_rows), ("hearing_bill_links", link_rows),

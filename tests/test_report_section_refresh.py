@@ -102,7 +102,7 @@ def test_rule_change_refreshes_outside_window_and_replaces_only_successful_repor
         "body": "obsolete block",
         "last_modified": modified,
     }
-    unread = {"package_id": "CRPT-119hrpt2", "seq": "0", "body": "unread report"}
+    unread = {"package_id": "CRPT-119hrpt2", "last_modified": modified, "seq": "0", "body": "unread report"}
     _write_prior(tmp_path, "report_sections", REPORT_SECTIONS.columns, [old, unread])
     acquirer = RetainedReport(fail, empty)
     paths = build_committee_reports(
@@ -404,7 +404,8 @@ def test_prior_rows_are_backfilled_as_their_package_and_none_is_dropped(tmp_path
         tmp_path,
         "report_sections",
         section_columns,
-        [{"package_id": key, "seq": "0", "body": "prior block"} for key in packages],
+        [{"package_id": key, "last_modified": "2026-09-18T12:00:00Z",
+          "seq": "0", "body": "prior block"} for key in packages],
     )
     _checkpoints(tmp_path, {PART_ONLY: "complete", CRPT_ID: "complete", REFUSED: "refused", UNREAD: "complete"})
     acquirer = ReportsAcquirer()
@@ -457,7 +458,8 @@ def _two_part_priors(directory):
         directory,
         "report_sections",
         REPORT_SECTIONS.columns,
-        [{"package_id": TWO_PARTS, "part_id": part, "seq": "0", "body": "prior block"} for part in parts],
+        [{"package_id": TWO_PARTS, "part_id": part, "last_modified": "2026-09-18T12:00:00Z",
+          "seq": "0", "body": "prior block"} for part in parts],
     )
     _checkpoints(directory, {TWO_PARTS: "complete"})
     return parts

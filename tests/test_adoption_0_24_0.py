@@ -190,7 +190,7 @@ def test_communication_route_is_filled_on_unchanged_old_rows(tmp_path):
 
 @pytest.mark.parametrize("correction", ["empty", "partial", "refused"])
 def test_hearing_correction_replaces_only_evaluated_parent_links(tmp_path, correction):
-    """Empty/partial/refused corrections replace only the evaluated parent's links; other rows and refusals stand."""
+    """A new hearing revision keeps prior links; its own empty/partial/refused result and other parents stay distinct."""
     package_id = "CHRG-118hhrg56198"
     modified = "2026-09-18T12:00:00Z"
     mods = (FIXTURES / f"mods-{package_id}.excerpt.xml").read_bytes()
@@ -227,9 +227,13 @@ def test_hearing_correction_replaces_only_evaluated_parent_links(tmp_path, corre
     mods = mods.replace(b'context="COVER"', b'context="BODY"', 1 if correction == "partial" else -1)
     paths = run()
     rows = pq.read_table(paths[3]).to_pylist()
-    fresh = [row for row in rows if row["package_id"] == package_id]
-    assert len(fresh) == {"empty": 0, "partial": 11, "refused": 12}[correction]
+    historical = [row for row in rows if row["package_id"] == package_id
+                  and row["last_modified"] == "2026-09-18T12:00:00Z"]
+    assert historical == original.to_pylist()
+    fresh = [row for row in rows if row["package_id"] == package_id and row["last_modified"] == modified]
+    assert len(fresh) == {"empty": 0, "partial": 11, "refused": 0}[correction]
     assert [row for row in rows if row["package_id"] != package_id] == [untouched]
+    assert len(rows) == original.num_rows + len(fresh) + 1
     [checkpoint] = pq.read_table(paths[-1]).to_pylist()
     assert checkpoint["outcome"] == ("refused" if correction == "refused" else "complete")
     retain(paths)
