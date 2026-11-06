@@ -29,7 +29,7 @@ Usage::
 from __future__ import annotations
 
 from spicy_regs.subject_catalog import subject_tables, policies as subject_policies
-from spicy_regs.schemas.disbursement_summaries import TABLES as DISBURSEMENT_SUMMARY_TABLES
+from spicy_regs.disbursement_summary_tables import TABLES as DISBURSEMENT_SUMMARY_TABLES
 
 import argparse
 import hashlib

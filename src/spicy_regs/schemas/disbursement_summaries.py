@@ -5,13 +5,9 @@ import pyarrow as pa
 from spicy_regs.schemas.disbursement_pages import READING_FIELDS, SOURCE_FIELDS
 from spicy_regs.schemas.disbursement_pages import PARTITION_COLUMNS as PARTITION_COLUMNS
 
-PREFIXES = {
-    ("house", "financial-summary"): "house_financial_summary",
-    ("house", "mailing-summary"): "house_mailing_summary",
-    ("house", "allowance-summary"): "house_allowance_summary",
-    ("house", "allowance-formula"): "house_allowance_formula",
-    ("senate", "financial-summary"): "senate_financial_summary",
-}
+from spicy_regs.disbursement_summary_tables import PREFIXES, SUFFIXES
+from spicy_regs.disbursement_summary_tables import TABLES as TABLES
+
 COMMON = SOURCE_FIELDS + READING_FIELDS + (("chamber", pa.string()), ("reading_profile", pa.string()))
 ROW_CONTEXT = (
     ("summary_row_index", pa.int64()),
@@ -90,11 +86,10 @@ FAMILY_CONTEXT = {
 }
 SUFFIX_FIELDS = {"rows": ROW_CONTEXT + ROW_FIELDS, "values": ROW_CONTEXT + VALUE_FIELDS, "pages": PAGE_FIELDS}
 SCHEMAS = {
-    prefix + "_" + suffix: pa.schema(COMMON + fields + (FAMILY_CONTEXT.get(prefix, ()) if suffix != "pages" else ()))
+    prefix + "_" + suffix: pa.schema(COMMON + SUFFIX_FIELDS[suffix] + (FAMILY_CONTEXT.get(prefix, ()) if suffix != "pages" else ()))
     for prefix in PREFIXES.values()
-    for suffix, fields in SUFFIX_FIELDS.items()
+    for suffix in SUFFIXES
 }
-TABLES = tuple(SCHEMAS)
 
 
 def family_tables(chamber, profile):
@@ -102,5 +97,5 @@ def family_tables(chamber, profile):
         prefix = PREFIXES[chamber, profile]
     except KeyError as error:
         raise ValueError("Unsupported disbursement summary family") from error
-    tables = tuple(prefix + "_" + suffix for suffix in SUFFIX_FIELDS)
+    tables = tuple(prefix + "_" + suffix for suffix in SUFFIXES)
     return prefix.replace("_", "-"), tables, {table: SCHEMAS[table] for table in tables}
