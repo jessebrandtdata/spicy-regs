@@ -233,6 +233,13 @@
       "kind": "government",
       "note": ""
     },
+    "house-spending": {
+      "id": "house-spending",
+      "name": "House Chief Administrative Officer Statement of Disbursements CSVs",
+      "url": "https://www.house.gov/the-house-explained/open-government/statement-of-disbursements",
+      "kind": "government",
+      "note": "Selected official quarterly detail and summary CSVs. Detail payments, subtotals and organization totals retain distinct row levels; the summary is separate. Rows retain original source URLs, hashes and normalization receipts. Earlier PDF reports and Senate records are outside these CSV tables."
+    },
     "senate-spending": {
       "id": "senate-spending",
       "name": "Secretary of the Senate expenditure reports",
@@ -579,6 +586,11 @@
     "lobbying-filings": {
       "sources": [
         "lobbying"
+      ]
+    },
+    "house-disbursements": {
+      "sources": [
+        "house-spending"
       ]
     },
     "senate-expenditures": {
