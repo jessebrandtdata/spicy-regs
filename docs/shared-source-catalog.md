@@ -613,6 +613,14 @@ are native columns, so tools can search and group them without opening receipts.
 Unknown values remain empty, and conflicting evidence stays explicit. Periods
 describe source coverage; capture times describe when the source was obtained.
 
+Public origin URLs omit credentials and query parameters except the registered
+CourtListener bulk listing and exact Google Books PDF download locators accepted
+by SpicyDocs `disbursements_report_locator`. The Google Books exception requires
+the source-reader dependency and retains only the book ID and `output=pdf` query;
+other paths, hosts and query keys remain withheld. Export completion pins that
+validator's source alongside the catalog exporter. This preserves a recorded
+origin link without claiming current download access or report qualification.
+
 Receipt columns point to the separate archived receipt and its entry. The receipt
 kind distinguishes a line in a frozen index from an entry in an acquisition
 receipt. An original publisher or downloader receipt can have its own reference.

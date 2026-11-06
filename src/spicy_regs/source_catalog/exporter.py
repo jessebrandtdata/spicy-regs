@@ -29,9 +29,19 @@ def public_url(value: str | None) -> str | None:
         and parts.path == "/list.html"
         and parts.query == "prefix=bulk-data/"
     )
-    if (parts.scheme not in ["http", "https"] or parts.username or parts.password
-            or (parts.query and not public_listing) or parts.fragment):
+    if (parts.scheme not in ["http", "https"] or parts.username or parts.password or parts.fragment):
         return None
+    if parts.query and not public_listing:
+        if parts.netloc != "books.google.com":
+            return None
+        # The source reader owns the exact public PDF locator: book id and
+        # output=pdf only. Do not widen other origins or duplicate its policy.
+        try:
+            from spicy_docs.sources.disbursements_reports import disbursements_report_locator
+
+            disbursements_report_locator(value)
+        except (ImportError, ValueError):
+            return None
     return value
 
 

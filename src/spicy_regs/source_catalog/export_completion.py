@@ -21,9 +21,10 @@ from .progress import phase
 
 
 def implementation():
+    from spicy_docs.sources import disbursements_reports
     from spicy_docs.storage import raw_archive
 
-    paths = [*Path(__file__).parent.glob('*.py'), Path(raw_archive.__file__)]
+    paths = [*Path(__file__).parent.glob('*.py'), Path(raw_archive.__file__), Path(disbursements_reports.__file__)]
     return {
         'sources': {str(path.resolve()): digest(path) for path in sorted(paths)},
         'python': sys.version,
