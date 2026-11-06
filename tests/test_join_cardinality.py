@@ -9,7 +9,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from scripts.check_table_joins import measure
-from spicy_regs.table_joins import JOINS, SOURCE_JOINS, Join
+from spicy_regs.table_joins import JOINS, Join
 
 
 @pytest.mark.parametrize("columns, child_key, parent_keys", [
@@ -94,13 +94,13 @@ def test_changed_printing_keys_do_not_inherit_old_measurements():
 
 @pytest.mark.parametrize("parent", ["budget_volumes", "house_activity_reports"])
 def test_dated_metadata_body_can_match_multiple_parent_revisions(tmp_path, parent):
-    join = next(j for j in SOURCE_JOINS if j.child == "document_citations" and j.parent == parent)
+    join = next(j for j in JOINS if j.child == "document_citations" and j.parent == parent)
     assert join.kind == "unmeasured" and join.measurement is None
     assert join.expected_cardinality == "many"
     assert (join.baseline_keys, join.baseline_missing, join.floor_pct) == (0, 0, None)
     child, parents = tmp_path / "citations.parquet", tmp_path / "parents.parquet"
-    pq.write_table(pa.table({"document_key": ["pkg"], "text_sha256": ["same-body"]}), child)
-    pq.write_table(pa.table({"package_id": ["pkg", "pkg"], "text_sha256": ["same-body", "same-body"],
+    pq.write_table(pa.table({"document_key": ["pkg"], "body_version_id": ["same-body"]}), child)
+    pq.write_table(pa.table({"package_id": ["pkg", "pkg"], "body_version_id": ["same-body", "same-body"],
                             "last_modified": ["2026-08-01T00:00:00Z", "2026-09-01T00:00:00Z"]}), parents)
     urls = {join.child: [str(child)], join.parent: [str(parents)]}
     with duckdb.connect() as connection:
