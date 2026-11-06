@@ -12,7 +12,7 @@ windows remain valid.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 from datetime import date
 from operator import itemgetter
 from pathlib import Path
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 import httpx
 
 from spicy_regs.env_values import first_env
+from spicy_regs.crs_report_detail import merge_list_observation
 from spicy_regs.sources.base import Reader
 
 API_BASE = "https://api.congress.gov/v3"
@@ -45,7 +46,7 @@ def _resolve_api_key() -> str | None:
 
 
 class CrsReportsReader(Reader):
-    """Yield raw CRS report dicts, filtering locally to ``since`` or later.
+    """Yield the selected native CRS query, preserving its complete membership.
 
     Requires an api.data.gov key (``CrsReportsError`` without one). A walk stating no
     declared count, a report with no ``id`` or ``updateDate``, or a query spicy-docs'
@@ -78,7 +79,7 @@ class CrsReportsReader(Reader):
             raise CrsReportsError("CRS reports require an api.data.gov key")
         try:
             from spicy_docs.reading.paged_json import PagedJsonBudget
-            from spicy_docs.sources.congress.listing import LIST_ROUTES, CongressListingReader, crs_report_list_url
+            from spicy_docs.sources.congress.listing import LIST_ROUTES, CongressListingReader, crs_report_list_url, utc_day_window
         except ModuleNotFoundError as error:
             if error.name == "spicy_docs":
                 raise RuntimeError(
@@ -86,7 +87,7 @@ class CrsReportsReader(Reader):
                 ) from None
             raise
         url = crs_report_list_url(
-            from_datetime=f"{self.since.isoformat()}T00:00:00Z" if self.since else None,
+            from_datetime=utc_day_window(self.since, None)[0],
             limit=self.per_page,
         )
         budget = PagedJsonBudget(
@@ -101,6 +102,8 @@ class CrsReportsReader(Reader):
             self.evidence.event("selection", stage="crs", url=url, since=str(self.since), max_pages=_MAX_PAGES)
             transport = self.evidence.transport(transport, stage="crs-response", max_bytes=budget.max_page_bytes)
         witnesses = self.witnesses
+        observations: dict[tuple, dict] = {}
+
         class WitnessedListingReader(CongressListingReader):
             def records(self, *args, **kwargs):
                 for page in super().records(*args, **kwargs):
@@ -109,6 +112,9 @@ class CrsReportsReader(Reader):
                                    "sha256": page.sha256, "locator": f"/CRSReports/{ordinal}",
                                    "body_version": str(report.get("version"))}
                         key = (report.get("id"), report.get("updateDate"))
+                        # Check before pooling can collapse equal-version observations.
+                        # The evidence transport already retained this entire page.
+                        observations[key] = merge_list_observation(observations.get(key, {}), dict(report))
                         held = witnesses.setdefault(key, [])
                         if witness not in held:
                             held.append(witness)
@@ -121,10 +127,15 @@ class CrsReportsReader(Reader):
                 version=itemgetter("updateDate"),
                 max_pages=_MAX_PAGES,
             )
-        for report in pooled.records:
-            # Do not rely on the server's ignored sort parameter.
-            if self.since is None or not _older_than(report, self.since):
-                yield dict(report)
+        # The native date predicate does not exactly match printed updateDate
+        # (reverified 2026-11-06). Locally filtering that different field would
+        # discard legitimate query members, including late indexed records.
+        admitted = {report["id"] for report in pooled.records}
+        # Pooling establishes inventory membership by ID. Every dated revision
+        # actually observed for those IDs remains available to the history table.
+        for (report_id, _update_date), report in observations.items():
+            if report_id in admitted:
+                yield report
 
 
 class CrsReportDetailReader:
@@ -182,14 +193,3 @@ class CrsReportDetailReader:
                 return {"state": "failed", "witnesses": witnesses, "error": failure_reason(error, self.api_key)}
         witnesses[-1]["body_version"] = str(report_version(report))
         return {"state": "ok", "report": report, "witnesses": witnesses, "error": None}
-
-
-def _older_than(report: Mapping, since: date) -> bool:
-    """True when ``updateDate`` parses to a date before ``since``; missing or invalid dates are not older."""
-    raw = report.get("updateDate")
-    if not raw:
-        return False
-    try:
-        return date.fromisoformat(str(raw)[:10]) < since
-    except ValueError:
-        return False

@@ -3,8 +3,9 @@
 Produces a native subject table and shared receipts keyed on ``report_id`` and
 ``update_date``, retaining each captured revision of the report's list metadata.
 
-Incremental by design: best-effort prior from R2, fetch only reports updated
-since its max ``update_date`` minus a short overlap, then dedup on
+Incremental discovery uses the prior selected generation's successful crawl
+cutoff with overlap, never a maximum timestamp among imported rows. Explicit
+reconciliation enumerates the native inventory without a date window. Dedup on
 ``(report_id, update_date)`` preferring the fresh copy of a repeated revision.
 With no prior table it is a full list backfill. Explicit ``detail_limit`` adds a
 bounded enrichment pass for selected current revisions; ordinary refreshes keep
@@ -13,7 +14,7 @@ qualified detail and its witnesses at an unchanged native coordinate.
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 from contextlib import nullcontext
@@ -31,7 +32,9 @@ from spicy_regs.sources import r2
 from spicy_regs.transforms.government_receipts import internal_prior, receipt_builder
 from spicy_regs.transforms.government_source_shapes import GovernmentShapeError
 from spicy_regs.sources.crs_reports import CrsReportDetailReader, CrsReportsReader
-from spicy_regs.crs_report_detail import DETAIL_COLUMNS, check_detail_replacement, json_text, qualified_detail
+from spicy_regs.crs_report_detail import (
+    DETAIL_COLUMNS, LIST_SOURCE_FIELDS, check_detail_replacement, json_text, merge_list_observation, qualified_detail,
+)
 
 OUTPUT = "crs_reports.parquet"
 
@@ -57,35 +60,16 @@ _SCHEMA = pa.schema([(c, pa.string()) for c in COLUMNS])
 
 
 def _shape(doc: dict) -> dict:
-    """Map one raw Congress.gov CRS report onto the published column shape."""
-    return {
-        **dict.fromkeys(DETAIL_COLUMNS),
-        "detail_state": "not_requested",
-        "detail_attempt_state": "not_requested",
-        "report_id": doc.get("id"),
-        "title": doc.get("title"),
-        "report_type": doc.get("contentType"),
-        "status": doc.get("status"),
-        "published_date": doc.get("publishDate"),
-        "update_date": doc.get("updateDate"),
-        "version": str_or_none(doc.get("version")),
-        "url": doc.get("url"),
-    }
+    """Map the native list fields without giving unrequested detail false values."""
+    row = {column: doc.get(field) for column, field in LIST_SOURCE_FIELDS.items()}
+    row["version"] = str_or_none(row["version"])
+    return {**dict.fromkeys(DETAIL_COLUMNS), "detail_state": "not_requested",
+            "detail_attempt_state": "not_requested", **row}
 
 
-def _prior_max_update_date(prior_file: Path) -> date | None:
-    """Largest ``update_date`` in the prior table, or None if empty/absent."""
-    if not prior_file.exists():
-        return None
-    import duckdb
-
-    row = duckdb.sql(f"SELECT max(update_date) FROM read_parquet('{prior_file}')").fetchone()
-    if not row or row[0] is None:
-        return None
-    try:
-        return date.fromisoformat(str(row[0])[:10])
-    except ValueError:
-        return None
+def _discovery_state(evidence: CaptureEvidence | None) -> dict:
+    """Only the selected prior's retained crawl can establish live progress."""
+    return (evidence.inherited_event("crs-discovery") or {}) if evidence is not None else {}
 
 
 @receipt_builder
@@ -93,6 +77,7 @@ def build_crs_reports(
     output_dir: Path, *, since: date | None = None, evidence: CaptureEvidence | None = None,
     detail_limit: int = 0, detail_api_key: str | None = None, detail_transport=None, retry_completed: bool = False,
     retained_details: dict[str, tuple[Path, str]] | None = None, refresh_list: bool = True,
+    reconcile: bool = False, coverage: dict | None = None,
 ) -> Path:
     """Build ``crs_reports.parquet`` (incremental merge with the prior table)."""
     if type(detail_limit) is not int or not 0 <= detail_limit <= 100:
@@ -115,33 +100,39 @@ def build_crs_reports(
     else:
         logger.info("CRS reports: no prior table found — full backfill")
 
-    # 2. Decide the fetch window start.
-    if since is None:
-        prior_max = _prior_max_update_date(prior_file) if have_prior else None
-        since = (prior_max - timedelta(days=OVERLAP_DAYS)) if prior_max else None
+    # Capture before discovery. A crawl is observed pages, not an atomic snapshot.
+    # The selected generation owns this cursor: a failed conversion cannot adopt it.
+    discovered_at = datetime.now(UTC).isoformat()
+    state = _discovery_state(evidence)
+    explicit_window = since is not None
+    if reconcile and explicit_window:
+        raise ValueError("CRS reconciliation cannot also select a date window")
+    if since is None and not reconcile and state.get("cursor"):
+        since = datetime.fromisoformat(state["cursor"]).date() - timedelta(days=OVERLAP_DAYS)
     logger.info("CRS reports: list refresh={}, window starts {}", refresh_list, since or "the beginning")
 
     # 3. Fetch + shape into a "new rows" parquet.
     if not refresh_list and (not have_prior or not detail_limit):
         raise ValueError("A detail-only build requires a selected local prior and positive detail_limit")
     reader = CrsReportsReader(since=since, evidence=evidence)
-    rows = [_shape(doc) for doc in reader.iter_records()] if refresh_list else []
-    list_rows = len(rows)
-    for row in rows:
-        witnesses = getattr(reader, "witnesses", {}).get((row["report_id"], row["update_date"]))
-        if witnesses:
-            row["list_witness_json"] = json_text(witnesses)
+    records = [(_shape(doc), frozenset(doc)) for doc in reader.iter_records()] if refresh_list else []
+    list_rows = len(records)
     # One bounded table pass owns the source-specific merge. It distinguishes
     # unrequested detail from authoritative explicit null/empty values.
     merged = {(row["report_id"], row["update_date"]): {**dict.fromkeys(COLUMNS), **row}
               for row in pq.read_table(prior_file).to_pylist()} if have_prior else {}
-    for row in rows:
+    for row, fields in records:
         key = (row["report_id"], row["update_date"])
+        witnesses = getattr(reader, "witnesses", {}).get(key)
+        if witnesses:
+            row["list_witness_json"] = json_text(witnesses)
         prior = merged.get(key)
         if prior:
-            if prior.get("detail_state") == "ok" and any(prior.get(name) != row.get(name) for name in
-                    ("version", "title", "report_type", "status", "published_date")):
-                raise GovernmentShapeError("CRS incompatible same-coordinate list metadata; prior preserved")
+            source = merge_list_observation(
+                {field: prior.get(column) for column, field in LIST_SOURCE_FIELDS.items()},
+                {field: row[column] for column, field in LIST_SOURCE_FIELDS.items() if field in fields},
+            )
+            row.update({column: source.get(field) for column, field in LIST_SOURCE_FIELDS.items()})
             for name in DETAIL_COLUMNS:
                 row[name] = prior.get(name)
             old_witnesses = json.loads(prior.get("list_witness_json") or "[]")
@@ -195,4 +186,21 @@ def build_crs_reports(
 
     total = pq.ParquetFile(out_file).metadata.num_rows
     logger.info("CRS reports: {:,} rows", total)
+    failed_details = sum(row.get("detail_attempt_state") == "failed" for row in rows)
+    status = {"discovery": "complete" if refresh_list else "not_requested",
+              "scope": "native-inventory" if reconcile or since is None else "date-window",
+              "since": str(since) if since is not None else None,
+              "listed": list_rows, "detail_failed": failed_details,
+              "table_generation": "prepared", "atomic_snapshot": False,
+              "whole_history_complete": False}
+    if coverage is not None:
+        coverage.update(status)
+    if evidence is not None:
+        evidence.event("acquisition-coverage", **status)
+        # An explicit archive/window import or detail-only pass carries live state
+        # forward unchanged. Metadata rows never create or move the live cursor.
+        cursor = discovered_at if refresh_list and not explicit_window else state.get("cursor")
+        evidence.event("crs-discovery", cursor=cursor, since=status["since"],
+                       mode="reconcile" if reconcile else "explicit-window" if explicit_window else
+                            "refresh" if refresh_list else "detail-only")
     return out_file

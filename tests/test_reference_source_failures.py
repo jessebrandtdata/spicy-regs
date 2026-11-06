@@ -204,8 +204,8 @@ def test_crs_follows_continuation_and_never_stops_at_an_old_row():
     newer = {**CRS, "id": "R-new"}
     transport = Transport(crs_page([older, CRS], total=3, next_url=next_url), crs_page([newer], total=3))
     rows = list(selected("crs", transport, since=DAY, per_page=2).iter_records())
-    assert [x["id"] for x in rows] == ["R1", "R-new"]
-    assert transport.calls[0].url.params["fromDateTime"] == "2026-09-08T00:00:00Z"
+    assert [x["id"] for x in rows] == ["R-old", "R1", "R-new"]
+    assert transport.calls[0].url.params["fromDateTime"] == "2026-09-07T23:59:59Z"
     assert str(transport.calls[1].url) == next_url
     assert all(x.headers["x-api-key"] == KEY and "api_key" not in x.url.params for x in transport.calls)
 

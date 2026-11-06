@@ -143,41 +143,28 @@ MAX_PACKAGES_PER_RUN = 200
 MAX_PAGES = 40
 
 
-def _prior_watermark(prior_file: Path) -> datetime | None:
-    """The largest ``last_modified`` already published, or None."""
-    if not prior_file.exists():
-        return None
-    import duckdb
+def _since(prior_file: Path | None = None, window_days: int = DEFAULT_WINDOW_DAYS,
+           *, evidence: CaptureEvidence | None = None, now: datetime | None = None) -> str:
+    """Last-modified floor from the selected prior's successful discovery, never imported rows.
 
-    row = duckdb.sql(f"SELECT max(try_cast(last_modified AS TIMESTAMPTZ)) FROM read_parquet('{prior_file}')").fetchone()
-    if not row or row[0] is None:
-        return None
-    try:
-        return datetime.fromisoformat(str(row[0]).replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        logger.warning("Committee reports: prior last_modified {!r} is not an instant — using the cold window", row[0])
-        return None
-
-
-def _since(prior_file: Path | None = None, window_days: int = DEFAULT_WINDOW_DAYS) -> str:
-    """The last-modified floor this run asks GovInfo for."""
+    ``prior_file`` is retained for callers; its historical contents cannot establish
+    a live cursor. Without qualified discovery state the declared cold window applies.
+    """
     raw = os.environ.get("COMMITTEE_REPORTS_SINCE", "").strip()
     if raw:
         return raw if raw.endswith("Z") else f"{raw}T00:00:00Z"
-    watermark = _prior_watermark(prior_file) if prior_file is not None else None
-    if watermark is not None:
-        start = watermark - timedelta(hours=OVERLAP_HOURS)
-    else:
-        start = datetime.now(UTC) - timedelta(days=window_days)
+    state = (evidence.inherited_event("committee-discovery") or {}) if evidence is not None else {}
+    cutoff = datetime.fromisoformat(state["cursor"]) if state.get("cursor") else None
+    start = (cutoff - timedelta(hours=OVERLAP_HOURS)) if cutoff else (now or datetime.now(UTC)) - timedelta(days=window_days)
     return start.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _package_ids(reader: PackageDiscoverySource, collection: str, since: str,
-                 evidence: CaptureEvidence | None = None) -> dict[str, str | None]:
+                 evidence: CaptureEvidence | None = None, *, until: str | None = None) -> dict[str, str | None]:
     """Enumerate within the page cap; use the package grammar before spending body requests."""
     found = {}
     unsupported = 0
-    for page in reader.packages(collection_url(collection, since), max_pages=MAX_PAGES):
+    for page in reader.packages(collection_url(collection, since, until), max_pages=MAX_PAGES):
         if evidence:
             evidence.capture(page.capture, stage=collection + ":listing")
         for record in page.records:
@@ -472,6 +459,7 @@ def build_committee_reports(
     download_prior: Callable[[str, Path], bool] = r2.download,
     evidence: CaptureEvidence | None = None,
     reread: Collection[str] = (),
+    coverage: dict | None = None,
 ) -> tuple[Path, ...]:
     """Build five contract tables and the acquisition checkpoint, with one owner.
 
@@ -506,7 +494,10 @@ def build_committee_reports(
     previous_reads = dict(reads)
     if reread:
         _refuse_unsafe_reread(reread, set(prior_reads(checkpoint, {})), reads)
-    since = _since(prior_files["committee_reports"])
+    discovered_at = datetime.now(UTC)
+    since = _since(evidence=evidence, now=discovered_at)
+    raw_until = os.environ.get("COMMITTEE_REPORTS_UNTIL", "").strip()
+    until = (raw_until if raw_until.endswith("Z") else f"{raw_until}T00:00:00Z") if raw_until else None
     logger.info("Committee reports: {}; cap {} per collection; agenda cap 0",
                 f"re-reading only {sorted(reread)}" if reread else f"modified since {since}", max_packages)
     observed_at = datetime.now(UTC).isoformat()
@@ -525,7 +516,7 @@ def build_committee_reports(
     completeness: Counter[str] = Counter()
     mentions: Counter[str] = Counter()
     meetings: Counter[str] = Counter()
-    refused = unchanged = linked = 0
+    refused = unchanged = linked = deferred = listed_count = 0
 
     for collection in ("CRPT", "CHRG"):
         if reread:
@@ -534,7 +525,7 @@ def build_committee_reports(
                        if key.startswith(collection + "-")}
         else:
             try:
-                listed = _package_ids(reader, collection, since, evidence)
+                listed = _package_ids(reader, collection, since, evidence, until=until)
             except Exception as error:
                 if evidence:
                     evidence.refusal(error, stage=collection + ":listing")
@@ -543,6 +534,8 @@ def build_committee_reports(
                        if key.startswith(collection + "-") and not _settled(row, collection)}
             pending.update({key: modified for key, modified in listed.items()
                             if not _settled(reads.get(key, {}), collection, modified)})
+        listed_count += len(listed)
+        deferred += max(0, len(pending) - max_packages)
         unchanged += len(listed) - sum(key in pending for key in listed)
         if evidence:
             evidence.event("package-selection", collection=collection, listed=listed,
@@ -659,7 +652,21 @@ def build_committee_reports(
     relinked = _link_committee_codes(paths["hearing_bill_links"], paths["hearing_transcripts"])
     logger.info("Committee reports: {:,} hearing links take their hearing's committee code", relinked)
     reads = {key: latest_read(previous_reads.get(key, {}), row) for key, row in reads.items()}
-    return (*paths.values(), merge_table(output_dir, name=READS_TABLE, columns=READ_COLUMNS,
+    read_path = merge_table(output_dir, name=READS_TABLE, columns=READ_COLUMNS,
                                          identity=("package_id",), version_column="observed_at", rows=reads.values(),
                                          remote_key=f"{READS_TABLE}.parquet", download_prior=download_prior,
-                                         prior_present=checkpoint is not None))
+                                         prior_present=checkpoint is not None)
+    status = {"discovery": "not_requested" if reread else "complete", "since": None if reread else since,
+              "until": until, "listed": listed_count, "unchanged": unchanged, "refused": refused, "deferred": deferred,
+              "pending": sum(not _settled(row, key.split("-", 1)[0]) for key, row in reads.items()),
+              "table_generation": "prepared", "atomic_snapshot": False, "whole_history_complete": False}
+    if coverage is not None:
+        coverage.update(status)
+    if evidence is not None:
+        evidence.event("acquisition-coverage", **status)
+        state = evidence.inherited_event("committee-discovery") or {}
+        explicit = bool(os.environ.get("COMMITTEE_REPORTS_SINCE", "").strip()) or until is not None
+        evidence.event("committee-discovery",
+                       cursor=discovered_at.isoformat() if not reread and not explicit else state.get("cursor"),
+                       since=status["since"], mode="reread" if reread else "explicit-window" if explicit else "refresh")
+    return (*paths.values(), read_path)

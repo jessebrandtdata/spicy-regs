@@ -7,6 +7,27 @@ from typing import Any
 
 import pyarrow as pa
 
+LIST_SOURCE_FIELDS = {
+    "report_id": "id", "title": "title", "report_type": "contentType", "status": "status",
+    "published_date": "publishDate", "update_date": "updateDate", "version": "version", "url": "url",
+}
+
+
+def merge_list_observation(prior: dict, report: dict) -> dict:
+    """Merge one native coordinate: omission is unknown, explicit null/empty clears.
+
+    Contradictory populated source facts refuse before a duplicate or pooled walk
+    can overwrite them. The same rule applies to fresh pages and selected priors.
+    """
+    from spicy_regs.transforms.government_source_shapes import GovernmentShapeError
+
+    for field in LIST_SOURCE_FIELDS.values():
+        if (field in report and prior.get(field) not in (None, "") and report[field] not in (None, "")
+                and prior[field] != report[field]):
+            raise GovernmentShapeError("CRS incompatible same-coordinate list metadata; prior preserved")
+    return {**prior, **report}
+
+
 DETAIL_COLUMNS = (
     "summary", "authors_json", "topics_json", "formats_json", "related_materials_json",
     "detail_state", "detail_attempt_state", "detail_fields_json",
