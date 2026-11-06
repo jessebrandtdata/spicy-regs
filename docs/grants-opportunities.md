@@ -71,6 +71,49 @@ The selection lists admitted source releases and their exact retained ZIPs:
 }
 ```
 
+### Release selection on refresh
+
+`spicy_regs.pipelines.grants_opportunities.main` is the maintained refresh
+caller. Its `--selection` file is the complete input set for one new generation;
+it neither discovers the latest export nor appends the preceding table. The
+builder already writes every selected release. Keep this one selection mechanism
+rather than introducing another revision key or history table.
+
+For a single-snapshot query, select the exact admitted release of interest. For
+declared release history, retain the preceding selection file, add the next
+admitted release to `sources`, and keep every earlier release pin and corresponding
+`archives` entry in the next selection. Write that cumulative selection to a new
+file and build into a fresh output directory. Keep the selection file and its
+SHA-256 alongside the resulting generation and source evidence so its declared
+coverage can be replayed. The existing evidence records each release's exact
+logical ID, artifact digest, population outcome and compressed-original digest.
+Do not replace a release pin merely because its snapshot date matches another.
+
+A later-only selection intentionally produces later-only coverage. Selecting a
+directory, retaining an old table, or possessing old original bytes does not add
+them to the next generation. Report the selected snapshot dates **and release
+digests**, plus any unselected, unadmitted or unavailable periods. Daily publisher
+availability and the dates found within one export do not establish complete
+historical coverage. Reuse the accepted full-export qualification in `ss-5bhb`;
+this selection rule does not reopen it or acquire historical releases.
+
+The accepted 2026-10-20 scope in `ss-5bhb` binds original ZIP SHA-256
+`ee3dc41ec567dbea378f6b759fa071fb1679c69fab871dd1e49d987d7dc76508`
+to source release
+`sha256:125e9b3cfe0365ef6150954858f172eb4356435a18bed1e97a3ff97abbcdd615`
+and domain generation
+`sha256:b98a33ef40900f6dde4f49bfd9a41609178750d2af0207b00b52dbf1f0b0e5ab`.
+These retained acceptance pins describe that selected export, not a continuous
+daily history or a fresh readback of today's publication.
+
+Compare observations using `(source_release_digest, notice_type, opportunity_id)`.
+An unchanged cumulative selection retains the same source observations, while a
+later snapshot may change a version/deadline or omit an opportunity. Omission
+creates no withdrawal observation; source-stated lifecycle enrichment remains
+owned by `ss-nguq`. `post_date` is the publisher's posting date for the notice and
+`last_updated_date` is its stated update date; neither identifies the daily export
+or proves when the notice first became publicly available.
+
 The ordinary source-evidence writer retains the compressed original once per
 distinct digest and records each source release and its population outcome.
 No full decoded XML file is created. `build_generation` then admits the table.
@@ -101,5 +144,6 @@ refresh behavior. An absent record remains absent from that snapshot without
 creating a withdrawal event.
 
 Focused local fixtures prove mapping, refusal, ordinary publication and SQL
-behavior. Complete real-export qualification and public delivery are separate
-acceptance steps; this implementation does not claim either is already complete.
+behavior. `ss-5bhb` records accepted complete selected-export qualification and
+public delivery. The release-selection checks reuse that acceptance; they do not
+establish automatic daily freshness, lifecycle status or complete history.

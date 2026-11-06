@@ -52,6 +52,38 @@ establishes current payload availability.
 
 ## Refresh and resolve
 
+### Edition state and earlier renditions
+
+Decision for `ss-q1e2`: retain the current complete rendition of each selected
+edition in the queryable family. The supported consumer compares attributable
+member ratings and their official-action links across publisher-defined editions;
+no prioritized consumer currently requires every earlier capture of the same
+edition in that family. The `ss-0ib0` source census continues to distinguish
+edition gaps from alternative-rendition gaps, under the `ss-jo9y` expansion hold.
+This decision does not activate a publisher or restart archive acquisition.
+
+A complete successful refresh replaces that edition's rows, including its earlier
+`scorecard_snapshots` rows. Other editions, failed editions and editions absent
+from the requested batch remain. An edition is therefore historical by its
+publisher-defined period, without implying that all captures of it remain in the
+current tables. Retained originals, capture receipts and immutable earlier
+generations can support exact replay of an earlier accepted rendition; their
+retention is distinct from within-edition table history, and availability must be
+checked against those exact pins. Use the existing census, qualification records,
+private retained plans and publication evidence for their respective claims.
+
+Keep the existing parent/child business identities and accepted `snapshot_id`
+associations. Current rating counts must not multiply with each capture.
+`updated_at_text` remains publisher prose; it is neither an ordering guarantee nor
+a required revision key. Successful/failed/absent-edition and unchanged-receipt
+checks already cover this selected behavior. No history schema or receipt
+migration is selected. If a consumer later needs changes within one edition,
+prioritize that exact rendition query in `ss-0ib0`, identify the retained capture
+and generation pins, and qualify revision-scoped replacement and snapshot joins
+across the source and analysis families before changing these counts.
+
+### Qualified refresh
+
 `run-rollup-scorecards` uses `sources.yaml`. Canonical unattended activation is
 bound to the installed `live_qualifications.json`: publisher, reader digest,
 parser version, exact edition, completeness and evidence policy must agree.
