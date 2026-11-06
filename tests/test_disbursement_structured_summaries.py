@@ -96,7 +96,7 @@ def selected(tmp_path):
     }
 
     class Client:
-        def generate(self, model, request):
+        def generate(self, model, body):
             return response
 
     reading = Gemini(
