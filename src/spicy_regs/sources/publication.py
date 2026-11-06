@@ -1309,7 +1309,7 @@ def _publish_evidence(client, bucket: str, path: Path, artifact) -> None:
 def publish_generation(directory: Path, *, client, bucket: str, prior_index: Mapping,
                        evidence_directories: tuple[Path, ...] = (), added_tables: frozenset[str] = frozenset(),
                        receipt_only_tables: frozenset[str] = frozenset(), exact_prior: bool = False,
-                       conversion_proof: NativeConversionProof | None = None) -> dict:
+                       conversion_proof: NativeConversionProof | None = None, before_pointer=None) -> dict:
     """Verify/upload/verify, then compare-and-swap the publication pointer.
 
     Validation and conditional-write refusals preserve the current pointer.
@@ -1328,6 +1328,8 @@ def publish_generation(directory: Path, *, client, bucket: str, prior_index: Map
     ``exact_prior`` also holds the captured publication timestamp unchanged on every pointer retry.
     ``conversion_proof`` replaces the byte-size heuristic only for original tables
     completely restored by this native-conversion invocation; it also requires the exact prior on every retry.
+    ``before_pointer`` runs after immutable staging and before the timestamp on each pointer attempt. A callback
+    exception preserves the current pointer. Callers that pause for an observer should make their gate one-shot.
     """
     from rulespec_artifacts import LocalMemberSource
     from spicy_regs.generations import admit_generation_for_publication
@@ -1336,7 +1338,7 @@ def publish_generation(directory: Path, *, client, bucket: str, prior_index: Map
     return _publish_verified_generation(
         artifact, LocalMemberSource(directory), client=client, bucket=bucket, prior_index=prior_index,
         evidence_directories=evidence_directories, added_tables=added_tables, receipt_only_tables=receipt_only_tables,
-        exact_prior=exact_prior, conversion_proof=conversion_proof, local=directory,
+        exact_prior=exact_prior, conversion_proof=conversion_proof, before_pointer=before_pointer, local=directory,
         upload_member=lambda prefix, key: _put_immutable(client, bucket, prefix + "/" + key, directory / key),
     )
 
@@ -1663,13 +1665,13 @@ def _publish_verified_generation(
     # contention resolves in at most one round per concurrent writer.
     for _ in range(_POINTER_ATTEMPTS):
         _assert_parents_current(index, artifact.root["spec"].get("parents", {}))
+        if before_pointer is not None:
+            before_pointer()
         # Stamped per attempt, so it is the instant this write moves the pointer. Replaying the generation already
         # current moves nothing, so its entry is kept as stored, with or without an instant.
         current = index["families"].get(family)
         moved = current if _generation_entry(current) == entry else {**entry, "publishedAt": _instant()}
         updated, raw = _merge_family(index, family, moved)
-        if before_pointer is not None:
-            before_pointer()
         if _put_pointer(client, bucket, INDEX_V2_KEY, raw, etag):
             return _published(updated, raw, family, local)
         logger.info("publication: pointer moved concurrently; merging {} onto the reread index", family)
@@ -1783,22 +1785,30 @@ def stored_family(client, bucket: str, family: str) -> dict | None:
     return _stored_index(client, bucket)[0]["families"].get(family)
 
 
-def restore_family(client, bucket: str, family: str, entry: Mapping, *, expected: Mapping | None) -> dict:
+def restore_family(client, bucket: str, family: str, entry: Mapping | None, *, expected: Mapping | None) -> dict:
     """Point ``family`` back at ``entry``, an earlier generation whose objects are still stored; return the index.
 
     A rollback is a pointer write, never a publish: :func:`publish_generation` refuses a generation that drops
     receipts. ``expected`` is the generation the family must still name (``None``: whatever it names now), so a
     generation another writer published since is not discarded unseen. ``entry`` is restored as it was captured,
     ``publishedAt`` included.
+
+    ``entry=None`` restores prior absence. It requires the exact recorded ``expected`` entry, including its
+    publication time, and removes only that family through the same conditional pointer write. Immutable objects
+    remain stored. An already-absent family is an idempotent success when a recorded expected entry was supplied.
     """
-    prefix = entry["prefix"]
-    stored = {f"{prefix}/artifact.json": None} | {
-        f"{prefix}/{member['key']}": member["byteSize"]
-        for key, table in entry["tables"].items() for member in table.get("members", [{"key": key, **table}])}
-    for key, size in stored.items():
-        head = _head(client, bucket, key)
-        if head is None or (size is not None and head["ContentLength"] != size):
-            raise PublicationError(f"Cannot restore {family}: {key} is no longer stored as published")
+    if entry is None:
+        if expected is None:
+            raise PublicationError("Restoring family absence requires the recorded expected release")
+    else:
+        prefix = entry["prefix"]
+        stored = {f"{prefix}/artifact.json": None} | {
+            f"{prefix}/{member['key']}": member["byteSize"]
+            for key, table in entry["tables"].items() for member in table.get("members", [{"key": key, **table}])}
+        for key, size in stored.items():
+            head = _head(client, bucket, key)
+            if head is None or (size is not None and head["ContentLength"] != size):
+                raise PublicationError(f"Cannot restore {family}: {key} is no longer stored as published")
     for _ in range(_POINTER_ATTEMPTS):
         index, etag = _stored_index(client, bucket)
         if etag is None:
@@ -1806,9 +1816,18 @@ def restore_family(client, bucket: str, family: str, entry: Mapping, *, expected
         current = index["families"].get(family)
         if current == entry:
             return index
-        if expected is not None and _generation_entry(current) != _generation_entry(expected):
+        matches = current == expected if entry is None else _generation_entry(current) == _generation_entry(expected)
+        if expected is not None and not matches:
             raise PublicationError(f"{family} names another generation than the one being rolled back")
-        updated, raw = _merge_family(index, family, dict(entry))
+        if entry is None:
+            from rulespec_artifacts import canonical_json_bytes
+
+            updated = deepcopy(index)
+            del updated["families"][family]
+            raw = canonical_json_bytes(updated)
+            parse_index(raw)
+        else:
+            updated, raw = _merge_family(index, family, dict(entry))
         if _put_pointer(client, bucket, INDEX_V2_KEY, raw, etag):
             return updated
     raise PublicationError("Publication changed concurrently; retry the rollback")
