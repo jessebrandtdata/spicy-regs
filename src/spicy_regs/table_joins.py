@@ -1035,9 +1035,12 @@ JOINS += (
 # values only from the replayable complete-input receipt.
 _MEASUREMENTS = json.loads(Path(__file__).with_name("join_measurements.json").read_text())
 _MEASURED_BY_NAME = {item["join"]: item for item in _MEASUREMENTS["results"]}
+# Explicit current rules survive a historical measurement when native keys change.
+_DECLARED_CARDINALITIES = {join.name: join.expected_cardinality for join in JOINS
+                           if join.expected_cardinality != "unspecified"}
 JOINS = tuple(
     replace(join, baseline_keys=measurement["keys"], baseline_missing=measurement["missing"],
-            kind=join.kind if measurement.get("receipt") else "complete",
+            kind=measurement.get("kind", join.kind) if measurement.get("receipt") else "complete",
             expected_cardinality="one", measurement=measurement,
             reason=join.reason if measurement.get("receipt") else f"Full selected-input measurement on {measurement.get('measured_on', _MEASUREMENTS['measured_on'])}; "
                    "immutable URLs, SQL and cardinality in join_measurements.json. "
@@ -1116,6 +1119,7 @@ def _native_join(join):
         raise ValueError(f"Native join loses its declared key: {join.name}")
     return replace(join, child_columns=child, parent_columns=parent,
                    baseline_keys=0, baseline_missing=0, kind="unmeasured", measurement=None,
+                   expected_cardinality=_DECLARED_CARDINALITIES.get(join.name, join.expected_cardinality),
                    reason=(join.reason if join.parent in {"budget_volumes", "house_activity_reports"} else
                            "Native subject keys replace source capture keys. The original measured relationship "
                            "remains in processing_joins; this subject-key relationship has no measured baseline yet."))

@@ -3934,7 +3934,7 @@
       "baseline_keys": 0,
       "baseline_missing": 0,
       "floor_pct": null,
-      "expected_cardinality": "one",
+      "expected_cardinality": "many",
       "measurement": null
     },
     {
@@ -3954,7 +3954,7 @@
       "baseline_keys": 0,
       "baseline_missing": 0,
       "floor_pct": null,
-      "expected_cardinality": "one",
+      "expected_cardinality": "many",
       "measurement": null
     },
     {
@@ -8429,7 +8429,7 @@
         "package_id",
         "text_sha256"
       ],
-      "kind": "unmeasured",
+      "kind": "scope",
       "reason": "A body can occur in several dated metadata revisions. Historical navigation returns each matching parent revision; current citation reads first select the latest package revision.",
       "measured_via": null,
       "baseline_keys": 79,
@@ -8482,7 +8482,7 @@
         "package_id",
         "text_sha256"
       ],
-      "kind": "unmeasured",
+      "kind": "scope",
       "reason": "A body can occur in several dated metadata revisions. Historical navigation returns each matching parent revision; current citation reads first select the latest package revision.",
       "measured_via": null,
       "baseline_keys": 79,

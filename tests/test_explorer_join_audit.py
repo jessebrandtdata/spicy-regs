@@ -69,6 +69,30 @@ def test_audited_measurements_supply_enforced_baselines_and_cardinality():
             assert join.kind == "scope"
 
 
+@pytest.mark.parametrize("parent", ["budget_volumes", "house_activity_reports"])
+def test_native_citation_navigation_preserves_dated_parent_revisions(tmp_path, parent):
+    historical = next(join for join in table_joins.SOURCE_JOINS
+                      if join.child == "document_citations" and join.parent == parent)
+    assert historical.kind == "scope" and historical.expected_cardinality == "one"
+    assert historical.measurement is not None
+    assert historical.measurement["measured_expected_cardinality"] == "one"
+    join = next(join for join in table_joins.JOINS
+                if join.child == "document_citations" and join.parent == parent)
+    assert join.kind == "unmeasured" and join.expected_cardinality == "many"
+    assert join.measurement is None
+    assert (join.baseline_keys, join.baseline_missing) == (0, 0)
+    child_file, parent_file = tmp_path / "citations.parquet", tmp_path / "revisions.parquet"
+    pq.write_table(pa.table({"document_key": ["package"], "body_version_id": ["body"]}), child_file)
+    pq.write_table(pa.table({"package_id": ["package", "package"], "body_version_id": ["body", "body"],
+                            "last_modified": ["2026-01-01T00:00:00Z", "2026-02-01T00:00:00Z"]}), parent_file)
+    urls = {join.child: [str(child_file)], join.parent: [str(parent_file)]}
+    with duckdb.connect() as con:
+        result = measure(con, join, urls.__getitem__)
+    assert result["status"] == "UNBASELINED"
+    assert result["inner_join_rows"] == 2 and result["max_parent_multiplicity"] == 2
+    assert result["missing"] == 0
+
+
 @pytest.mark.parametrize("declaration", [table_joins.record(j) for j in REVIEWED if len(j.child_columns) > 1], ids=key)
 def test_navigation_keys_do_not_cross_edition_digest_or_member_scope(tmp_path, declaration):
     child_columns, parent_columns = declaration["child_columns"], declaration["parent_columns"]
