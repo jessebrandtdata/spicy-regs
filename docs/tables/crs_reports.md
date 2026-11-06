@@ -4,7 +4,7 @@
 
 **Congressional Research Service reports**
 
-One Congressional Research Service report from the Congress.gov API list, keyed by `report_id`. Whole or pooled list walks validate the declared population; updates follow source `update_date`. This is list metadata only: report details and bodies are not fetched. `published_date` dates the current version, not first publication. The source API locator is retained in receipts.
+One retained revision of a Congressional Research Service report's Congress.gov list metadata, keyed by `report_id` and `update_date`. Distinct dated revisions survive incremental merges; repeated copies of the same revision deduplicate. Whole or pooled list walks validate the declared population. Report details and bodies are not fetched. `MIN(published_date)` per report gives the earliest retained version's publication date, which is not necessarily its first issue. The source API locator is retained in receipts.
 
 **Coverage.** True range: reports whose current version is dated from 1993-10-22 on (`published_date` is the current version's date, not first issue). *(measured 2026-09-23)*
 
@@ -15,10 +15,10 @@ One Congressional Research Service report from the Congress.gov API list, keyed 
 
 | Column | Type | Description |
 | --- | --- | --- |
-| `report_id` | `VARCHAR` | CRS report id (e.g. `R48641`, `IN12713`). Primary key / dedup key. |
+| `report_id` | `VARCHAR` | CRS report id (e.g. `R48641`, `IN12713`). Together with `update_date`, identifies one retained revision. |
 | `title` | `VARCHAR` | Report title as returned by the list endpoint. |
 | `report_type` | `VARCHAR` | CRS product category from `contentType` (e.g. `Reports`, `Posts`). |
 | `status` | `VARCHAR` | Congress.gov's own status, `Active` or `Archived`, as stated; the list route does not define it, and an `Archived` report can carry a recent `published_date`. |
-| `published_date` | `TIMESTAMP WITH TIME ZONE` | The publisher's `publishDate` for the report's current version, as the list route states it (ISO 8601 string): the latest update's date, not first issue (R44997, first issued in 2017, carries 2026-04-29 at version 16). The list route gives no first-issue date. |
-| `update_date` | `TIMESTAMP WITH TIME ZONE` | Date the Congress.gov record was last updated (ISO 8601 string). Incremental window key. |
+| `published_date` | `TIMESTAMP WITH TIME ZONE` | The publisher's `publishDate` for this retained report version, as the list route states it. Dates the version, not necessarily the first issue (R44997, first issued in 2017, carries 2026-04-29 at version 16). The list route gives no first-issue date. |
+| `update_date` | `TIMESTAMP WITH TIME ZONE` | Source timestamp when the Congress.gov record was updated. Together with `report_id`, identifies one retained revision; also controls the incremental fetch window. |
 | `version` | `BIGINT` | Version number of the report as returned by the list endpoint. |

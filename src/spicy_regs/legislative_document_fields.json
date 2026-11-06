@@ -258,7 +258,8 @@
     "identity_fields": [
       "bill_id",
       "summary_version_code",
-      "action_date"
+      "action_date",
+      "update_date"
     ],
     "processing_only": false,
     "fields": [
@@ -301,11 +302,12 @@
       {
         "name": "update_date",
         "source_type": "VARCHAR",
-        "meaning": "When the publisher last updated this summary; the merge prefers the larger value.",
+        "meaning": "The publisher's update date for this revision; distinct dates retain separate summary rows.",
         "decision": "keep",
         "target": "update_date",
         "target_type": "string",
-        "reason": "Published domain value or stable subject key; preserve its literal meaning."
+        "reason": "Published domain value or stable subject key; preserve its literal meaning.",
+        "nullable": false
       },
       {
         "name": "summary_html",

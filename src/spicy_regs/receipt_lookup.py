@@ -13,6 +13,7 @@ from __future__ import annotations
 import bisect
 import json
 import re
+from datetime import datetime, timezone
 from collections.abc import Callable, Mapping, Sequence
 from functools import lru_cache
 from importlib.resources import files
@@ -308,7 +309,7 @@ def _stated_identities(cursor: Any, member: Member, groups: Sequence[_Group], ca
 
 
 def _kind(dtype: Any) -> str:
-    """``integer`` or ``text`` for an identity field's type. Any other type refuses: a key typed as text would
+    """The supported native identity type. Any other type refuses: a key typed as text would
     digest to another record id than the writer's, and every lookup would read as a miss."""
     import pyarrow as pa
 
@@ -316,7 +317,9 @@ def _kind(dtype: Any) -> str:
         return "integer"
     if pa.types.is_string(dtype) or pa.types.is_large_string(dtype):
         return "text"
-    raise ValueError(f"{TOOL} types text and whole-number row identities only; this table's has a {dtype} field.")
+    if pa.types.is_timestamp(dtype) and dtype.unit == "us" and dtype.tz == "UTC":
+        return "timestamp"
+    raise ValueError(f"{TOOL} types text, whole-number and UTC timestamp row identities only; this table's has a {dtype} field.")
 
 
 def _identity_words(policy: Any) -> str:
@@ -342,11 +345,11 @@ def _refuse_other_identity(policy: Any, stated: Mapping[str, tuple[str, list]]) 
     for version, (record_id, pairs) in stated.items():
         names = tuple(name for name, _ in pairs)
         typed = names == policy.identity_fields and all(
-            value is None or type(value).__name__ == {"integer": "int", "text": "str"}[
+            value is None or type(value).__name__ == {"integer": "int", "text": "str", "timestamp": "datetime"}[
                 _kind(policy.subject_schema.field(name).type)]
             for name, value in pairs)
         if not typed:
-            held = ", ".join(f"{name} ({'null' if value is None else 'integer' if type(value) is int else 'text'})"
+            held = ", ".join(f"{name} ({'null' if value is None else 'integer' if type(value) is int else 'timestamp' if isinstance(value, datetime) else 'text'})"
                              for name, value in pairs)
             raise ValueError(
                 f"{policy.dataset} receipts were written under policy_version {version!r}, whose row identity is "
@@ -365,7 +368,8 @@ def _typed_keys(policy: Any, keys: Sequence[Any]) -> list[dict[str, Any]]:
     """Each key typed by the installed identity schema, or a refusal naming the first that does not parse.
 
     Text is taken exactly as given: never trimmed, folded or read as a number. An integer may be given as a number
-    or as its plain decimal text. A key is refused, never answered as a miss, when it is not an object of exactly
+    or as its plain decimal text. An offset timestamp is normalized to UTC without losing precision.
+    A key is refused, never answered as a miss, when it is not an object of exactly
     the identity fields, gives a field another type, or gives null where the policy allows none.
     """
     import pyarrow as pa
@@ -388,6 +392,17 @@ def _typed_keys(policy: Any, keys: Sequence[Any]) -> list[dict[str, Any]]:
                 elif _kind(dtype) == "text":
                     if not isinstance(value, str):
                         problem = f"gives {name} as {type(value).__name__}; it is text, so quote it"
+                elif _kind(dtype) == "timestamp":
+                    try:
+                        if not isinstance(value, str) or not re.fullmatch(
+                            r"[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}"
+                            r"(?:\.[0-9]{1,6})?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])", value,
+                        ):
+                            raise ValueError
+                        value = datetime.fromisoformat(value).astimezone(timezone.utc)
+                        pa.scalar(value, type=dtype)
+                    except (ValueError, OverflowError, pa.ArrowException):
+                        problem = f"gives {name} as {key[name]!r}; use an ISO timestamp with an offset and at most six fractional digits"
                 else:
                     if (isinstance(value, str) and _INTEGER.match(value)) or (
                             isinstance(value, float) and value.is_integer()):
@@ -459,7 +474,7 @@ def _held_keys(cursor: Any, policy: Any, keys: Sequence[Mapping[str, Any]]) -> s
         raise ValueError(
             f"No accepted receipt holds {len(keys)} of the keys asked for, and telling a missing receipt from a key "
             f"{table} does not hold would search its {rows:,} rows, over the {SCAN_ROW_BOUND:,}-row bound. First "
-            f"such key: {json.dumps(keys[0], ensure_ascii=False)}. Check the key's spelling (keys are exact and "
+            f"such key: {json.dumps(keys[0], ensure_ascii=False, default=str)}. Check the key's spelling (keys are exact and "
             f"case-sensitive) with query_sql on {table}, and ask again without it.")
     names = ", ".join(f'"{name}"' for name in policy.identity_fields)
     match = " AND ".join(f'"{name}" IS NOT DISTINCT FROM ?' for name in policy.identity_fields)
@@ -592,22 +607,22 @@ def read_fields(cursor: Any, *, table: str, keys: Sequence[Any], fields: Sequenc
         found = {record_id: [row["processing_json"] for row in rows]
                  for record_id, rows in zip(unique_ids, indexed, strict=True) if rows}
     unheld = [key for key, record_id in zip(typed, record_ids, strict=True) if record_id not in found]
-    in_table = _held_keys(cursor, policy, list({json.dumps(key): key for key in unheld}.values())) if unheld else set()
+    in_table = _held_keys(cursor, policy, list({tuple(key.values()): key for key in unheld}.values())) if unheld else set()
     entries, absent = [], set()
     for key, record_id in zip(typed, record_ids, strict=True):
         held = found.get(record_id, [])
         if not held:
             outcome = RECEIPT_MISSING if tuple(key[name] for name in policy.identity_fields) in in_table else NOT_IN_TABLE
-            entries.append({"key": key, "receipt": outcome})
+            entries.append({"key": plain(key), "receipt": outcome})
         elif len(held) > 1:
-            entries.append({"key": key, "receipt": AMBIGUOUS, "receipts_found": len(held)})
+            entries.append({"key": plain(key), "receipt": AMBIGUOUS, "receipts_found": len(held)})
         else:
             try:
                 states = _field_states(table, fields, where, _unpack(json.loads(held[0])), plain)
             except LookupError as error:
                 absent.add(error.args[0])
                 continue
-            entries.append({"key": key, "receipt": FOUND, "fields": states})
+            entries.append({"key": plain(key), "receipt": FOUND, "fields": states})
     if absent:
         gone = [name for name in fields if where[name] in absent]
         raise ValueError(

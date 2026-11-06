@@ -40,10 +40,10 @@ maintainers' own evidence files, which are not public.
 
 The `read_receipt_fields` tool reads values out of receipts for you. Give it
 the table, the keys of the rows you mean and the fields you want. For the link
-to the CRS report `R48641`:
+to the CRS report `R48641` at a particular source update date:
 
 ```json
-{"table": "crs_reports", "keys": [{"report_id": "R48641"}], "fields": ["url"]}
+{"table": "crs_reports", "keys": [{"report_id": "R48641", "update_date": "2026-07-17T22:38:55+00:00"}], "fields": ["url"]}
 ```
 
 `describe_table('crs_reports')` lists, under `receipt_fields`, the table's key
@@ -64,19 +64,19 @@ has exactly one receipt whose `outcome` is `accepted`. You find it by the
 table's name and the row's key.
 
 1. Ask for the table's key columns. `describe_table('crs_reports')` lists them
-   as `identity_columns`; for `crs_reports` that is `report_id`.
+   as `identity_columns`; for `crs_reports` those are `report_id` and `update_date`.
 2. Write the row's key the way a receipt stores it in `identity_json`: each key
    column as a name and a value, in the order `identity_columns` gives.
 3. Select the receipt with that table name and that key.
 
-For the CRS report `R48641`:
+For the CRS report `R48641` updated at `2026-07-17T22:38:55+00:00`:
 
 ```sql
 SELECT *
 FROM etl_receipts
 WHERE dataset = 'crs_reports'
   AND outcome = 'accepted'
-  AND identity_json = '["list",[["list",[["str","report_id"],["str","R48641"]]]]]'
+  AND identity_json = '["list",[["list",[["str","report_id"],["str","R48641"]]],["list",[["str","update_date"],["datetime","2026-07-17T22:38:55+00:00"]]]]]'
 ```
 
 A table with two key columns names both. `fec_committee_history` is keyed by
@@ -88,18 +88,22 @@ A table with two key columns names both. `fec_committee_history` is keyed by
 
 Text is written `["str","…"]`, a whole number `["int",2012]` with no quotes
 around the number, and a key column that is empty for the row `["null",null]`.
+A timestamp is written `["datetime","2026-07-17T22:38:55+00:00"]`.
 Spelling and capital letters must match the table's value exactly.
 
 To fetch the receipts of several rows, join on the same expression and build
 the key from the table's own column:
 
 ```sql
-SELECT t.report_id, t.title, r.witnesses
+SELECT t.report_id, t.update_date, t.title, r.witnesses
 FROM crs_reports t
 JOIN etl_receipts r
   ON r.dataset = 'crs_reports'
  AND r.outcome = 'accepted'
- AND r.identity_json = '["list",[["list",[["str","report_id"],["str","' || t.report_id || '"]]]]]'
+ AND r.identity_json = '["list",[["list",[["str","report_id"],["str","' || t.report_id
+     || '"]]],["list",[["str","update_date"],["datetime","'
+     || replace(strftime(t.update_date AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%M:%S.%f')
+                || '+00:00', '.000000+', '+') || '"]]]]]'
 WHERE t.report_id IN ('R48641', 'IN12713')
 ```
 
@@ -130,7 +134,7 @@ SELECT regexp_extract(processing_json, '\["url",\["str","([^"]*)"', 1) AS url
 FROM etl_receipts
 WHERE dataset = 'crs_reports'
   AND outcome = 'accepted'
-  AND identity_json = '["list",[["list",[["str","report_id"],["str","R48641"]]]]]'
+  AND identity_json = '["list",[["list",[["str","report_id"],["str","R48641"]]],["list",[["str","update_date"],["datetime","2026-07-17T22:38:55+00:00"]]]]]'
 ```
 
 Put the field's name where `url` is. The pattern has limits:
@@ -147,7 +151,7 @@ SELECT ('"' || regexp_extract(processing_json, '\["title",\["str","((?:[^"\\]|\\
 FROM etl_receipts
 WHERE dataset = 'crs_reports'
   AND outcome = 'accepted'
-  AND identity_json = '["list",[["list",[["str","report_id"],["str","R48641"]]]]]'
+  AND identity_json = '["list",[["list",[["str","report_id"],["str","R48641"]]],["list",[["str","update_date"],["datetime","2026-07-17T22:38:55+00:00"]]]]]'
 ```
 
 To see which fields a table's receipts hold, look at one:
@@ -186,7 +190,9 @@ tables, and the publication index names it.
 - **What the row said before.** The server holds one build of each table, the
   one published now, with that build's receipts. A receipt for a row carried
   over from an earlier build notes the earlier receipts in `diagnostic_json`;
-  the earlier builds themselves cannot be queried here.
+  the earlier builds themselves cannot be queried here. Tables that retain source
+  revisions, such as `crs_reports`, expose those revisions as separate rows in the
+  current build.
 - **Where to open the publisher's page.** `witnesses` names what the pipeline
   read, and that is not always a page you can visit. For some tables it is one
   of the pipeline's own working files, named by a path on the machine that ran

@@ -273,14 +273,14 @@ def test_a_key_that_does_not_fit_the_identity_is_refused_naming_its_fields_and_t
     assert "A key for bill_actions is an object giving exactly bill_id (text), action_index (integer)" in message
 
 
-def test_every_installed_row_identity_is_text_or_a_whole_number_which_are_the_types_a_key_is_typed_as():
-    """A date or decimal identity would need its own typing: typed as text it would digest to another record id."""
+def test_every_installed_row_identity_has_supported_native_key_typing():
+    """Typing a native key as text would digest to another record id."""
     import pyarrow as pa
 
     for table, policy in POLICIES.items():
         for name in policy.identity_fields:
-            assert lookup._kind(policy.subject_schema.field(name).type) in ("text", "integer"), (table, name)
-    with pytest.raises(ValueError, match="text and whole-number row identities only"):
+            assert lookup._kind(policy.subject_schema.field(name).type) in ("text", "integer", "timestamp"), (table, name)
+    with pytest.raises(ValueError, match="UTC timestamp row identities only"):
         lookup._kind(pa.date32())
 
 
@@ -517,11 +517,35 @@ def test_the_receipts_page_shows_a_call_the_tool_answers(tmp_path, monkeypatch):
     arguments = json.loads(example)
     assert set(arguments) == {"table", "keys", "fields"} and arguments["table"] == "crs_reports"
     link = "https://www.congress.gov/crs-product/R48641"
-    raw = {**dict.fromkeys(LEGACY_COLUMNS["crs_reports"]), "report_id": arguments["keys"][0]["report_id"], "url": link}
+    raw = {**dict.fromkeys(LEGACY_COLUMNS["crs_reports"]), **arguments["keys"][0], "url": link}
     one_family(tmp_path, monkeypatch, {"crs_reports": [{**map_subject("crs_reports", raw), "raw_record": raw}]})
     reply = call(**arguments)
     assert reply["keys"] == [{"key": arguments["keys"][0], "receipt": "found",
                               "fields": {"url": {"state": "stated", "value": link}}}]
+
+
+def test_crs_receipt_lookup_distinguishes_revisions_and_normalizes_timestamp_offsets(tmp_path, monkeypatch):
+    from spicy_regs.transforms.government_source_shapes import LEGACY_COLUMNS, map_subject
+
+    raw_rows = [{**dict.fromkeys(LEGACY_COLUMNS["crs_reports"]), "report_id": "R1",
+                 "update_date": stamp, "url": f"https://example.test/revision-{index}"}
+                for index, stamp in enumerate(("2026-07-17T22:38:55Z", "2026-07-17T23:38:55.123456Z"))]
+    con = one_family(tmp_path, monkeypatch, {"crs_reports": [
+        {**map_subject("crs_reports", raw), "raw_record": raw} for raw in raw_rows
+    ]})
+    keys = [{"report_id": "R1", "update_date": stamp} for stamp in (
+        "2026-07-17T22:38:55Z", "2026-07-18T01:38:55.123456+02:00", "2026-07-19T00:00:00Z",
+    )]
+    reply = call("crs_reports", keys, ["url"])
+    assert [item["receipt"] for item in reply["keys"]] == ["found", "found", "not_in_table"]
+    assert [item["fields"]["url"]["value"] for item in reply["keys"][:2]] == [raw["url"] for raw in raw_rows]
+    assert reply["keys"][1]["key"]["update_date"] == "2026-07-17T23:38:55.123456+00:00"
+    _add_selected_index(con)
+    assert call("crs_reports", keys, ["url"]) == reply
+    for invalid in ("2026-07-17", "2026-07-17T22:38:55", "2026-02-30T22:38:55Z",
+                    "2026-07-17T22:38:55.1234567Z", "2026-07-17T22:38:55+00:99", 123):
+        message = refused("crs_reports", [{"report_id": "R1", "update_date": invalid}], ["url"])
+        assert "use an ISO timestamp with an offset" in message
 
 
 def test_one_scan_of_record_ids_then_only_the_row_groups_holding_a_key_are_read(tmp_path, monkeypatch):

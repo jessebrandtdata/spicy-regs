@@ -80,7 +80,7 @@ TIMESTAMP_FIELDS = {
 }
 
 IDENTITY_FIELDS = {
-    "crs_reports": ("report_id",),
+    "crs_reports": ("report_id", "update_date"),
     "fcc_filings": ("id_submission",),
     "fcc_proceedings": ("name",),
     "gao_reports": ("report_id",),
@@ -491,7 +491,11 @@ def subject_schema(dataset: str) -> pa.Schema:
         fields.extend([("generation_id", pa.string()), ("extraction_results", FCC_EXTRACTION_TYPE)])
     if dataset == "gao_reports":
         fields.append(("citation_product_id", pa.string()))
-    return pa.schema(fields, metadata={b"government_etl_policy": b"1"})
+    schema = pa.schema(fields, metadata={b"government_etl_policy": b"1"})
+    if dataset == "crs_reports":
+        at = schema.get_field_index("update_date")
+        schema = schema.set(at, schema.field(at).with_nullable(False))
+    return schema
 
 
 SUBJECT_SCHEMAS = {dataset: subject_schema(dataset) for dataset in LEGACY_COLUMNS}

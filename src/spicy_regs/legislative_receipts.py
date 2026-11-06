@@ -55,8 +55,12 @@ def policy(dataset: str) -> DatasetPolicy:
         subject_schema(dataset),
         () if spec["processing_only"] else tuple(spec["identity_fields"]),
         (RAW,),
-        # committee_reports/2: its five per-letter columns moved to committee_report_cbo_letters (ss-uep5).
-        policy_version="legislative-documents/2" if dataset in {"native_legal_references", "native_legal_reference_reads", "document_citations", "committee_reports"} else "legislative-documents/1",
+        # committee_reports/2 moves per-letter columns to committee_report_cbo_letters (ss-uep5).
+        # CRS /2 adds update_date to the key; the earlier policy still reads existing summaries.
+        policy_version="legislative-documents/2" if dataset in {
+            "native_legal_references", "native_legal_reference_reads", "document_citations",
+            "committee_reports", "bill_publisher_summaries",
+        } else "legislative-documents/1",
         receipt_only=spec["processing_only"],
     )
 
@@ -309,7 +313,9 @@ def write_legislative_outputs(
             # Carry once over the complete dataset, including all partitions. A
             # shard cannot decide whether another shard resolved a prior refusal.
             import pyarrow.dataset as ds
-            from spicy_regs.receipt_history import RefusalIdentity, carry_receipt_history
+            from spicy_regs.receipt_history import (
+                RefusalIdentity, carry_receipt_history, crs_revision_identity_migrations,
+            )
 
             active = [*manifest["datasets"], *manifest["outcome_subjects"], FILE_STATES]
             scoped = stage / ".shards" / "selected-prior.parquet"
@@ -319,14 +325,18 @@ def write_legislative_outputs(
                         for batch in previous.iter_batches(batch_size=2000):
                             writer.write_table(pa.Table.from_batches([batch]).filter(
                                 ds.field("dataset").isin(active)))
-            identities = {}
+            identities, migrations = {}, {}
             for name in manifest["datasets"]:
-                keys = policy(name).identity_fields
+                current_policy = policy(name)
+                keys = current_policy.identity_fields
+                migrations.update(crs_revision_identity_migrations(
+                    current_policy, lambda raw, name=name: map_subject(name, raw)))
                 raw_names = {field["name"] for field in field_registry()[name]["fields"]}
                 if keys and set(keys) <= raw_names:
                     identities[name] = RefusalIdentity(keys, RAW)
             receipt_path = stage / manifest["receipt_file"]
-            carry_receipt_history(receipt_path, [scoped], receipt_path, refusal_identities=identities)
+            carry_receipt_history(receipt_path, [scoped], receipt_path, refusal_identities=identities,
+                                  identity_migrations=migrations)
             held = ds.dataset(receipt_path, format="parquet")
             for name in manifest["datasets"]:
                 manifest["refused_rows"][name] = held.count_rows(

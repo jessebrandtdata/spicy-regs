@@ -122,8 +122,8 @@ def test_gao_and_crs_keys_are_looked_up_as_spicy_docs_prints_them():
     with duckdb.connect() as con:
         con.execute("CREATE TABLE gao_reports(report_id VARCHAR, report_number VARCHAR)")
         con.execute("INSERT INTO gao_reports VALUES ('d23105520','GAO-23-105520'),('gao-17-317',NULL)")
-        con.execute("CREATE TABLE crs_reports(report_id VARCHAR)")
-        con.execute("INSERT INTO crs_reports VALUES ('R47101')")
+        con.execute("CREATE TABLE crs_reports(report_id VARCHAR, update_date TIMESTAMPTZ)")
+        con.execute("INSERT INTO crs_reports VALUES ('R47101','2026-07-17T00:00:00Z'),('R47101','2026-07-18T00:00:00Z')")
         pins = {name: {"artifact_digest": name} for name in ("gao_reports", "crs_reports")}
         items = [occurrence("gao_product_id", "GAO-23-105520"), occurrence("gao_product_id", "GAO-17-317"),
                  occurrence("crs_report_id", "R47101"), occurrence("crs_report_id", "r47101")]
@@ -131,6 +131,7 @@ def test_gao_and_crs_keys_are_looked_up_as_spicy_docs_prints_them():
     assert [(r["target_key"], r["target_status"]) for r in rows] == [
         ("GAO-23-105520", "found"), ("GAO-17-317", "found"), ("R47101", "found"), ("r47101", "missing")]
     assert rows[0]["candidate_keys"] == [{"report_id": "d23105520"}]
+    assert rows[2]["match_count"] == 1  # Revisions of one report are not ambiguous report identities.
 
 
 # Real granules of the 2025 and 2026 editions: 2 CFR part 200 is held once, 10 CFR part 830 in both editions.

@@ -3268,7 +3268,7 @@ def _tools() -> list[Tool]:
         table. Each key is an object giving every identity field its exact
         value: text is case-sensitive and stays quoted even when it looks
         numeric; a whole-number field takes a number or its plain digits as
-        text. An unknown table or field, a
+        text; a UTC timestamp field takes ISO text with an offset. An unknown table or field, a
         key that does not fit the identity and more than 100 keys are refused,
         saying what is valid. Values come back decoded. keys answers in request
         order; receipt is found, ambiguous (several accepted receipts, none

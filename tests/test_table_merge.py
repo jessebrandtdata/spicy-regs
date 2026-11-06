@@ -86,6 +86,52 @@ def test_merge_keeps_prior_only_rows(tmp_path):
     assert by_id["2"] == {"id": "2", "name": "prior-only", "version": "2024-01-02"}
 
 
+def test_crs_summary_merge_preserves_revisions_and_deduplicates_rereads(tmp_path):
+    import shutil
+
+    import duckdb
+    from spicy_docs.schemas import TABLE_CONTRACTS
+
+    name = "bill_publisher_summaries"
+    contract = TABLE_CONTRACTS[name]
+    original = dict(
+        bill_id="119-hr-1", summary_version_code="49", action_date="2025-07-04",
+        action_desc="Public Law", update_date="2025-07-07T12:00:00Z",
+        summary_html="<p>Original summary.</p>", summary_chars="24",
+    )
+    revision = {**original, "update_date": "2025-07-09T12:00:00Z", "summary_html": "<p>Revised summary.</p>",
+                "summary_chars": "23"}
+    # The existing table already contains update_date, so its row needs no backfill.
+    pq.write_table(pa.Table.from_pylist([original], schema=pa.schema([(c, pa.string()) for c in contract.columns])),
+                   prior_scratch_path(tmp_path, name))
+    output = table_merge.merge_contract_table(tmp_path, name, [revision], download_prior=_never_called)
+    assert _read(output) == [revision, original]
+
+    # An unchanged fetch, including an older retained revision, creates no duplicate.
+    for incoming in ([revision], [original, revision], []):
+        shutil.copyfile(output, prior_scratch_path(tmp_path, name))
+        output = table_merge.merge_contract_table(tmp_path, name, incoming, download_prior=_never_called)
+        assert _read(output) == [revision, original]
+    with duckdb.connect() as con:
+        first = con.execute("SELECT min(update_date) FROM read_parquet(?) GROUP BY bill_id", [str(output)]).fetchone()
+    assert first == (original["update_date"],)
+
+
+def test_crs_revision_key_refuses_to_drop_an_undated_prior(tmp_path):
+    from spicy_docs.schemas import TABLE_CONTRACTS
+
+    name = "bill_publisher_summaries"
+    row = dict.fromkeys(TABLE_CONTRACTS[name].columns)
+    row.update(bill_id="119-hr-1", summary_version_code="49", action_date="2025-07-04")
+    prior = prior_scratch_path(tmp_path, name)
+    pq.write_table(pa.Table.from_pylist([row], schema=pa.schema([(c, pa.string()) for c in row])), prior)
+    before = prior.read_bytes()
+    with pytest.raises(ValueError, match="missing update_date"):
+        table_merge.merge_contract_table(tmp_path, name, [], download_prior=_never_called)
+    assert prior.read_bytes() == before
+    assert not (tmp_path / f"{name}.parquet").exists()
+
+
 def test_merge_orders_by_version_then_identity(tmp_path):
     fresh = [
         {"id": "3", "name": "c", "version": "2024-01-01"},

@@ -1,6 +1,10 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.68.2` comes from
+- **Selected provider** `spicy_docs-0.68.2+crsrevisions.1` adds `update_date`
+  to the existing CRS summary key so later revisions retain earlier rows.
+  Its product changes are limited to the summary schema and family admission.
+  See [the build receipt](spicy_docs-0.68.2+crsrevisions.1.json).
+- **Previous provider** `spicy_docs-0.68.2` comes from
   `d3cdb4842ed535df0e4667e3272b28ffa900bb52`. It includes the reviewed CBO
   paragraph handling, roster code joins and Federal Register body receipt
   bytes. See [the build receipt](spicy_docs-0.68.2.json).

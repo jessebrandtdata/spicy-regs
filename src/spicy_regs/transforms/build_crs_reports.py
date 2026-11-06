@@ -1,13 +1,12 @@
 """Transform: build ``crs_reports.parquet`` from the Congress.gov REST API.
 
-Produces a native subject table and shared receipts keyed on ``report_id`` (e.g. ``R48641``,
-``IN12713``) — the Congressional Research Service analysis layer over the policy
-questions behind the rulemakings this dataset tracks.
+Produces a native subject table and shared receipts keyed on ``report_id`` and
+``update_date``, retaining each captured revision of the report's list metadata.
 
 Incremental by design: best-effort prior from R2, fetch only reports updated
 since its max ``update_date`` minus a short overlap, then dedup on
-``report_id`` preferring the fresh row. With no prior table it is a full
-backfill. Scope is deliberately **list-level only** — every column comes from
+``(report_id, update_date)`` preferring the fresh copy of a repeated revision.
+With no prior table it is a full backfill. Scope is deliberately **list-level only** — every column comes from
 the ``/crsreport`` list payload, so there are no per-report detail fetches; the
 detail endpoint's authors, formats and related materials are left to a later
 enrichment pass.
@@ -29,6 +28,7 @@ from loguru import logger
 from spicy_regs.transforms.parquet_rows import str_or_none
 from spicy_regs.sources import r2
 from spicy_regs.transforms.government_receipts import internal_prior, receipt_builder
+from spicy_regs.transforms.government_source_shapes import IDENTITY_FIELDS, GovernmentShapeError
 from spicy_regs.sources.crs_reports import CrsReportsReader
 from spicy_regs.transforms.table_merge import merge_local_prior
 
@@ -38,8 +38,8 @@ OUTPUT = "crs_reports.parquet"
 # reports updated after our previous run's cutoff are picked up.
 OVERLAP_DAYS = 3
 
-# Literal processing schema, converted to native subjects and retained in receipts: 8 columns, all VARCHAR, in a fixed order. ``report_id``
-# is the primary / dedup key.
+# Literal processing schema, converted to native subjects and retained in receipts.
+# The report id and source update date identify a retained revision.
 COLUMNS = (
     "report_id",
     "title",
@@ -95,6 +95,11 @@ def build_crs_reports(output_dir: Path, *, since: date | None = None, evidence: 
     have_prior = prior_file.exists() or r2.download(OUTPUT, prior_file)
     if have_prior:
         prior_file = internal_prior("crs_reports", prior_file)
+        # Undated prior rows cannot be assigned revision identities. Preserve the
+        # prior and refuse before merging, rather than inventing a date.
+        if ("update_date" not in pq.read_schema(prior_file).names
+                or pq.read_table(prior_file, columns=["update_date"])["update_date"].null_count):
+            raise GovernmentShapeError("crs_reports: prior revisions require update_date; prior preserved")
     if have_prior:
         logger.info("CRS reports: merging against prior table {}", prior_file)
     else:
@@ -114,7 +119,7 @@ def build_crs_reports(output_dir: Path, *, since: date | None = None, evidence: 
     pq.write_table(table, new_file, compression="zstd")
     logger.info("CRS reports: fetched {:,} reports this run", len(rows))
 
-    # 4. Merge prior + new, dedup on report_id preferring the new row.
+    # 4. Keep distinct dated revisions; a repeated revision uses the fresh copy.
     spill_dir = output_dir / ".duckdb_tmp"
     spill_dir.mkdir(exist_ok=True)
     con = duckdb.connect()
@@ -126,7 +131,7 @@ def build_crs_reports(output_dir: Path, *, since: date | None = None, evidence: 
     merge_local_prior(
         con,
         columns=COLUMNS,
-        identity="report_id",
+        identity=IDENTITY_FIELDS["crs_reports"],
         order_by="update_date DESC, report_id",
         prior_file=prior_file if have_prior else None,
         new_file=new_file,

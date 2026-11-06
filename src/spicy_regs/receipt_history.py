@@ -10,6 +10,45 @@ from contextlib import ExitStack
 from dataclasses import dataclass
 
 
+def crs_revision_identity_migrations(policy, subject_mapper):
+    """Map only the registered CRS /1 keys to their retained, dated /2 revision.
+
+    The family's existing mapper interprets the raw date. The previous receipt
+    remains immutable; its alias is used only to find a migration predecessor.
+    """
+    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.etl_receipts import decode_exact_json, subject_identity
+
+    registered = {
+        "bill_publisher_summaries": ("legislative-documents/2", "raw_source_row"),
+        "crs_reports": ("government-sources/2", "raw_record"),
+    }
+    migration = registered.get(policy.dataset)
+    if migration is None or policy.policy_version != migration[0]:
+        return {}
+    previous, = earlier_policies(policy)
+
+    def record_id(processing_json, prior_record_id):
+        source = decode_exact_json(processing_json)[migration[1]]
+        subject = subject_mapper(source)
+        if subject_identity(previous, subject)[0] != prior_record_id:
+            raise ValueError("CRS revision migration differs from the prior receipt identity")
+        return subject_identity(policy, subject)[0]
+
+    return {(policy.dataset, previous.policy_version): record_id}
+
+
+def _migrated_record_keys(record_id):
+    """Decode only old-policy accepted inputs, in bounded Arrow batches."""
+    import pyarrow as pa
+
+    def derive(processing, identities):
+        return pa.array([record_id(raw, identity) for raw, identity in
+                         zip(processing.to_pylist(), identities.to_pylist(), strict=True)], type=pa.string())
+
+    return derive
+
+
 @dataclass(frozen=True)
 class RefusalIdentity:
     """Explicit raw natural key shared by a family's accepted and refused inputs.
@@ -183,6 +222,7 @@ def history_query_threads(value: int) -> int:
 def carry_receipt_history(
     current_path: Path, prior_paths: Sequence[Path], destination: Path, *,
     refusal_identities: Mapping[str, RefusalIdentity] | None = None,
+    identity_migrations: Mapping[tuple[str, str], Callable[[str, str], str]] | None = None,
     resolution_receipts: Path | None = None,
     threads: int = 1,
     report_settings: Callable[[dict[str, int | str]], None] | None = None,
@@ -203,13 +243,19 @@ def carry_receipt_history(
     ``threads`` defaults to one and is validated before any private state is created.
     Narrow matching keys spill to private disk. Full prior rows are gathered by
     Parquet ordinal in output batches; Python only decodes changed predecessors.
+    Registered ``identity_migrations`` derive a new key from an old receipt's
+    retained input. They always create a current receipt with original evidence
+    and predecessor references, even when the input and subject are unchanged.
     """
     threads = history_query_threads(threads)
     import duckdb
+    import duckdb.func
     import pyarrow as pa
     import pyarrow.parquet as pq
     import pyarrow.compute as pc
-    from spicy_regs.etl_receipts import RECEIPT_SCHEMA, _digest, decode_exact_json, exact_json
+    from spicy_regs.etl_receipts import (
+        RECEIPT_SCHEMA, ReceiptContext, _digest, decode_exact_json, exact_json, inherit_receipt,
+    )
 
     def compute(name, *args):
         # Arrow generates these kernels at import time; use its typed entry point.
@@ -295,18 +341,35 @@ def carry_receipt_history(
                 f"CASE WHEN outcome='accepted' THEN ''::BLOB ELSE {_processing_key('diagnostic_json')} END AS diagnostic_key "
                 f"FROM {name})"
             )
+        con.execute("CREATE TABLE migrated_keys (ordinal BIGINT, dataset VARCHAR, record_key BLOB)")
+        for index, ((dataset, policy_version), record_id) in enumerate((identity_migrations or {}).items()):
+            function = f"migrated_record_key_{index}"
+            con.create_function(function, _migrated_record_keys(record_id), ["VARCHAR", "VARCHAR"], "VARCHAR",
+                                type=duckdb.func.PythonUDFType.ARROW,
+                                null_handling=duckdb.func.FunctionNullHandling.SPECIAL)
+            try:
+                con.execute(
+                    f"INSERT INTO migrated_keys SELECT ordinal,dataset,unhex(sha256({function}(processing_json,record_id))) "
+                    "FROM prior WHERE dataset=? AND policy_version=? AND outcome='accepted'",
+                    [dataset, policy_version],
+                )
+            finally:
+                con.remove_function(function)
         # Outcome separates the branches, so ignored fields use fixed keys.
         # Ordinary equality preserves null refusal and admits a hash join
         # instead of an OR join that compares every current/prior pair.
         # A changed accepted row finds its predecessor by identity alone; a non-accepted row's empty record_key matches nothing.
         con.execute("""CREATE TABLE matches AS SELECT c.ordinal AS current_ordinal,p.ordinal AS prior_ordinal,
-            CASE WHEN p.ordinal IS NULL AND c.outcome='accepted' THEN predecessor.ordinal END AS predecessor_ordinal
+            CASE WHEN p.ordinal IS NULL AND c.outcome='accepted'
+                THEN coalesce(predecessor.ordinal,migration.ordinal) END AS predecessor_ordinal,
+            p.ordinal IS NULL AND predecessor.ordinal IS NULL AND migration.ordinal IS NOT NULL AS migrated
             FROM current_ranked c LEFT JOIN prior_ranked p ON c.dataset=p.dataset AND c.outcome=p.outcome
             AND c.processing_key=p.processing_key AND c.occurrence=p.occurrence
             AND c.record_key=p.record_key AND c.version_key=p.version_key AND c.diagnostic_key=p.diagnostic_key
             LEFT JOIN prior_ranked predecessor ON c.dataset=predecessor.dataset AND c.record_key=predecessor.record_key
-            AND predecessor.outcome='accepted'""")
-        for name in ("current_ranked", "prior_ranked"):
+            AND predecessor.outcome='accepted'
+            LEFT JOIN migrated_keys migration ON c.dataset=migration.dataset AND c.record_key=migration.record_key""")
+        for name in ("current_ranked", "prior_ranked", "migrated_keys"):
             con.execute(f"DROP TABLE {name}")
         resolution_source = "current"
         if resolution_receipts is not None:
@@ -387,11 +450,12 @@ def carry_receipt_history(
                             pa.array(positions, type=pa.int64()),
                         )
                     )
-                    diagnostics, identities = [], []
-                    for row, predecessor in zip(
-                        updates,
-                        predecessors.select(["receipt_id", "generation_id", "processing_json"]).to_pylist(),
-                        strict=True,
+                    migrating = compute("any", mapping.column("migrated")).as_py()
+                    prior_columns = (RECEIPT_SCHEMA.names if migrating else
+                                     ["receipt_id", "generation_id", "processing_json"])
+                    diagnostics, identities, witnesses = [], [], []
+                    for position, row, predecessor in zip(
+                        changed, updates, predecessors.select(prior_columns).to_pylist(), strict=True,
                     ):
                         values = decode_exact_json(row["diagnostic_json"])
                         values = {
@@ -404,13 +468,27 @@ def carry_receipt_history(
                             "generation_id": predecessor["generation_id"],
                             "processing_sha256": _digest(decode_exact_json(predecessor["processing_json"])),
                         }
+                        if mapping.column("migrated")[position].as_py():
+                            context = inherit_receipt(ReceiptContext(
+                                row["generation_id"], row["attempt_id"], row["processor"], row["witnesses"], values,
+                            ), predecessor)
+                            values = dict(context.diagnostics)
+                            values["prior_receipt"].update({
+                                "policy_version": predecessor["policy_version"], "record_id": predecessor["record_id"],
+                            })
+                            row["witnesses"] = list(context.witnesses)
                         row["diagnostic_json"] = exact_json(values)
                         diagnostics.append(row["diagnostic_json"])
+                        witnesses.append(row["witnesses"])
                         identities.append(_digest({k: v for k, v in row.items() if k != "receipt_id"}))
                     # Replace only changed accepted rows. Every unchanged row stays Arrow, with no Python decoding.
-                    for name, values in (("diagnostic_json", diagnostics), ("receipt_id", identities)):
+                    columns = [("diagnostic_json", diagnostics), ("receipt_id", identities)]
+                    if migrating:
+                        columns.append(("witnesses", witnesses))
+                    for name, values in columns:
                         by_position = dict(zip(changed, values))
-                        replacements = pa.array([by_position.get(i) for i in range(batch.num_rows)], type=pa.string())
+                        replacements = pa.array([by_position.get(i) for i in range(batch.num_rows)],
+                                                type=RECEIPT_SCHEMA.field(name).type)
                         table = table.set_column(
                             table.schema.get_field_index(name),
                             name,

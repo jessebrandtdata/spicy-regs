@@ -61,7 +61,8 @@ def test_exact_processing_values_and_nullable_registration_identity(tmp_path):
 def test_native_incremental_read_requires_exact_receipts(tmp_path, monkeypatch):
     monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
     dataset = "crs_reports"
-    path = literal(tmp_path, dataset, [{"report_id": "R1", "version": "1", "url": "https://source.test/r1"}])
+    path = literal(tmp_path, dataset, [{"report_id": "R1", "update_date": "2026-07-17T22:38:55Z",
+                                      "version": "1", "url": "https://source.test/r1"}])
     meta = migrate_outputs((path,), generation_id="crs-first")
     receipt = Path(meta["receipt_path"])
     assert pq.read_table(internal_prior(dataset, path, receipt_path=receipt, generation_id="new-publisher")).num_rows == 1
@@ -91,7 +92,7 @@ def test_refused_money_retains_input_without_replacing_original(tmp_path):
 
 
 def test_completed_migration_retires_only_its_conversion_work(tmp_path):
-    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "version": "1"}])
+    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "update_date": "2026-07-17T22:38:55Z", "version": "1"}])
     original = path.read_bytes()
     failed = tmp_path / ".government-etl/earlier-failed/partial.parquet"
     evidence = tmp_path / "source-evidence/artifact.json"
@@ -115,7 +116,7 @@ def test_completed_migration_retires_only_its_conversion_work(tmp_path):
 def test_interrupted_migration_keeps_conversion_work(tmp_path, monkeypatch, failure):
     from spicy_regs.transforms import government_receipts as gr
 
-    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "version": "1"}])
+    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "update_date": "2026-07-17T22:38:55Z", "version": "1"}])
     original = path.read_bytes()
     work = tmp_path / ".government-etl/interrupted"
     copyfile, digest, write_text = gr.shutil.copyfile, gr._digest, Path.write_text
@@ -150,7 +151,7 @@ def test_interrupted_migration_keeps_conversion_work(tmp_path, monkeypatch, fail
 def test_cleanup_error_stops_before_admission_with_final_pins_intact(tmp_path, monkeypatch):
     from spicy_regs.transforms import government_receipts as gr
 
-    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "version": "1"}])
+    path = literal(tmp_path, "crs_reports", [{"report_id": "R", "update_date": "2026-07-17T22:38:55Z", "version": "1"}])
     work = tmp_path / ".government-etl/complete"
     rmtree = gr.shutil.rmtree
 
@@ -214,7 +215,8 @@ def test_an_unchanged_row_keeps_its_prior_receipt_verbatim_across_a_rebuild(tmp_
 
 def test_complete_generation_requires_paired_receipts_and_verifies(tmp_path):
     dataset = "crs_reports"
-    path = literal(tmp_path / "build", dataset, [{"report_id": "R", "status": "Active", "version": "3"}])
+    path = literal(tmp_path / "build", dataset, [{"report_id": "R", "update_date": "2026-07-17T22:38:55Z",
+                                                "status": "Active", "version": "3"}])
     migrate_outputs((path,), generation_id="complete")
     schemas = {dataset: described_schema(SUBJECT_SCHEMAS[dataset])}
     with pytest.raises(ValueError, match="require ETL receipts"):

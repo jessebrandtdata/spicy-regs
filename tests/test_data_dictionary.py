@@ -512,6 +512,7 @@ def test_the_receipts_page_is_the_guide_around_the_declared_columns():
 def test_the_receipts_page_states_what_the_writer_does():
     """Each query and each warning on the page is run against receipts the real writer produced."""
     import re
+    from datetime import datetime, timezone
 
     import duckdb
     import pyarrow as pa
@@ -530,8 +531,10 @@ def test_the_receipts_page_states_what_the_writer_does():
 
     link = "https://api.congress.gov/v3/crsreport/"
     reports, report_receipts = written("crs_reports", [
-        {"report_id": "R48641", "title": "First", "raw_record": {"title": 'He said "no"', "url": link + "R48641"}},
-        {"report_id": "IN12713", "title": "Second", "raw_record": {"url": link + "IN12713", "version": 2}},
+        {"report_id": "R48641", "update_date": datetime(2026, 7, 17, 22, 38, 55, tzinfo=timezone.utc),
+         "title": "First", "raw_record": {"title": 'He said "no"', "url": link + "R48641"}},
+        {"report_id": "IN12713", "update_date": datetime(2026, 7, 18, 12, 0, 0, 123456, tzinfo=timezone.utc),
+         "title": "Second", "raw_record": {"url": link + "IN12713", "version": 2}},
     ])
     _, committee_receipts = written("fec_committee_history", [
         {"committee_id": "C00097238", "cycle": cycle, "conversion_inputs": {}, "conversion_diagnostics": {},

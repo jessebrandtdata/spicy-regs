@@ -576,6 +576,13 @@ def merge_table(
         prior_cols = {
             str(row[0]) for row in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{prior_file}')").fetchall()
         }
+        if name == "bill_publisher_summaries" and "update_date" in identity:
+            # Older tables allowed NULL here. The new revision key must not silently filter those rows out.
+            if "update_date" not in prior_cols or con.execute(
+                "SELECT EXISTS(SELECT 1 FROM read_parquet(?) WHERE update_date IS NULL)", [str(prior_file)]
+            ).fetchone()[0]:
+                con.close()
+                raise ValueError("CRS summary prior has missing update_date; cannot migrate without losing rows")
         absent = [c for c in columns if c not in prior_cols]
         if absent:
             logger.info(

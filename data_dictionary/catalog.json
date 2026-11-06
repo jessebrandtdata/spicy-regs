@@ -624,11 +624,12 @@
       {
         "dataset": "bill_publisher_summaries",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/2",
         "identity_columns": [
           "bill_id",
           "summary_version_code",
-          "action_date"
+          "action_date",
+          "update_date"
         ],
         "processing_fields": [
           "raw_source_row"
@@ -1134,9 +1135,10 @@
       {
         "dataset": "crs_reports",
         "receipt_only": false,
-        "policy_version": "government-sources/1",
+        "policy_version": "government-sources/2",
         "identity_columns": [
-          "report_id"
+          "report_id",
+          "update_date"
         ],
         "processing_fields": [
           "raw_record"
@@ -7214,7 +7216,7 @@
     {
       "table": "crs_reports",
       "label": "Congressional Research Service reports",
-      "summary": "One Congressional Research Service report from the Congress.gov API list, keyed by `report_id`. Whole or pooled list walks validate the declared population; updates follow source `update_date`. This is list metadata only: report details and bodies are not fetched. `published_date` dates the current version, not first publication. The source API locator is retained in receipts.",
+      "summary": "One retained revision of a Congressional Research Service report's Congress.gov list metadata, keyed by `report_id` and `update_date`. Distinct dated revisions survive incremental merges; repeated copies of the same revision deduplicate. Whole or pooled list walks validate the declared population. Report details and bodies are not fetched. `MIN(published_date)` per report gives the earliest retained version's publication date, which is not necessarily its first issue. The source API locator is retained in receipts.",
       "coverage": "True range: reports whose current version is dated from 1993-10-22 on (`published_date` is the current version's date, not first issue).",
       "kind": "true_range",
       "measured_on": "2026-09-23",
@@ -8411,7 +8413,7 @@
     {
       "table": "bill_publisher_summaries",
       "label": "CRS bill summaries (publisher)",
-      "summary": "One row per CRS summary the publisher states on a bill, at the version and action it describes. `summary_html` is kept exactly as the publisher escaped it.",
+      "summary": "One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. MIN(update_date) gives the earliest retained CRS date, which may follow the original posting when earlier revisions were not captured.",
       "coverage": "Sampled: bills the bill family has read from GovInfo BILLSTATUS, Congress by Congress from the 108th on; group by the Congress in bill_id to see which Congresses are filled. A bill has rows only for the summaries the publisher has written.",
       "kind": "sampled",
       "measured_on": "2026-09-28",

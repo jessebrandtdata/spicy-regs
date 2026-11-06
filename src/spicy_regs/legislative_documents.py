@@ -132,9 +132,10 @@ def _native_candidates(value: Any) -> Any:
 @cache
 def subject_schema(dataset: str) -> pa.Schema:
     spec = field_registry()[dataset]
-    fields = [(f["target"], TYPES[f["target_type"]]) for f in spec["fields"] if f["target"]]
-    fields += [(name, TYPES[f["type"]]) for name, f in spec.get("derived_fields", {}).items()]
-    if len({n for n, _ in fields}) != len(fields):
+    fields = [pa.field(f["target"], TYPES[f["target_type"]], nullable=f.get("nullable", True))
+              for f in spec["fields"] if f["target"]]
+    fields += [pa.field(name, TYPES[f["type"]]) for name, f in spec.get("derived_fields", {}).items()]
+    if len({field.name for field in fields}) != len(fields):
         raise LegislativeShapeError(f"{dataset}: duplicate subject column")
     return pa.schema(fields)
 

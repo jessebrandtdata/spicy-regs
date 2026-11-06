@@ -65,6 +65,69 @@ def test_roundtrip_preserves_checkpoint_only_rows_and_exact_parquet_metadata(tmp
     assert pq.read_table(restored["committee_report_reads"]).to_pylist() == [checkpoint]
 
 
+@pytest.mark.parametrize("bulk", [False, True])
+def test_crs_revisions_migrate_existing_receipts_and_roundtrip(tmp_path, monkeypatch, bulk):
+    from spicy_regs import legislative_receipts
+    from spicy_regs.etl_receipts import decode_exact_json, receipt_policies, resolve_receipt_witness, subject_identity
+
+    dataset = "bill_publisher_summaries"
+    current = policy(dataset)
+    _, earlier = receipt_policies(current)
+    original = row(
+        dataset, bill_id="119-hr-1", summary_version_code="49", action_date="2025-07-04",
+        action_desc="Public Law", update_date="2025-07-07T12:00:00Z",
+        summary_html="<p>Original summary.</p>", summary_chars="24",
+    )
+    old_input = retained(tmp_path / "old-input", dataset, [original])
+    with monkeypatch.context() as patch:
+        patch.setattr(legislative_receipts, "policy", lambda name: earlier if name == dataset else policy(name))
+        write_legislative_outputs(
+            [old_input], tmp_path / "old", generation_id="old", bulk=bulk,
+            source_witnesses=[{"source_id": "original-capture", "sha256": "a" * 64}],
+        )
+    old_receipts = tmp_path / "old/etl_receipts.parquet"
+    old_bytes = old_receipts.read_bytes()
+    [old] = [receipt for receipt in pq.read_table(old_receipts).to_pylist()
+             if receipt["dataset"] == dataset and receipt["outcome"] == "accepted"]
+    restored = restore_prior(tmp_path / "old", tmp_path / "old-restored", bulk=bulk)
+    assert pq.read_table(restored[dataset]).to_pylist() == [original]
+
+    revised = {**original, "update_date": "2025-07-09T12:00:00Z", "summary_html": "<p>Revised summary.</p>",
+               "summary_chars": "23"}
+    new_input = retained(tmp_path / "new-input", dataset, [original, revised])
+    write_legislative_outputs(
+        [new_input], tmp_path / "new", generation_id="new",
+        prior_receipts=[tmp_path / "old/etl_receipts.parquet"], bulk=bulk,
+    )
+    published = pq.read_table(tmp_path / f"new/{dataset}.parquet")
+    assert published.schema.equals(current.subject_schema)
+    assert not published.schema.field("update_date").nullable
+    assert [record["update_date"] for record in published.to_pylist()] == [original["update_date"], revised["update_date"]]
+    restored = restore_prior(tmp_path / "new", tmp_path / "new-restored", bulk=bulk)
+    assert pq.read_table(restored[dataset]).to_pylist() == [original, revised]
+    receipts = pq.read_table(tmp_path / "new/etl_receipts.parquet").to_pylist()
+    dated = {dict(decode_exact_json(receipt["identity_json"]))["update_date"]: receipt for receipt in receipts
+             if receipt["dataset"] == dataset and receipt["outcome"] == "accepted"}
+    migrated = dated[original["update_date"]]
+    assert migrated["policy_version"] == current.policy_version
+    assert migrated["record_id"] == subject_identity(current, published.to_pylist()[0])[0] != old["record_id"]
+    assert migrated["receipt_id"] != old["receipt_id"]
+    assert migrated["processing_json"] == old["processing_json"]
+    reference = decode_exact_json(migrated["diagnostic_json"])["prior_receipt"]
+    assert {key: reference[key] for key in ("receipt_id", "generation_id", "policy_version", "record_id")} == {
+        key: old[key] for key in ("receipt_id", "generation_id", "policy_version", "record_id")}
+    assert all(witness in migrated["witnesses"] for witness in old["witnesses"])
+    inherited = next(w for w in migrated["witnesses"] if w["source_id"] == "prior-etl-processing")
+    assert resolve_receipt_witness(migrated, inherited) == old["processing_json"].encode()
+    assert "prior_receipt" not in decode_exact_json(dated[revised["update_date"]]["diagnostic_json"])
+    assert old_receipts.read_bytes() == old_bytes
+    write_legislative_outputs(
+        [new_input], tmp_path / "repeated", generation_id="repeated",
+        prior_receipts=[tmp_path / "new/etl_receipts.parquet"], bulk=bulk,
+    )
+    assert pq.read_table(tmp_path / "repeated/etl_receipts.parquet").to_pylist() == receipts
+
+
 @pytest.mark.parametrize(
     "dataset,source,published",
     [

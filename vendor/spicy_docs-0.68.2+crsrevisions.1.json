@@ -1,0 +1,16 @@
+{
+  "filename": "spicy_docs-0.68.2+crsrevisions.1-py3-none-any.whl",
+  "version": "0.68.2+crsrevisions.1",
+  "sha256": "dde8d75590649694efb1092ffc1ec884a3ef7900935f4e1288ab96546afc25b3",
+  "byte_size": 2752531,
+  "source_base_commit": "d3cdb4842ed535df0e4667e3272b28ffa900bb52",
+  "source_state": "Committed source; no registry publication",
+  "build": "uv build --offline --wheel",
+  "scope": "Preserve CRS summary revisions by adding existing update_date to the table identity.",
+  "changed_product_files": {
+    "spicy_docs/interpretation/bill_family.py": "b26d50d514a4abda80ad56ef949098bb1f557324bc60f7ebf6c50097786e3ba5",
+    "spicy_docs/schemas/bill_tables.py": "b7226c17b8ed724850badae05026a0deb380098a6d0610eadb2e7cb665d6df03"
+  },
+  "wheel_record_hashes_verified": true,
+  "source_commit": "b698d55a54ef94ada18cdcf25718e31d5ed427a3"
+}

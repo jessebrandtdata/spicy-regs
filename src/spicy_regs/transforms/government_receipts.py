@@ -43,7 +43,7 @@ from spicy_regs.etl_receipts import (
     validate_receipt_bundle,
 )
 from spicy_regs.native_merge import native_merge
-from spicy_regs.receipt_history import RefusalIdentity, carry_receipt_history
+from spicy_regs.receipt_history import RefusalIdentity, carry_receipt_history, crs_revision_identity_migrations
 from spicy_regs.selected_generations import SelectedDataset, SelectedInputs
 from spicy_regs.sources import publication
 from spicy_regs.transforms.government_source_shapes import (
@@ -63,6 +63,7 @@ from spicy_regs.transforms.parquet_rows import write_rows
 #: the July 2026 column list left out by mistake; the four comment-window columns ECFS never filled dropped (owner,
 #: 2026-10-31).
 POLICY_VERSIONS = {
+    "crs_reports": "government-sources/2",
     "fcc_filings": "government-sources/3",
     "fcc_proceedings": "government-sources/2",
     "gao_decisions": "government-sources/3",
@@ -115,7 +116,7 @@ EARLIER_POLICIES: dict[str, tuple[DatasetPolicy, ...]] = {
     "gao_reports": (_without("gao_reports", "major_rule_agency", "major_rule_rins", "major_rule_fr_citations", "citation_product_id"),),
 }
 # Exact earlier policies restore private source rows without relabeling them.
-for _name in ("gao_decisions", "gao_reports", "fcc_proceedings", "lobbying_filings"):
+for _name in ("crs_reports", "gao_decisions", "gao_reports", "fcc_proceedings", "lobbying_filings"):
     EARLIER_POLICIES[_name] = earlier_policies(POLICIES[_name])
 _FCC_HISTORY = json.loads(Path(__file__).parents[1].joinpath("navigation_policy_history.json").read_text())
 EARLIER_POLICIES["fcc_filings"] = tuple(
@@ -477,7 +478,9 @@ def migrate_outputs(
             merged.receipts.replace(receipt_path)
         elif prior := (_INHERITED.get() or {}).get(dataset):
             carry_receipt_history(receipt_path, [prior], shard / "carried.parquet",
-                                  refusal_identities={dataset: REFUSAL_IDENTITIES[dataset]})
+                                  refusal_identities={dataset: REFUSAL_IDENTITIES[dataset]},
+                                  identity_migrations=crs_revision_identity_migrations(
+                                      policy, lambda raw: map_subject(dataset, raw)))
             (shard / "carried.parquet").replace(receipt_path)
         subjects = pq.ParquetFile(subject_path).metadata.num_rows
         bundles.append((path, subject_path, receipt_path))

@@ -1744,7 +1744,7 @@ tables:
       NDAA, and B-401197, a report to Congress on defense bid protests).
     columns_from: spicy_docs
   crs_reports:
-    identity_columns: [report_id]
+    identity_columns: [report_id, update_date]
     label: "Congressional Research Service reports"
     subject: oversight
     coverage: >-
@@ -1752,18 +1752,19 @@ tables:
       (`published_date` is the current version's date, not first issue).
     measured_on: "2026-09-23"
     summary: >-
-      One Congressional Research Service report from the Congress.gov API list, keyed by
-      `report_id`. Whole or pooled list walks validate the declared population; updates
-      follow source `update_date`. This is list metadata only: report details and bodies are
-      not fetched. `published_date` dates the current version, not first publication. The
-      source API locator is retained in receipts.
+      One retained revision of a Congressional Research Service report's Congress.gov list
+      metadata, keyed by `report_id` and `update_date`. Distinct dated revisions survive
+      incremental merges; repeated copies of the same revision deduplicate. Whole or pooled
+      list walks validate the declared population. Report details and bodies are not fetched.
+      `MIN(published_date)` per report gives the earliest retained version's publication date,
+      which is not necessarily its first issue. The source API locator is retained in receipts.
     columns:
-      report_id: "CRS report id (e.g. `R48641`, `IN12713`). Primary key / dedup key."
+      report_id: "CRS report id (e.g. `R48641`, `IN12713`). Together with `update_date`, identifies one retained revision."
       title: "Report title as returned by the list endpoint."
       report_type: "CRS product category from `contentType` (e.g. `Reports`, `Posts`)."
       status: "Congress.gov's own status, `Active` or `Archived`, as stated; the list route does not define it, and an `Archived` report can carry a recent `published_date`."
-      published_date: "The publisher's `publishDate` for the report's current version, as the list route states it (ISO 8601 string): the latest update's date, not first issue (R44997, first issued in 2017, carries 2026-04-29 at version 16). The list route gives no first-issue date."
-      update_date: "Date the Congress.gov record was last updated (ISO 8601 string). Incremental window key."
+      published_date: "The publisher's `publishDate` for this retained report version, as the list route states it. Dates the version, not necessarily the first issue (R44997, first issued in 2017, carries 2026-04-29 at version 16). The list route gives no first-issue date."
+      update_date: "Source timestamp when the Congress.gov record was updated. Together with `report_id`, identifies one retained revision; also controls the incremental fetch window."
       version: "Version number of the report as returned by the list endpoint."
       url: "Congress.gov API URL for the report's detail resource."
   court_dockets:
@@ -2411,9 +2412,12 @@ tables:
       publisher has written.
     measured_on: "2026-09-28"
     summary: >-
-      One row per CRS summary the publisher states on a bill, at the version and
-      action it describes. `summary_html` is kept exactly as the publisher escaped
-      it.
+      One row per retained CRS summary revision, keyed by bill, summary version,
+      action date and publisher update date. Later update dates preserve earlier
+      rows; repeated copies of the same dated revision merge into one row.
+      `summary_html` is kept exactly as the publisher escaped it. MIN(update_date)
+      gives the earliest retained CRS date, which may follow the original posting
+      when earlier revisions were not captured.
     columns_from: spicy_docs
 
   bill_versions:

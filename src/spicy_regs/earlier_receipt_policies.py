@@ -20,6 +20,30 @@ EARLIER_COLUMNS = {
 
 def earlier_policies(policy):
     from spicy_regs.etl_receipts import DatasetPolicy
+    if policy.dataset == "crs_reports" and policy.policy_version == "government-sources/2":
+        history = json.loads(files("spicy_regs").joinpath("government_policy_history.json").read_text())
+        earlier = DatasetPolicy.from_descriptor(history[policy.dataset])
+        at = policy.subject_schema.get_field_index("update_date")
+        previous_schema = policy.subject_schema.set(at, policy.subject_schema.field(at).with_nullable(True))
+        if (earlier.policy_version != "government-sources/1"
+                or policy.identity_fields != (*earlier.identity_fields, "update_date")
+                or policy.subject_schema.field(at).nullable
+                or earlier.receipt_fields != policy.receipt_fields
+                or not earlier.subject_schema.equals(previous_schema, check_metadata=True)):
+            raise ValueError("CRS report revision policy changes fields beyond the dated identity")
+        return (earlier,)
+    if policy.dataset == "bill_publisher_summaries" and policy.policy_version == "legislative-documents/2":
+        history = json.loads(files("spicy_regs").joinpath("legislative_policy_history.json").read_text())
+        earlier = DatasetPolicy.from_descriptor(history[policy.dataset])
+        at = policy.subject_schema.get_field_index("update_date")
+        previous_schema = policy.subject_schema.set(at, policy.subject_schema.field(at).with_nullable(True))
+        if (earlier.policy_version != "legislative-documents/1"
+                or policy.identity_fields != (*earlier.identity_fields, "update_date")
+                or policy.subject_schema.field(at).nullable
+                or earlier.receipt_fields != policy.receipt_fields
+                or not earlier.subject_schema.equals(previous_schema, check_metadata=True)):
+            raise ValueError("CRS summary revision policy changes fields beyond the dated identity")
+        return (earlier,)
     if policy.dataset == "scorecard_member_links" and policy.policy_version == "scorecards-etl-member-links-v4":
         previous = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs.scorecards").joinpath(
             "geography_policy_history.json").read_text()))

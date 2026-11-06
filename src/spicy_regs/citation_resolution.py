@@ -96,7 +96,11 @@ ROUTES = {
     "rin": Route("unified_agenda", "rin", ("rin", "agenda_edition"), "many", grain="agenda editions for a RIN"),
     # spicy-docs keys a GAO citation on the printed number, upper-cased; a row stating none falls back to its slug.
     "gao_product_id": Route("gao_reports", CITATION_PRODUCT_SQL, ("report_id",)),
-    "crs_report_id": Route("crs_reports", "report_id", ("report_id",)),
+    # A report citation still names one report when its table retains several dated revisions.
+    "crs_report_id": Route("crs_reports", "report_id", ("report_id",),
+                           predicate="t.update_date = (SELECT max(r.update_date) FROM crs_reports r "
+                                     "WHERE r.report_id = t.report_id)",
+                           predicate_columns=("update_date",), grain="latest retained revision of a CRS report"),
     "docket_number": Route("dockets", "docket_id", ("docket_id",)),
     "committee_name": Route("committees", "system_code", ("system_code",)),
     "us_reports_cite": Route("court_citations", "volume || '-' || page", ("cluster_id",),
