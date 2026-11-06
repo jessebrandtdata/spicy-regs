@@ -1,11 +1,11 @@
 {
-  "filename": "spicy_docs-0.71.0-py3-none-any.whl",
-  "version": "0.71.0",
-  "sha256": "2146cb271d32b20c5620ba5b4c74d662f30379083cdc9d6df7cdc3114528ae3f",
-  "byte_size": 3507444,
-  "source_commit": "a2f8afb20ce9992fb0ec66c94ce63acda6d71ce1",
-  "source_tree": "7861da870735049c2cf9f4b1e7b0e6d61399be9e",
-  "built_at_commit": "a2f8afb20ce9992fb0ec66c94ce63acda6d71ce1",
+  "filename": "spicy_docs-0.72.0-py3-none-any.whl",
+  "version": "0.72.0",
+  "sha256": "d895fc5b3fff4c5197fe9ccae89192320dc082e6e1dbd40625e736fa4d551bd3",
+  "byte_size": 3506428,
+  "source_commit": "bdbe8e15403a252e922e21d5eb052ce5aae0bd8f",
+  "source_tree": "38e88d37b297988a1dcf3da4fda73b87348c2014",
+  "built_at_commit": "bdbe8e15403a252e922e21d5eb052ce5aae0bd8f",
   "source_state": "Committed integration candidate; exact package bytes verified; no public release performed.",
   "build": "uv build --wheel --out-dir ../dist",
   "wheel_record_hashes_verified": true,
@@ -243,7 +243,7 @@
     "spicy_docs/sources/congress/bulk_bills.py": "e034abb4c3e306255489f251b41005dd1a85270ad14e5a38554441bc3c9f1522",
     "spicy_docs/sources/congress/bulk_status.py": "f4468a4467c546d11d97140c5629dcbb5dd3376e7d791c8f2b5e313a026aeba3",
     "spicy_docs/sources/congress/committee_rosters.py": "c5552ac2c06ab6d646b6f9e81a54348cfeb7a2247be33bf21d59ed6100d883f7",
-    "spicy_docs/sources/congress/crs_files.py": "8243ab7685ec7421772900e2eccb75d6b882cfb727c0f87964798af985b65e31",
+    "spicy_docs/sources/congress/crs_files.py": "f71f9672bc41762f7a6d6e56eb62eb0362792d08f91057712e4319a5c1d58a07",
     "spicy_docs/sources/congress/crs_summaries.py": "db54a42ebbb25e090e333ef1c87ff03bdd30a4864cc3aa2ff1fa791e02019c3a",
     "spicy_docs/sources/congress/house_committee_repository.py": "d176c7b5576a9273fa2eb44bf654b0841d241afe56d72728406ed7550a396025",
     "spicy_docs/sources/congress/listing.py": "7aea5d77005cae721015392cd7d5298a4aadbcf679cb8b22579167a49a94ce39",
@@ -570,12 +570,12 @@
     "spicy_docs/transport/zyte.py": "6840c68d2576224bdffa98684a6b3ab23dc9ad55b55d58963c6874a407538ae5"
   },
   "verified_record_members": 560,
-  "changed_0_70_0_package_members": [
+  "changed_0_71_0_package_members": [
     "spicy_docs/extraction/gemini.py",
     "spicy_docs/reading/ocr_observations.py",
     "spicy_docs/reading/senate_disbursement_summaries.py"
   ],
-  "added_0_70_0_package_members": [
+  "added_0_71_0_package_members": [
     "spicy_docs/extraction/_structured.py",
     "spicy_docs/extraction/openai.py",
     "spicy_docs/extraction/remote.py",
@@ -583,7 +583,7 @@
     "spicy_docs/reading/house_allowance_formulas_annotations.json",
     "spicy_docs/reading/house_allowance_formulas_corrections.json"
   ],
-  "unchanged_0_70_0_package_members": 548,
+  "unchanged_0_71_0_package_members": 548,
   "scope": "Retains current CRS source support and adds disbursement formulas, reviewed Senate observations and Gemini/OpenAI remote recognition. Repository capture/qualification tools support Flex and Batch.",
-  "validation_evidence": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/provider-final-integration-v1/full-check-watchdog.json"
+  "validation_evidence": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/provider-final-integration-v1/full-check072-watchdog.json"
 }
