@@ -7,7 +7,7 @@ for financial summaries or mailing tables.
 
 from importlib import import_module
 
-PROFILES = ("ledger", "financial-summary", "mailing-summary", "allowance-summary")
+PROFILES = ("ledger", "financial-summary", "mailing-summary", "allowance-summary", "allowance-formula")
 READERS = {
     ("house", "ledger"): ("house_disbursements_pdf", "iter_house_disbursements_pages"),
     ("senate", "ledger"): ("senate_disbursements", "iter_senate_disbursements_pages"),
@@ -15,6 +15,7 @@ READERS = {
     ("senate", "financial-summary"): ("senate_disbursement_summaries", "iter_senate_summary_pages"),
     ("house", "mailing-summary"): ("house_mailing_summaries", "iter_house_mailing_summary_pages"),
     ("house", "allowance-summary"): ("house_allowance_summaries", "iter_house_allowance_summary_pages"),
+    ("house", "allowance-formula"): ("house_allowance_formulas", "iter_house_allowance_formula_pages"),
 }
 
 
@@ -47,6 +48,9 @@ def record_kind(row):
 
 def validate_page_content(page, profile):
     """Check retained indices and row occurrence identity, without reinterpreting cells."""
+    if profile == "allowance-formula":
+        import_module(reader_module("house", profile)).validate_formula_page(page)
+        return
     if "words" in page:
         if [word["index"] for word in page["words"]] != list(range(len(page["words"]))):
             raise ValueError("PDF reading repeats or omits a native word index")

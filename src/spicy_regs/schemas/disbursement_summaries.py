@@ -9,6 +9,7 @@ PREFIXES = {
     ("house", "financial-summary"): "house_financial_summary",
     ("house", "mailing-summary"): "house_mailing_summary",
     ("house", "allowance-summary"): "house_allowance_summary",
+    ("house", "allowance-formula"): "house_allowance_formula",
     ("senate", "financial-summary"): "senate_financial_summary",
 }
 COMMON = SOURCE_FIELDS + READING_FIELDS + (("chamber", pa.string()), ("reading_profile", pa.string()))
@@ -60,11 +61,36 @@ ALLOWANCE_CONTEXT = (
     ("state_literal", pa.string()),
     ("district_literal", pa.string()),
 )
+FORMULA_COLUMNS = (
+    ("formula_occurrence", "occurrence", pa.int64()),
+    ("formula_parameter", "parameter", pa.string()),
+    ("formula_component", "component", pa.string()),
+    ("formula_target_year", "target_year", pa.int32()),
+    ("formula_target_year_basis", "target_year_basis", pa.string()),
+    ("formula_basis_year", "basis_year", pa.int32()),
+    ("formula_reference_year", "reference_year", pa.int32()),
+    ("printed_reference_year", "reference_year_literal", pa.string()),
+    ("formula_operation", "operation", pa.string()),
+    ("printed_operation", "operation_literal", pa.string()),
+    ("formula_evaluation_status", "evaluation_status", pa.string()),
+    ("formula_approximate", "approximate", pa.bool_()),
+    ("lower_inclusive", "lower_inclusive", pa.bool_()),
+    ("upper_inclusive", "upper_inclusive", pa.bool_()),
+    ("formula_bound", "bound", pa.string()),
+    ("bound_inclusive", "inclusive", pa.bool_()),
+    ("formula_effective_date", "effective_date", pa.date32()),
+    ("formula_effective_month", "effective_month", pa.string()),
+    ("external_input_status", "input_value_status", pa.string()),
+    ("external_input_year", "input_year", pa.int32()),
+    ("source_expression", "source_expression", pa.string()),
+)
+FAMILY_CONTEXT = {
+    "house_allowance_summary": ALLOWANCE_CONTEXT,
+    "house_allowance_formula": tuple((name, kind) for name, _, kind in FORMULA_COLUMNS),
+}
 SUFFIX_FIELDS = {"rows": ROW_CONTEXT + ROW_FIELDS, "values": ROW_CONTEXT + VALUE_FIELDS, "pages": PAGE_FIELDS}
 SCHEMAS = {
-    prefix + "_" + suffix: pa.schema(
-        COMMON + fields + (ALLOWANCE_CONTEXT if prefix == "house_allowance_summary" and suffix != "pages" else ())
-    )
+    prefix + "_" + suffix: pa.schema(COMMON + fields + (FAMILY_CONTEXT.get(prefix, ()) if suffix != "pages" else ()))
     for prefix in PREFIXES.values()
     for suffix, fields in SUFFIX_FIELDS.items()
 }

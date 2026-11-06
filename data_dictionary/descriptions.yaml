@@ -12060,3 +12060,231 @@ tables:
       page_reading_json: Complete source page reading, including original tables, words or native text and explicit
         unread content.
       issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+
+  house_allowance_formula_rows:
+    label: House allowance formula rows
+    summary: Distinct source formula parameters, relationships, adjustments and external-input references with
+      original wording and source witnesses.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained native House formula occurrences and any declared adjacent
+      context pages. Historical scanned formulas and unselected pages remain outside this profile's qualification.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    data_quality: Repeated report formulas remain separate occurrences. Preserve target years, adjustment basis
+      years, external-input years and amended periods. Source-bound relationship corrections retain printed literals
+      and evidence. Unstated bounds are absent, not zero; external inputs remain unsupplied. Newer unit-incomplete
+      travel wording is retained without inventing monetary conversions or replacement annual allowances.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned allowance-formula reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding
+        years as separate occurrences.
+      source_table: Null for formula text; no ruled-table geometry is invented.
+      source_row: Null for formula text; use formula_occurrence and retained native span witnesses.
+      source_line: Null for formula text; exact displayed native blocks are retained in the source record.
+      summary_kind: allowance_formula; distinct from annual allowance observations and ledger payments.
+      row_kind: Formula parameter, rate band, adjustment, relationship, context, external-input reference or printed
+        authority.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Readable source-owned parameter label; not a member name or an annual allowance amount.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly printed for an amended formula section; distinct from the containing
+        report interval and governed annual year.
+      summary_period_end: Last day explicitly printed for an amended formula section; null when no interval is
+        stated.
+      amended: Whether the observed formula-section introduction explicitly identifies an amendment.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      values_json: Source reader's normalized values, including exact decimal strings and explicit nulls.
+      raw_fields_json: Literal original fields before numeric normalization; blanks remain distinct from printed
+        zeros.
+      source_row_json: Complete source-owned summary record, retaining heading, coordinates, word references and
+        interpretation evidence.
+      formula_occurrence: Zero-based formula observation position within its physical page; repeated formula occurrences
+        remain separate.
+      formula_parameter: Source-owned formula parameter, rate band, relationship, context or external-input reference
+        name.
+      formula_component: Formula component governed by this observation, such as travel, staffing or official_mail.
+      formula_target_year: Governed year supported by the selected native formula or an explicitly retained adjacent
+        annual-heading witness. Null when that context was not observed.
+      formula_target_year_basis: Additional source-context basis where the governed year is read from a separately
+        retained adjacent annual title; null for the ordinary printed formula context.
+      formula_basis_year: Prior authorization, member or district amount year used as the adjustment basis; distinct
+        from the governed target year.
+      formula_reference_year: Normalized funding, component-basis, staffing or salary-analysis reference year,
+        according to formula_parameter.
+      printed_reference_year: Exact reference-year literal before a reviewed source-bound correction.
+      formula_operation: Normalized source relationship, such as product or sum; null where the literal expression
+        is not qualified for execution.
+      printed_operation: Literal source operation or complete expression before a reviewed relationship correction.
+      formula_evaluation_status: Why the relationship has not been evaluated, including missing external inputs
+        or unit-incomplete source wording.
+      formula_approximate: Whether the source describes an adjustment as approximate; null for other observations.
+      lower_inclusive: Whether the printed mileage lower bound is inclusive; null when no lower bound is stated.
+      upper_inclusive: Whether the printed mileage upper bound is inclusive; null when no upper bound is stated.
+      formula_bound: Role of a single printed bound, such as the travel minimum's lower bound.
+      bound_inclusive: Whether a single printed limit is inclusive; null where no such limit is observed.
+      formula_effective_date: Complete source-stated effective date of an adjustment; never completed from a month-only
+        statement.
+      formula_effective_month: Source-stated effective year and month when no day is printed.
+      external_input_status: not_supplied when the formula names an external input without providing its district-specific
+        value.
+      external_input_year: Year explicitly attached to an external-input reference, where printed.
+      source_expression: Whitespace-normalized source expression; exact native fragments and displayed block positions
+        remain in source_row_json.
+  house_allowance_formula_values:
+    label: House allowance formula values
+    summary: Exact observed formula quantities, mileage bounds and rates with their own units; no replacement
+      annual allowances are calculated.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained native House formula occurrences and any declared adjacent
+      context pages. Historical scanned formulas and unselected pages remain outside this profile's qualification.
+    identity_columns:
+    - source_sha256
+    - source_page
+    - summary_row_index
+    - value_name
+    data_quality: Repeated report formulas remain separate occurrences. Preserve target years, adjustment basis
+      years, external-input years and amended periods. Source-bound relationship corrections retain printed literals
+      and evidence. Unstated bounds are absent, not zero; external inputs remain unsupplied. Newer unit-incomplete
+      travel wording is retained without inventing monetary conversions or replacement annual allowances.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned allowance-formula reading selected for these pages.
+      summary_row_index: One-based record position in this page reading; preserves repeated labels and funding
+        years as separate occurrences.
+      source_table: Null for formula text; no ruled-table geometry is invented.
+      source_row: Null for formula text; use formula_occurrence and retained native span witnesses.
+      source_line: Null for formula text; exact displayed native blocks are retained in the source record.
+      summary_kind: allowance_formula; distinct from annual allowance observations and ledger payments.
+      row_kind: Formula parameter, rate band, adjustment, relationship, context, external-input reference or printed
+        authority.
+      organization: Printed Senate reporting office where the page reader has a source witness; otherwise null.
+      label: Readable source-owned parameter label; not a member name or an annual allowance amount.
+      appropriation_title: Complete printed appropriation title, including witnessed wrapped lines; repeated titles
+        stay separate.
+      appropriation_number: Literal printed appropriation account number, when present.
+      funding_period_literal: Printed fiscal-year label, span or no-year designation, separate from the containing
+        report interval.
+      summary_period_start: First day explicitly printed for an amended formula section; distinct from the containing
+        report interval and governed annual year.
+      summary_period_end: Last day explicitly printed for an amended formula section; null when no interval is
+        stated.
+      amended: Whether the observed formula-section introduction explicitly identifies an amendment.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.
+      value_index: One-based numeric-column position in the source reader's declared value order.
+      value_name: Numeric field within one formula observation, such as value, lower, upper or rate.
+      value_decimal: Exact normalized numeric value stored as DECIMAL(38,4); use value_scale and value_unit to
+        interpret it. Null is not zero.
+      value_scale: Exact normalized fractional precision declared by this formula field; padding never rounds
+        source digits.
+      value_unit: Declared formula unit, including USD, USD/mile, miles, square_feet, percent, factor, trips,
+        days, years or component counts. Do not sum across units or roles.
+      value_status: parsed for an exact observed numeric field. Missing bounds and unsupplied external inputs
+        produce no synthetic value row.
+      raw_value: Exact printed numeric cell, including signs, commas and currency symbols where observed; null
+        or empty for a source blank.
+      formula_occurrence: Zero-based formula observation position within its physical page; repeated formula occurrences
+        remain separate.
+      formula_parameter: Source-owned formula parameter, rate band, relationship, context or external-input reference
+        name.
+      formula_component: Formula component governed by this observation, such as travel, staffing or official_mail.
+      formula_target_year: Governed year supported by the selected native formula or an explicitly retained adjacent
+        annual-heading witness. Null when that context was not observed.
+      formula_target_year_basis: Additional source-context basis where the governed year is read from a separately
+        retained adjacent annual title; null for the ordinary printed formula context.
+      formula_basis_year: Prior authorization, member or district amount year used as the adjustment basis; distinct
+        from the governed target year.
+      formula_reference_year: Normalized funding, component-basis, staffing or salary-analysis reference year,
+        according to formula_parameter.
+      printed_reference_year: Exact reference-year literal before a reviewed source-bound correction.
+      formula_operation: Normalized source relationship, such as product or sum; null where the literal expression
+        is not qualified for execution.
+      printed_operation: Literal source operation or complete expression before a reviewed relationship correction.
+      formula_evaluation_status: Why the relationship has not been evaluated, including missing external inputs
+        or unit-incomplete source wording.
+      formula_approximate: Whether the source describes an adjustment as approximate; null for other observations.
+      lower_inclusive: Whether the printed mileage lower bound is inclusive; null when no lower bound is stated.
+      upper_inclusive: Whether the printed mileage upper bound is inclusive; null when no upper bound is stated.
+      formula_bound: Role of a single printed bound, such as the travel minimum's lower bound.
+      bound_inclusive: Whether a single printed limit is inclusive; null where no such limit is observed.
+      formula_effective_date: Complete source-stated effective date of an adjustment; never completed from a month-only
+        statement.
+      formula_effective_month: Source-stated effective year and month when no day is printed.
+      external_input_status: not_supplied when the formula names an external input without providing its district-specific
+        value.
+      external_input_year: Year explicitly attached to an external-input reference, where printed.
+      source_expression: Whitespace-normalized source expression; exact native fragments and displayed block positions
+        remain in source_row_json.
+  house_allowance_formula_pages:
+    label: House allowance formula pages
+    summary: Complete selected formula-page readings and any explicitly selected adjacent context, retaining native
+      text and unread scope.
+    subject: spending
+    measured_on: '2026-11-06'
+    coverage: Window. Explicitly selected retained native House formula occurrences and any declared adjacent
+      context pages. Historical scanned formulas and unselected pages remain outside this profile's qualification.
+    identity_columns:
+    - source_sha256
+    - source_page
+    data_quality: Repeated report formulas remain separate occurrences. Preserve target years, adjustment basis
+      years, external-input years and amended periods. Source-bound relationship corrections retain printed literals
+      and evidence. Unstated bounds are absent, not zero; external inputs remain unsupplied. Newer unit-incomplete
+      travel wording is retained without inventing monetary conversions or replacement annual allowances.
+    columns:
+      source_file_id: Selected retained report file identifier.
+      source_url: Exact selected publisher PDF URL.
+      source_sha256: SHA-256 of the complete original PDF before reading or repair.
+      package_id: Publisher package identifier where present in the selected source.
+      source_page: One-based physical page in the complete original PDF.
+      printed_page: Printed page label, distinct from its physical position.
+      report_year: Calendar year in which the report interval starts.
+      report_start_month: Calendar month in which the report interval starts.
+      report_period_start: First day of the selected reporting interval.
+      report_period_end: Last day of the selected reporting interval.
+      reader_version: Version of the source-owned PDF reading rule.
+      reading_sha256: SHA-256 of the retained stream for the explicitly selected source pages.
+      chamber: House or Senate publisher of this retained report.
+      reading_profile: Source-owned allowance-formula reading selected for these pages.
+      page_status: Source-owned summary outcome, including readable tables, unrecognized layouts and explicit
+        pending image content.
+      native_text: Retained native page text; it does not qualify image-only financial content.
+      native_word_count: Count of retained original word observations when supplied by this reader; null means
+        the reader did not measure it.
+      image_count: Original image-reference count when supplied by this reader; null means unmeasured, not no
+        images.
+      record_count: Number of distinct source summary records emitted on this selected physical page.
+      page_reading_json: Complete source page reading, including original tables, words or native text and explicit
+        unread content.
+      issue_codes: Preserved page and row issues. A readable row can retain unresolved context or numeric cells.

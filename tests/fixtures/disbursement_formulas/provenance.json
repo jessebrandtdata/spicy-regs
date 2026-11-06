@@ -1,0 +1,7 @@
+{
+  "fixture": "pages.json.gz",
+  "fixture_sha256": "sha256:b72fcf98e657f0154ba02bae27f6db6ebdffad287c3fde6a55a38815df629135",
+  "candidate": "house-allowance-formula-reader-v1/candidate-v4/completion.json",
+  "candidate_sha256": "sha256:da15468c153bed104e74d900cab14d8da9818bdff937bd863c09ff6eee413b82",
+  "scope": "Actual source-reader output from selected complete-original pages; native witnesses and whole original SHA/size are retained in each page. This is an offline host/typed fixture, not a replacement original PDF."
+}

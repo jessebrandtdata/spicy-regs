@@ -14,7 +14,7 @@ readings serve `senate_disbursements` and `senate_disbursement_pages`. See the
 
 Financial, mailing and annual allowance summaries use the same page host and generation builder.
 Their separate `house_financial_summary_*`, `house_mailing_summary_*`,
-`house_allowance_summary_*` and `senate_financial_summary_*` tables preserve source rows, individual numeric
+`house_allowance_summary_*`, `house_allowance_formula_*` and `senate_financial_summary_*` tables preserve source rows, individual numeric
 values and complete page readings. Summary amounts remain separate from ledger
 payments.
 
@@ -87,6 +87,17 @@ Use `--profile financial-summary` for either chamber or
 `--profile mailing-summary` for House mailing and communication tables.
 Use `--profile allowance-summary` for House annual allowance tables and their
 formula introductions. The default profile is `ledger`.
+
+Use `--profile allowance-formula` for explicit formula parameters, mileage bands,
+relationships, adjustments and external-input references. The same retained-page
+and typed-generation stages emit separate `house_allowance_formula_*` tables.
+Each numeric field keeps its own unit and exact scale. Unstated bounds and
+unsupplied external inputs produce no synthetic numeric rows. Native span
+witnesses, printed operations, source-bound repairs and amended scope remain in
+the source JSON. Formula target years stay separate from funding and adjustment
+basis years; an adjacent-heading inference requires that page to be selected and
+retained as a witness. No annual allowance is recomputed, and unit-incomplete
+travel expressions remain explicit.
 
 ```sh
 uv run --frozen python -m spicy_regs.pipelines.congressional_disbursement_pages \
