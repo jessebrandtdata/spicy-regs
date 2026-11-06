@@ -582,7 +582,10 @@ class CaptureEvidence:
         """Observe streamed HTTP responses before owner parsing, including retries.
 
         The source still owns requests, pacing and validation. This wrapper only
-        retains exact transport bytes and refuses retention failures. Redirects
+        retains exact transport bytes and refuses retention failures.
+        ``response_header_names`` opts into selected response metadata under full
+        retention; the default copies no headers. Credential echoes still refuse.
+        Redirects
         are individual observations, so signed credentials are scrubbed by the
         same journal policy as ordinary captures. Full-retention bytes go
         directly through the maintained private blob writer, then the owner

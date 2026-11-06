@@ -824,7 +824,7 @@
       "id_submission": "ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov (`https://www.fcc.gov/ecfs/filing/<id_submission>`, the former `filing_url` column) is kept in the filing's receipt, not in this table: ask `read_receipt_fields` for the field `filing_url`.",
       "proceedings": "Source-listed FCC proceedings with their names and identifiers; repeated occurrences remain distinct. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
       "submission_type": "ECFS submission type description, e.g. `COMMENT`, `REPLY TO COMMENTS`, `NOTICE OF EXPARTE`.",
-      "express_comment": "`1` if the filing is an express comment (text-only, entered in the web form), `0` for standard filings with uploaded documents.",
+      "express_comment": "Publisher express-comment flag, normalized to BOOLEAN. NULL means the publisher omitted the flag or supplied null; retained native evidence distinguishes those states. The flag alone does not establish document availability.",
       "date_received": "Timestamp ECFS records the filing as received (ISO 8601 string). Incremental cursor and sort key.",
       "date_submission": "Timestamp the filer submitted the filing (ISO 8601 string).",
       "date_disseminated": "Timestamp the filing was disseminated (made public) by ECFS (ISO 8601 string).",

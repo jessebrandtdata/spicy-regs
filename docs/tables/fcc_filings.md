@@ -4,7 +4,7 @@
 
 **FCC filings**
 
-One FCC ECFS submission, including comments, replies, ex-parte notices and letters, keyed by `id_submission`. The public API requires an api.data.gov key. Incremental received-date windows are validated by whole or pooled list walks. A first run defaults to the trailing 30 days; earlier history requires an explicit date or proceeding scope.
+One FCC ECFS submission, including comments, replies, ex-parte notices and letters, keyed by `id_submission`. The public API requires an api.data.gov key. Incremental received-date windows reconcile unique filing IDs with FCC's total response header; crowded selections use reconciled submission-timestamp partitions. A first run defaults to the trailing 30 days; earlier history requires an explicit date or proceeding scope.
 
 **Coverage.** Window. FCC ECFS filings received from 2026-08-24 onward, extended daily; earlier filings appear only in explicitly backfilled proceedings. Daily runs reread the trailing seven received-date days, so later dissemination can be missed. The newest day is partial. Proceedings reflect the last read and may retain a placeholder later reassigned by ECFS. PDF text extraction covers selected documents only; a held proceeding's count is not its ECFS total. *(measured 2026-09-28)*
 
@@ -18,7 +18,7 @@ One FCC ECFS submission, including comments, replies, ex-parte notices and lette
 | `id_submission` | `VARCHAR` | ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov (`https://www.fcc.gov/ecfs/filing/<id_submission>`, the former `filing_url` column) is kept in the filing's receipt, not in this table: ask `read_receipt_fields` for the field `filing_url`. |
 | `proceedings` | `STRUCT("name" VARCHAR, id_proceeding VARCHAR, bureau_code VARCHAR, bureau_name VARCHAR, created_date VARCHAR, date_closed VARCHAR, description VARCHAR, description_display VARCHAR, sunshine_start_date VARCHAR, sunshine_end_date VARCHAR, filing_status VARCHAR)[]` | Source-listed FCC proceedings with their names and identifiers; repeated occurrences remain distinct. Stored as native nested values; list order, repeated values, null and empty collections remain distinct. |
 | `submission_type` | `VARCHAR` | ECFS submission type description, e.g. `COMMENT`, `REPLY TO COMMENTS`, `NOTICE OF EXPARTE`. |
-| `express_comment` | `BOOLEAN` | `1` if the filing is an express comment (text-only, entered in the web form), `0` for standard filings with uploaded documents. |
+| `express_comment` | `BOOLEAN` | Publisher express-comment flag, normalized to BOOLEAN. NULL means the publisher omitted the flag or supplied null; retained native evidence distinguishes those states. The flag alone does not establish document availability. |
 | `date_received` | `VARCHAR` | Timestamp ECFS records the filing as received (ISO 8601 string). Incremental cursor and sort key. |
 | `date_submission` | `VARCHAR` | Timestamp the filer submitted the filing (ISO 8601 string). |
 | `date_disseminated` | `VARCHAR` | Timestamp the filing was disseminated (made public) by ECFS (ISO 8601 string). |

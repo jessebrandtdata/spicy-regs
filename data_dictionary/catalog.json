@@ -8021,7 +8021,7 @@
     {
       "table": "fcc_filings",
       "label": "FCC filings",
-      "summary": "One FCC ECFS submission, including comments, replies, ex-parte notices and letters, keyed by `id_submission`. The public API requires an api.data.gov key. Incremental received-date windows are validated by whole or pooled list walks. A first run defaults to the trailing 30 days; earlier history requires an explicit date or proceeding scope.",
+      "summary": "One FCC ECFS submission, including comments, replies, ex-parte notices and letters, keyed by `id_submission`. The public API requires an api.data.gov key. Incremental received-date windows reconcile unique filing IDs with FCC's total response header; crowded selections use reconciled submission-timestamp partitions. A first run defaults to the trailing 30 days; earlier history requires an explicit date or proceeding scope.",
       "coverage": "Window. FCC ECFS filings received from 2026-08-24 onward, extended daily; earlier filings appear only in explicitly backfilled proceedings. Daily runs reread the trailing seven received-date days, so later dissemination can be missed. The newest day is partial. Proceedings reflect the last read and may retain a placeholder later reassigned by ECFS. PDF text extraction covers selected documents only; a held proceeding's count is not its ECFS total.",
       "kind": "window",
       "measured_on": "2026-09-28",
