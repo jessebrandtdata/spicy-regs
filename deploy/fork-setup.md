@@ -135,24 +135,37 @@ cold discovery. Its script and receipts are in
 `~/Work/corpora/fork-execution-2026-09-21/r7-mcp-2026-09-25/`.
 
 The maintained [Worker template](cloudflare/wrangler.template.jsonc) pins the
-reader built from `e7cb16abdfb5dc9519bae61a7a5ae16cff87f148` and its matching
+qualified House reader built from `36ce86d5ebc5449e2bceb8dcf7ca420a57388ee8` and its matching
 Federal Election Commission compatibility receipt. Keep the registry image and
 both runtime pins together when updating the template. Confirm the running
 container and live MCP response after deployment.
-[Reader image build and association](https://github.com/mikewolfd/spicy-regs/actions/runs/42174944381)
+[Reader image build and association](https://github.com/mikewolfd/spicy-regs/actions/runs/42195512943)
 
-The November 6, 2026 successor uses Worker version
+This reader supports the qualified House CSV artifact while keeping its historical
+PDF and Senate work separate. Its complete installed-package and exact-image
+binding preserves the protected FEC data, schemas and recovery history. The
+content-addressed receipt is published and its public bytes match the qualified
+result. These preparation results do not establish deployment or House data
+publication. Complete source CI and the bounded rollout checks before selecting
+House data. For the first publication, stage immutable data and source evidence
+through `publish_generation`, then use its `before_pointer` callback to coordinate
+the ready warm observer before the pointer timestamp is generated. A rollback to
+the prior reader must first restore House's prior absence with
+`restore_family(..., entry=None, expected=<recorded House entry>)` and verify the
+public selection; the prior reader cannot read House's partition declaration.
+
+The earlier November 6, 2026 successor used Worker version
 `12a2f56c-1a0a-4830-a6e5-e544d18baa64` and container app version `68`.
 Completed replacement, the running singleton and the ordinary MCP client all
-matched the template's image and receipt. Discovery, the known lobbying filing,
+matched its image `681c1396` and receipt `1c379800`. Discovery, the known lobbying filing,
 protected campaign-finance queries and query-error recovery passed under the
 unchanged 20-second client deadline. A separate isolated hosted exercise on the
 same image returned an explicit discovery timeout and recovered in the same
 session. It does not establish the cause of the historical stream-ending incident.
 
-Repository acceptance uses `c42bd0e0bf2e607f5dcfc09d277f4c9933b5408e`, whose
-only change after the image build corrects a synthetic FCC response in a test.
-All image inputs remain unchanged; retain the actual image build revision above.
+That earlier repository acceptance used `c42bd0e0bf2e607f5dcfc09d277f4c9933b5408e`, whose
+only change after image source `e7cb16abdfb5dc9519bae61a7a5ae16cff87f148`
+corrected a synthetic FCC response in a test. Its image inputs were unchanged.
 Automatic Explorer metadata publication executed on the accepted source and
 matched the selected public family generations.
 [Corrective source CI](https://github.com/mikewolfd/spicy-regs/actions/runs/42176189881) ·
