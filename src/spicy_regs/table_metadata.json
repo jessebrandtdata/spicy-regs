@@ -35534,7 +35534,7 @@
       {
         "column_name": "capture_receipt_entry",
         "column_type": "BIGINT",
-        "description": "Original file position within the pinned archive receipt."
+        "description": "Zero-based index in the pinned archive receipt's files array; the catalog adapter converts the source catalog's one-based receipt ordinal."
       }
     ],
     "subject": "oversight",

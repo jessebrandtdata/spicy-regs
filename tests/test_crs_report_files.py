@@ -320,7 +320,7 @@ def test_historical_catalog_pin_preserves_unknown_http_facts_and_edition_limits(
     catalog_row = {"collection_id": "family:historical-import", "status": "held",
                    "sha256": captured["source_sha256"], "bytes": captured["source_bytes"], "data": {
         "mapping": {"receipt_evidence_ref": {"manifest": captured["capture_receipt_key"],
-                     "sha256": captured["capture_receipt_sha256"], "entry": 0}},
+                     "sha256": captured["capture_receipt_sha256"], "entry": 1}},
         "receipt_context": {"source_url": PDF_URL, "original_receipts": [{"pointer": "/historical/files/0"}]}}}
     pin = files.retained_file_pin(catalog_row)
     second = files.build_crs_report_files(tmp_path / "retained", [report()], retained_files={PDF_URL: pin}, transport=transport)
@@ -333,6 +333,42 @@ def test_historical_catalog_pin_preserves_unknown_http_facts_and_edition_limits(
     association = files._receipt(CentralRawArchiveStore(), retained["association_receipt_key"],
                                  retained["association_receipt_sha256"])
     assert "response_complete" not in association["files"][0]
+
+
+def test_catalog_ordinal_selects_nonfirst_receipt_file_without_changing_source_pin(tmp_path, source):
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+
+    asked, transport = source
+    store = CentralRawArchiveStore()
+    other = b"unrelated retained original"
+    for body in (other, PDF):
+        store.put_blob(files._sha(body), len(body), [body])
+    receipt = store.record_receipt(files=[
+        {"sha256": files._sha(other), "bytes": len(other), "source_url": "https://example.org/other.txt"},
+        {"sha256": files._sha(PDF), "bytes": len(PDF), "receipt_context": {"source_url": PDF_URL}},
+    ], receipt={"event": "synthetic-retained-source-reconciliation"})
+    catalog_row = {"status": "held", "sha256": files._sha(PDF), "bytes": len(PDF), "data": {
+        "mapping": {"receipt_evidence_ref": {"manifest": receipt["object"],
+                    "sha256": "sha256:" + receipt["sha256"], "entry": 2}},
+        "receipt_context": {"source_url": PDF_URL}}}
+    pin = files.retained_file_pin(catalog_row)
+    assert pin["capture_receipt_entry"] == 1
+    assert pin["capture_receipt_key"] == receipt["object"]
+    assert pin["capture_receipt_sha256"] == "sha256:" + receipt["sha256"]
+    result = files.build_crs_report_files(tmp_path / "run", [report()], retained_files={PDF_URL: pin}, transport=transport)
+    [row] = rows(result)
+    assert asked == [] and result["requests"] == 0 and row["source_sha256"] == files._sha(PDF)
+    assert row["capture_receipt_entry"] == 1 and row["capture_receipt_sha256"] == pin["capture_receipt_sha256"]
+
+
+@pytest.mark.parametrize("ordinal", [None, 0, -1, True, "2", 2.0])
+def test_catalog_pin_refuses_malformed_source_ordinal(ordinal):
+    catalog_row = {"status": "held", "sha256": files._sha(PDF), "bytes": len(PDF), "data": {
+        "mapping": {"receipt_evidence_ref": {"manifest": "acquisitions/sha256/aa/" + "a" * 64,
+                    "sha256": "sha256:" + "a" * 64, "entry": ordinal}},
+        "receipt_context": {"source_url": PDF_URL}}}
+    with pytest.raises(ValueError, match="positive one-based ordinal"):
+        files.retained_file_pin(catalog_row)
 
 
 def test_corrupt_completed_text_phase_refuses_and_preserves_admitted_generation(tmp_path, source):

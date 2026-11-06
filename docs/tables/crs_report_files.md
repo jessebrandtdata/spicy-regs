@@ -50,4 +50,4 @@ File subjects linked to qualified CRS metadata revisions and exact original rece
 | `provider_version` | `VARCHAR` | Installed SpicyDocs release used when this file observation was processed. |
 | `source_bytes` | `BIGINT` | Measured original byte length. |
 | `page_count` | `BIGINT` | Parsed PDF page count; NULL for HTML. |
-| `capture_receipt_entry` | `BIGINT` | Original file position within the pinned archive receipt. |
+| `capture_receipt_entry` | `BIGINT` | Zero-based index in the pinned archive receipt's files array; the catalog adapter converts the source catalog's one-based receipt ordinal. |

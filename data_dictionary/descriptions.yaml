@@ -1803,7 +1803,7 @@ tables:
       captured_at: "Original network observation time when known; historical custody reconciliation does not invent one."
       capture_receipt_key: "Archive-relative immutable receipt retaining the original capture or historical source reconciliation."
       capture_receipt_sha256: "Exact digest of the original capture/reference receipt."
-      capture_receipt_entry: "Original file position within the pinned archive receipt."
+      capture_receipt_entry: "Zero-based index in the pinned archive receipt's files array; the catalog adapter converts the source catalog's one-based receipt ordinal."
       association_receipt_key: "Archive-relative receipt associating this metadata revision with the retained file or recording its refusal."
       association_receipt_sha256: "Exact association receipt digest; separate metadata observations can reuse one original body."
       association_kind: "Captured original or retained-original reuse; association is separate from network acquisition."

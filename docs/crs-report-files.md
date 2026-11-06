@@ -16,6 +16,9 @@ acquisition. It never derives a family from the report id or guesses version
 numbers. `retained_file_pin` translates a selected file-catalog occurrence into
 the `retained_files` map keyed by exact source URL. Historical reconciliation
 keeps unknown acquisition time, capture id and final URL unknown.
+The catalog's receipt entry is a positive one-based ordinal. The adapter converts
+it to the zero-based `capture_receipt_entry` index without changing the pinned
+receipt key or digest; the original catalog evidence retains the source ordinal.
 
 The central archive retains original bytes and immutable receipts. File subjects
 keep the original digest, exact source link, capture/reference receipt and the

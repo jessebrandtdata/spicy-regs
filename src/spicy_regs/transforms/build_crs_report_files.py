@@ -24,7 +24,7 @@ from spicy_regs.source_evidence import CaptureEvidence
 from spicy_regs.transforms.pdf_text import PYPDF_VERSION, extract_pdf_text
 
 if TYPE_CHECKING:
-    from spicy_docs.sources.congress.crs_files import CrsReportSelection
+    from spicy_docs.sources.congress.crs_files import CrsFileSelection, CrsHtmlSelection, CrsReportSelection
 
 DATASET = "crs_report_files"
 FAMILY = "crs-report-files"
@@ -171,7 +171,10 @@ def _receipt(store, key: str, digest: str) -> dict:
 
 
 def retained_file_pin(catalog_row: Mapping) -> dict:
-    """Translate one selected file-catalog occurrence without inventing HTTP facts."""
+    """Translate the catalog's one-based receipt ordinal to a zero-based file index.
+
+    The exact receipt key/digest stays unchanged; this creates no HTTP facts.
+    """
     facts = json.loads(catalog_row["data"]) if isinstance(catalog_row["data"], str) else catalog_row["data"]
     mapping, context = facts.get("mapping") or {}, facts.get("receipt_context") or {}
     reference = mapping.get("receipt_evidence_ref") or {}
@@ -179,6 +182,9 @@ def retained_file_pin(catalog_row: Mapping) -> dict:
     if (catalog_row.get("status") != "held"
             or not reference.get("manifest", "").startswith("acquisitions/sha256/") or not url):
         raise ValueError("CRS retained input requires a held occurrence with exact receipt and source URL")
+    ordinal = reference.get("entry")
+    if type(ordinal) is not int or ordinal < 1:
+        raise ValueError("CRS catalog receipt entry must be a positive one-based ordinal")
     from spicy_docs.sources.congress.crs_files import crs_file_selection, crs_html_selection
 
     if url.endswith(".pdf"):
@@ -188,7 +194,7 @@ def retained_file_pin(catalog_row: Mapping) -> dict:
     return {"source_url": url, "resolved_url": None, "source_sha256": catalog_row["sha256"],
             "source_bytes": catalog_row["bytes"], "capture_id": facts.get("capture_id"),
             "captured_at": mapping.get("acquired_at"), "capture_receipt_key": reference["manifest"],
-            "capture_receipt_sha256": reference["sha256"], "capture_receipt_entry": reference.get("entry"),
+            "capture_receipt_sha256": reference["sha256"], "capture_receipt_entry": ordinal - 1,
             "provenance_basis": "retained-source-reconciliation",
             "original_receipts_json": json.dumps(context.get("original_receipts"), sort_keys=True)}
 
@@ -261,7 +267,10 @@ def _check_metadata_original(evidence, report: Mapping, selection, digest: str) 
     if len(body) > 2 * 1024 * 1024 or _sha(body) != digest:
         raise ValueError("CRS metadata original differs from its digest/byte bound")
     native = read_report(body, report["report_id"], update_date=report["update_date"], version=report["version"])
-    if crs_report_selection(native.get("formats")) != selection:
+    formats = native.get("formats")
+    if not isinstance(formats, list):
+        raise ValueError("CRS metadata original must state a formats array")
+    if crs_report_selection(formats) != selection:
         raise ValueError("CRS selected file locators differ from the pinned metadata original")
     evidence.retain_bytes(body, stage="crs-file-metadata-input", raw_source=True,
                           dataset_id="family:crs-reports", native_id=report["report_id"],
@@ -314,13 +323,13 @@ def _check_phase(row: Mapping, *, report: Mapping, digest: str, rendition: str, 
         raise ValueError("CRS phase differs from the selected metadata/file identity")
 
 
-def _validate_file(row: dict, body: bytes, locator, max_bytes: int) -> None:
+def _validate_file(row: dict, body: bytes, locator: CrsFileSelection | CrsHtmlSelection, max_bytes: int) -> None:
     from spicy_docs.reading.pdf_bytes import check_pdf_bytes
-    from spicy_docs.sources.congress.crs_files import CrsFileSourceError, read_crs_html, read_crs_pdf
+    from spicy_docs.sources.congress.crs_files import CrsFileSelection, CrsFileSourceError, read_crs_html, read_crs_pdf
 
     final_url = row["resolved_url"]
     if final_url is not None:
-        if row["rendition"] == "pdf":
+        if isinstance(locator, CrsFileSelection):
             read_crs_pdf(body, locator, final_url=final_url, max_bytes=max_bytes)
             row["qualified_publisher_version"] = row["publisher_version"]
         else:
@@ -329,7 +338,7 @@ def _validate_file(row: dict, body: bytes, locator, max_bytes: int) -> None:
     else:
         # Historical receipts support a source association, not an observed
         # redirect destination. PDF shape alone cannot qualify their edition.
-        if row["rendition"] == "pdf":
+        if isinstance(locator, CrsFileSelection):
             check_pdf_bytes(body, error_type=CrsFileSourceError, label="Retained CRS PDF")
         else:
             # Reuse the maintained native HTML identity reader against the
@@ -356,7 +365,7 @@ def build_crs_report_files(
     candidate acceptance; central originals are never cleanup candidates.
     """
     from spicy_docs.sources.congress.crs_files import (
-        CrsFileAcquirer, CrsFileBudget, CrsFileSourceError, CrsFileUnavailableError,
+        CrsFileAcquirer, CrsFileBudget, CrsFileSelection, CrsFileSourceError, CrsFileUnavailableError,
         crs_file_locator, crs_html_locator,
     )
     from spicy_docs.transport.captured import attached_capture
@@ -389,7 +398,8 @@ def build_crs_report_files(
         with CrsFileAcquirer(budget=budget, transport=transport) as acquirer:
             for report, selection, metadata_digest in selected:
                 _check_metadata_original(evidence, report, selection, metadata_digest)
-                renditions = [("pdf", selection.pdf, crs_file_locator(selection.pdf))]
+                renditions: list[tuple[str, CrsFileSelection | CrsHtmlSelection, str]] = [
+                    ("pdf", selection.pdf, crs_file_locator(selection.pdf))]
                 if include_html and selection.html is not None:
                     renditions.append(("html", selection.html, crs_html_locator(selection.html)))
                 for rendition, locator, url in renditions:
@@ -418,8 +428,8 @@ def build_crs_report_files(
                         row.update(report_id=report["report_id"], metadata_update_date=report["update_date"],
                                    metadata_source_sha256=metadata_digest, rendition=rendition,
                                    source_family=locator.family, source_url=url,
-                                   publisher_version=str(locator.version) if rendition == "pdf" else None,
-                                   qualified_publisher_version=str(locator.version) if rendition == "pdf" else None,
+                                   publisher_version=str(locator.version) if isinstance(locator, CrsFileSelection) else None,
+                                   qualified_publisher_version=str(locator.version) if isinstance(locator, CrsFileSelection) else None,
                                    version_binding="numbered-pdf-locator" if rendition == "pdf" else "unbound-current-observation",
                                    text_state="not_requested", provider_version=version("spicy-docs"))
                         if held:
@@ -445,10 +455,12 @@ def build_crs_report_files(
                                 raise ValueError("CRS whole-run request/decoded-byte budget exhausted")
                             requests += 1
                             try:
-                                acquired = (acquirer.acquire_report(selection, version=selection.pdf.version)
-                                            if rendition == "pdf" else acquirer.acquire_report_html(locator))
-                                if rendition == "pdf" and acquired.selection != locator:
-                                    raise ValueError("CRS provider did not return the selected numbered PDF")
+                                if isinstance(locator, CrsFileSelection):
+                                    acquired = acquirer.acquire_report(selection, version=locator.version)
+                                else:
+                                    acquired = acquirer.acquire_report_html(locator)
+                                if acquired.selection != locator:
+                                    raise ValueError("CRS provider did not return the selected file")
                             except CrsFileSourceError as error:
                                 evidence.refusal(error, stage="crs-file")
                                 capture = attached_capture(error)
