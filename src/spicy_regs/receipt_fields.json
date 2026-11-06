@@ -259,7 +259,9 @@
      "action_desc",
      "update_date",
      "summary_html",
-     "summary_chars"
+     "summary_chars",
+     "last_summary_update_date",
+     "source_schema_version"
     ]
    }
   },
@@ -391,8 +393,14 @@
      "kind_label",
      "kind_warning",
      "kind_section_count",
-     "kind_body_bytes"
+     "kind_body_bytes",
+     "publication_dates_json",
+     "publication_evidence_status",
+     "publication_evidence_json"
     ]
+   },
+   "renamed": {
+    "publication_dates_json": "publication_dates"
    },
    "meanings": {
     "body_tags": "The body element names found, unit-separator joined; a reported bill states two.",
@@ -413,6 +421,8 @@
     "kind_section_count": "The section count the kind heuristic was given, recorded so the answer re-derives.",
     "observed_at": "When the body was captured; the instant the other capture columns describe.",
     "offered_formats_json": "Every format link the publisher offered for this printing, as a JSON array.",
+    "publication_dates_json": "Native SUMMARY/MODS dates with original values, precision, attributes and exact source/capture locators.",
+    "publication_evidence_json": "Exact body digest and metadata capture pins, observations and publication/availability limits.",
     "requested_url": "The URL the fetch asked for.",
     "resolved_url": "The URL the response actually came from, which a redirect can change.",
     "root_tag": "The XML root element name (bill, resolution, amendment-doc).",
@@ -1090,8 +1100,27 @@
      "published_date",
      "update_date",
      "version",
-     "url"
+     "url",
+     "summary",
+     "authors_json",
+     "topics_json",
+     "formats_json",
+     "related_materials_json",
+     "detail_state",
+     "detail_attempt_state",
+     "detail_fields_json",
+     "list_witness_json",
+     "detail_witness_json",
+     "detail_attempt_witness_json",
+     "detail_error"
     ]
+   },
+   "renamed": {
+    "authors_json": "authors",
+    "detail_fields_json": "detail_fields",
+    "formats_json": "formats",
+    "related_materials_json": "related_materials",
+    "topics_json": "topics"
    },
    "meanings": {
     "url": "Congress.gov API URL for the report's detail resource."

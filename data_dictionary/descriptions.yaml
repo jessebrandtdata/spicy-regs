@@ -1752,20 +1752,24 @@ tables:
       (`published_date` is the current version's date, not first issue).
     measured_on: "2026-09-23"
     summary: >-
-      One retained revision of a Congressional Research Service report's Congress.gov list
-      metadata, keyed by `report_id` and `update_date`. Distinct dated revisions survive
-      incremental merges; repeated copies of the same revision deduplicate. Whole or pooled
-      list walks validate the declared population. Report details and bodies are not fetched.
-      `MIN(published_date)` per report gives the earliest retained version's publication date,
-      which is not necessarily its first issue. The source API locator is retained in receipts.
+      One retained revision of a Congressional Research Service report, keyed by
+      `report_id` and `update_date`. Distinct dated revisions survive incremental merges.
+      Bounded detail enrichment adds the complete summary, authors, topics, file locators
+      and related materials only when the report, update instant and stated version agree.
+      Qualified detail and the latest attempt have separate states, so a failed retry or
+      ordinary list refresh preserves earlier qualified values and their witnesses.
+      List walks check their declared population without proving an atomic snapshot or
+      complete revision history. Listed file locators do not establish acquired bodies.
+      `published_date` dates a retained version and does not establish the report's first
+      issue. Source locators and role-specific capture witnesses remain in receipts.
     columns:
       report_id: "CRS report id (e.g. `R48641`, `IN12713`). Together with `update_date`, identifies one retained revision."
       title: "Report title as returned by the list endpoint."
       report_type: "CRS product category from `contentType` (e.g. `Reports`, `Posts`)."
       status: "Congress.gov's own status, `Active` or `Archived`, as stated; the list route does not define it, and an `Archived` report can carry a recent `published_date`."
       published_date: "The publisher's `publishDate` for this retained report version, as the list route states it. Dates the version, not necessarily the first issue (R44997, first issued in 2017, carries 2026-04-29 at version 16). The list route gives no first-issue date."
-      update_date: "Source timestamp when the Congress.gov record was updated. Together with `report_id`, identifies one retained revision; also controls the incremental fetch window."
-      version: "Version number of the report as returned by the list endpoint."
+      update_date: "Source timestamp when the Congress.gov record was updated. Together with report_id, identifies one retained revision; separate from the discovery checkpoint."
+      version: "Version number stated by the list endpoint. Detail enrichment requires an explicitly stated matching version."
       url: "Congress.gov API URL for the report's detail resource."
   court_dockets:
     identity_columns: [cl_docket_id]

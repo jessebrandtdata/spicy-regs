@@ -20266,7 +20266,7 @@
   "crs_reports": {
     "table": "crs_reports",
     "label": "Congressional Research Service reports",
-    "summary": "One retained revision of a Congressional Research Service report's Congress.gov list metadata, keyed by `report_id` and `update_date`. Distinct dated revisions survive incremental merges; repeated copies of the same revision deduplicate. Whole or pooled list walks validate the declared population. Report details and bodies are not fetched. `MIN(published_date)` per report gives the earliest retained version's publication date, which is not necessarily its first issue. The source API locator is retained in receipts.",
+    "summary": "One retained revision of a Congressional Research Service report, keyed by `report_id` and `update_date`. Distinct dated revisions survive incremental merges. Bounded detail enrichment adds the complete summary, authors, topics, file locators and related materials only when the report, update instant and stated version agree. Qualified detail and the latest attempt have separate states, so a failed retry or ordinary list refresh preserves earlier qualified values and their witnesses. List walks check their declared population without proving an atomic snapshot or complete revision history. Listed file locators do not establish acquired bodies. `published_date` dates a retained version and does not establish the report's first issue. Source locators and role-specific capture witnesses remain in receipts.",
     "coverage": "True range: reports whose current version is dated from 1993-10-22 on (`published_date` is the current version's date, not first issue).",
     "kind": "true_range",
     "measured_on": "2026-09-23",
@@ -20300,12 +20300,57 @@
       {
         "column_name": "update_date",
         "column_type": "TIMESTAMP WITH TIME ZONE",
-        "description": "Source timestamp when the Congress.gov record was updated. Together with `report_id`, identifies one retained revision; also controls the incremental fetch window."
+        "description": "Source timestamp when the Congress.gov record was updated. Together with report_id, identifies one retained revision. It is separate from the discovery checkpoint and does not establish first publication."
       },
       {
         "column_name": "version",
         "column_type": "BIGINT",
-        "description": "Version number of the report as returned by the list endpoint."
+        "description": "Version number of the report as returned by the list endpoint. Detail enrichment requires an explicitly stated matching version."
+      },
+      {
+        "column_name": "summary",
+        "column_type": "VARCHAR",
+        "description": "Complete summary from the matched report detail, including any publisher markup. See detail_fields for missing, null and empty states."
+      },
+      {
+        "column_name": "authors",
+        "column_type": "STRUCT(author VARCHAR)[]",
+        "description": "Native author entries in source order, preserving repeated and null entries. See detail_fields for the state of the source field."
+      },
+      {
+        "column_name": "topics",
+        "column_type": "STRUCT(topic VARCHAR)[]",
+        "description": "Native topic entries in source order, preserving repeated and null entries. An explicit empty list remains empty."
+      },
+      {
+        "column_name": "formats",
+        "column_type": "STRUCT(format VARCHAR, url VARCHAR)[]",
+        "description": "Native format and URL entries in source order. A listed file is not evidence that its body was acquired."
+      },
+      {
+        "column_name": "related_materials",
+        "column_type": "STRUCT(url VARCHAR, congress BIGINT, number VARCHAR, title VARCHAR, \"type\" VARCHAR)[]",
+        "description": "Native report references in source order, preserving repeated and null entries. Source URL or url becomes url; numeric identifiers become text. Original spelling and types remain in captured detail."
+      },
+      {
+        "column_name": "detail_state",
+        "column_type": "VARCHAR",
+        "description": "Whether qualified detail is retained for this revision: not_requested or ok. A failed later attempt does not erase a previously qualified detail."
+      },
+      {
+        "column_name": "detail_attempt_state",
+        "column_type": "VARCHAR",
+        "description": "Outcome of the most recent detail attempt, separate from whether qualified detail is retained."
+      },
+      {
+        "column_name": "detail_fields",
+        "column_type": "STRUCT(\"name\" VARCHAR, state VARCHAR)[]",
+        "description": "One entry per supported source detail field, recording missing, null, empty or value. These states describe the qualified detail and its witness."
+      },
+      {
+        "column_name": "detail_error",
+        "column_type": "VARCHAR",
+        "description": "Reason for a failed detail attempt, when present. Previously qualified values may remain available with their original witness."
       }
     ],
     "subject": "oversight",
@@ -20313,6 +20358,17 @@
     "identity_columns": [
       "report_id",
       "update_date"
+    ],
+    "later_policy_columns": [
+      "summary",
+      "authors",
+      "topics",
+      "formats",
+      "related_materials",
+      "detail_state",
+      "detail_attempt_state",
+      "detail_fields",
+      "detail_error"
     ]
   },
   "court_dockets": {
@@ -28054,7 +28110,7 @@
   "bill_publisher_summaries": {
     "table": "bill_publisher_summaries",
     "label": "CRS bill summaries (publisher)",
-    "summary": "One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. MIN(update_date) gives the earliest retained CRS date, which may follow the original posting when earlier revisions were not captured.",
+    "summary": "One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. `update_date` preserves the native item clock; legacy `last_summary_update_date` dates the summary itself. `source_schema_version` qualifies those meanings. Neither clock nor its minimum establishes first publication. See docs/bill-summary-clocks.md for the schema-qualified query and replay limits.",
     "coverage": "Sampled: bills the bill family has read from GovInfo BILLSTATUS, Congress by Congress from the 108th on; group by the Congress in bill_id to see which Congresses are filled. A bill has rows only for the summaries the publisher has written.",
     "kind": "sampled",
     "measured_on": "2026-09-28",
@@ -28083,7 +28139,7 @@
       {
         "column_name": "update_date",
         "column_type": "VARCHAR",
-        "description": "The publisher's update date for this revision; distinct dates retain separate summary rows."
+        "description": "Literal publisher updateDate retained in the revision key. In BILLSTATUS schema 1.0.0 it dates the list item; in schema 3.0.0 it dates the summary update. It does not establish first publication."
       },
       {
         "column_name": "summary_html",
@@ -28094,6 +28150,16 @@
         "column_name": "summary_chars",
         "column_type": "BIGINT",
         "description": "Character length of summary_html, so a truncation upstream is visible without reading it."
+      },
+      {
+        "column_name": "last_summary_update_date",
+        "column_type": "VARCHAR",
+        "description": "Literal legacy lastSummaryUpdateDate, separate from the item clock. Missing is NULL and an explicitly empty value stays empty. This is an update date, not a first-publication date."
+      },
+      {
+        "column_name": "source_schema_version",
+        "column_type": "VARCHAR",
+        "description": "BILLSTATUS schema version stated by the source document; qualifies the meaning of the two update fields."
       }
     ],
     "subject": "congress",
@@ -28137,7 +28203,7 @@
       {
         "column_name": "version_date",
         "column_type": "VARCHAR",
-        "description": "The publisher's date for this printing; the merge prefers the larger value. An enrolled printing's date is empty at the publisher (BILLSTATUS `<date/>` and the printing's own dc:date), so version_date is '' (not NULL) on enrolled rows, which sorts before every date: order printings with printing_order or NULLIF(version_date, '')."
+        "description": "Congress textVersions action-associated date for this printing, not its online publication time; the merge prefers the larger value. An enrolled printing's date is empty at the publisher (BILLSTATUS `<date/>` and the printing's own dc:date), so version_date is '' (not NULL) on enrolled rows, which sorts before every date: order printings with printing_order or NULLIF(version_date, '')."
       },
       {
         "column_name": "package_id",
@@ -28183,6 +28249,16 @@
         "column_name": "kind_warning",
         "column_type": "VARCHAR",
         "description": "The inline warning this kind carries, for a version picker.  NULL for `full_text` and for `unknown`, which states none of its own."
+      },
+      {
+        "column_name": "publication_dates",
+        "column_type": "STRUCT(field VARCHAR, \"value\" VARCHAR, state VARCHAR, \"precision\" VARCHAR, locator VARCHAR, source_sha256 VARCHAR, source_url VARCHAR, observed_at VARCHAR, attributes STRUCT(\"name\" VARCHAR, \"value\" VARCHAR)[])[]",
+        "description": "Native SUMMARY/MODS date observations with original values, precision, attributes and exact evidence/capture locators."
+      },
+      {
+        "column_name": "publication_evidence_status",
+        "column_type": "VARCHAR",
+        "description": "Whether SUMMARY was bracketed or changed; every status leaves the metadata/body version link unverified."
       },
       {
         "column_name": "body_version_id",
@@ -38161,7 +38237,7 @@
       {
         "dataset": "bill_publisher_summaries",
         "receipt_only": false,
-        "policy_version": "legislative-documents/2",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
           "bill_id",
           "summary_version_code",
@@ -38216,7 +38292,7 @@
       {
         "dataset": "bill_versions",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/2",
         "identity_columns": [
           "bill_id",
           "version_code",
@@ -38675,7 +38751,7 @@
       {
         "dataset": "crs_reports",
         "receipt_only": false,
-        "policy_version": "government-sources/2",
+        "policy_version": "government-sources/3",
         "identity_columns": [
           "report_id",
           "update_date"

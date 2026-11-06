@@ -4,7 +4,7 @@
 
 **Congressional Research Service reports**
 
-One retained revision of a Congressional Research Service report's Congress.gov list metadata, keyed by `report_id` and `update_date`. Distinct dated revisions survive incremental merges; repeated copies of the same revision deduplicate. Whole or pooled list walks validate the declared population. Report details and bodies are not fetched. `MIN(published_date)` per report gives the earliest retained version's publication date, which is not necessarily its first issue. The source API locator is retained in receipts.
+One retained revision of a Congressional Research Service report, keyed by `report_id` and `update_date`. Distinct dated revisions survive incremental merges. Bounded detail enrichment adds the complete summary, authors, topics, file locators and related materials only when the report, update instant and stated version agree. Qualified detail and the latest attempt have separate states, so a failed retry or ordinary list refresh preserves earlier qualified values and their witnesses. List walks check their declared population without proving an atomic snapshot or complete revision history. Listed file locators do not establish acquired bodies. `published_date` dates a retained version and does not establish the report's first issue. Source locators and role-specific capture witnesses remain in receipts.
 
 **Coverage.** True range: reports whose current version is dated from 1993-10-22 on (`published_date` is the current version's date, not first issue). *(measured 2026-09-23)*
 
@@ -20,5 +20,14 @@ One retained revision of a Congressional Research Service report's Congress.gov 
 | `report_type` | `VARCHAR` | CRS product category from `contentType` (e.g. `Reports`, `Posts`). |
 | `status` | `VARCHAR` | Congress.gov's own status, `Active` or `Archived`, as stated; the list route does not define it, and an `Archived` report can carry a recent `published_date`. |
 | `published_date` | `TIMESTAMP WITH TIME ZONE` | The publisher's `publishDate` for this retained report version, as the list route states it. Dates the version, not necessarily the first issue (R44997, first issued in 2017, carries 2026-04-29 at version 16). The list route gives no first-issue date. |
-| `update_date` | `TIMESTAMP WITH TIME ZONE` | Source timestamp when the Congress.gov record was updated. Together with `report_id`, identifies one retained revision; also controls the incremental fetch window. |
-| `version` | `BIGINT` | Version number of the report as returned by the list endpoint. |
+| `update_date` | `TIMESTAMP WITH TIME ZONE` | Source timestamp when the Congress.gov record was updated. Together with report_id, identifies one retained revision. It is separate from the discovery checkpoint and does not establish first publication. |
+| `version` | `BIGINT` | Version number of the report as returned by the list endpoint. Detail enrichment requires an explicitly stated matching version. |
+| `summary` | `VARCHAR` | Complete summary from the matched report detail, including any publisher markup. See detail_fields for missing, null and empty states. |
+| `authors` | `STRUCT(author VARCHAR)[]` | Native author entries in source order, preserving repeated and null entries. See detail_fields for the state of the source field. |
+| `topics` | `STRUCT(topic VARCHAR)[]` | Native topic entries in source order, preserving repeated and null entries. An explicit empty list remains empty. |
+| `formats` | `STRUCT(format VARCHAR, url VARCHAR)[]` | Native format and URL entries in source order. A listed file is not evidence that its body was acquired. |
+| `related_materials` | `STRUCT(url VARCHAR, congress BIGINT, number VARCHAR, title VARCHAR, "type" VARCHAR)[]` | Native report references in source order, preserving repeated and null entries. Source URL or url becomes url; numeric identifiers become text. Original spelling and types remain in captured detail. |
+| `detail_state` | `VARCHAR` | Whether qualified detail is retained for this revision: not_requested or ok. A failed later attempt does not erase a previously qualified detail. |
+| `detail_attempt_state` | `VARCHAR` | Outcome of the most recent detail attempt, separate from whether qualified detail is retained. |
+| `detail_fields` | `STRUCT("name" VARCHAR, state VARCHAR)[]` | One entry per supported source detail field, recording missing, null, empty or value. These states describe the qualified detail and its witness. |
+| `detail_error` | `VARCHAR` | Reason for a failed detail attempt, when present. Previously qualified values may remain available with their original witness. |

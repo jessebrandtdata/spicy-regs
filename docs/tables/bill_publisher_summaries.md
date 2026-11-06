@@ -4,7 +4,7 @@
 
 **CRS bill summaries (publisher)**
 
-One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. MIN(update_date) gives the earliest retained CRS date, which may follow the original posting when earlier revisions were not captured.
+One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. `update_date` preserves the native item clock; legacy `last_summary_update_date` dates the summary itself. `source_schema_version` qualifies those meanings. Neither clock nor its minimum establishes first publication. See docs/bill-summary-clocks.md for the schema-qualified query and replay limits.
 
 **Coverage.** Sampled: bills the bill family has read from GovInfo BILLSTATUS, Congress by Congress from the 108th on; group by the Congress in bill_id to see which Congresses are filled. A bill has rows only for the summaries the publisher has written. *(measured 2026-09-28)*
 
@@ -19,6 +19,8 @@ One row per retained CRS summary revision, keyed by bill, summary version, actio
 | `summary_version_code` | `VARCHAR` | The publisher's two-digit summary version code (00 introduced, 53 passed House...). |
 | `action_date` | `VARCHAR` | The date of the action this summary describes. |
 | `action_desc` | `VARCHAR` | The publisher's description of that action. |
-| `update_date` | `VARCHAR` | The publisher's update date for this revision; distinct dates retain separate summary rows. |
+| `update_date` | `VARCHAR` | Literal publisher updateDate retained in the revision key. In BILLSTATUS schema 1.0.0 it dates the list item; in schema 3.0.0 it dates the summary update. It does not establish first publication. |
 | `summary_html` | `VARCHAR` | The summary exactly as the publisher escaped it, from either placement, untruncated. |
 | `summary_chars` | `BIGINT` | Character length of summary_html, so a truncation upstream is visible without reading it. |
+| `last_summary_update_date` | `VARCHAR` | Literal legacy lastSummaryUpdateDate, separate from the item clock. Missing is NULL and an explicitly empty value stays empty. This is an update date, not a first-publication date. |
+| `source_schema_version` | `VARCHAR` | BILLSTATUS schema version stated by the source document; qualifies the meaning of the two update fields. |

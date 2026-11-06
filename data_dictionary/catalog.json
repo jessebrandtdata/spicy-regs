@@ -624,7 +624,7 @@
       {
         "dataset": "bill_publisher_summaries",
         "receipt_only": false,
-        "policy_version": "legislative-documents/2",
+        "policy_version": "legislative-documents/3",
         "identity_columns": [
           "bill_id",
           "summary_version_code",
@@ -679,7 +679,7 @@
       {
         "dataset": "bill_versions",
         "receipt_only": false,
-        "policy_version": "legislative-documents/1",
+        "policy_version": "legislative-documents/2",
         "identity_columns": [
           "bill_id",
           "version_code",
@@ -1138,7 +1138,7 @@
       {
         "dataset": "crs_reports",
         "receipt_only": false,
-        "policy_version": "government-sources/2",
+        "policy_version": "government-sources/3",
         "identity_columns": [
           "report_id",
           "update_date"
@@ -7223,7 +7223,7 @@
     {
       "table": "crs_reports",
       "label": "Congressional Research Service reports",
-      "summary": "One retained revision of a Congressional Research Service report's Congress.gov list metadata, keyed by `report_id` and `update_date`. Distinct dated revisions survive incremental merges; repeated copies of the same revision deduplicate. Whole or pooled list walks validate the declared population. Report details and bodies are not fetched. `MIN(published_date)` per report gives the earliest retained version's publication date, which is not necessarily its first issue. The source API locator is retained in receipts.",
+      "summary": "One retained revision of a Congressional Research Service report, keyed by `report_id` and `update_date`. Distinct dated revisions survive incremental merges. Bounded detail enrichment adds the complete summary, authors, topics, file locators and related materials only when the report, update instant and stated version agree. Qualified detail and the latest attempt have separate states, so a failed retry or ordinary list refresh preserves earlier qualified values and their witnesses. List walks check their declared population without proving an atomic snapshot or complete revision history. Listed file locators do not establish acquired bodies. `published_date` dates a retained version and does not establish the report's first issue. Source locators and role-specific capture witnesses remain in receipts.",
       "coverage": "True range: reports whose current version is dated from 1993-10-22 on (`published_date` is the current version's date, not first issue).",
       "kind": "true_range",
       "measured_on": "2026-09-23",
@@ -7235,7 +7235,16 @@
         "status",
         "published_date",
         "update_date",
-        "version"
+        "version",
+        "summary",
+        "authors",
+        "topics",
+        "formats",
+        "related_materials",
+        "detail_state",
+        "detail_attempt_state",
+        "detail_fields",
+        "detail_error"
       ]
     },
     {
@@ -9168,7 +9177,7 @@
     {
       "table": "bill_publisher_summaries",
       "label": "CRS bill summaries (publisher)",
-      "summary": "One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. MIN(update_date) gives the earliest retained CRS date, which may follow the original posting when earlier revisions were not captured.",
+      "summary": "One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. `update_date` preserves the native item clock; legacy `last_summary_update_date` dates the summary itself. `source_schema_version` qualifies those meanings. Neither clock nor its minimum establishes first publication. See docs/bill-summary-clocks.md for the schema-qualified query and replay limits.",
       "coverage": "Sampled: bills the bill family has read from GovInfo BILLSTATUS, Congress by Congress from the 108th on; group by the Congress in bill_id to see which Congresses are filled. A bill has rows only for the summaries the publisher has written.",
       "kind": "sampled",
       "measured_on": "2026-09-28",
@@ -9180,7 +9189,9 @@
         "action_desc",
         "update_date",
         "summary_html",
-        "summary_chars"
+        "summary_chars",
+        "last_summary_update_date",
+        "source_schema_version"
       ]
     },
     {
@@ -9206,6 +9217,8 @@
         "kind",
         "kind_label",
         "kind_warning",
+        "publication_dates",
+        "publication_evidence_status",
         "body_version_id"
       ]
     },

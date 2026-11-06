@@ -150,7 +150,9 @@
       "summary_version_code": "The publisher's two-digit summary version code (00 introduced, 53 passed House...).",
       "action_date": "The date of the action this summary describes.",
       "action_desc": "The publisher's description of that action.",
-      "update_date": "The publisher's update date for this revision; distinct dates retain separate summary rows.",
+      "update_date": "Literal publisher updateDate retained in the revision key. In BILLSTATUS schema 1.0.0 it dates the list item; in schema 3.0.0 it dates the summary update. It does not establish first publication.",
+      "last_summary_update_date": "Literal legacy lastSummaryUpdateDate, separate from the item clock. Missing is NULL and an explicitly empty value stays empty. This is an update date, not a first-publication date.",
+      "source_schema_version": "BILLSTATUS schema version stated by the source document; qualifies the meaning of the two update fields.",
       "summary_html": "The summary exactly as the publisher escaped it, from either placement, untruncated.",
       "summary_chars": "Character length of summary_html, so a truncation upstream is visible without reading it."
     }
@@ -671,8 +673,17 @@
       "report_type": "CRS product category from `contentType` (e.g. `Reports`, `Posts`).",
       "status": "Congress.gov's own status, `Active` or `Archived`, as stated; the list route does not define it, and an `Archived` report can carry a recent `published_date`.",
       "published_date": "The publisher's `publishDate` for this retained report version, as the list route states it. Dates the version, not necessarily the first issue (R44997, first issued in 2017, carries 2026-04-29 at version 16). The list route gives no first-issue date.",
-      "update_date": "Source timestamp when the Congress.gov record was updated. Together with `report_id`, identifies one retained revision; also controls the incremental fetch window.",
-      "version": "Version number of the report as returned by the list endpoint."
+      "update_date": "Source timestamp when the Congress.gov record was updated. Together with report_id, identifies one retained revision. It is separate from the discovery checkpoint and does not establish first publication.",
+      "version": "Version number of the report as returned by the list endpoint. Detail enrichment requires an explicitly stated matching version.",
+      "summary": "Complete summary from the matched report detail, including any publisher markup. See detail_fields for missing, null and empty states.",
+      "authors": "Native author entries in source order, preserving repeated and null entries. See detail_fields for the state of the source field.",
+      "topics": "Native topic entries in source order, preserving repeated and null entries. An explicit empty list remains empty.",
+      "formats": "Native format and URL entries in source order. A listed file is not evidence that its body was acquired.",
+      "related_materials": "Native report references in source order, preserving repeated and null entries. Source URL or url becomes url; numeric identifiers become text. Original spelling and types remain in captured detail.",
+      "detail_state": "Whether qualified detail is retained for this revision: not_requested or ok. A failed later attempt does not erase a previously qualified detail.",
+      "detail_attempt_state": "Outcome of the most recent detail attempt, separate from whether qualified detail is retained.",
+      "detail_fields": "One entry per supported source detail field, recording missing, null, empty or value. These states describe the qualified detail and its witness.",
+      "detail_error": "Reason for a failed detail attempt, when present. Previously qualified values may remain available with their original witness."
     }
   },
   "diff_summaries": {
