@@ -33,6 +33,10 @@ QUALIFIED_PRIVATE_NATIVE = {
         "source_commit": "ffecc57a329eaa82a914086ac24b06866a3062f8",
         "sha256": "26ac42827e960fb93cc35526615151a2252f9321ef5bc1be97dcc30f2c43aa07",
     },
+    "0.68.2+crsrevisions.1": {
+        "source_commit": "b698d55a54ef94ada18cdcf25718e31d5ed427a3",
+        "sha256": "dde8d75590649694efb1092ffc1ec884a3ef7900935f4e1288ab96546afc25b3",
+    },
 }
 
 
