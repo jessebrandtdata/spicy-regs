@@ -8429,14 +8429,47 @@
         "package_id",
         "text_sha256"
       ],
-      "kind": "unmeasured",
+      "kind": "scope",
       "reason": "A body can occur in several dated metadata revisions. Historical navigation returns each matching parent revision; current citation reads first select the latest package revision.",
       "measured_via": null,
-      "baseline_keys": 0,
-      "baseline_missing": 0,
-      "floor_pct": null,
-      "expected_cardinality": "many",
-      "measurement": null
+      "baseline_keys": 79,
+      "baseline_missing": 53,
+      "floor_pct": 32.9113,
+      "expected_cardinality": "one",
+      "measurement": {
+        "join": "document_citations.document_key+text_sha256 -> budget_volumes.package_id+text_sha256",
+        "keys": 79,
+        "missing": 53,
+        "resolved_pct": 32.9114,
+        "examples": [
+          "CRPT-117hrpt700|sha256:b1c700229629f312acc01f1ae1bfc85a8035e2e2ad9bf12987ae875b973cbe25",
+          "CRPT-117hrpt701|sha256:7e6f0fdbd6317a6d747b386e76c4de1e978cfcb11c71ce24d508441e4f01f515",
+          "CRPT-117hrpt702|sha256:b5acdf764d27d52cd2ee996318985cf42802c832f726542e5ae8f1c7eb3c3fff"
+        ],
+        "child_input_rows": 52895,
+        "child_nonnull_rows": 52895,
+        "parent_input_rows": 29,
+        "parent_distinct_keys": 29,
+        "parent_duplicate_keys": 0,
+        "max_parent_multiplicity": 1,
+        "max_matched_parent_multiplicity": 1,
+        "inner_join_rows": 17033,
+        "left_join_nonnull_rows": 52895,
+        "scope": "full_selected_inputs",
+        "child_urls": [
+          "https://data.spicygov.ai/generations/print-citations/8885c43caa0d12301492da662bc43eb9d99d6cbce55357e7c41eb3c9980f545b/document_citations.parquet"
+        ],
+        "parent_urls": [
+          "https://data.spicygov.ai/generations/print-citations/8885c43caa0d12301492da662bc43eb9d99d6cbce55357e7c41eb3c9980f545b/budget_volumes.parquet"
+        ],
+        "measured_on": "2026-10-03",
+        "measured_expected_cardinality": "one",
+        "receipt": "docs/evidence/explorer-joins-2026-10-03.json",
+        "kind": "scope",
+        "source_evidence": [
+          "src/spicy_regs/transforms/build_print_citations.py:build_print_citations"
+        ]
+      }
     },
     {
       "child": "document_citations",
@@ -8449,14 +8482,47 @@
         "package_id",
         "text_sha256"
       ],
-      "kind": "unmeasured",
+      "kind": "scope",
       "reason": "A body can occur in several dated metadata revisions. Historical navigation returns each matching parent revision; current citation reads first select the latest package revision.",
       "measured_via": null,
-      "baseline_keys": 0,
-      "baseline_missing": 0,
-      "floor_pct": null,
-      "expected_cardinality": "many",
-      "measurement": null
+      "baseline_keys": 79,
+      "baseline_missing": 38,
+      "floor_pct": 51.8987,
+      "expected_cardinality": "one",
+      "measurement": {
+        "join": "document_citations.document_key+text_sha256 -> house_activity_reports.package_id+text_sha256",
+        "keys": 79,
+        "missing": 38,
+        "resolved_pct": 51.8987,
+        "examples": [
+          "BUDGET-2024-APP|sha256:3176922505d0f479ddc852f460f6b0e55017d14f2d5df825211410dc2ae61f1a",
+          "BUDGET-2024-BALANCES|sha256:0571c0298ea7043fde1853119b85eb48153ed5be08253d89a1401fcfb69b2323",
+          "BUDGET-2024-BUD|sha256:c344335685063f2281b802fb92395fd3c205499435f31334b8c0b07eaf311a07"
+        ],
+        "child_input_rows": 52895,
+        "child_nonnull_rows": 52895,
+        "parent_input_rows": 41,
+        "parent_distinct_keys": 41,
+        "parent_duplicate_keys": 0,
+        "max_parent_multiplicity": 1,
+        "max_matched_parent_multiplicity": 1,
+        "inner_join_rows": 35790,
+        "left_join_nonnull_rows": 52895,
+        "scope": "full_selected_inputs",
+        "child_urls": [
+          "https://data.spicygov.ai/generations/print-citations/8885c43caa0d12301492da662bc43eb9d99d6cbce55357e7c41eb3c9980f545b/document_citations.parquet"
+        ],
+        "parent_urls": [
+          "https://data.spicygov.ai/generations/print-citations/8885c43caa0d12301492da662bc43eb9d99d6cbce55357e7c41eb3c9980f545b/house_activity_reports.parquet"
+        ],
+        "measured_on": "2026-10-03",
+        "measured_expected_cardinality": "one",
+        "receipt": "docs/evidence/explorer-joins-2026-10-03.json",
+        "kind": "scope",
+        "source_evidence": [
+          "src/spicy_regs/transforms/build_print_citations.py:build_print_citations"
+        ]
+      }
     },
     {
       "child": "house_communications",

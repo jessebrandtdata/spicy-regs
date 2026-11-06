@@ -52,14 +52,6 @@ def test_every_audited_connection_is_in_the_single_canonical_registry():
 def test_audited_measurements_supply_enforced_baselines_and_cardinality():
     for join in REVIEWED:
         measurement = join.measurement
-        if join.kind == "unmeasured":
-            # Dated metadata can repeat a body across revisions. The old
-            # single-parent measurement remains historical evidence only.
-            assert join.parent in {"budget_volumes", "house_activity_reports"}
-            assert join.expected_cardinality == "many"
-            assert measurement is None
-            assert (join.baseline_keys, join.baseline_missing, join.floor_pct) == (0, 0, None)
-            continue
         assert measurement is not None
         assert measurement["scope"] == "full_selected_inputs"
         assert measurement["parent_duplicate_keys"] == 0
