@@ -8,7 +8,7 @@ Monetary lines from selected historical House report PDFs, with transaction amou
 
 **Coverage.** Window. Explicitly selected retained House PDFs. Each physical page is visited; images and other financial grids have explicit pending page outcomes. These PDF occurrences are distinct from official CSV occurrences. Do not combine overlapping PDF and CSV periods without a source-qualified selection. *(measured 2026-11-06)*
 
-**Data quality.** Exact signed decimals preserve quarterly and year-to-date values independently. Only transaction rows populate amount. Summary, subtotal and organization_total rows must not be added to transactions. Literal DO payees resolve only from a witnessed prior payee. Original cells, normalization witnesses and unresolved date or hierarchy issues remain available. Offices can change within a page.
+**Data quality.** Exact signed decimals preserve quarterly and year-to-date values independently. Only transaction rows populate amount. Summary, subtotal and organization_total rows must not be added to transactions. Literal DO payees resolve only from a witnessed prior payee. Original cells, normalization witnesses and unresolved date or hierarchy issues remain available. Offices can change within a page. Reviewed structured observations retain limited source-review status; their DO payees stay unresolved and unavailable native coordinates remain null.
 
 - **Parquet file:** `house_disbursement_pdf_rows.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
@@ -28,8 +28,12 @@ Monetary lines from selected historical House report PDFs, with transaction amou
 | `report_period_start` | `DATE` | First day of the selected reporting interval. |
 | `report_period_end` | `DATE` | Last day of the selected reporting interval. |
 | `reader_version` | `VARCHAR` | Version of the source-owned PDF reading rule. |
-| `reading_sha256` | `VARCHAR` | Digest of the complete page-reading stream containing original words and positions. |
-| `source_line` | `BIGINT` | One-based positioned financial line on this physical page. |
+| `reading_sha256` | `VARCHAR` | Digest of the retained page-reading stream and its original-word or structured-observation evidence. |
+| `reading_method` | `VARCHAR` | Native PDF reading or reviewed structured observation; the latter retains its source-review limits. |
+| `source_row_index` | `BIGINT` | One-based financial occurrence in the retained page reading; not a positioned line number. |
+| `source_line` | `BIGINT` | One-based positioned financial line; null for unpositioned observations. |
+| `source_role` | `VARCHAR` | Finer independently reviewed source role for a structured row; null for native rows. |
+| `source_origin_json` | `VARCHAR` | Structured table, row and cell locators with literal bindings; null for native rows. It supplies no native geometry. |
 | `row_kind` | `VARCHAR` | Printed transaction, summary, subtotal or organization_total role. |
 | `organizational_group` | `VARCHAR` | Outer printed group containing the reporting office. |
 | `organization` | `VARCHAR` | Printed reporting office, distinct from an elected-member identity. |
@@ -37,7 +41,7 @@ Monetary lines from selected historical House report PDFs, with transaction amou
 | `program` | `VARCHAR` | Printed program within the office hierarchy, null if its heading was not read. |
 | `cost_category` | `VARCHAR` | Printed expense category for the transaction, null where unresolved. |
 | `transaction_date` | `DATE` | Posted date using the report year for abbreviated month-day cells. |
-| `data_source` | `VARCHAR` | Publisher AP, AR or GL accounting-system label when printed. |
+| `data_source` | `VARCHAR` | Literal publisher accounting-system code, including historical codes whose meaning remains unresolved. |
 | `document` | `VARCHAR` | Literal voucher identifier, preserving leading zeros and blank-date transfers. |
 | `vendor_name` | `VARCHAR` | Printed payee or witnessed DO continuation; blank source identities remain null. |
 | `service_start_date` | `DATE` | Normalized source service start date; invalid cells remain null with an issue. |
@@ -47,8 +51,8 @@ Monetary lines from selected historical House report PDFs, with transaction amou
 | `ytd_amount` | `DECIMAL(38,2)` | Exact signed year-to-date amount where printed; never add to quarterly values. |
 | `qtd_amount` | `DECIMAL(38,2)` | Exact signed quarter-to-date amount where printed, including aggregate rows. |
 | `office_origin_json` | `VARCHAR` | Physical page and positioned line witnessing the office heading. |
-| `raw_fields_json` | `VARCHAR` | Literal cells before cleaning, date parsing or ditto resolution. |
-| `word_indices` | `BIGINT[]` | Original page-word indices for this financial line in the reading stream. |
+| `raw_fields_json` | `VARCHAR` | Literal fields after separately retained manual observation corrections and before scalar normalization; empty strings are true observed blanks, while null means no independent cell was mapped. |
+| `word_indices` | `BIGINT[]` | Original page-word indices for a native financial line; null for unpositioned observations. |
 | `normalizations_json` | `VARCHAR` | Applied source rules, original values and witnesses, including printed DO resolution. |
-| `repairs_json` | `VARCHAR` | Qualified source corrections with evidence; an empty list means no repair was applied. |
+| `repairs_json` | `VARCHAR` | Native source-date corrections with evidence; structured observation corrections live in the page provenance. |
 | `issue_codes` | `VARCHAR[]` | Page and row issues, including unresolved context or date anomalies. |

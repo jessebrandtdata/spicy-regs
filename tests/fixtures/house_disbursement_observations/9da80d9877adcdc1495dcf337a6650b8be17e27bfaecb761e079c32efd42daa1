@@ -1,0 +1,3866 @@
+{
+  "schema": "reviewed-house-ledger-observation/1",
+  "status": "reviewed_fields_with_unresolved_text_or_context",
+  "binding": {
+    "image_sha256": "sha256:4476c3723123d2f83021b239d149518edd9cf889d800943777b673c3ae7f8065",
+    "page": 49,
+    "result_sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316",
+    "source_byte_size": 81081273,
+    "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1"
+  },
+  "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+  "source_byte_size": 81081273,
+  "page": 49,
+  "physical_pages": 1252,
+  "report_period_start": "2008-01-01",
+  "report_period_end": "2008-03-31",
+  "two_digit_year_century": 2000,
+  "raw_outcome_sha256": "sha256:928ad9b19850e61a05adf3cb8e7fb275559c00101b7beb686f6d3b36c16e3ad6",
+  "normalized_outcome_sha256": "sha256:366f99b2722e8ece3ff81c1ff09fcc7c9d3fde61020420aa047b7932970509e4",
+  "result": {
+    "sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316",
+    "bytes": 16115
+  },
+  "review_evidence": [
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-flex-p49-ledger-source-map-v1/source-map.json",
+      "sha256": "sha256:318a258a1579953f6ed24bd3da88bad8a7abcff4c90d021abef13760e751a08f",
+      "bytes": 179288
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle-v2.json",
+      "sha256": "sha256:3b7e17cf3c8061051d35c9f0c1eef90f3df46e360d093e64a55c1bf64aae7a3a",
+      "bytes": 80881
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-oracle.json",
+      "sha256": "sha256:12736ab402c972b0ca771b352381228ba148407c7a694b40caedf2249be0f3a7",
+      "bytes": 214401
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/actual-normalized-v2-readback.json",
+      "sha256": "sha256:45e7954cb483b98c3535d57fa5c2a5ef177664ce20204d35e150b137d26dbe2f",
+      "bytes": 15280
+    }
+  ],
+  "corrections": [
+    {
+      "edits": [
+        {
+          "after": [
+            {
+              "columns": [
+                "",
+                "",
+                ""
+              ],
+              "rows": [
+                {
+                  "cells": [
+                    "PERSONNEL COMPENSATION",
+                    "4,945,319.07",
+                    "2,518,063.60"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "PERSONNEL BENEFITS",
+                    "464.31",
+                    "0.00"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "RENT, COMMUNICATION, UTILITIES",
+                    "204.96",
+                    "-3,358.02"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "PRINTING AND REPRODUCTION",
+                    "0.00",
+                    "0.00"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "SUPPLIES AND MATERIALS",
+                    "3,861.39",
+                    "1,579.22"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "EQUIPMENT",
+                    "3,421.56",
+                    "-1,316.86"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "PERSONNEL TOTALS:",
+                    "4,953,271.29",
+                    "2,514,967.94"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "OFFICE TOTALS:",
+                    "6,884,791.21",
+                    "3,425,616.19"
+                  ],
+                  "context": "PERSONNEL"
+                }
+              ],
+              "title": ""
+            },
+            {
+              "columns": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "rows": [
+                {
+                  "cells": [
+                    "01-31",
+                    "S7",
+                    "08031000006",
+                    "",
+                    "01/01/08",
+                    "01/31/08",
+                    "TRANSIT BENEFITS",
+                    "",
+                    "511.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "01-31",
+                    "S7",
+                    "08031000007",
+                    "",
+                    "01/01/08",
+                    "01/31/08",
+                    "TRANSIT BENEFITS",
+                    "",
+                    "464.27"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "02-29",
+                    "S7",
+                    "08060000007",
+                    "",
+                    "02/01/08",
+                    "02/29/08",
+                    "TRANSIT BENEFITS",
+                    "",
+                    "401.27"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "02-29",
+                    "S7",
+                    "08060000008",
+                    "",
+                    "02/01/08",
+                    "02/29/08",
+                    "TRANSIT BENEFITS",
+                    "",
+                    "464.24"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "03-28",
+                    "S7",
+                    "08088000005",
+                    "",
+                    "03/01/08",
+                    "03/31/08",
+                    "TRANSIT BENEFITS",
+                    "",
+                    "527.31"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "03-28",
+                    "S7",
+                    "08088000006",
+                    "",
+                    "03/01/08",
+                    "03/31/08",
+                    "TRANSIT BENEFITS",
+                    "",
+                    "485.33"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                }
+              ],
+              "title": ""
+            },
+            {
+              "columns": [
+                "",
+                ""
+              ],
+              "rows": [
+                {
+                  "cells": [
+                    "PERSONNEL BENEFITS TOTALS",
+                    "2,853.92"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                }
+              ],
+              "title": ""
+            },
+            {
+              "columns": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "rows": [
+                {
+                  "cells": [
+                    "01-14",
+                    "P1",
+                    "08A00100067",
+                    "CITIBANK GOV CARD SERVICE",
+                    "11/04/07",
+                    "11/04/07",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "37.13"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "01-23",
+                    "P1",
+                    "08A00100069",
+                    "DO",
+                    "01/15/08",
+                    "01/15/08",
+                    "A/F PVD-BWI #6914 MEENAN",
+                    "",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "01-23",
+                    "P1",
+                    "08A00100070",
+                    "DO",
+                    "01/17/08",
+                    "01/17/08",
+                    "A/F BWI-PVD #0324 MEENAN",
+                    "",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-06",
+                    "P1",
+                    "08A00100080",
+                    "DO",
+                    "01/22/08",
+                    "01/23/08",
+                    "AIRFARE #5437 DAIGLE",
+                    "",
+                    "249.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-06",
+                    "P1",
+                    "08A00100081",
+                    "DO",
+                    "01/28/08",
+                    "02/01/08",
+                    "AIRFARE #7548 DAIGLE",
+                    "",
+                    "249.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-08",
+                    "P1",
+                    "08A00100083",
+                    "DANIEL P BEARD",
+                    "01/24/08",
+                    "01/26/08",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "243.21"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-08",
+                    "P1",
+                    "08A00100082",
+                    "PERRY PLUMART",
+                    "01/24/08",
+                    "01/26/08",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "316.25"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-15",
+                    "P1",
+                    "08A00100085",
+                    "CITIBANK GOV CARD SERVICE",
+                    "02/06/08",
+                    "02/06/08",
+                    "AIRFARE #8383 MEENAN",
+                    "",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-15",
+                    "P1",
+                    "08A00100086",
+                    "DO",
+                    "02/08/08",
+                    "02/08/08",
+                    "AIRFARE #1846 MEENAN",
+                    "",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-20",
+                    "P1",
+                    "08A00100087",
+                    "DANIEL P BEARD",
+                    "02/02/08",
+                    "02/04/08",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "41.28"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-27",
+                    "P1",
+                    "08A00100089",
+                    "CITIBANK GOV CARD SERVICE",
+                    "02/11/08",
+                    "02/11/08",
+                    "AIRFARE #9437 MEENAN",
+                    "",
+                    "75.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-27",
+                    "P1",
+                    "08A00100090",
+                    "DO",
+                    "02/14/08",
+                    "02/14/08",
+                    "AIRFARE #0270 MEENAN",
+                    "",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-29",
+                    "P1",
+                    "08A00100095",
+                    "DO",
+                    "01/16/08",
+                    "01/27/08",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "196.15"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-29",
+                    "P1",
+                    "08A00100093",
+                    "GRANT SCHERLING",
+                    "02/04/08",
+                    "02/08/08",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "1,599.81"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-07",
+                    "P1",
+                    "08A00100103",
+                    "CITIBANK GOV CARD SERVICE",
+                    "02/25/08",
+                    "02/25/08",
+                    "AIRFARE #1581 DAIGLE",
+                    "",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-07",
+                    "P1",
+                    "08A00100104",
+                    "DO",
+                    "02/28/08",
+                    "02/28/08",
+                    "AIRFARE #6283 DAIGLE",
+                    "",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-11",
+                    "P1",
+                    "08A00100105",
+                    "DO",
+                    "03/04/08",
+                    "03/04/08",
+                    "AIRFARE #2706 MEENAN",
+                    "",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-11",
+                    "P1",
+                    "08A00100106",
+                    "DO",
+                    "03/06/08",
+                    "03/06/08",
+                    "AIRFARE #4787 MEENAN",
+                    "",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100114",
+                    "DO",
+                    "01/27/08",
+                    "02/15/08",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "2,113.35"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100116",
+                    "DO",
+                    "03/10/08",
+                    "03/10/08",
+                    "A/F MEENAN #8740",
+                    "",
+                    "188.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100117",
+                    "DO",
+                    "03/14/08",
+                    "03/14/08",
+                    "A/F MEENAN #1846",
+                    "",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100115",
+                    "GALA RODRIGUEZ",
+                    "03/05/08",
+                    "03/07/08",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "247.60"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100107",
+                    "PERRY PLUMART",
+                    "03/03/08",
+                    "03/03/08",
+                    "TRAVEL SUBSISTENCE",
+                    "",
+                    "248.06"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                }
+              ],
+              "title": ""
+            },
+            {
+              "columns": [
+                "",
+                ""
+              ],
+              "rows": [
+                {
+                  "cells": [
+                    "TRAVEL TOTALS:",
+                    "7,044.34"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                }
+              ],
+              "title": ""
+            },
+            {
+              "columns": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "rows": [
+                {
+                  "cells": [
+                    "01-07",
+                    "P2",
+                    "HCV0800467",
+                    "VERIZON WIRELESS",
+                    "12/11/07",
+                    "12/11/07",
+                    "1, BLUETOOTH",
+                    "",
+                    "37.49"
+                  ],
+                  "context": "ADMINISTRATION \u2014 RENT, COMMUNICATION, UTILITIES"
+                },
+                {
+                  "cells": [
+                    "01-17",
+                    "P2",
+                    "HCV0800561",
+                    "DO",
+                    "12/18/07",
+                    "12/18/07",
+                    "8830 BLACKBERRY",
+                    "",
+                    "79.98"
+                  ],
+                  "context": "ADMINISTRATION \u2014 RENT, COMMUNICATION, UTILITIES"
+                },
+                {
+                  "cells": [
+                    "01-23",
+                    "S5",
+                    "DY080100010",
+                    "",
+                    "12/01/07",
+                    "12/31/07",
+                    "DC TEL EQUIP (TRANSFER)",
+                    "",
+                    "96.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 RENT, COMMUNICATION, UTILITIES"
+                },
+                {
+                  "cells": [
+                    "01-23",
+                    "S5",
+                    "DY080100015",
+                    "",
+                    "12/01/07",
+                    "12/31/07",
+                    "DC TEL EQUIP (TRANSFER)",
+                    "",
+                    "588.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 RENT, COMMUNICATION, UTILITIES"
+                }
+              ],
+              "title": ""
+            }
+          ],
+          "before": [
+            {
+              "columns": [
+                "",
+                "",
+                ""
+              ],
+              "rows": [
+                {
+                  "cells": [
+                    "PERSONNEL COMPENSATION",
+                    "4,945,319.07",
+                    "2,518,063.60"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "PERSONNEL BENEFITS",
+                    "464.31",
+                    "0.00"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "RENT, COMMUNICATION, UTILITIES",
+                    "204.96",
+                    "-3,358.02"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "PRINTING AND REPRODUCTION",
+                    "0.00",
+                    "0.00"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "SUPPLIES AND MATERIALS",
+                    "3,861.39",
+                    "1,579.22"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "EQUIPMENT",
+                    "3,421.56",
+                    "-1,316.86"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "PERSONNEL TOTALS:",
+                    "4,953,271.29",
+                    "2,514,967.94"
+                  ],
+                  "context": "PERSONNEL"
+                },
+                {
+                  "cells": [
+                    "OFFICE TOTALS:",
+                    "6,884,791.21",
+                    "3,425,616.19"
+                  ],
+                  "context": "PERSONNEL"
+                }
+              ],
+              "title": ""
+            },
+            {
+              "columns": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "rows": [
+                {
+                  "cells": [
+                    "01-31",
+                    "S7",
+                    "0803100006",
+                    "",
+                    "01/01/08",
+                    "01/31/08",
+                    "TRANSIT BENEFITS",
+                    "511.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "01-31",
+                    "S7",
+                    "0803100007",
+                    "",
+                    "01/01/08",
+                    "01/31/08",
+                    "TRANSIT BENEFITS",
+                    "464.27"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "02-29",
+                    "S7",
+                    "0806000007",
+                    "",
+                    "02/01/08",
+                    "02/29/08",
+                    "TRANSIT BENEFITS",
+                    "401.27"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "02-29",
+                    "S7",
+                    "0806000008",
+                    "",
+                    "02/01/08",
+                    "02/29/08",
+                    "TRANSIT BENEFITS",
+                    "464.24"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "03-28",
+                    "S7",
+                    "0808800005",
+                    "",
+                    "03/01/08",
+                    "03/31/08",
+                    "TRANSIT BENEFITS",
+                    "527.31"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "03-28",
+                    "S7",
+                    "0808800006",
+                    "",
+                    "03/01/08",
+                    "03/31/08",
+                    "TRANSIT BENEFITS",
+                    "485.33"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "PERSONNEL BENEFITS TOTALS",
+                    "2,853.92"
+                  ],
+                  "context": "ADMINISTRATION \u2014 PERSONNEL BENEFITS"
+                },
+                {
+                  "cells": [
+                    "01-14",
+                    "P1",
+                    "08A00100067",
+                    "CITIBANK GOV CARD SERVICE",
+                    "11/04/07",
+                    "11/04/07",
+                    "TRAVEL SUBSISTENCE",
+                    "37.13"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "01-23",
+                    "P1",
+                    "08A00100069",
+                    "DO",
+                    "01/15/08",
+                    "01/15/08",
+                    "A/F PVD-BWI #6914 MEENAN",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "01-23",
+                    "P1",
+                    "08A00100070",
+                    "DO",
+                    "01/17/08",
+                    "01/17/08",
+                    "A/F BWI-PVD #0324 MEENAN",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-06",
+                    "P1",
+                    "08A00100080",
+                    "DO",
+                    "01/22/08",
+                    "01/23/08",
+                    "AIRFARE #5437 DAIGLE",
+                    "249.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-06",
+                    "P1",
+                    "08A00100081",
+                    "DO",
+                    "01/28/08",
+                    "02/01/08",
+                    "AIRFARE #7548 DAIGLE",
+                    "249.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-08",
+                    "P1",
+                    "08A00100083",
+                    "DANIEL P BEARD",
+                    "01/24/08",
+                    "01/26/08",
+                    "TRAVEL SUBSISTENCE",
+                    "243.21"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-08",
+                    "P1",
+                    "08A00100082",
+                    "PERRY PLUMART",
+                    "01/24/08",
+                    "01/26/08",
+                    "TRAVEL SUBSISTENCE",
+                    "316.25"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-15",
+                    "P1",
+                    "08A00100085",
+                    "CITIBANK GOV CARD SERVICE",
+                    "02/06/08",
+                    "02/06/08",
+                    "AIRFARE #8383 MEENAN",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-15",
+                    "P1",
+                    "08A00100086",
+                    "DO",
+                    "02/08/08",
+                    "02/08/08",
+                    "AIRFARE #1846 MEENAN",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-20",
+                    "P1",
+                    "08A00100087",
+                    "DANIEL P BEARD",
+                    "02/02/08",
+                    "02/04/08",
+                    "TRAVEL SUBSISTENCE",
+                    "41.28"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-27",
+                    "P1",
+                    "08A00100089",
+                    "CITIBANK GOV CARD SERVICE",
+                    "02/11/08",
+                    "02/11/08",
+                    "AIRFARE #9437 MEENAN",
+                    "75.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-27",
+                    "P1",
+                    "08A00100090",
+                    "DO",
+                    "02/14/08",
+                    "02/14/08",
+                    "AIRFARE #0270 MEENAN",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-29",
+                    "P1",
+                    "08A00100095",
+                    "DO",
+                    "01/16/08",
+                    "01/27/08",
+                    "TRAVEL SUBSISTENCE",
+                    "196.15"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "02-29",
+                    "P1",
+                    "08A00100093",
+                    "GRANT SCHERLING",
+                    "02/04/08",
+                    "02/08/08",
+                    "TRAVEL SUBSISTENCE",
+                    "1,599.81"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-07",
+                    "P1",
+                    "08A00100103",
+                    "CITIBANK GOV CARD SERVICE",
+                    "02/25/08",
+                    "02/25/08",
+                    "AIRFARE #1581 DAIGLE",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-07",
+                    "P1",
+                    "08A00100104",
+                    "DO",
+                    "02/28/08",
+                    "02/28/08",
+                    "AIRFARE #6283 DAIGLE",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-11",
+                    "P1",
+                    "08A00100105",
+                    "DO",
+                    "03/04/08",
+                    "03/04/08",
+                    "AIRFARE #2706 MEENAN",
+                    "123.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-11",
+                    "P1",
+                    "08A00100106",
+                    "DO",
+                    "03/06/08",
+                    "03/06/08",
+                    "AIRFARE #4787 MEENAN",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100114",
+                    "DO",
+                    "01/27/08",
+                    "02/15/08",
+                    "TRAVEL SUBSISTENCE",
+                    "2,113.35"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100116",
+                    "DO",
+                    "03/10/08",
+                    "03/10/08",
+                    "A/F MEENAN #8740",
+                    "188.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100117",
+                    "DO",
+                    "03/14/08",
+                    "03/14/08",
+                    "A/F MEENAN #1846",
+                    "124.50"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100115",
+                    "GALA RODRIGUEZ",
+                    "03/05/08",
+                    "03/07/08",
+                    "TRAVEL SUBSISTENCE",
+                    "247.60"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "03-20",
+                    "P1",
+                    "08A00100107",
+                    "PERRY PLUMART",
+                    "03/03/08",
+                    "03/03/08",
+                    "TRAVEL SUBSISTENCE",
+                    "248.06"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "TRAVEL TOTALS:",
+                    "7,044.34"
+                  ],
+                  "context": "ADMINISTRATION \u2014 TRAVEL"
+                },
+                {
+                  "cells": [
+                    "01-07",
+                    "P2",
+                    "HCV0800467",
+                    "VERIZON WIRELESS",
+                    "12/11/07",
+                    "12/11/07",
+                    "1, BLUETOOTH",
+                    "37.49"
+                  ],
+                  "context": "ADMINISTRATION \u2014 RENT, COMMUNICATION, UTILITIES"
+                },
+                {
+                  "cells": [
+                    "01-17",
+                    "P2",
+                    "HCV0800561",
+                    "DO",
+                    "12/18/07",
+                    "12/18/07",
+                    "8830 BLACKBERRY",
+                    "79.98"
+                  ],
+                  "context": "ADMINISTRATION \u2014 RENT, COMMUNICATION, UTILITIES"
+                },
+                {
+                  "cells": [
+                    "01-23",
+                    "S5",
+                    "DY080100010",
+                    "",
+                    "12/01/07",
+                    "12/31/07",
+                    "DC TEL EQUIP (TRANSFER)",
+                    "96.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 RENT, COMMUNICATION, UTILITIES"
+                },
+                {
+                  "cells": [
+                    "01-23",
+                    "S5",
+                    "DY080100015",
+                    "",
+                    "12/01/07",
+                    "12/31/07",
+                    "DC TEL EQUIP (TRANSFER)",
+                    "588.00"
+                  ],
+                  "context": "ADMINISTRATION \u2014 RENT, COMMUNICATION, UTILITIES"
+                }
+              ],
+              "title": ""
+            }
+          ],
+          "path": [
+            "tables"
+          ]
+        }
+      ],
+      "id": "house-2008q1-part1-p49-reviewed-vouchers-and-positional-layout",
+      "image_sha256": "sha256:4476c3723123d2f83021b239d149518edd9cf889d800943777b673c3ae7f8065",
+      "method": "manual_review",
+      "page": 49,
+      "reason": "Original page geometry supports empty payroll prefix fields and absent detail YTD entries. Restore those slots with empty header strings. Preserve spanning subtotal labels as two-slot label/quarterly rows rather than inventing blank cells under their text. Split contiguous source row runs without changing their order, context, printed values, zeros, dates or ditto text. Review coordinates are not model geometry. This combined raw-bound table-array replacement also retains the six separately reviewed 11-glyph voucher corrections, at their exact source row positions; all other nonempty literals are unchanged. The prior voucher artifact remains immutable. When split tables inherit a printed heading, retain that title on each applicable row run. These repetitions express source scope and do not add printed heading occurrences. All original row contexts and the page headings array remain unchanged.",
+      "result_sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316",
+      "review_evidence": [
+        {
+          "bytes": 214401,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-oracle.json",
+          "sha256": "sha256:12736ab402c972b0ca771b352381228ba148407c7a694b40caedf2249be0f3a7"
+        },
+        {
+          "bytes": 6686,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crop-provenance.json",
+          "sha256": "sha256:02adf2a8683d2cb417d8bc072a3ed0d96955c4f29f16cf52348bce7888309343"
+        },
+        {
+          "bytes": 80881,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle-v2.json",
+          "sha256": "sha256:3b7e17cf3c8061051d35c9f0c1eef90f3df46e360d093e64a55c1bf64aae7a3a"
+        },
+        {
+          "bytes": 1952450,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p49-rotation90-300dpi.png",
+          "sha256": "sha256:f4e0e9251dc73cb2afdb9ae66b7f2196d21f41695b729b2c2b6640651b4eaced"
+        },
+        {
+          "bytes": 12953,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/structural-source-second-review-v1/review.json",
+          "sha256": "sha256:fb90dbbcf58ec0d2c1638d1f97927bf48cda5fff9965ba144fc144d6c5a62c8c"
+        },
+        {
+          "bytes": 30113,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/normalized-six-voucher-independent-readback.json",
+          "sha256": "sha256:884d6c070829c982970980348dbc8b638559c9ad4a04e67caebee47a89ac62b4"
+        },
+        {
+          "bytes": 19074,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/normalized-observation.json",
+          "sha256": "sha256:133d4885f3f1d5e08543768b136fde810d49799306f10eede74187ef487a8a1a"
+        },
+        {
+          "bytes": 4315,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/six-voucher-corrections-proposed.json",
+          "sha256": "sha256:5f461ee48bf074e87bc449cee6af924e890f81213529f6397fabba07f209fcd0"
+        },
+        {
+          "bytes": 15998,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-comparison.json",
+          "sha256": "sha256:2c0ad7d42da823f0006c0522777b75b2f6d0885dd843b216c1dc4cb2b267987b"
+        },
+        {
+          "bytes": 21361,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-chunk-copies-and-voucher-guards-v2/review.json",
+          "sha256": "sha256:d050881f9f1038ff1a92132d52e601e940acb2c104329aa4c484db68851e0555"
+        },
+        {
+          "bytes": 3452,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/normalized-voucher-one-copy-second-review.json",
+          "sha256": "sha256:551b9d4066384095318fa9356a9f6ce18506bc1cf77fe7a742f83f7d0c188279"
+        },
+        {
+          "bytes": 4334,
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/raw-bound-combined-v3/source-title-scope-dispositions.json",
+          "sha256": "sha256:6bd37e0e06437623a7301b8f3cfb358ff332d9c5625cd7aeeb85470f26b20f85"
+        }
+      ],
+      "source_byte_size": 81081273,
+      "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1"
+    }
+  ],
+  "rows": [
+    {
+      "table": 0,
+      "row": 0,
+      "source_role": "summary",
+      "row_kind": "summary",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PERSONNEL COMPENSATION"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "4,945,319.07"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "2,518,063.60"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null
+      }
+    },
+    {
+      "table": 0,
+      "row": 1,
+      "source_role": "summary",
+      "row_kind": "summary",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PERSONNEL BENEFITS"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "464.31"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "0.00"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null
+      }
+    },
+    {
+      "table": 0,
+      "row": 2,
+      "source_role": "summary",
+      "row_kind": "summary",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "RENT, COMMUNICATION, UTILITIES"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "204.96"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "-3,358.02"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null
+      }
+    },
+    {
+      "table": 0,
+      "row": 3,
+      "source_role": "summary",
+      "row_kind": "summary",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PRINTING AND REPRODUCTION"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "0.00"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "0.00"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null
+      }
+    },
+    {
+      "table": 0,
+      "row": 4,
+      "source_role": "summary",
+      "row_kind": "summary",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "SUPPLIES AND MATERIALS"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "3,861.39"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "1,579.22"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null
+      }
+    },
+    {
+      "table": 0,
+      "row": 5,
+      "source_role": "summary",
+      "row_kind": "summary",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "EQUIPMENT"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "3,421.56"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "-1,316.86"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null
+      }
+    },
+    {
+      "table": 0,
+      "row": 6,
+      "source_role": "summary_program_total",
+      "row_kind": "subtotal",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PERSONNEL TOTALS:"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "4,953,271.29"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "2,514,967.94"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null
+      }
+    },
+    {
+      "table": 0,
+      "row": 7,
+      "source_role": "summary_office_total",
+      "row_kind": "organization_total",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "OFFICE TOTALS:"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "6,884,791.21"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "3,425,616.19"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": null,
+        "cost_category": null
+      }
+    },
+    {
+      "table": 1,
+      "row": 0,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-31"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08031000006"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/31/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "511.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS"
+      }
+    },
+    {
+      "table": 1,
+      "row": 1,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-31"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08031000007"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/31/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "464.27"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS"
+      }
+    },
+    {
+      "table": 1,
+      "row": 2,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-29"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08060000007"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/29/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "401.27"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS"
+      }
+    },
+    {
+      "table": 1,
+      "row": 3,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-29"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08060000008"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/29/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "464.24"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS"
+      }
+    },
+    {
+      "table": 1,
+      "row": 4,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-28"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08088000005"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/31/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "527.31"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS"
+      }
+    },
+    {
+      "table": 1,
+      "row": 5,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-28"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08088000006"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/31/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "485.33"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS"
+      }
+    },
+    {
+      "table": 2,
+      "row": 0,
+      "source_role": "subtotal",
+      "row_kind": "subtotal",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PERSONNEL BENEFITS TOTALS"
+        },
+        {
+          "cell": 1,
+          "field": "qtd_amount",
+          "literal": "2,853.92"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS"
+      }
+    },
+    {
+      "table": 3,
+      "row": 0,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-14"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100067"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "CITIBANK GOV CARD SERVICE"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "11/04/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "11/04/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "37.13"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 1,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-23"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100069"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/15/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/15/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "A/F PVD-BWI #6914 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 2,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-23"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100070"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/17/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/17/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "A/F BWI-PVD #0324 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 3,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map",
+        "voucher_O_zero_glyph_unresolved"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-06"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100080"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/22/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/23/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #5437 DAIGLE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "249.00"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 4,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map",
+        "voucher_O_zero_glyph_unresolved"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-06"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100081"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/28/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/01/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #7548 DAIGLE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "249.00"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 5,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-08"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100083"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DANIEL P BEARD"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/24/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/26/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "243.21"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 6,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-08"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100082"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "PERRY PLUMART"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/24/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/26/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "316.25"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 7,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-15"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100085"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "CITIBANK GOV CARD SERVICE"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/06/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/06/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #8383 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 8,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-15"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100086"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/08/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/08/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #1846 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 9,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100087"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DANIEL P BEARD"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/02/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/04/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "41.28"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 10,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-27"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100089"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "CITIBANK GOV CARD SERVICE"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/11/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/11/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #9437 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "75.00"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 11,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-27"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100090"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/14/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/14/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #0270 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 12,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-29"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100095"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/16/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/27/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "196.15"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 13,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-29"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100093"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "GRANT SCHERLING"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/04/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/08/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "1,599.81"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 14,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-07"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100103"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "CITIBANK GOV CARD SERVICE"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/25/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/25/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #1581 DAIGLE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 15,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-07"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100104"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/28/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/28/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #6283 DAIGLE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 16,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-11"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100105"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/04/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/04/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #2706 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 17,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-11"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100106"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/06/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/06/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #4787 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 18,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map",
+        "voucher_O_zero_glyph_unresolved"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100114"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/27/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/15/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "2,113.35"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 19,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100116"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/10/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/10/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "A/F MEENAN #8740"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "188.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 20,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100117"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/14/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/14/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "A/F MEENAN #1846"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 21,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100115"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "GALA RODRIGUEZ"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/05/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/07/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "247.60"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 3,
+      "row": 22,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100107"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "PERRY PLUMART"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/03/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/03/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "248.06"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 4,
+      "row": 0,
+      "source_role": "subtotal",
+      "row_kind": "subtotal",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "TRAVEL TOTALS:"
+        },
+        {
+          "cell": 1,
+          "field": "qtd_amount",
+          "literal": "7,044.34"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL"
+      }
+    },
+    {
+      "table": 5,
+      "row": 0,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-07"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P2"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "HCV0800467"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "VERIZON WIRELESS"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "12/11/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "12/11/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "1, BLUETOOTH"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "37.49"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "RENT, COMMUNICATION, UTILITIES"
+      }
+    },
+    {
+      "table": 5,
+      "row": 1,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-17"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P2"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "HCV0800561"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "12/18/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "12/18/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "8830 BLACKBERRY"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "79.98"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "RENT, COMMUNICATION, UTILITIES"
+      }
+    },
+    {
+      "table": 5,
+      "row": 2,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-23"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S5"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "DY080100010"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "12/01/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "12/31/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "DC TEL EQUIP (TRANSFER)"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "96.00"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "RENT, COMMUNICATION, UTILITIES"
+      }
+    },
+    {
+      "table": 5,
+      "row": 3,
+      "source_role": "detail",
+      "row_kind": "transaction",
+      "issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "fields": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-23"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S5"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "DY080100015"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "12/01/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "12/31/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "DC TEL EQUIP (TRANSFER)"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "588.00"
+        }
+      ],
+      "context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "RENT, COMMUNICATION, UTILITIES"
+      }
+    }
+  ],
+  "unread_scope": "Other pages, full nonselected text transcription, missing office/account continuity, and downstream adapter/typed output are not qualified by this artifact.",
+  "image": {
+    "sha256": "sha256:4476c3723123d2f83021b239d149518edd9cf889d800943777b673c3ae7f8065",
+    "bytes": 1447184
+  }
+}

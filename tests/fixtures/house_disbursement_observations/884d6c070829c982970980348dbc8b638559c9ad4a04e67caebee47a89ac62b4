@@ -1,0 +1,1058 @@
+{
+  "schema": "six-exact-voucher-actual-normalized-readback/1",
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/check_normalized_six_vouchers.py",
+    "sha256": "sha256:dc3b8215ca67d3539c077d831d346195cfd712a66be05243390aee26adef982f",
+    "bytes": 4857
+  },
+  "source_checker": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/check_three_chunks.py",
+    "sha256": "sha256:63d157727f4da7c332f9fe8e80658e3f3858479ce8c2b4857ea5d30c166b207e",
+    "bytes": 19863
+  },
+  "source_oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle-v2.json",
+    "sha256": "sha256:3b7e17cf3c8061051d35c9f0c1eef90f3df46e360d093e64a55c1bf64aae7a3a",
+    "bytes": 80881
+  },
+  "actual_completion": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/completion.json",
+    "sha256": "sha256:ed5fbbea691c21926f45e1cb899ffe432c101061df58401b4a995aaa90fcce4a",
+    "bytes": 1284
+  },
+  "actual_normalized": {
+    "bytes": 19074,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/normalized-observation.json",
+    "sha256": "sha256:133d4885f3f1d5e08543768b136fde810d49799306f10eede74187ef487a8a1a"
+  },
+  "actual_raw": {
+    "bytes": 16115,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/observation-00000.json",
+    "sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316"
+  },
+  "approved_rules": {
+    "bytes": 4315,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/six-voucher-corrections-proposed.json",
+    "sha256": "sha256:5f461ee48bf074e87bc449cee6af924e890f81213529f6397fabba07f209fcd0"
+  },
+  "verified_review_pins": [
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle.json",
+      "sha256": "sha256:e4a0adc76f6bb3150a38e3fe946b6b160891bc4781b11f7386972255b3e079fa",
+      "bytes": 67842
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle-v2.json",
+      "sha256": "sha256:3b7e17cf3c8061051d35c9f0c1eef90f3df46e360d093e64a55c1bf64aae7a3a",
+      "bytes": 80881
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/final-independent-comparison.json",
+      "sha256": "sha256:479efaf6a53bfb5351b876e08bb0b5b19b29965d70d903ae66d3d79a4a0cff7c",
+      "bytes": 114640
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-transit-vouchers.png",
+      "sha256": "sha256:90150a89757f60621fad30b8dd7b9060a65c2eca1bb39a8124a5edb1989f283f",
+      "bytes": 41311
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/provenance.json",
+      "sha256": "sha256:ee904b73bb6d660ec2fa8f919c2dfb30fb01d858445ca6860304cbe068572a41",
+      "bytes": 7976
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-page-source-crops-second-review-v1/review.json",
+      "sha256": "sha256:a6a42070a94cbaed125080d0f211223e5b25f897df287b6fa0851f17ced851df",
+      "bytes": 15985
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-page-source-crops-second-review-v1/six-p49-vouchers-addendum.json",
+      "sha256": "sha256:563b5429c5cc6c468772b8abb238d1d3efc48c17f89bf3dc1714ab7d9aafa6a7",
+      "bytes": 15426
+    }
+  ],
+  "whole_outcome_exact_changed_leaves": [
+    {
+      "path": [
+        "tables",
+        1,
+        "rows",
+        0,
+        "cells",
+        2
+      ],
+      "before": "0803100006",
+      "after": "08031000006"
+    },
+    {
+      "path": [
+        "tables",
+        1,
+        "rows",
+        1,
+        "cells",
+        2
+      ],
+      "before": "0803100007",
+      "after": "08031000007"
+    },
+    {
+      "path": [
+        "tables",
+        1,
+        "rows",
+        2,
+        "cells",
+        2
+      ],
+      "before": "0806000007",
+      "after": "08060000007"
+    },
+    {
+      "path": [
+        "tables",
+        1,
+        "rows",
+        3,
+        "cells",
+        2
+      ],
+      "before": "0806000008",
+      "after": "08060000008"
+    },
+    {
+      "path": [
+        "tables",
+        1,
+        "rows",
+        4,
+        "cells",
+        2
+      ],
+      "before": "0808800005",
+      "after": "08088000005"
+    },
+    {
+      "path": [
+        "tables",
+        1,
+        "rows",
+        5,
+        "cells",
+        2
+      ],
+      "before": "0808800006",
+      "after": "08088000006"
+    }
+  ],
+  "actual_source_check": {
+    "errors": [],
+    "counts": {
+      "direct_monetary_occurrences": 51,
+      "direct_zero_occurrences": 3,
+      "direct_negative_occurrences": 2,
+      "labels_or_payees": 43,
+      "unrepresented_blank_money_positions": 35,
+      "direct_blank_payees": 8,
+      "selected_direct_fields": 49,
+      "selected_visually_ambiguous_fields": 3,
+      "post_outcome_additional_literal_fields": 5
+    },
+    "money_associations": [
+      {
+        "source_visual_row": 1,
+        "role": "left_amount_position",
+        "source_literal": "4,945,319.07",
+        "observed_literal": "4,945,319.07",
+        "table": 0,
+        "row": 0,
+        "cell": 1,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 1,
+        "role": "right_amount_position",
+        "source_literal": "2,518,063.60",
+        "observed_literal": "2,518,063.60",
+        "table": 0,
+        "row": 0,
+        "cell": 2,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 2,
+        "role": "left_amount_position",
+        "source_literal": "464.31",
+        "observed_literal": "464.31",
+        "table": 0,
+        "row": 1,
+        "cell": 1,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 2,
+        "role": "right_amount_position",
+        "source_literal": "0.00",
+        "observed_literal": "0.00",
+        "table": 0,
+        "row": 1,
+        "cell": 2,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 3,
+        "role": "left_amount_position",
+        "source_literal": "204.96",
+        "observed_literal": "204.96",
+        "table": 0,
+        "row": 2,
+        "cell": 1,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 3,
+        "role": "right_amount_position",
+        "source_literal": "-3,358.02",
+        "observed_literal": "-3,358.02",
+        "table": 0,
+        "row": 2,
+        "cell": 2,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 4,
+        "role": "left_amount_position",
+        "source_literal": "0.00",
+        "observed_literal": "0.00",
+        "table": 0,
+        "row": 3,
+        "cell": 1,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 4,
+        "role": "right_amount_position",
+        "source_literal": "0.00",
+        "observed_literal": "0.00",
+        "table": 0,
+        "row": 3,
+        "cell": 2,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 5,
+        "role": "left_amount_position",
+        "source_literal": "3,861.39",
+        "observed_literal": "3,861.39",
+        "table": 0,
+        "row": 4,
+        "cell": 1,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 5,
+        "role": "right_amount_position",
+        "source_literal": "1,579.22",
+        "observed_literal": "1,579.22",
+        "table": 0,
+        "row": 4,
+        "cell": 2,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 6,
+        "role": "left_amount_position",
+        "source_literal": "3,421.56",
+        "observed_literal": "3,421.56",
+        "table": 0,
+        "row": 5,
+        "cell": 1,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 6,
+        "role": "right_amount_position",
+        "source_literal": "-1,316.86",
+        "observed_literal": "-1,316.86",
+        "table": 0,
+        "row": 5,
+        "cell": 2,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 7,
+        "role": "left_amount_position",
+        "source_literal": "4,953,271.29",
+        "observed_literal": "4,953,271.29",
+        "table": 0,
+        "row": 6,
+        "cell": 1,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 7,
+        "role": "right_amount_position",
+        "source_literal": "2,514,967.94",
+        "observed_literal": "2,514,967.94",
+        "table": 0,
+        "row": 6,
+        "cell": 2,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 8,
+        "role": "left_amount_position",
+        "source_literal": "6,884,791.21",
+        "observed_literal": "6,884,791.21",
+        "table": 0,
+        "row": 7,
+        "cell": 1,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 8,
+        "role": "right_amount_position",
+        "source_literal": "3,425,616.19",
+        "observed_literal": "3,425,616.19",
+        "table": 0,
+        "row": 7,
+        "cell": 2,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 9,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 0,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 9,
+        "role": "right_amount_position",
+        "source_literal": "511.50",
+        "observed_literal": "511.50",
+        "table": 1,
+        "row": 0,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 10,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 1,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 10,
+        "role": "right_amount_position",
+        "source_literal": "464.27",
+        "observed_literal": "464.27",
+        "table": 1,
+        "row": 1,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 11,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 2,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 11,
+        "role": "right_amount_position",
+        "source_literal": "401.27",
+        "observed_literal": "401.27",
+        "table": 1,
+        "row": 2,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 12,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 3,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 12,
+        "role": "right_amount_position",
+        "source_literal": "464.24",
+        "observed_literal": "464.24",
+        "table": 1,
+        "row": 3,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 13,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 4,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 13,
+        "role": "right_amount_position",
+        "source_literal": "527.31",
+        "observed_literal": "527.31",
+        "table": 1,
+        "row": 4,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 14,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 5,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 14,
+        "role": "right_amount_position",
+        "source_literal": "485.33",
+        "observed_literal": "485.33",
+        "table": 1,
+        "row": 5,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 15,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 6,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 15,
+        "role": "right_amount_position",
+        "source_literal": "2,853.92",
+        "observed_literal": "2,853.92",
+        "table": 1,
+        "row": 6,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 16,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 7,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 16,
+        "role": "right_amount_position",
+        "source_literal": "37.13",
+        "observed_literal": "37.13",
+        "table": 1,
+        "row": 7,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 17,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 8,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 17,
+        "role": "right_amount_position",
+        "source_literal": "124.50",
+        "observed_literal": "124.50",
+        "table": 1,
+        "row": 8,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 18,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 9,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 18,
+        "role": "right_amount_position",
+        "source_literal": "123.50",
+        "observed_literal": "123.50",
+        "table": 1,
+        "row": 9,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 19,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 10,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 19,
+        "role": "right_amount_position",
+        "source_literal": "249.00",
+        "observed_literal": "249.00",
+        "table": 1,
+        "row": 10,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 20,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 11,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 20,
+        "role": "right_amount_position",
+        "source_literal": "249.00",
+        "observed_literal": "249.00",
+        "table": 1,
+        "row": 11,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 21,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 12,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 21,
+        "role": "right_amount_position",
+        "source_literal": "243.21",
+        "observed_literal": "243.21",
+        "table": 1,
+        "row": 12,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 22,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 13,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 22,
+        "role": "right_amount_position",
+        "source_literal": "316.25",
+        "observed_literal": "316.25",
+        "table": 1,
+        "row": 13,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 23,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 14,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 23,
+        "role": "right_amount_position",
+        "source_literal": "124.50",
+        "observed_literal": "124.50",
+        "table": 1,
+        "row": 14,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 24,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 15,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 24,
+        "role": "right_amount_position",
+        "source_literal": "123.50",
+        "observed_literal": "123.50",
+        "table": 1,
+        "row": 15,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 25,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 16,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 25,
+        "role": "right_amount_position",
+        "source_literal": "41.28",
+        "observed_literal": "41.28",
+        "table": 1,
+        "row": 16,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 26,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 17,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 26,
+        "role": "right_amount_position",
+        "source_literal": "75.00",
+        "observed_literal": "75.00",
+        "table": 1,
+        "row": 17,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 27,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 18,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 27,
+        "role": "right_amount_position",
+        "source_literal": "123.50",
+        "observed_literal": "123.50",
+        "table": 1,
+        "row": 18,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 28,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 19,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 28,
+        "role": "right_amount_position",
+        "source_literal": "196.15",
+        "observed_literal": "196.15",
+        "table": 1,
+        "row": 19,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 29,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 20,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 29,
+        "role": "right_amount_position",
+        "source_literal": "1,599.81",
+        "observed_literal": "1,599.81",
+        "table": 1,
+        "row": 20,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 30,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 21,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 30,
+        "role": "right_amount_position",
+        "source_literal": "124.50",
+        "observed_literal": "124.50",
+        "table": 1,
+        "row": 21,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 31,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 22,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 31,
+        "role": "right_amount_position",
+        "source_literal": "123.50",
+        "observed_literal": "123.50",
+        "table": 1,
+        "row": 22,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 32,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 23,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 32,
+        "role": "right_amount_position",
+        "source_literal": "123.50",
+        "observed_literal": "123.50",
+        "table": 1,
+        "row": 23,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 33,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 24,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 33,
+        "role": "right_amount_position",
+        "source_literal": "124.50",
+        "observed_literal": "124.50",
+        "table": 1,
+        "row": 24,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 34,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 25,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 34,
+        "role": "right_amount_position",
+        "source_literal": "2,113.35",
+        "observed_literal": "2,113.35",
+        "table": 1,
+        "row": 25,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 35,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 26,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 35,
+        "role": "right_amount_position",
+        "source_literal": "188.50",
+        "observed_literal": "188.50",
+        "table": 1,
+        "row": 26,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 36,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 27,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 36,
+        "role": "right_amount_position",
+        "source_literal": "124.50",
+        "observed_literal": "124.50",
+        "table": 1,
+        "row": 27,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 37,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 28,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 37,
+        "role": "right_amount_position",
+        "source_literal": "247.60",
+        "observed_literal": "247.60",
+        "table": 1,
+        "row": 28,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 38,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 29,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 38,
+        "role": "right_amount_position",
+        "source_literal": "248.06",
+        "observed_literal": "248.06",
+        "table": 1,
+        "row": 29,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 39,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 30,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 39,
+        "role": "right_amount_position",
+        "source_literal": "7,044.34",
+        "observed_literal": "7,044.34",
+        "table": 1,
+        "row": 30,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 40,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 31,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 40,
+        "role": "right_amount_position",
+        "source_literal": "37.49",
+        "observed_literal": "37.49",
+        "table": 1,
+        "row": 31,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 41,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 32,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 41,
+        "role": "right_amount_position",
+        "source_literal": "79.98",
+        "observed_literal": "79.98",
+        "table": 1,
+        "row": 32,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 42,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 33,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 42,
+        "role": "right_amount_position",
+        "source_literal": "96.00",
+        "observed_literal": "96.00",
+        "table": 1,
+        "row": 33,
+        "cell": 7,
+        "representation": "direct_cell"
+      },
+      {
+        "source_visual_row": 43,
+        "role": "left_amount_position",
+        "source_literal": "",
+        "table": 1,
+        "row": 34,
+        "cell": null,
+        "representation": "source_position_not_serialized"
+      },
+      {
+        "source_visual_row": 43,
+        "role": "right_amount_position",
+        "source_literal": "588.00",
+        "observed_literal": "588.00",
+        "table": 1,
+        "row": 34,
+        "cell": 7,
+        "representation": "direct_cell"
+      }
+    ],
+    "monetary_literal_representation_differences": []
+  },
+  "source_readback": [
+    {
+      "visual_row": 9,
+      "voucher": "08031000006"
+    },
+    {
+      "visual_row": 10,
+      "voucher": "08031000007"
+    },
+    {
+      "visual_row": 11,
+      "voucher": "08060000007"
+    },
+    {
+      "visual_row": 12,
+      "voucher": "08060000008"
+    },
+    {
+      "visual_row": 13,
+      "voucher": "08088000005"
+    },
+    {
+      "visual_row": 14,
+      "voucher": "08088000006"
+    }
+  ],
+  "all_untouched_financial_cells_and_other_outcome_fields_exact": true,
+  "all_fifty_one_money_occurrences_match_original": true,
+  "actual_normalized_copy_challenge": {
+    "pristine": {
+      "bytes": 19074,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/normalized-observation.json",
+      "sha256": "sha256:133d4885f3f1d5e08543768b136fde810d49799306f10eede74187ef487a8a1a"
+    },
+    "copy": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/normalized-first-voucher-wrong-valid.json",
+      "sha256": "sha256:cfffc7994d989467c3f060c18dcd628213bc0f8e12b477d22d16cf2648cb8a93",
+      "bytes": 19074
+    },
+    "path": [
+      "outcome",
+      "tables",
+      1,
+      "rows",
+      0,
+      "cells",
+      2
+    ],
+    "before": "08031000006",
+    "after": "08031000007",
+    "source_failures": [
+      {
+        "kind": "selected_literal",
+        "row": 9,
+        "field": "voucher",
+        "expected": "08031000006",
+        "observed": "08031000007"
+      }
+    ]
+  },
+  "limits": [
+    "All raw observation bytes remain unchanged.",
+    "Only six independently supported voucher cells change. Other43-row outcome fields are exact.",
+    "Three O/0 glyph ambiguities and omitted blank positions remain explicit source-review limitations.",
+    "The normalized artifact explicitly stays observed_unqualified_with_reviewed_field_corrections; this does not qualify the complete page or downstream typed publication.",
+    "No producer import, helper invocation or model call used in this independent readback."
+  ]
+}

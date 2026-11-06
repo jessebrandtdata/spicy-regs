@@ -52,9 +52,15 @@ def processing_inputs(source: dict) -> list[dict]:
         raise ValueError("Structured observations require distinct selected physical pages")
     for item in selected:
         qualification = json.loads(verify_pin(item["qualification"]).read_text())
-        if qualification.get("schema") != "source-qualified-structured-summary/1" or qualification.get(
-            "status"
-        ) not in {"accepted_observation", "accepted_with_reviewed_corrections"}:
+        house_ledger = qualification.get("schema") == "reviewed-house-ledger-observation/1"
+        accepted = (
+            source["chamber"] == "house"
+            and qualification.get("status") == "reviewed_fields_with_unresolved_text_or_context"
+            if house_ledger
+            else qualification.get("schema") == "source-qualified-structured-summary/1"
+            and qualification.get("status") in {"accepted_observation", "accepted_with_reviewed_corrections"}
+        )
+        if not accepted:
             raise ValueError("Structured observation has no accepted source qualification")
         for key in ("source_sha256", "source_byte_size"):
             if qualification[key] != source[key]:
@@ -66,11 +72,33 @@ def processing_inputs(source: dict) -> list[dict]:
         for key in ("result", "image"):
             if qualification[key] != {field: item[key][field] for field in ("sha256", "bytes")}:
                 raise ValueError("Structured qualification differs from its selected input pins")
+        extra = []
+        if house_ledger:
+            binding = qualification["binding"]
+            if (
+                any(binding[key] != source[key] for key in ("source_sha256", "source_byte_size"))
+                or binding["page"] != item["page"]
+                or binding["result_sha256"] != item["result"]["sha256"]
+                or binding["image_sha256"] != item["image"]["sha256"]
+                or any(qualification["report_" + key] != source[key] for key in ("period_start", "period_end"))
+                or item["capture_binding"]
+                != {
+                    "source_id": source["id"],
+                    "source_sha256": source["source_sha256"],
+                    "source_byte_size": source["source_byte_size"],
+                    "page": item["page"],
+                    "plan": {key: item["plan"][key] for key in ("sha256", "bytes")},
+                    "observation": {key: item["result"][key] for key in ("sha256", "bytes")},
+                }
+            ):
+                raise ValueError("House retained capture differs from its selected source, period or observation")
+            extra = [item[key] for key in ("page_record", "request", "response", "plan")]
         for artifact in [
             item["qualification"],
             item["result"],
             item["image"],
             *item.get("evidence", []),
+            *extra,
             *qualification["review_evidence"],
             *(review for rule in qualification.get("corrections", []) for review in rule["review_evidence"]),
         ]:
@@ -135,6 +163,14 @@ def implementation(chamber: str, profile: str = "ledger") -> dict:
                 "spicy_docs.schemas",
                 "spicy_docs.sources.disbursements_index",
             ),
+        )
+        names = tuple(dict.fromkeys(names))
+    elif chamber == "house":
+        from spicy_docs.extraction.derivation import derivation_modules
+
+        names += derivation_modules(
+            "spicy_docs.reading.house_disbursements_observations",
+            packages=("spicy_docs.reading", "spicy_docs.extraction", "spicy_docs.schemas"),
         )
         names = tuple(dict.fromkeys(names))
     modules = [importlib.import_module(name) for name in names]

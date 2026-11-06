@@ -28,11 +28,12 @@ Every selected physical House report page, including pending images and financia
 | `report_period_start` | `DATE` | First day of the selected reporting interval. |
 | `report_period_end` | `DATE` | Last day of the selected reporting interval. |
 | `reader_version` | `VARCHAR` | Version of the source-owned PDF reading rule. |
-| `reading_sha256` | `VARCHAR` | Digest of the complete page-reading stream containing original words and positions. |
-| `page_status` | `VARCHAR` | Source-owned ledger_read, image_content_pending or non_ledger_content_pending outcome. |
-| `native_text` | `VARCHAR` | Literal whole-page native text, not qualified image OCR. |
-| `native_word_count` | `BIGINT` | Number of original words, each accounted for once in the reading stream. |
-| `image_count` | `BIGINT` | Count of image references on the original page. |
+| `reading_sha256` | `VARCHAR` | Digest of the retained page-reading stream and its original-word or structured-observation evidence. |
+| `reading_method` | `VARCHAR` | Native PDF reading or reviewed structured observation; the latter retains its source-review limits. |
+| `page_status` | `VARCHAR` | Source-owned native page outcome or reviewed_fields_with_unresolved_text_or_context for bounded structured readings. |
+| `native_text` | `VARCHAR` | Literal whole-page native text; null when only a structured observation was read. |
+| `native_word_count` | `BIGINT` | Number of original native words; null for unpositioned observations. |
+| `image_count` | `BIGINT` | Count of image references when measured by the native reader; otherwise null. |
 | `record_count` | `BIGINT` | Number of financial lines emitted, including printed aggregate rows. |
 | `unassigned_line_count` | `BIGINT` | Count of positioned ledger text lines whose roles remain unresolved. |
 | `unassigned_lines_json` | `VARCHAR` | Original unresolved lines with their source word indices. |
@@ -40,3 +41,4 @@ Every selected physical House report page, including pending images and financia
 | `issue_codes` | `VARCHAR[]` | Page-level reading issues; row issues remain on the companion financial rows. |
 | `header_basis` | `VARCHAR` | Whether columns were printed on this page or inherited from a contiguous printed page. |
 | `header_json` | `VARCHAR` | Observed column positions and header word indices retained by the source reader. |
+| `structured_provenance_json` | `VARCHAR` | Exact observation binding, configuration, field-role review and correction evidence; null for native pages. |

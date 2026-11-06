@@ -1,0 +1,56 @@
+{
+  "status": "actual_normalized_copy_confirmed",
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/confirm_normalized_voucher.py",
+    "sha256": "12fb6e4ea7d23ed242e5b279533face28aeddd39786ad7057568a361c63506fe",
+    "bytes": 2863
+  },
+  "peer_receipt": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/normalized-six-voucher-independent-readback.json",
+    "sha256": "884d6c070829c982970980348dbc8b638559c9ad4a04e67caebee47a89ac62b4",
+    "bytes": 30113
+  },
+  "prior_independent_pixel_and_glyph_proof": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-page-source-crops-second-review-v1/six-p49-vouchers-addendum.json",
+    "sha256": "563b5429c5cc6c468772b8abb238d1d3efc48c17f89bf3dc1714ab7d9aafa6a7",
+    "bytes": 15426
+  },
+  "actual_pins": {
+    "actual_completion": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/completion.json",
+      "sha256": "ed5fbbea691c21926f45e1cb899ffe432c101061df58401b4a995aaa90fcce4a",
+      "bytes": 1284
+    },
+    "actual_normalized": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/normalized-observation.json",
+      "sha256": "133d4885f3f1d5e08543768b136fde810d49799306f10eede74187ef487a8a1a",
+      "bytes": 19074
+    },
+    "actual_raw": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/observation-00000.json",
+      "sha256": "96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316",
+      "bytes": 16115
+    },
+    "approved_rules": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/six-voucher-corrections-proposed.json",
+      "sha256": "5f461ee48bf074e87bc449cee6af924e890f81213529f6397fabba07f209fcd0",
+      "bytes": 4315
+    }
+  },
+  "pristine": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/normalized-observation.json",
+    "sha256": "133d4885f3f1d5e08543768b136fde810d49799306f10eede74187ef487a8a1a",
+    "bytes": 19074
+  },
+  "mutation": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/normalized-first-voucher-wrong-valid.json",
+    "sha256": "cfffc7994d989467c3f060c18dcd628213bc0f8e12b477d22d16cf2648cb8a93",
+    "bytes": 19074
+  },
+  "pristine_exact_actual_member": true,
+  "whole_outcome_only_six_source_approved_cells_differ": true,
+  "wrong_but_valid_eleven_digit_voucher_rejected": true,
+  "first_source_voucher": "08031000006",
+  "mutated_voucher": "08031000007",
+  "scope": "One planted actual normalized-copy fact plus exact full-outcome preservation outside the six source-approved voucher cells. Reuses pinned original pixel proof; no producer imports, new assets, model calls or full monetary rereview."
+}

@@ -1,0 +1,123 @@
+[
+  {
+    "id": "house-2008q1-part1-p49-six-transit-voucher-zero-omissions",
+    "method": "manual_review",
+    "reason": "Each of the six original transit-benefit voucher numbers has11 visible glyphs; the retained model response dropped one zero in each. Two independent reviewers read original pixels, and the second reviewer counted11 separated glyph columns at three thresholds. Exact source/cell repair only; no general zero insertion or O/0 inference.",
+    "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+    "source_byte_size": 81081273,
+    "page": 49,
+    "result_sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316",
+    "image_sha256": "sha256:4476c3723123d2f83021b239d149518edd9cf889d800943777b673c3ae7f8065",
+    "review_evidence": [
+      {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle.json",
+        "sha256": "sha256:e4a0adc76f6bb3150a38e3fe946b6b160891bc4781b11f7386972255b3e079fa",
+        "bytes": 67842
+      },
+      {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle-v2.json",
+        "sha256": "sha256:3b7e17cf3c8061051d35c9f0c1eef90f3df46e360d093e64a55c1bf64aae7a3a",
+        "bytes": 80881
+      },
+      {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/final-independent-comparison.json",
+        "sha256": "sha256:479efaf6a53bfb5351b876e08bb0b5b19b29965d70d903ae66d3d79a4a0cff7c",
+        "bytes": 114640
+      },
+      {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-transit-vouchers.png",
+        "sha256": "sha256:90150a89757f60621fad30b8dd7b9060a65c2eca1bb39a8124a5edb1989f283f",
+        "bytes": 41311
+      },
+      {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/provenance.json",
+        "sha256": "sha256:ee904b73bb6d660ec2fa8f919c2dfb30fb01d858445ca6860304cbe068572a41",
+        "bytes": 7976
+      },
+      {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-page-source-crops-second-review-v1/review.json",
+        "sha256": "sha256:a6a42070a94cbaed125080d0f211223e5b25f897df287b6fa0851f17ced851df",
+        "bytes": 15985
+      },
+      {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-page-source-crops-second-review-v1/six-p49-vouchers-addendum.json",
+        "sha256": "sha256:563b5429c5cc6c468772b8abb238d1d3efc48c17f89bf3dc1714ab7d9aafa6a7",
+        "bytes": 15426
+      }
+    ],
+    "edits": [
+      {
+        "path": [
+          "tables",
+          1,
+          "rows",
+          0,
+          "cells",
+          2
+        ],
+        "before": "0803100006",
+        "after": "08031000006"
+      },
+      {
+        "path": [
+          "tables",
+          1,
+          "rows",
+          1,
+          "cells",
+          2
+        ],
+        "before": "0803100007",
+        "after": "08031000007"
+      },
+      {
+        "path": [
+          "tables",
+          1,
+          "rows",
+          2,
+          "cells",
+          2
+        ],
+        "before": "0806000007",
+        "after": "08060000007"
+      },
+      {
+        "path": [
+          "tables",
+          1,
+          "rows",
+          3,
+          "cells",
+          2
+        ],
+        "before": "0806000008",
+        "after": "08060000008"
+      },
+      {
+        "path": [
+          "tables",
+          1,
+          "rows",
+          4,
+          "cells",
+          2
+        ],
+        "before": "0808800005",
+        "after": "08088000005"
+      },
+      {
+        "path": [
+          "tables",
+          1,
+          "rows",
+          5,
+          "cells",
+          2
+        ],
+        "before": "0808800006",
+        "after": "08088000006"
+      }
+    ]
+  }
+]

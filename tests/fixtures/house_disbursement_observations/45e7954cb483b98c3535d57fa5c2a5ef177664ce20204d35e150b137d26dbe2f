@@ -1,0 +1,324 @@
+{
+  "schema": "actual-three-page-structural-normalization-source-readback/1",
+  "status": "passed",
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/check_actual_normalized_v2.py",
+    "sha256": "sha256:899f24995e2288371a83c295e0d457bb38e727938b883e086340be75a3ce0e43",
+    "bytes": 8884
+  },
+  "application_completion": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v2/completion.json",
+    "sha256": "sha256:e45c44248b127b810414b11257aea013f3118e4d5b240cba400107d507bbfc96",
+    "bytes": 2249
+  },
+  "source_checker": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/check_structural_proposal.py",
+    "sha256": "sha256:c8c3d0e9aeca84f0cd6b69439c267e87407b2fb1ff5b106047f1ea72b4bad6ab",
+    "bytes": 7961
+  },
+  "source_oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-oracle.json",
+    "sha256": "sha256:12736ab402c972b0ca771b352381228ba148407c7a694b40caedf2249be0f3a7",
+    "bytes": 214401
+  },
+  "source_peer_final_v3": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/structural-source-second-review-v1/final-raw-bound-v3-approval.json",
+    "sha256": "sha256:18d76462ff63c895929690af360d9b3a9cd19b6f8636aad01c0efa9fcef16d73",
+    "bytes": 14396
+  },
+  "pages": [
+    {
+      "source_page": 17,
+      "actual_normalized": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v2/p17-normalized-observation.json",
+        "sha256": "sha256:00a4b1aca66502b26e26f8f06621735f958512c7b86e2c7b74c6bbcad135564a",
+        "bytes": 64059
+      },
+      "raw_observation": {
+        "bytes": 14729,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0017-0032/observation-00000.json",
+        "sha256": "sha256:845102dbc3b48745442208907afb2ed94ebdaa3ea5f4fa4c6a8471adf61264ae"
+      },
+      "binding": {
+        "image_sha256": "sha256:e5b913b12f5fb4e5e3ee15326c578c1824b622d497f4ca712eadc4f6bdfb43c8",
+        "page": 17,
+        "result_sha256": "sha256:845102dbc3b48745442208907afb2ed94ebdaa3ea5f4fa4c6a8471adf61264ae",
+        "source_byte_size": 81081273,
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1"
+      },
+      "source_result": {
+        "errors": [],
+        "counts": {
+          "detail_rows": 43,
+          "explicit_detail_ytd_blanks": 43,
+          "explicit_payroll_prefix_blanks": 81,
+          "money_occurrences": 46,
+          "zero_occurrences": 0,
+          "negative_occurrences": 0,
+          "spanning_label_rows": 3
+        }
+      },
+      "nonempty_literal_changes": [],
+      "inherited_title_scope_changes": [],
+      "actual_matches_proposal": true,
+      "reverse_audit_equals_raw": true,
+      "audit_matches_exact_reviewed_declaration": true
+    },
+    {
+      "source_page": 33,
+      "actual_normalized": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v2/p33-normalized-observation.json",
+        "sha256": "sha256:f3f1c638890e00afbc5b57d5fea507f7b6ff01939faf0ce1ff2b2009cf574bd3",
+        "bytes": 68039
+      },
+      "raw_observation": {
+        "bytes": 17979,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0033-0048/observation-00000.json",
+        "sha256": "sha256:76fda364dcf6744e5b83eedcaaa81b863bb3ce9028adfc199b1ce5d80f4fb30b"
+      },
+      "binding": {
+        "image_sha256": "sha256:28aeb2bb1c75e16ecd61176454006054b4fac47dbd7af12e4e3a2afafa486406",
+        "page": 33,
+        "result_sha256": "sha256:76fda364dcf6744e5b83eedcaaa81b863bb3ce9028adfc199b1ce5d80f4fb30b",
+        "source_byte_size": 81081273,
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1"
+      },
+      "source_result": {
+        "errors": [],
+        "counts": {
+          "paired_summary_rows": 2,
+          "money_occurrences": 45,
+          "zero_occurrences": 0,
+          "negative_occurrences": 0,
+          "detail_rows": 38,
+          "explicit_detail_ytd_blanks": 38,
+          "explicit_payroll_prefix_blanks": 72,
+          "spanning_label_rows": 3
+        }
+      },
+      "nonempty_literal_changes": [],
+      "inherited_title_scope_changes": [
+        {
+          "source_visual_row": 28,
+          "before": "PERSONNEL COMPENSATION",
+          "after": "LEADERSHIP LUMP SUM PERSONNEL"
+        }
+      ],
+      "actual_matches_proposal": true,
+      "reverse_audit_equals_raw": true,
+      "audit_matches_exact_reviewed_declaration": true
+    },
+    {
+      "source_page": 49,
+      "actual_normalized": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v2/p49-normalized-observation.json",
+        "sha256": "sha256:2ad42e5627b2ecb6ca2232fd73dba550e840a2109f345fb8f57ded0adf5034a2",
+        "bytes": 64676
+      },
+      "raw_observation": {
+        "bytes": 16115,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/observation-00000.json",
+        "sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316"
+      },
+      "binding": {
+        "image_sha256": "sha256:4476c3723123d2f83021b239d149518edd9cf889d800943777b673c3ae7f8065",
+        "page": 49,
+        "result_sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316",
+        "source_byte_size": 81081273,
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1"
+      },
+      "source_result": {
+        "errors": [],
+        "counts": {
+          "paired_summary_rows": 8,
+          "money_occurrences": 51,
+          "zero_occurrences": 3,
+          "negative_occurrences": 2,
+          "detail_rows": 33,
+          "explicit_detail_ytd_blanks": 33,
+          "spanning_label_rows": 2
+        }
+      },
+      "nonempty_literal_changes": [
+        {
+          "source_visual_row": 9,
+          "nonempty_position": 2,
+          "before": "0803100006",
+          "after": "08031000006"
+        },
+        {
+          "source_visual_row": 10,
+          "nonempty_position": 2,
+          "before": "0803100007",
+          "after": "08031000007"
+        },
+        {
+          "source_visual_row": 11,
+          "nonempty_position": 2,
+          "before": "0806000007",
+          "after": "08060000007"
+        },
+        {
+          "source_visual_row": 12,
+          "nonempty_position": 2,
+          "before": "0806000008",
+          "after": "08060000008"
+        },
+        {
+          "source_visual_row": 13,
+          "nonempty_position": 2,
+          "before": "0808800005",
+          "after": "08088000005"
+        },
+        {
+          "source_visual_row": 14,
+          "nonempty_position": 2,
+          "before": "0808800006",
+          "after": "08088000006"
+        }
+      ],
+      "inherited_title_scope_changes": [],
+      "actual_matches_proposal": true,
+      "reverse_audit_equals_raw": true,
+      "audit_matches_exact_reviewed_declaration": true
+    }
+  ],
+  "source_counts": {
+    "detail_rows": 114,
+    "explicit_detail_ytd_blanks": 114,
+    "explicit_payroll_prefix_blanks": 153,
+    "money_occurrences": 142,
+    "zero_occurrences": 3,
+    "negative_occurrences": 2,
+    "spanning_label_rows": 8,
+    "paired_summary_rows": 10
+  },
+  "normalized_tables": 18,
+  "prior_voucher_normalized_v1_unchanged": {
+    "bytes": 19074,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/normalized-observation.json",
+    "sha256": "sha256:133d4885f3f1d5e08543768b136fde810d49799306f10eede74187ef487a8a1a"
+  },
+  "review_evidence_and_original_pins_reverified": [
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-oracle.json",
+      "sha256": "sha256:12736ab402c972b0ca771b352381228ba148407c7a694b40caedf2249be0f3a7",
+      "bytes": 214401
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crop-provenance.json",
+      "sha256": "sha256:02adf2a8683d2cb417d8bc072a3ed0d96955c4f29f16cf52348bce7888309343",
+      "bytes": 6686
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle-v2.json",
+      "sha256": "sha256:3b7e17cf3c8061051d35c9f0c1eef90f3df46e360d093e64a55c1bf64aae7a3a",
+      "bytes": 80881
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p17-rotation90-300dpi.png",
+      "sha256": "sha256:f57fb3719fd8ba9c5599fa4797f7c3250528c9289e11037ce4ffbf9437e6987b",
+      "bytes": 1935899
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/structural-source-second-review-v1/review.json",
+      "sha256": "sha256:fb90dbbcf58ec0d2c1638d1f97927bf48cda5fff9965ba144fc144d6c5a62c8c",
+      "bytes": 12953
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/raw-bound-combined-v3/source-title-scope-dispositions.json",
+      "sha256": "sha256:6bd37e0e06437623a7301b8f3cfb358ff332d9c5625cd7aeeb85470f26b20f85",
+      "bytes": 4334
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/6a/6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+      "sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+      "bytes": 81081273
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p33-rotation90-300dpi.png",
+      "sha256": "sha256:5ddd2d1b61e9166b773a17afacb11b64c5fe5659a7430c73822fffb374aeba4e",
+      "bytes": 2467750
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p49-rotation90-300dpi.png",
+      "sha256": "sha256:f4e0e9251dc73cb2afdb9ae66b7f2196d21f41695b729b2c2b6640651b4eaced",
+      "bytes": 1952450
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/normalized-six-voucher-independent-readback.json",
+      "sha256": "sha256:884d6c070829c982970980348dbc8b638559c9ad4a04e67caebee47a89ac62b4",
+      "bytes": 30113
+    },
+    {
+      "bytes": 19074,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/normalized-observation.json",
+      "sha256": "sha256:133d4885f3f1d5e08543768b136fde810d49799306f10eede74187ef487a8a1a"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/six-voucher-corrections-proposed.json",
+      "sha256": "sha256:5f461ee48bf074e87bc449cee6af924e890f81213529f6397fabba07f209fcd0",
+      "bytes": 4315
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-comparison.json",
+      "sha256": "sha256:2c0ad7d42da823f0006c0522777b75b2f6d0885dd843b216c1dc4cb2b267987b",
+      "bytes": 15998
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-chunk-copies-and-voucher-guards-v2/review.json",
+      "sha256": "sha256:d050881f9f1038ff1a92132d52e601e940acb2c104329aa4c484db68851e0555",
+      "bytes": 21361
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/normalized-voucher-one-copy-second-review.json",
+      "sha256": "sha256:551b9d4066384095318fa9356a9f6ce18506bc1cf77fe7a742f83f7d0c188279",
+      "bytes": 3452
+    }
+  ],
+  "actual_copy_challenge": {
+    "id": "invent_payroll_YTD_zero",
+    "source_page": 17,
+    "pristine": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v2/p17-normalized-observation.json",
+      "sha256": "sha256:00a4b1aca66502b26e26f8f06621735f958512c7b86e2c7b74c6bbcad135564a",
+      "bytes": 64059
+    },
+    "copy": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/actual-normalized-YTD-zero-copy.json",
+      "sha256": "sha256:e236efcf174e0730a49c1e849e848b6829ea4bb96b266a95086d750a3a4dad5f",
+      "bytes": 64063
+    },
+    "path": [
+      "outcome",
+      "tables",
+      0,
+      "rows",
+      0,
+      "cells",
+      7
+    ],
+    "before": "",
+    "after": "0.00",
+    "source_errors": [
+      {
+        "kind": "source_absent_ytd",
+        "row": 1,
+        "observed": "0.00"
+      }
+    ],
+    "pristine_passes": true,
+    "copy_rejected": true
+  },
+  "limits": [
+    "This qualifies these132 source-reviewed financial rows and specified fields, not whole-page transcription or corpus-wide rules.",
+    "Three airfare O/0 voucher glyphs remain unresolved; no interpretation was added.",
+    "The original p17/p49 request images were upside down; raw orientation records and all model responses remain unchanged.",
+    "Source positions justify empty values, not zeros. Eight total labels span the nominal YTD area and retain two slots. No printed headers or model geometry were invented.",
+    "Existing broader office/program-context questions and off-page ditto associations are outside this bounded structural normalization.",
+    "Independent confirmation of the one final actual-copy challenge remains pending at receipt creation."
+  ],
+  "producer_imports": false,
+  "model_calls": 0,
+  "network_calls": 0
+}

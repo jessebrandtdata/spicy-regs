@@ -19,7 +19,7 @@ from spicy_regs.pipelines.congressional_disbursement_pages import (
 from spicy_regs.pipelines.disbursement_page_profiles import (
     record_kind,
     validate_page_content,
-    read_retained_summary_observation,
+    read_retained_observation,
 )
 
 
@@ -59,6 +59,18 @@ def source_columns(source, entry, page):
 
 
 def page_columns(page):
+    if page.get("reading_method") == "reviewed_structured_observation":
+        return {
+            "page_status": page["status"],
+            "native_text": None,
+            "native_word_count": None,
+            "image_count": None,
+            "record_count": len(page["records"]),
+            "unassigned_line_count": None,
+            "unassigned_lines_json": None,
+            "outside_ledger_word_indices": None,
+            "issue_codes": page["issues"],
+        }
     unassigned = [row for row in page["lines"] if row["role"] == "unassigned_text"]
     return {
         "page_status": page["status"],
@@ -95,7 +107,9 @@ def pages(source, entry):
                 raise ValueError("Disbursement PDF original physical page count differs from its manifest")
             validate_page_content(page, profile)
             if expected_page in observations:
-                expected = read_retained_summary_observation(observations[expected_page])
+                expected = read_retained_observation(
+                    observations[expected_page], chamber=source["chamber"], profile=profile
+                )
                 if page != json.loads(json.dumps(expected)):
                     raise ValueError("Structured page differs from its exact retained input and approved corrections")
             elif page.get("structured_provenance"):

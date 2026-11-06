@@ -1,0 +1,5949 @@
+{
+  "schema": "bounded_original_image_ledger_field_map/v1",
+  "status": "source_role_map_with_explicit_context_and_text_limits",
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/house-flex-p49-ledger-source-map-v1/freeze_source_map.py",
+    "sha256": "sha256:1cbaf7401125d26c06e56d53e91e05723840960a79183e32d055dd3e4fd4a93d",
+    "bytes": 17950
+  },
+  "source_id": "house-2008-01-01-pdf-part-1",
+  "source": {
+    "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/6a/6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+    "sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+    "bytes": 81081273
+  },
+  "source_page": 49,
+  "printed_page": "37",
+  "source_image": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p49-rotation90-300dpi.png",
+    "sha256": "sha256:f4e0e9251dc73cb2afdb9ae66b7f2196d21f41695b729b2c2b6640651b4eaced",
+    "bytes": 1952450
+  },
+  "raw_observation": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/observation-00000.json",
+    "sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316",
+    "bytes": 16115
+  },
+  "actual_normalized_observation": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v2/p49-normalized-observation.json",
+    "sha256": "sha256:2ad42e5627b2ecb6ca2232fd73dba550e840a2109f345fb8f57ded0adf5034a2",
+    "bytes": 64676
+  },
+  "binding": {
+    "image_sha256": "sha256:4476c3723123d2f83021b239d149518edd9cf889d800943777b673c3ae7f8065",
+    "page": 49,
+    "result_sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316",
+    "source_byte_size": 81081273,
+    "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1"
+  },
+  "prior_source_oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle-v2.json",
+    "sha256": "sha256:3b7e17cf3c8061051d35c9f0c1eef90f3df46e360d093e64a55c1bf64aae7a3a",
+    "bytes": 80881
+  },
+  "prior_structural_oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-oracle.json",
+    "sha256": "sha256:12736ab402c972b0ca771b352381228ba148407c7a694b40caedf2249be0f3a7",
+    "bytes": 214401
+  },
+  "source_header_reference": {
+    "physical_page": 13,
+    "printed_page": "1",
+    "image": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/historical-expansion/house-2008q1-page13-rotation90-300dpi.png",
+      "sha256": "sha256:d2b122c786da6ec654795cbe60015192ab10d4922dbe4c0fc5735b2bc625c433",
+      "bytes": 1960857
+    },
+    "prior_manual_fixture": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/historical-expansion/house-2008q1-page13-manual-assertions-v2.json",
+      "sha256": "sha256:941f4324f1f3fb43d5ca9fab878d1886628820ce9518f967110c094970134b6c",
+      "bytes": 21989
+    },
+    "literal_headings": [
+      "DATE",
+      "VOUCHER NO.",
+      "PAYEE",
+      "SERVICE DATES",
+      "DESCRIPTION",
+      "YTD AMOUNT",
+      "QUARTERLY AMOUNT"
+    ],
+    "use": "Corroborates same-source report column meanings only. None of these strings is inserted as a header on the three headerless pages."
+  },
+  "prior_structural_acceptance": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/completion.json",
+    "sha256": "sha256:0a16c30cb7dde66695951ef2a0cda7f28107f16b62126d098460c7a1abf5d6ef",
+    "bytes": 9595
+  },
+  "prior_actual_readback": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/actual-normalized-v2-readback.json",
+    "sha256": "sha256:45e7954cb483b98c3535d57fa5c2a5ef177664ce20204d35e150b137d26dbe2f",
+    "bytes": 15280
+  },
+  "source_reinspection": "Viewed the complete retained original p49 image for field/heading roles, explicit payees and source order after existing outcomes were already known. Reused the earlier sealed independent money, blank, selected literal and voucher witnesses. This extension is not a new blind transcription.",
+  "field_name_reference_only": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/house-native-pilot-v2/house-2009-07-01-pdf-full.jsonl",
+    "sha256": "sha256:66a148df8f375ab47ba512254c8304638d8fe2e1fb7e15aae3bb6679bbf13d00",
+    "bytes": 976945
+  },
+  "field_name_reference_limit": "Old retained native output is used only for existing field/row-kind spelling, never for p49 source truth or current release acceptance.",
+  "page_header": {
+    "printed_on_page": false,
+    "inserted_header_literals": false,
+    "meaning_basis": "The previously reviewed same-original physical p13 header establishes column roles. These meanings are metadata, not newly printed header cells."
+  },
+  "source_code_meaning": "S7, P1, P2 and S5 are retained literal codes in the existing data_source slot; this review does not decode their business meaning.",
+  "rows": [
+    {
+      "source_visual_row": 1,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 1
+      },
+      "source_image_review_band": [
+        100,
+        135
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 0,
+        "row": 0
+      },
+      "normalized_observation_locator": {
+        "table": 0,
+        "row": 0
+      },
+      "source_role": "summary",
+      "native_row_kind": "summary",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PERSONNEL COMPENSATION"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "4,945,319.07"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "2,518,063.60"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "PERSONNEL COMPENSATION",
+        "ytd_amount": "4,945,319.07",
+        "qtd_amount": "2,518,063.60"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null,
+        "summary_subject_label": "PERSONNEL COMPENSATION",
+        "nearest_printed_program_heading": "PERSONNEL",
+        "retained_model_context_literal": "PERSONNEL"
+      },
+      "summary_scope": "category",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": "4945319.07",
+        "qtd_amount": "2518063.60"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "printed_amount",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 2,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 2
+      },
+      "source_image_review_band": [
+        139,
+        174
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 0,
+        "row": 1
+      },
+      "normalized_observation_locator": {
+        "table": 0,
+        "row": 1
+      },
+      "source_role": "summary",
+      "native_row_kind": "summary",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PERSONNEL BENEFITS"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "464.31"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "0.00"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "PERSONNEL BENEFITS",
+        "ytd_amount": "464.31",
+        "qtd_amount": "0.00"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null,
+        "summary_subject_label": "PERSONNEL BENEFITS",
+        "nearest_printed_program_heading": "PERSONNEL",
+        "retained_model_context_literal": "PERSONNEL"
+      },
+      "summary_scope": "category",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": "464.31",
+        "qtd_amount": "0.00"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "printed_amount",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 3,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 3
+      },
+      "source_image_review_band": [
+        178,
+        213
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 0,
+        "row": 2
+      },
+      "normalized_observation_locator": {
+        "table": 0,
+        "row": 2
+      },
+      "source_role": "summary",
+      "native_row_kind": "summary",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "RENT, COMMUNICATION, UTILITIES"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "204.96"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "-3,358.02"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "RENT, COMMUNICATION, UTILITIES",
+        "ytd_amount": "204.96",
+        "qtd_amount": "-3,358.02"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null,
+        "summary_subject_label": "RENT, COMMUNICATION, UTILITIES",
+        "nearest_printed_program_heading": "PERSONNEL",
+        "retained_model_context_literal": "PERSONNEL"
+      },
+      "summary_scope": "category",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": "204.96",
+        "qtd_amount": "-3358.02"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "printed_amount",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 4,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 4
+      },
+      "source_image_review_band": [
+        216,
+        251
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 0,
+        "row": 3
+      },
+      "normalized_observation_locator": {
+        "table": 0,
+        "row": 3
+      },
+      "source_role": "summary",
+      "native_row_kind": "summary",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PRINTING AND REPRODUCTION"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "0.00"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "0.00"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "PRINTING AND REPRODUCTION",
+        "ytd_amount": "0.00",
+        "qtd_amount": "0.00"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null,
+        "summary_subject_label": "PRINTING AND REPRODUCTION",
+        "nearest_printed_program_heading": "PERSONNEL",
+        "retained_model_context_literal": "PERSONNEL"
+      },
+      "summary_scope": "category",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": "0.00",
+        "qtd_amount": "0.00"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "printed_amount",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 5,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 5
+      },
+      "source_image_review_band": [
+        255,
+        290
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 0,
+        "row": 4
+      },
+      "normalized_observation_locator": {
+        "table": 0,
+        "row": 4
+      },
+      "source_role": "summary",
+      "native_row_kind": "summary",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "SUPPLIES AND MATERIALS"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "3,861.39"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "1,579.22"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "SUPPLIES AND MATERIALS",
+        "ytd_amount": "3,861.39",
+        "qtd_amount": "1,579.22"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null,
+        "summary_subject_label": "SUPPLIES AND MATERIALS",
+        "nearest_printed_program_heading": "PERSONNEL",
+        "retained_model_context_literal": "PERSONNEL"
+      },
+      "summary_scope": "category",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": "3861.39",
+        "qtd_amount": "1579.22"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "printed_amount",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 6,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 6
+      },
+      "source_image_review_band": [
+        293,
+        328
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 0,
+        "row": 5
+      },
+      "normalized_observation_locator": {
+        "table": 0,
+        "row": 5
+      },
+      "source_role": "summary",
+      "native_row_kind": "summary",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "EQUIPMENT"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "3,421.56"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "-1,316.86"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "EQUIPMENT",
+        "ytd_amount": "3,421.56",
+        "qtd_amount": "-1,316.86"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null,
+        "summary_subject_label": "EQUIPMENT",
+        "nearest_printed_program_heading": "PERSONNEL",
+        "retained_model_context_literal": "PERSONNEL"
+      },
+      "summary_scope": "category",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": "3421.56",
+        "qtd_amount": "-1316.86"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "printed_amount",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 7,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 7
+      },
+      "source_image_review_band": [
+        332,
+        367
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 0,
+        "row": 6
+      },
+      "normalized_observation_locator": {
+        "table": 0,
+        "row": 6
+      },
+      "source_role": "summary_program_total",
+      "native_row_kind": "subtotal",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PERSONNEL TOTALS:"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "4,953,271.29"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "2,514,967.94"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "PERSONNEL TOTALS:",
+        "ytd_amount": "4,953,271.29",
+        "qtd_amount": "2,514,967.94"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "PERSONNEL",
+        "cost_category": null,
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "PERSONNEL",
+        "retained_model_context_literal": "PERSONNEL"
+      },
+      "summary_scope": "program",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": "4953271.29",
+        "qtd_amount": "2514967.94"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "printed_amount",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 8,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 8
+      },
+      "source_image_review_band": [
+        390,
+        425
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 0,
+        "row": 7
+      },
+      "normalized_observation_locator": {
+        "table": 0,
+        "row": 7
+      },
+      "source_role": "summary_office_total",
+      "native_row_kind": "organization_total",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "OFFICE TOTALS:"
+        },
+        {
+          "cell": 1,
+          "field": "ytd_amount",
+          "literal": "6,884,791.21"
+        },
+        {
+          "cell": 2,
+          "field": "qtd_amount",
+          "literal": "3,425,616.19"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "OFFICE TOTALS:",
+        "ytd_amount": "6,884,791.21",
+        "qtd_amount": "3,425,616.19"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": null,
+        "cost_category": null,
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "PERSONNEL",
+        "retained_model_context_literal": "PERSONNEL"
+      },
+      "summary_scope": "office",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": "6884791.21",
+        "qtd_amount": "3425616.19"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "printed_amount",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 9,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 9
+      },
+      "source_image_review_band": [
+        531,
+        566
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 0
+      },
+      "normalized_observation_locator": {
+        "table": 1,
+        "row": 0
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-31"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08031000006"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/31/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "511.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-31",
+        "data_source": "S7",
+        "document": "08031000006",
+        "vendor_name": "",
+        "service_start_date": "01/01/08",
+        "service_end_date": "01/31/08",
+        "description": "TRANSIT BENEFITS",
+        "ytd_amount": "",
+        "qtd_amount": "511.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — PERSONNEL BENEFITS"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "511.50",
+        "ytd_amount": null,
+        "qtd_amount": "511.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "visible_blank",
+        "raw_literal": "",
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "transaction_date",
+          "state": "independently_source_reviewed",
+          "literal": "01-31"
+        },
+        {
+          "field": "data_source",
+          "state": "independently_source_reviewed",
+          "literal": "S7"
+        },
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "08031000006"
+        },
+        {
+          "field": "vendor_name",
+          "state": "independently_source_reviewed",
+          "literal": ""
+        },
+        {
+          "field": "service_start_date",
+          "state": "independently_source_reviewed",
+          "literal": "01/01/08"
+        },
+        {
+          "field": "service_end_date",
+          "state": "independently_source_reviewed",
+          "literal": "01/31/08"
+        },
+        {
+          "field": "description",
+          "state": "independently_source_reviewed",
+          "literal": "TRANSIT BENEFITS"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 10,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 10
+      },
+      "source_image_review_band": [
+        570,
+        605
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 1
+      },
+      "normalized_observation_locator": {
+        "table": 1,
+        "row": 1
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-31"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08031000007"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/31/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "464.27"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-31",
+        "data_source": "S7",
+        "document": "08031000007",
+        "vendor_name": "",
+        "service_start_date": "01/01/08",
+        "service_end_date": "01/31/08",
+        "description": "TRANSIT BENEFITS",
+        "ytd_amount": "",
+        "qtd_amount": "464.27"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — PERSONNEL BENEFITS"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "464.27",
+        "ytd_amount": null,
+        "qtd_amount": "464.27"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "visible_blank",
+        "raw_literal": "",
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "08031000007"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 11,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 11
+      },
+      "source_image_review_band": [
+        609,
+        644
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 2
+      },
+      "normalized_observation_locator": {
+        "table": 1,
+        "row": 2
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-29"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08060000007"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/29/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "401.27"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-29",
+        "data_source": "S7",
+        "document": "08060000007",
+        "vendor_name": "",
+        "service_start_date": "02/01/08",
+        "service_end_date": "02/29/08",
+        "description": "TRANSIT BENEFITS",
+        "ytd_amount": "",
+        "qtd_amount": "401.27"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — PERSONNEL BENEFITS"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "401.27",
+        "ytd_amount": null,
+        "qtd_amount": "401.27"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "visible_blank",
+        "raw_literal": "",
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "08060000007"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 12,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 12
+      },
+      "source_image_review_band": [
+        648,
+        683
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 3
+      },
+      "normalized_observation_locator": {
+        "table": 1,
+        "row": 3
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-29"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08060000008"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/29/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "464.24"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-29",
+        "data_source": "S7",
+        "document": "08060000008",
+        "vendor_name": "",
+        "service_start_date": "02/01/08",
+        "service_end_date": "02/29/08",
+        "description": "TRANSIT BENEFITS",
+        "ytd_amount": "",
+        "qtd_amount": "464.24"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — PERSONNEL BENEFITS"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "464.24",
+        "ytd_amount": null,
+        "qtd_amount": "464.24"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "visible_blank",
+        "raw_literal": "",
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "08060000008"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 13,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 13
+      },
+      "source_image_review_band": [
+        686,
+        721
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 4
+      },
+      "normalized_observation_locator": {
+        "table": 1,
+        "row": 4
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-28"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08088000005"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/31/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "527.31"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-28",
+        "data_source": "S7",
+        "document": "08088000005",
+        "vendor_name": "",
+        "service_start_date": "03/01/08",
+        "service_end_date": "03/31/08",
+        "description": "TRANSIT BENEFITS",
+        "ytd_amount": "",
+        "qtd_amount": "527.31"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — PERSONNEL BENEFITS"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "527.31",
+        "ytd_amount": null,
+        "qtd_amount": "527.31"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "visible_blank",
+        "raw_literal": "",
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "08088000005"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 14,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 14
+      },
+      "source_image_review_band": [
+        725,
+        760
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 5
+      },
+      "normalized_observation_locator": {
+        "table": 1,
+        "row": 5
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-28"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S7"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08088000006"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/01/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/31/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRANSIT BENEFITS"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "485.33"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-28",
+        "data_source": "S7",
+        "document": "08088000006",
+        "vendor_name": "",
+        "service_start_date": "03/01/08",
+        "service_end_date": "03/31/08",
+        "description": "TRANSIT BENEFITS",
+        "ytd_amount": "",
+        "qtd_amount": "485.33"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — PERSONNEL BENEFITS"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "485.33",
+        "ytd_amount": null,
+        "qtd_amount": "485.33"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "visible_blank",
+        "raw_literal": "",
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "08088000006"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 15,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 15
+      },
+      "source_image_review_band": [
+        764,
+        799
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 6
+      },
+      "normalized_observation_locator": {
+        "table": 2,
+        "row": 0
+      },
+      "source_role": "subtotal",
+      "native_row_kind": "subtotal",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "PERSONNEL BENEFITS TOTALS"
+        },
+        {
+          "cell": 1,
+          "field": "qtd_amount",
+          "literal": "2,853.92"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "PERSONNEL BENEFITS TOTALS",
+        "qtd_amount": "2,853.92"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "PERSONNEL BENEFITS",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — PERSONNEL BENEFITS"
+      },
+      "summary_scope": "category",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": null,
+        "qtd_amount": "2853.92"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "no_independent_cell_label_spans_position",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 16,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 16
+      },
+      "source_image_review_band": [
+        837,
+        872
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 7
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 0
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-14"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100067"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "CITIBANK GOV CARD SERVICE"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "11/04/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "11/04/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "37.13"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-14",
+        "data_source": "P1",
+        "document": "08A00100067",
+        "vendor_name": "CITIBANK GOV CARD SERVICE",
+        "service_start_date": "11/04/07",
+        "service_end_date": "11/04/07",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "37.13"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "37.13",
+        "ytd_amount": null,
+        "qtd_amount": "37.13"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "CITIBANK GOV CARD SERVICE",
+        "qualified_explicit_name": "CITIBANK GOV CARD SERVICE",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 17,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 17
+      },
+      "source_image_review_band": [
+        875,
+        910
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 8
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 1
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-23"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100069"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/15/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/15/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "A/F PVD-BWI #6914 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-23",
+        "data_source": "P1",
+        "document": "08A00100069",
+        "vendor_name": "DO",
+        "service_start_date": "01/15/08",
+        "service_end_date": "01/15/08",
+        "description": "A/F PVD-BWI #6914 MEENAN",
+        "ytd_amount": "",
+        "qtd_amount": "124.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "124.50",
+        "ytd_amount": null,
+        "qtd_amount": "124.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 16,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 18,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 18
+      },
+      "source_image_review_band": [
+        914,
+        949
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 9
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 2
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-23"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100070"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/17/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/17/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "A/F BWI-PVD #0324 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-23",
+        "data_source": "P1",
+        "document": "08A00100070",
+        "vendor_name": "DO",
+        "service_start_date": "01/17/08",
+        "service_end_date": "01/17/08",
+        "description": "A/F BWI-PVD #0324 MEENAN",
+        "ytd_amount": "",
+        "qtd_amount": "123.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "123.50",
+        "ytd_amount": null,
+        "qtd_amount": "123.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 16,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 19,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 19
+      },
+      "source_image_review_band": [
+        953,
+        988
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 10
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 3
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-06"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100080"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/22/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/23/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #5437 DAIGLE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "249.00"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-06",
+        "data_source": "P1",
+        "document": "08A00100080",
+        "vendor_name": "DO",
+        "service_start_date": "01/22/08",
+        "service_end_date": "01/23/08",
+        "description": "AIRFARE #5437 DAIGLE",
+        "ytd_amount": "",
+        "qtd_amount": "249.00"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "249.00",
+        "ytd_amount": null,
+        "qtd_amount": "249.00"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 16,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "transaction_date",
+          "state": "independently_source_reviewed",
+          "literal": "02-06"
+        },
+        {
+          "field": "data_source",
+          "state": "independently_source_reviewed",
+          "literal": "P1"
+        },
+        {
+          "field": "document",
+          "state": "source_glyph_ambiguous",
+          "candidate_literal": "08A00100080",
+          "manual_reading": "08AO0100080"
+        },
+        {
+          "field": "vendor_name",
+          "state": "independently_source_reviewed",
+          "literal": "DO"
+        },
+        {
+          "field": "service_start_date",
+          "state": "independently_source_reviewed",
+          "literal": "01/22/08"
+        },
+        {
+          "field": "service_end_date",
+          "state": "independently_source_reviewed",
+          "literal": "01/23/08"
+        },
+        {
+          "field": "description",
+          "state": "independently_source_reviewed",
+          "literal": "AIRFARE #5437 DAIGLE"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map",
+        "voucher_O_zero_glyph_unresolved"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 20,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 20
+      },
+      "source_image_review_band": [
+        991,
+        1026
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 11
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 4
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-06"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100081"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/28/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/01/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #7548 DAIGLE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "249.00"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-06",
+        "data_source": "P1",
+        "document": "08A00100081",
+        "vendor_name": "DO",
+        "service_start_date": "01/28/08",
+        "service_end_date": "02/01/08",
+        "description": "AIRFARE #7548 DAIGLE",
+        "ytd_amount": "",
+        "qtd_amount": "249.00"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "249.00",
+        "ytd_amount": null,
+        "qtd_amount": "249.00"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 16,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "transaction_date",
+          "state": "independently_source_reviewed",
+          "literal": "02-06"
+        },
+        {
+          "field": "data_source",
+          "state": "independently_source_reviewed",
+          "literal": "P1"
+        },
+        {
+          "field": "document",
+          "state": "source_glyph_ambiguous",
+          "candidate_literal": "08A00100081",
+          "manual_reading": "08AO0100081"
+        },
+        {
+          "field": "vendor_name",
+          "state": "independently_source_reviewed",
+          "literal": "DO"
+        },
+        {
+          "field": "service_start_date",
+          "state": "independently_source_reviewed",
+          "literal": "01/28/08"
+        },
+        {
+          "field": "service_end_date",
+          "state": "independently_source_reviewed",
+          "literal": "02/01/08"
+        },
+        {
+          "field": "description",
+          "state": "independently_source_reviewed",
+          "literal": "AIRFARE #7548 DAIGLE"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map",
+        "voucher_O_zero_glyph_unresolved"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 21,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 21
+      },
+      "source_image_review_band": [
+        1030,
+        1065
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 12
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 5
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-08"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100083"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DANIEL P BEARD"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/24/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/26/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "243.21"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-08",
+        "data_source": "P1",
+        "document": "08A00100083",
+        "vendor_name": "DANIEL P BEARD",
+        "service_start_date": "01/24/08",
+        "service_end_date": "01/26/08",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "243.21"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "243.21",
+        "ytd_amount": null,
+        "qtd_amount": "243.21"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "DANIEL P BEARD",
+        "qualified_explicit_name": "DANIEL P BEARD",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 22,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 22
+      },
+      "source_image_review_band": [
+        1069,
+        1104
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 13
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 6
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-08"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100082"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "PERRY PLUMART"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/24/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/26/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "316.25"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-08",
+        "data_source": "P1",
+        "document": "08A00100082",
+        "vendor_name": "PERRY PLUMART",
+        "service_start_date": "01/24/08",
+        "service_end_date": "01/26/08",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "316.25"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "316.25",
+        "ytd_amount": null,
+        "qtd_amount": "316.25"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "PERRY PLUMART",
+        "qualified_explicit_name": "PERRY PLUMART",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 23,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 23
+      },
+      "source_image_review_band": [
+        1108,
+        1143
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 14
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 7
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-15"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100085"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "CITIBANK GOV CARD SERVICE"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/06/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/06/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #8383 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-15",
+        "data_source": "P1",
+        "document": "08A00100085",
+        "vendor_name": "CITIBANK GOV CARD SERVICE",
+        "service_start_date": "02/06/08",
+        "service_end_date": "02/06/08",
+        "description": "AIRFARE #8383 MEENAN",
+        "ytd_amount": "",
+        "qtd_amount": "124.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "124.50",
+        "ytd_amount": null,
+        "qtd_amount": "124.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "CITIBANK GOV CARD SERVICE",
+        "qualified_explicit_name": "CITIBANK GOV CARD SERVICE",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 24,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 24
+      },
+      "source_image_review_band": [
+        1146,
+        1181
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 15
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 8
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-15"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100086"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/08/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/08/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #1846 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-15",
+        "data_source": "P1",
+        "document": "08A00100086",
+        "vendor_name": "DO",
+        "service_start_date": "02/08/08",
+        "service_end_date": "02/08/08",
+        "description": "AIRFARE #1846 MEENAN",
+        "ytd_amount": "",
+        "qtd_amount": "123.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "123.50",
+        "ytd_amount": null,
+        "qtd_amount": "123.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 23,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 25,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 25
+      },
+      "source_image_review_band": [
+        1185,
+        1220
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 16
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 9
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100087"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DANIEL P BEARD"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/02/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/04/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "41.28"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-20",
+        "data_source": "P1",
+        "document": "08A00100087",
+        "vendor_name": "DANIEL P BEARD",
+        "service_start_date": "02/02/08",
+        "service_end_date": "02/04/08",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "41.28"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "41.28",
+        "ytd_amount": null,
+        "qtd_amount": "41.28"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "DANIEL P BEARD",
+        "qualified_explicit_name": "DANIEL P BEARD",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 26,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 26
+      },
+      "source_image_review_band": [
+        1224,
+        1259
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 17
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 10
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-27"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100089"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "CITIBANK GOV CARD SERVICE"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/11/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/11/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #9437 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "75.00"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-27",
+        "data_source": "P1",
+        "document": "08A00100089",
+        "vendor_name": "CITIBANK GOV CARD SERVICE",
+        "service_start_date": "02/11/08",
+        "service_end_date": "02/11/08",
+        "description": "AIRFARE #9437 MEENAN",
+        "ytd_amount": "",
+        "qtd_amount": "75.00"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "75.00",
+        "ytd_amount": null,
+        "qtd_amount": "75.00"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "CITIBANK GOV CARD SERVICE",
+        "qualified_explicit_name": "CITIBANK GOV CARD SERVICE",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 27,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 27
+      },
+      "source_image_review_band": [
+        1263,
+        1298
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 18
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 11
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-27"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100090"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/14/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/14/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #0270 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-27",
+        "data_source": "P1",
+        "document": "08A00100090",
+        "vendor_name": "DO",
+        "service_start_date": "02/14/08",
+        "service_end_date": "02/14/08",
+        "description": "AIRFARE #0270 MEENAN",
+        "ytd_amount": "",
+        "qtd_amount": "123.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "123.50",
+        "ytd_amount": null,
+        "qtd_amount": "123.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 26,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 28,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 28
+      },
+      "source_image_review_band": [
+        1301,
+        1336
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 19
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 12
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-29"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100095"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/16/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "01/27/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "196.15"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-29",
+        "data_source": "P1",
+        "document": "08A00100095",
+        "vendor_name": "DO",
+        "service_start_date": "01/16/08",
+        "service_end_date": "01/27/08",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "196.15"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "196.15",
+        "ytd_amount": null,
+        "qtd_amount": "196.15"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 26,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 29,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 29
+      },
+      "source_image_review_band": [
+        1340,
+        1375
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 20
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 13
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "02-29"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100093"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "GRANT SCHERLING"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/04/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/08/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "1,599.81"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "02-29",
+        "data_source": "P1",
+        "document": "08A00100093",
+        "vendor_name": "GRANT SCHERLING",
+        "service_start_date": "02/04/08",
+        "service_end_date": "02/08/08",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "1,599.81"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "1599.81",
+        "ytd_amount": null,
+        "qtd_amount": "1599.81"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "GRANT SCHERLING",
+        "qualified_explicit_name": "GRANT SCHERLING",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 30,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 30
+      },
+      "source_image_review_band": [
+        1379,
+        1414
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 21
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 14
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-07"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100103"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "CITIBANK GOV CARD SERVICE"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/25/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/25/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #1581 DAIGLE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-07",
+        "data_source": "P1",
+        "document": "08A00100103",
+        "vendor_name": "CITIBANK GOV CARD SERVICE",
+        "service_start_date": "02/25/08",
+        "service_end_date": "02/25/08",
+        "description": "AIRFARE #1581 DAIGLE",
+        "ytd_amount": "",
+        "qtd_amount": "124.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "124.50",
+        "ytd_amount": null,
+        "qtd_amount": "124.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "CITIBANK GOV CARD SERVICE",
+        "qualified_explicit_name": "CITIBANK GOV CARD SERVICE",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 31,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 31
+      },
+      "source_image_review_band": [
+        1417,
+        1452
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 22
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 15
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-07"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100104"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "02/28/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/28/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #6283 DAIGLE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-07",
+        "data_source": "P1",
+        "document": "08A00100104",
+        "vendor_name": "DO",
+        "service_start_date": "02/28/08",
+        "service_end_date": "02/28/08",
+        "description": "AIRFARE #6283 DAIGLE",
+        "ytd_amount": "",
+        "qtd_amount": "123.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "123.50",
+        "ytd_amount": null,
+        "qtd_amount": "123.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 30,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 32,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 32
+      },
+      "source_image_review_band": [
+        1456,
+        1491
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 23
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 16
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-11"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100105"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/04/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/04/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #2706 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "123.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-11",
+        "data_source": "P1",
+        "document": "08A00100105",
+        "vendor_name": "DO",
+        "service_start_date": "03/04/08",
+        "service_end_date": "03/04/08",
+        "description": "AIRFARE #2706 MEENAN",
+        "ytd_amount": "",
+        "qtd_amount": "123.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "123.50",
+        "ytd_amount": null,
+        "qtd_amount": "123.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 30,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 33,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 33
+      },
+      "source_image_review_band": [
+        1496,
+        1531
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 24
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 17
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-11"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100106"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/06/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/06/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "AIRFARE #4787 MEENAN"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-11",
+        "data_source": "P1",
+        "document": "08A00100106",
+        "vendor_name": "DO",
+        "service_start_date": "03/06/08",
+        "service_end_date": "03/06/08",
+        "description": "AIRFARE #4787 MEENAN",
+        "ytd_amount": "",
+        "qtd_amount": "124.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "124.50",
+        "ytd_amount": null,
+        "qtd_amount": "124.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 30,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 34,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 34
+      },
+      "source_image_review_band": [
+        1533,
+        1568
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 25
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 18
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100114"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "01/27/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "02/15/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "2,113.35"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-20",
+        "data_source": "P1",
+        "document": "08A00100114",
+        "vendor_name": "DO",
+        "service_start_date": "01/27/08",
+        "service_end_date": "02/15/08",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "2,113.35"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "2113.35",
+        "ytd_amount": null,
+        "qtd_amount": "2113.35"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 30,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "transaction_date",
+          "state": "independently_source_reviewed",
+          "literal": "03-20"
+        },
+        {
+          "field": "data_source",
+          "state": "independently_source_reviewed",
+          "literal": "P1"
+        },
+        {
+          "field": "document",
+          "state": "source_glyph_ambiguous",
+          "candidate_literal": "08A00100114",
+          "manual_reading": "08AO0100114"
+        },
+        {
+          "field": "vendor_name",
+          "state": "independently_source_reviewed",
+          "literal": "DO"
+        },
+        {
+          "field": "service_start_date",
+          "state": "independently_source_reviewed",
+          "literal": "01/27/08"
+        },
+        {
+          "field": "service_end_date",
+          "state": "independently_source_reviewed",
+          "literal": "02/15/08"
+        },
+        {
+          "field": "description",
+          "state": "independently_source_reviewed",
+          "literal": "TRAVEL SUBSISTENCE"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map",
+        "voucher_O_zero_glyph_unresolved"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 35,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 35
+      },
+      "source_image_review_band": [
+        1573,
+        1608
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 26
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 19
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100116"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/10/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/10/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "A/F MEENAN #8740"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "188.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-20",
+        "data_source": "P1",
+        "document": "08A00100116",
+        "vendor_name": "DO",
+        "service_start_date": "03/10/08",
+        "service_end_date": "03/10/08",
+        "description": "A/F MEENAN #8740",
+        "ytd_amount": "",
+        "qtd_amount": "188.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "188.50",
+        "ytd_amount": null,
+        "qtd_amount": "188.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 30,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 36,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 36
+      },
+      "source_image_review_band": [
+        1611,
+        1646
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 27
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 20
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100117"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/14/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/14/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "A/F MEENAN #1846"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "124.50"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-20",
+        "data_source": "P1",
+        "document": "08A00100117",
+        "vendor_name": "DO",
+        "service_start_date": "03/14/08",
+        "service_end_date": "03/14/08",
+        "description": "A/F MEENAN #1846",
+        "ytd_amount": "",
+        "qtd_amount": "124.50"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "124.50",
+        "ytd_amount": null,
+        "qtd_amount": "124.50"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 30,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 37,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 37
+      },
+      "source_image_review_band": [
+        1650,
+        1685
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 28
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 21
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100115"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "GALA RODRIGUEZ"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/05/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/07/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "247.60"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-20",
+        "data_source": "P1",
+        "document": "08A00100115",
+        "vendor_name": "GALA RODRIGUEZ",
+        "service_start_date": "03/05/08",
+        "service_end_date": "03/07/08",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "247.60"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "247.60",
+        "ytd_amount": null,
+        "qtd_amount": "247.60"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "GALA RODRIGUEZ",
+        "qualified_explicit_name": "GALA RODRIGUEZ",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 38,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 38
+      },
+      "source_image_review_band": [
+        1688,
+        1723
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 29
+      },
+      "normalized_observation_locator": {
+        "table": 3,
+        "row": 22
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "03-20"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P1"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "08A00100107"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "PERRY PLUMART"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "03/03/08"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "03/03/08"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "248.06"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "03-20",
+        "data_source": "P1",
+        "document": "08A00100107",
+        "vendor_name": "PERRY PLUMART",
+        "service_start_date": "03/03/08",
+        "service_end_date": "03/03/08",
+        "description": "TRAVEL SUBSISTENCE",
+        "ytd_amount": "",
+        "qtd_amount": "248.06"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "248.06",
+        "ytd_amount": null,
+        "qtd_amount": "248.06"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "PERRY PLUMART",
+        "qualified_explicit_name": "PERRY PLUMART",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 39,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 39
+      },
+      "source_image_review_band": [
+        1728,
+        1763
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 30
+      },
+      "normalized_observation_locator": {
+        "table": 4,
+        "row": 0
+      },
+      "source_role": "subtotal",
+      "native_row_kind": "subtotal",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "description",
+          "literal": "TRAVEL TOTALS:"
+        },
+        {
+          "cell": 1,
+          "field": "qtd_amount",
+          "literal": "7,044.34"
+        }
+      ],
+      "raw_field_inputs": {
+        "description": "TRAVEL TOTALS:",
+        "qtd_amount": "7,044.34"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "TRAVEL",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — TRAVEL"
+      },
+      "summary_scope": "category",
+      "monetary_values": {
+        "amount": null,
+        "ytd_amount": null,
+        "qtd_amount": "7044.34"
+      },
+      "amount_alias_scope": "amount remains null; summary/total values must not become payments",
+      "YTD_source_state": "no_independent_cell_label_spans_position",
+      "payee": {
+        "state": "not_applicable_to_summary_or_total",
+        "raw_literal": null,
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 40,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 40
+      },
+      "source_image_review_band": [
+        1799,
+        1834
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 31
+      },
+      "normalized_observation_locator": {
+        "table": 5,
+        "row": 0
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-07"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P2"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "HCV0800467"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "VERIZON WIRELESS"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "12/11/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "12/11/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "1, BLUETOOTH"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "37.49"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-07",
+        "data_source": "P2",
+        "document": "HCV0800467",
+        "vendor_name": "VERIZON WIRELESS",
+        "service_start_date": "12/11/07",
+        "service_end_date": "12/11/07",
+        "description": "1, BLUETOOTH",
+        "ytd_amount": "",
+        "qtd_amount": "37.49"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "RENT, COMMUNICATION, UTILITIES",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — RENT, COMMUNICATION, UTILITIES"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "37.49",
+        "ytd_amount": null,
+        "qtd_amount": "37.49"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "explicit_printed_name",
+        "raw_literal": "VERIZON WIRELESS",
+        "qualified_explicit_name": "VERIZON WIRELESS",
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "transaction_date",
+          "state": "independently_source_reviewed",
+          "literal": "01-07"
+        },
+        {
+          "field": "data_source",
+          "state": "independently_source_reviewed",
+          "literal": "P2"
+        },
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "HCV0800467"
+        },
+        {
+          "field": "vendor_name",
+          "state": "independently_source_reviewed",
+          "literal": "VERIZON WIRELESS"
+        },
+        {
+          "field": "service_start_date",
+          "state": "independently_source_reviewed",
+          "literal": "12/11/07"
+        },
+        {
+          "field": "service_end_date",
+          "state": "independently_source_reviewed",
+          "literal": "12/11/07"
+        },
+        {
+          "field": "description",
+          "state": "independently_source_reviewed",
+          "literal": "1, BLUETOOTH"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 41,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 41
+      },
+      "source_image_review_band": [
+        1837,
+        1872
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 32
+      },
+      "normalized_observation_locator": {
+        "table": 5,
+        "row": 1
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-17"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "P2"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "HCV0800561"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": "DO"
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "12/18/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "12/18/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "8830 BLACKBERRY"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "79.98"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-17",
+        "data_source": "P2",
+        "document": "HCV0800561",
+        "vendor_name": "DO",
+        "service_start_date": "12/18/07",
+        "service_end_date": "12/18/07",
+        "description": "8830 BLACKBERRY",
+        "ytd_amount": "",
+        "qtd_amount": "79.98"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "RENT, COMMUNICATION, UTILITIES",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — RENT, COMMUNICATION, UTILITIES"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "79.98",
+        "ytd_amount": null,
+        "qtd_amount": "79.98"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "printed_ditto",
+        "raw_literal": "DO",
+        "qualified_explicit_name": null,
+        "expanded_name": null,
+        "nearest_preceding_explicit_name_row": 40,
+        "witness_use": "Local source-order witness only; not an applied name expansion or a new printed name occurrence."
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "transaction_date",
+          "state": "independently_source_reviewed",
+          "literal": "01-17"
+        },
+        {
+          "field": "data_source",
+          "state": "independently_source_reviewed",
+          "literal": "P2"
+        },
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "HCV0800561"
+        },
+        {
+          "field": "vendor_name",
+          "state": "independently_source_reviewed",
+          "literal": "DO"
+        },
+        {
+          "field": "service_start_date",
+          "state": "independently_source_reviewed",
+          "literal": "12/18/07"
+        },
+        {
+          "field": "service_end_date",
+          "state": "independently_source_reviewed",
+          "literal": "12/18/07"
+        },
+        {
+          "field": "description",
+          "state": "independently_source_reviewed",
+          "literal": "8830 BLACKBERRY"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence",
+        "printed_ditto_not_expanded_in_source_map"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 42,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 42
+      },
+      "source_image_review_band": [
+        1876,
+        1911
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 33
+      },
+      "normalized_observation_locator": {
+        "table": 5,
+        "row": 2
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-23"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S5"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "DY080100010"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "12/01/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "12/31/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "DC TEL EQUIP (TRANSFER)"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "96.00"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-23",
+        "data_source": "S5",
+        "document": "DY080100010",
+        "vendor_name": "",
+        "service_start_date": "12/01/07",
+        "service_end_date": "12/31/07",
+        "description": "DC TEL EQUIP (TRANSFER)",
+        "ytd_amount": "",
+        "qtd_amount": "96.00"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "RENT, COMMUNICATION, UTILITIES",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — RENT, COMMUNICATION, UTILITIES"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "96.00",
+        "ytd_amount": null,
+        "qtd_amount": "96.00"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "visible_blank",
+        "raw_literal": "",
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [
+        {
+          "field": "transaction_date",
+          "state": "independently_source_reviewed",
+          "literal": "01-23"
+        },
+        {
+          "field": "data_source",
+          "state": "independently_source_reviewed",
+          "literal": "S5"
+        },
+        {
+          "field": "document",
+          "state": "independently_source_reviewed",
+          "literal": "DY080100010"
+        },
+        {
+          "field": "vendor_name",
+          "state": "independently_source_reviewed",
+          "literal": ""
+        },
+        {
+          "field": "service_start_date",
+          "state": "independently_source_reviewed",
+          "literal": "12/01/07"
+        },
+        {
+          "field": "service_end_date",
+          "state": "independently_source_reviewed",
+          "literal": "12/31/07"
+        },
+        {
+          "field": "description",
+          "state": "independently_source_reviewed",
+          "literal": "DC TEL EQUIP (TRANSFER)"
+        }
+      ],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    },
+    {
+      "source_visual_row": 43,
+      "source_occurrence_key": {
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "page": 49,
+        "visual_row": 43
+      },
+      "source_image_review_band": [
+        1915,
+        1950
+      ],
+      "review_band_use": "Human review locator only; not PDF/native/model geometry.",
+      "raw_observation_locator": {
+        "table": 1,
+        "row": 34
+      },
+      "normalized_observation_locator": {
+        "table": 5,
+        "row": 3
+      },
+      "source_role": "detail",
+      "native_row_kind": "transaction",
+      "native_field_bindings": [
+        {
+          "cell": 0,
+          "field": "transaction_date",
+          "literal": "01-23"
+        },
+        {
+          "cell": 1,
+          "field": "data_source",
+          "literal": "S5"
+        },
+        {
+          "cell": 2,
+          "field": "document",
+          "literal": "DY080100015"
+        },
+        {
+          "cell": 3,
+          "field": "vendor_name",
+          "literal": ""
+        },
+        {
+          "cell": 4,
+          "field": "service_start_date",
+          "literal": "12/01/07"
+        },
+        {
+          "cell": 5,
+          "field": "service_end_date",
+          "literal": "12/31/07"
+        },
+        {
+          "cell": 6,
+          "field": "description",
+          "literal": "DC TEL EQUIP (TRANSFER)"
+        },
+        {
+          "cell": 7,
+          "field": "ytd_amount",
+          "literal": ""
+        },
+        {
+          "cell": 8,
+          "field": "qtd_amount",
+          "literal": "588.00"
+        }
+      ],
+      "raw_field_inputs": {
+        "transaction_date": "01-23",
+        "data_source": "S5",
+        "document": "DY080100015",
+        "vendor_name": "",
+        "service_start_date": "12/01/07",
+        "service_end_date": "12/31/07",
+        "description": "DC TEL EQUIP (TRANSFER)",
+        "ytd_amount": "",
+        "qtd_amount": "588.00"
+      },
+      "source_context": {
+        "organizational_group": null,
+        "organization": null,
+        "fiscal_or_legislative_year": null,
+        "program": "ADMINISTRATION",
+        "cost_category": "RENT, COMMUNICATION, UTILITIES",
+        "summary_subject_label": null,
+        "nearest_printed_program_heading": "ADMINISTRATION",
+        "retained_model_context_literal": "ADMINISTRATION — RENT, COMMUNICATION, UTILITIES"
+      },
+      "summary_scope": null,
+      "monetary_values": {
+        "amount": "588.00",
+        "ytd_amount": null,
+        "qtd_amount": "588.00"
+      },
+      "amount_alias_scope": "amount and qtd_amount point to one printed occurrence, not two payments",
+      "YTD_source_state": "visible_blank_position",
+      "payee": {
+        "state": "visible_blank",
+        "raw_literal": "",
+        "qualified_explicit_name": null,
+        "expanded_name": null
+      },
+      "selected_literal_source_assertions": [],
+      "native_geometry": null,
+      "native_word_indices": null,
+      "native_line_number": null,
+      "normalization_issues": [
+        "organization_not_printed_on_reviewed_page",
+        "account_year_not_printed_on_reviewed_page",
+        "organizational_group_not_printed_on_reviewed_page",
+        "posting_year_not_printed_in_cell",
+        "service_century_requires_separate_normalization_evidence"
+      ],
+      "text_qualification_limit": "Role/position and named source assertions are qualified. Other retained voucher/date/description strings are preserved candidates, not a new complete independent transcription."
+    }
+  ],
+  "financial_occurrences": [
+    {
+      "id": "p49-r01-ytd_amount",
+      "source_visual_row": 1,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        0,
+        "cells",
+        1
+      ],
+      "role": "ytd_amount",
+      "literal": "4,945,319.07",
+      "decimal_value": "4945319.07"
+    },
+    {
+      "id": "p49-r01-qtd_amount",
+      "source_visual_row": 1,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        0,
+        "cells",
+        2
+      ],
+      "role": "qtd_amount",
+      "literal": "2,518,063.60",
+      "decimal_value": "2518063.60"
+    },
+    {
+      "id": "p49-r02-ytd_amount",
+      "source_visual_row": 2,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        1,
+        "cells",
+        1
+      ],
+      "role": "ytd_amount",
+      "literal": "464.31",
+      "decimal_value": "464.31"
+    },
+    {
+      "id": "p49-r02-qtd_amount",
+      "source_visual_row": 2,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        1,
+        "cells",
+        2
+      ],
+      "role": "qtd_amount",
+      "literal": "0.00",
+      "decimal_value": "0.00"
+    },
+    {
+      "id": "p49-r03-ytd_amount",
+      "source_visual_row": 3,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        2,
+        "cells",
+        1
+      ],
+      "role": "ytd_amount",
+      "literal": "204.96",
+      "decimal_value": "204.96"
+    },
+    {
+      "id": "p49-r03-qtd_amount",
+      "source_visual_row": 3,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        2,
+        "cells",
+        2
+      ],
+      "role": "qtd_amount",
+      "literal": "-3,358.02",
+      "decimal_value": "-3358.02"
+    },
+    {
+      "id": "p49-r04-ytd_amount",
+      "source_visual_row": 4,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        3,
+        "cells",
+        1
+      ],
+      "role": "ytd_amount",
+      "literal": "0.00",
+      "decimal_value": "0.00"
+    },
+    {
+      "id": "p49-r04-qtd_amount",
+      "source_visual_row": 4,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        3,
+        "cells",
+        2
+      ],
+      "role": "qtd_amount",
+      "literal": "0.00",
+      "decimal_value": "0.00"
+    },
+    {
+      "id": "p49-r05-ytd_amount",
+      "source_visual_row": 5,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        4,
+        "cells",
+        1
+      ],
+      "role": "ytd_amount",
+      "literal": "3,861.39",
+      "decimal_value": "3861.39"
+    },
+    {
+      "id": "p49-r05-qtd_amount",
+      "source_visual_row": 5,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        4,
+        "cells",
+        2
+      ],
+      "role": "qtd_amount",
+      "literal": "1,579.22",
+      "decimal_value": "1579.22"
+    },
+    {
+      "id": "p49-r06-ytd_amount",
+      "source_visual_row": 6,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        5,
+        "cells",
+        1
+      ],
+      "role": "ytd_amount",
+      "literal": "3,421.56",
+      "decimal_value": "3421.56"
+    },
+    {
+      "id": "p49-r06-qtd_amount",
+      "source_visual_row": 6,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        5,
+        "cells",
+        2
+      ],
+      "role": "qtd_amount",
+      "literal": "-1,316.86",
+      "decimal_value": "-1316.86"
+    },
+    {
+      "id": "p49-r07-ytd_amount",
+      "source_visual_row": 7,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        6,
+        "cells",
+        1
+      ],
+      "role": "ytd_amount",
+      "literal": "4,953,271.29",
+      "decimal_value": "4953271.29"
+    },
+    {
+      "id": "p49-r07-qtd_amount",
+      "source_visual_row": 7,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        6,
+        "cells",
+        2
+      ],
+      "role": "qtd_amount",
+      "literal": "2,514,967.94",
+      "decimal_value": "2514967.94"
+    },
+    {
+      "id": "p49-r08-ytd_amount",
+      "source_visual_row": 8,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        7,
+        "cells",
+        1
+      ],
+      "role": "ytd_amount",
+      "literal": "6,884,791.21",
+      "decimal_value": "6884791.21"
+    },
+    {
+      "id": "p49-r08-qtd_amount",
+      "source_visual_row": 8,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        0,
+        "rows",
+        7,
+        "cells",
+        2
+      ],
+      "role": "qtd_amount",
+      "literal": "3,425,616.19",
+      "decimal_value": "3425616.19"
+    },
+    {
+      "id": "p49-r09-qtd_amount",
+      "source_visual_row": 9,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        1,
+        "rows",
+        0,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "511.50",
+      "decimal_value": "511.50"
+    },
+    {
+      "id": "p49-r10-qtd_amount",
+      "source_visual_row": 10,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        1,
+        "rows",
+        1,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "464.27",
+      "decimal_value": "464.27"
+    },
+    {
+      "id": "p49-r11-qtd_amount",
+      "source_visual_row": 11,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        1,
+        "rows",
+        2,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "401.27",
+      "decimal_value": "401.27"
+    },
+    {
+      "id": "p49-r12-qtd_amount",
+      "source_visual_row": 12,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        1,
+        "rows",
+        3,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "464.24",
+      "decimal_value": "464.24"
+    },
+    {
+      "id": "p49-r13-qtd_amount",
+      "source_visual_row": 13,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        1,
+        "rows",
+        4,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "527.31",
+      "decimal_value": "527.31"
+    },
+    {
+      "id": "p49-r14-qtd_amount",
+      "source_visual_row": 14,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        1,
+        "rows",
+        5,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "485.33",
+      "decimal_value": "485.33"
+    },
+    {
+      "id": "p49-r15-qtd_amount",
+      "source_visual_row": 15,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        2,
+        "rows",
+        0,
+        "cells",
+        1
+      ],
+      "role": "qtd_amount",
+      "literal": "2,853.92",
+      "decimal_value": "2853.92"
+    },
+    {
+      "id": "p49-r16-qtd_amount",
+      "source_visual_row": 16,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        0,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "37.13",
+      "decimal_value": "37.13"
+    },
+    {
+      "id": "p49-r17-qtd_amount",
+      "source_visual_row": 17,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        1,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "124.50",
+      "decimal_value": "124.50"
+    },
+    {
+      "id": "p49-r18-qtd_amount",
+      "source_visual_row": 18,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        2,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "123.50",
+      "decimal_value": "123.50"
+    },
+    {
+      "id": "p49-r19-qtd_amount",
+      "source_visual_row": 19,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        3,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "249.00",
+      "decimal_value": "249.00"
+    },
+    {
+      "id": "p49-r20-qtd_amount",
+      "source_visual_row": 20,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        4,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "249.00",
+      "decimal_value": "249.00"
+    },
+    {
+      "id": "p49-r21-qtd_amount",
+      "source_visual_row": 21,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        5,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "243.21",
+      "decimal_value": "243.21"
+    },
+    {
+      "id": "p49-r22-qtd_amount",
+      "source_visual_row": 22,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        6,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "316.25",
+      "decimal_value": "316.25"
+    },
+    {
+      "id": "p49-r23-qtd_amount",
+      "source_visual_row": 23,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        7,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "124.50",
+      "decimal_value": "124.50"
+    },
+    {
+      "id": "p49-r24-qtd_amount",
+      "source_visual_row": 24,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        8,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "123.50",
+      "decimal_value": "123.50"
+    },
+    {
+      "id": "p49-r25-qtd_amount",
+      "source_visual_row": 25,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        9,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "41.28",
+      "decimal_value": "41.28"
+    },
+    {
+      "id": "p49-r26-qtd_amount",
+      "source_visual_row": 26,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        10,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "75.00",
+      "decimal_value": "75.00"
+    },
+    {
+      "id": "p49-r27-qtd_amount",
+      "source_visual_row": 27,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        11,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "123.50",
+      "decimal_value": "123.50"
+    },
+    {
+      "id": "p49-r28-qtd_amount",
+      "source_visual_row": 28,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        12,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "196.15",
+      "decimal_value": "196.15"
+    },
+    {
+      "id": "p49-r29-qtd_amount",
+      "source_visual_row": 29,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        13,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "1,599.81",
+      "decimal_value": "1599.81"
+    },
+    {
+      "id": "p49-r30-qtd_amount",
+      "source_visual_row": 30,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        14,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "124.50",
+      "decimal_value": "124.50"
+    },
+    {
+      "id": "p49-r31-qtd_amount",
+      "source_visual_row": 31,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        15,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "123.50",
+      "decimal_value": "123.50"
+    },
+    {
+      "id": "p49-r32-qtd_amount",
+      "source_visual_row": 32,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        16,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "123.50",
+      "decimal_value": "123.50"
+    },
+    {
+      "id": "p49-r33-qtd_amount",
+      "source_visual_row": 33,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        17,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "124.50",
+      "decimal_value": "124.50"
+    },
+    {
+      "id": "p49-r34-qtd_amount",
+      "source_visual_row": 34,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        18,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "2,113.35",
+      "decimal_value": "2113.35"
+    },
+    {
+      "id": "p49-r35-qtd_amount",
+      "source_visual_row": 35,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        19,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "188.50",
+      "decimal_value": "188.50"
+    },
+    {
+      "id": "p49-r36-qtd_amount",
+      "source_visual_row": 36,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        20,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "124.50",
+      "decimal_value": "124.50"
+    },
+    {
+      "id": "p49-r37-qtd_amount",
+      "source_visual_row": 37,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        21,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "247.60",
+      "decimal_value": "247.60"
+    },
+    {
+      "id": "p49-r38-qtd_amount",
+      "source_visual_row": 38,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        3,
+        "rows",
+        22,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "248.06",
+      "decimal_value": "248.06"
+    },
+    {
+      "id": "p49-r39-qtd_amount",
+      "source_visual_row": 39,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        4,
+        "rows",
+        0,
+        "cells",
+        1
+      ],
+      "role": "qtd_amount",
+      "literal": "7,044.34",
+      "decimal_value": "7044.34"
+    },
+    {
+      "id": "p49-r40-qtd_amount",
+      "source_visual_row": 40,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        5,
+        "rows",
+        0,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "37.49",
+      "decimal_value": "37.49"
+    },
+    {
+      "id": "p49-r41-qtd_amount",
+      "source_visual_row": 41,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        5,
+        "rows",
+        1,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "79.98",
+      "decimal_value": "79.98"
+    },
+    {
+      "id": "p49-r42-qtd_amount",
+      "source_visual_row": 42,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        5,
+        "rows",
+        2,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "96.00",
+      "decimal_value": "96.00"
+    },
+    {
+      "id": "p49-r43-qtd_amount",
+      "source_visual_row": 43,
+      "normalized_cell_path": [
+        "outcome",
+        "tables",
+        5,
+        "rows",
+        3,
+        "cells",
+        8
+      ],
+      "role": "qtd_amount",
+      "literal": "588.00",
+      "decimal_value": "588.00"
+    }
+  ],
+  "arithmetic": {
+    "benefit_details_rows_9_14": {
+      "sum": "2853.92",
+      "printed_total_row": 15,
+      "printed_total": "2853.92"
+    },
+    "travel_details_rows_16_38": {
+      "sum": "7044.34",
+      "printed_total_row": 39,
+      "printed_total": "7044.34"
+    },
+    "visible_rent_details_rows_40_43": {
+      "sum": "801.47",
+      "printed_total": null,
+      "scope": "Visible page subset; no category total printed here."
+    },
+    "role_basis": "Printed headings, label positions and source occurrences; arithmetic corroborates the read but does not assign roles or repair values."
+  },
+  "counts": {
+    "financial_rows": 43,
+    "transaction_rows": 33,
+    "category_summary_rows": 6,
+    "program_summary_totals": 1,
+    "office_summary_totals": 1,
+    "category_detail_totals": 2,
+    "printed_money_occurrences": 51,
+    "negative_occurrences": 2,
+    "zero_occurrences": 3,
+    "detail_YTD_blanks": 33,
+    "spanning_total_labels": 2,
+    "explicit_payees": 11,
+    "literal_ditto_payees": 14,
+    "blank_payees": 8
+  },
+  "context_requirements": [
+    {
+      "rows": [
+        1,
+        8
+      ],
+      "needed": "Review preceding consecutive original pages back to the explicit office/organizational and fiscal or legislative account heading governing this PERSONNEL summary, including every intervening boundary.",
+      "reason": "The page begins with a program summary and ends that block at OFFICE TOTALS; neither organization identity nor account year is printed."
+    },
+    {
+      "rows": [
+        9,
+        43
+      ],
+      "needed": "Establish the enclosing office/account heading for the ADMINISTRATION detail block from original continuity; explicitly test whether the preceding OFFICE TOTALS changes scope rather than assuming the same office.",
+      "reason": "ADMINISTRATION and the three indented category headings are visible; they do not supply an office name or account year."
+    },
+    {
+      "rows": [
+        40,
+        43
+      ],
+      "needed": "Read following original pages only if a complete RENT, COMMUNICATION, UTILITIES category total or continuation context is required.",
+      "reason": "Four detail payments are visible here; this page has no closing category total."
+    }
+  ],
+  "date_normalization_boundary": "Pass raw date literals into the maintained House normalizers with independently retained report-period evidence. Posting cells omit the year; service cells use two-digit years. This map neither manufactures full dates nor equates the containing report year with the fiscal account year.",
+  "ditto_boundary": "Every DO remains a source literal. Same-page preceding explicit-name rows are locators for a later governed interpretation, not applied expansions. Blank transfer/benefit payees are not ditto and must not inherit a name.",
+  "typed_ingestion_boundary": "A typed source-observation export may preserve known fields with null organization/account fields and explicit issues. Do not present it as a fully attributed office ledger until original continuity is independently reviewed. Reuse the House scalar normalizers and row fields, while retaining raw/normalized observation identity, source occurrence order, blank-versus-spanning distinction, reviewed corrections and absence of native geometry.",
+  "unread_scope": "Other pages, full nonselected text transcription, missing office/account continuity, and downstream adapter/typed output are not qualified by this artifact."
+}

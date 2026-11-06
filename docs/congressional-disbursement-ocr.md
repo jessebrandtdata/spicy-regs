@@ -24,9 +24,28 @@ embedded OCR or native-text presence never establishes financial completeness.
 Each page action is `recognize`, `defer`, or `exclude`. An exclusion requires a
 pinned source-review artifact. Recognition requires the supported source profile,
 explicit reviewed orientation, and named geometry/text backend configurations.
-The bounded House profile does not authorize Senate row association. A Senate
-image-only page should remain deferred until a separate source-owned profile and
-raw fixture qualify its layout.
+The House and `senate-ledger` profiles use their distinct source-owned association
+readers. A supported profile still requires independent source review; recognition
+alone does not qualify a financial page.
+
+## Reuse retained structured House observations
+
+The ordinary `congressional_disbursement_pages` ledger profile also accepts
+explicitly selected House `structured_observations`. Each item pins the original
+capture observation, image, page record, compressed request, response, plan and
+source-review qualification. The maintained SpicyDocs replay helper verifies the
+exact provider request and response offline before applying reviewed field
+corrections and row roles. No model request or new geometry is created.
+
+The existing House row/page tables retain `reading_method`, the ordered financial
+occurrence, structured cell locators and the complete review provenance. True
+blank fields remain empty strings in raw fields; a field with no independent
+cell remains null. Native words, positions and counts also remain null. Structured
+pages retain `reviewed_fields_with_unresolved_text_or_context`, including known
+voucher ambiguities, unresolved `DO` payees and missing office continuity. That
+status permits bounded source observations without claiming a fully qualified
+office ledger. The table builder reconstructs the exact retained capture and
+reviewed mapping before accepting its typed rows.
 
 | Processing outcome | Meaning |
 | --- | --- |

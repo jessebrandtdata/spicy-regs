@@ -16,19 +16,23 @@ from spicy_regs.transforms.disbursement_pdf_tables import (
 
 def _rows(source, entry, table):
     for page in pages(source, entry):
-        common = source_columns(source, entry, page)
+        common = {**source_columns(source, entry, page), "reading_method": page.get("reading_method", "native_pdf")}
         if table == TABLES[1]:
             yield {
                 **common,
                 **page_columns(page),
                 "header_basis": page["header_basis"],
                 "header_json": json_value(page["header"]),
+                "structured_provenance_json": json_value(page.get("structured_provenance")),
             }
             continue
-        for row in page["records"]:
+        for source_row_index, row in enumerate(page["records"], 1):
             yield {
                 **common,
+                "source_row_index": source_row_index,
                 "source_line": row["line"],
+                "source_role": row.get("source_role"),
+                "source_origin_json": json_value(row.get("source_origin")),
                 **{
                     field: row[field]
                     for field in (

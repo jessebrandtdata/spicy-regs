@@ -22872,7 +22872,7 @@
     "coverage": "Window. Explicitly selected retained House PDFs. Each physical page is visited; images and other financial grids have explicit pending page outcomes. These PDF occurrences are distinct from official CSV occurrences. Do not combine overlapping PDF and CSV periods without a source-qualified selection.",
     "kind": "window",
     "measured_on": "2026-11-06",
-    "data_quality": "Exact signed decimals preserve quarterly and year-to-date values independently. Only transaction rows populate amount. Summary, subtotal and organization_total rows must not be added to transactions. Literal DO payees resolve only from a witnessed prior payee. Original cells, normalization witnesses and unresolved date or hierarchy issues remain available. Offices can change within a page.",
+    "data_quality": "Exact signed decimals preserve quarterly and year-to-date values independently. Only transaction rows populate amount. Summary, subtotal and organization_total rows must not be added to transactions. Literal DO payees resolve only from a witnessed prior payee. Original cells, normalization witnesses and unresolved date or hierarchy issues remain available. Offices can change within a page. Reviewed structured observations retain limited source-review status; their DO payees stay unresolved and unavailable native coordinates remain null.",
     "columns": [
       {
         "column_name": "source_file_id",
@@ -22932,12 +22932,32 @@
       {
         "column_name": "reading_sha256",
         "column_type": "VARCHAR",
-        "description": "Digest of the complete page-reading stream containing original words and positions."
+        "description": "Digest of the retained page-reading stream and its original-word or structured-observation evidence."
+      },
+      {
+        "column_name": "reading_method",
+        "column_type": "VARCHAR",
+        "description": "Native PDF reading or reviewed structured observation; the latter retains its source-review limits."
+      },
+      {
+        "column_name": "source_row_index",
+        "column_type": "BIGINT",
+        "description": "One-based financial occurrence in the retained page reading; not a positioned line number."
       },
       {
         "column_name": "source_line",
         "column_type": "BIGINT",
-        "description": "One-based positioned financial line on this physical page."
+        "description": "One-based positioned financial line; null for unpositioned observations."
+      },
+      {
+        "column_name": "source_role",
+        "column_type": "VARCHAR",
+        "description": "Finer independently reviewed source role for a structured row; null for native rows."
+      },
+      {
+        "column_name": "source_origin_json",
+        "column_type": "VARCHAR",
+        "description": "Structured table, row and cell locators with literal bindings; null for native rows. It supplies no native geometry."
       },
       {
         "column_name": "row_kind",
@@ -22977,7 +22997,7 @@
       {
         "column_name": "data_source",
         "column_type": "VARCHAR",
-        "description": "Publisher AP, AR or GL accounting-system label when printed."
+        "description": "Literal publisher accounting-system code, including historical codes whose meaning remains unresolved."
       },
       {
         "column_name": "document",
@@ -23027,12 +23047,12 @@
       {
         "column_name": "raw_fields_json",
         "column_type": "VARCHAR",
-        "description": "Literal cells before cleaning, date parsing or ditto resolution."
+        "description": "Literal fields after separately retained manual observation corrections and before scalar normalization; empty strings are true observed blanks, while null means no independent cell was mapped."
       },
       {
         "column_name": "word_indices",
         "column_type": "BIGINT[]",
-        "description": "Original page-word indices for this financial line in the reading stream."
+        "description": "Original page-word indices for a native financial line; null for unpositioned observations."
       },
       {
         "column_name": "normalizations_json",
@@ -23042,7 +23062,7 @@
       {
         "column_name": "repairs_json",
         "column_type": "VARCHAR",
-        "description": "Qualified source corrections with evidence; an empty list means no repair was applied."
+        "description": "Native source-date corrections with evidence; structured observation corrections live in the page provenance."
       },
       {
         "column_name": "issue_codes",
@@ -23055,7 +23075,7 @@
     "identity_columns": [
       "source_sha256",
       "source_page",
-      "source_line"
+      "source_row_index"
     ]
   },
   "house_disbursement_pdf_pages": {
@@ -23125,27 +23145,32 @@
       {
         "column_name": "reading_sha256",
         "column_type": "VARCHAR",
-        "description": "Digest of the complete page-reading stream containing original words and positions."
+        "description": "Digest of the retained page-reading stream and its original-word or structured-observation evidence."
+      },
+      {
+        "column_name": "reading_method",
+        "column_type": "VARCHAR",
+        "description": "Native PDF reading or reviewed structured observation; the latter retains its source-review limits."
       },
       {
         "column_name": "page_status",
         "column_type": "VARCHAR",
-        "description": "Source-owned ledger_read, image_content_pending or non_ledger_content_pending outcome."
+        "description": "Source-owned native page outcome or reviewed_fields_with_unresolved_text_or_context for bounded structured readings."
       },
       {
         "column_name": "native_text",
         "column_type": "VARCHAR",
-        "description": "Literal whole-page native text, not qualified image OCR."
+        "description": "Literal whole-page native text; null when only a structured observation was read."
       },
       {
         "column_name": "native_word_count",
         "column_type": "BIGINT",
-        "description": "Number of original words, each accounted for once in the reading stream."
+        "description": "Number of original native words; null for unpositioned observations."
       },
       {
         "column_name": "image_count",
         "column_type": "BIGINT",
-        "description": "Count of image references on the original page."
+        "description": "Count of image references when measured by the native reader; otherwise null."
       },
       {
         "column_name": "record_count",
@@ -23181,6 +23206,11 @@
         "column_name": "header_json",
         "column_type": "VARCHAR",
         "description": "Observed column positions and header word indices retained by the source reader."
+      },
+      {
+        "column_name": "structured_provenance_json",
+        "column_type": "VARCHAR",
+        "description": "Exact observation binding, configuration, field-role review and correction evidence; null for native pages."
       }
     ],
     "subject": "spending",

@@ -7,9 +7,12 @@ from spicy_regs.schemas.disbursement_pages import PARTITION_COLUMNS as PARTITION
 
 FAMILY = "house-disbursement-pages"
 TABLES = ("house_disbursement_pdf_rows", "house_disbursement_pdf_pages")
-COMMON_FIELDS = SOURCE_FIELDS + READING_FIELDS
+COMMON_FIELDS = SOURCE_FIELDS + READING_FIELDS + (("reading_method", pa.string()),)
 RECORD_FIELDS = (
+    ("source_row_index", pa.int64()),
     ("source_line", pa.int64()),
+    ("source_role", pa.string()),
+    ("source_origin_json", pa.string()),
     ("row_kind", pa.string()),
     ("organizational_group", pa.string()),
     ("organization", pa.string()),
@@ -35,6 +38,8 @@ RECORD_FIELDS = (
 )
 FIELDS = {
     TABLES[0]: COMMON_FIELDS + RECORD_FIELDS,
-    TABLES[1]: COMMON_FIELDS + PAGE_FIELDS + (("header_basis", pa.string()), ("header_json", pa.string())),
+    TABLES[1]: COMMON_FIELDS
+    + PAGE_FIELDS
+    + (("header_basis", pa.string()), ("header_json", pa.string()), ("structured_provenance_json", pa.string())),
 }
 SCHEMAS = {name: pa.schema(fields) for name, fields in FIELDS.items()}

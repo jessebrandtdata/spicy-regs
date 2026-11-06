@@ -11338,13 +11338,15 @@ tables:
       images and other financial grids have explicit pending page outcomes.
       These PDF occurrences are distinct from official CSV occurrences. Do not combine
       overlapping PDF and CSV periods without a source-qualified selection.
-    identity_columns: [source_sha256, source_page, source_line]
+    identity_columns: [source_sha256, source_page, source_row_index]
     data_quality: >-
       Exact signed decimals preserve quarterly and year-to-date values independently.
       Only transaction rows populate amount. Summary, subtotal and organization_total
       rows must not be added to transactions. Literal DO payees resolve only from a
       witnessed prior payee. Original cells, normalization witnesses and unresolved
       date or hierarchy issues remain available. Offices can change within a page.
+      Reviewed structured observations retain limited source-review status; their
+      DO payees stay unresolved and unavailable native coordinates remain null.
     columns:
       <<: &house_disbursement_pdf_common_columns
         source_file_id: Selected retained report file identifier.
@@ -11358,8 +11360,12 @@ tables:
         report_period_start: First day of the selected reporting interval.
         report_period_end: Last day of the selected reporting interval.
         reader_version: Version of the source-owned PDF reading rule.
-        reading_sha256: Digest of the complete page-reading stream containing original words and positions.
-      source_line: One-based positioned financial line on this physical page.
+        reading_sha256: Digest of the retained page-reading stream and its original-word or structured-observation evidence.
+        reading_method: Native PDF reading or reviewed structured observation; the latter retains its source-review limits.
+      source_row_index: One-based financial occurrence in the retained page reading; not a positioned line number.
+      source_line: One-based positioned financial line; null for unpositioned observations.
+      source_role: Finer independently reviewed source role for a structured row; null for native rows.
+      source_origin_json: Structured table, row and cell locators with literal bindings; null for native rows. It supplies no native geometry.
       row_kind: Printed transaction, summary, subtotal or organization_total role.
       organizational_group: Outer printed group containing the reporting office.
       organization: Printed reporting office, distinct from an elected-member identity.
@@ -11367,7 +11373,7 @@ tables:
       program: Printed program within the office hierarchy, null if its heading was not read.
       cost_category: Printed expense category for the transaction, null where unresolved.
       transaction_date: Posted date using the report year for abbreviated month-day cells.
-      data_source: Publisher AP, AR or GL accounting-system label when printed.
+      data_source: Literal publisher accounting-system code, including historical codes whose meaning remains unresolved.
       document: Literal voucher identifier, preserving leading zeros and blank-date transfers.
       vendor_name: Printed payee or witnessed DO continuation; blank source identities remain null.
       service_start_date: Normalized source service start date; invalid cells remain null with an issue.
@@ -11377,10 +11383,10 @@ tables:
       ytd_amount: Exact signed year-to-date amount where printed; never add to quarterly values.
       qtd_amount: Exact signed quarter-to-date amount where printed, including aggregate rows.
       office_origin_json: Physical page and positioned line witnessing the office heading.
-      raw_fields_json: Literal cells before cleaning, date parsing or ditto resolution.
-      word_indices: Original page-word indices for this financial line in the reading stream.
+      raw_fields_json: Literal fields after separately retained manual observation corrections and before scalar normalization; empty strings are true observed blanks, while null means no independent cell was mapped.
+      word_indices: Original page-word indices for a native financial line; null for unpositioned observations.
       normalizations_json: Applied source rules, original values and witnesses, including printed DO resolution.
-      repairs_json: Qualified source corrections with evidence; an empty list means no repair was applied.
+      repairs_json: Native source-date corrections with evidence; structured observation corrections live in the page provenance.
       issue_codes: Page and row issues, including unresolved context or date anomalies.
 
   house_disbursement_pdf_pages:
@@ -11399,10 +11405,10 @@ tables:
       same geometry. Pending image content remains distinct from empty success.
     columns:
       <<: *house_disbursement_pdf_common_columns
-      page_status: Source-owned ledger_read, image_content_pending or non_ledger_content_pending outcome.
-      native_text: Literal whole-page native text, not qualified image OCR.
-      native_word_count: Number of original words, each accounted for once in the reading stream.
-      image_count: Count of image references on the original page.
+      page_status: Source-owned native page outcome or reviewed_fields_with_unresolved_text_or_context for bounded structured readings.
+      native_text: Literal whole-page native text; null when only a structured observation was read.
+      native_word_count: Number of original native words; null for unpositioned observations.
+      image_count: Count of image references when measured by the native reader; otherwise null.
       record_count: Number of financial lines emitted, including printed aggregate rows.
       unassigned_line_count: Count of positioned ledger text lines whose roles remain unresolved.
       unassigned_lines_json: Original unresolved lines with their source word indices.
@@ -11410,6 +11416,7 @@ tables:
       issue_codes: Page-level reading issues; row issues remain on the companion financial rows.
       header_basis: Whether columns were printed on this page or inherited from a contiguous printed page.
       header_json: Observed column positions and header word indices retained by the source reader.
+      structured_provenance_json: Exact observation binding, configuration, field-role review and correction evidence; null for native pages.
 
   house_financial_summary_rows:
     label: House financial summary rows

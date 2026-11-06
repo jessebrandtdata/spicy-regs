@@ -1,0 +1,110 @@
+{
+  "schema": "congressional-disbursement-selection/1",
+  "files": [
+    {
+      "id": "house-2008-01-01-pdf-part-1",
+      "chamber": "house",
+      "format": "pdf",
+      "kind": "part",
+      "part_number": 1,
+      "url": "https://archive.org/download/statementofdisbu20081unit/statementofdisbu20081unit.pdf",
+      "period_start": "2008-01-01",
+      "period_end": "2008-03-31",
+      "period_evidence": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/historical-source-inventory.json",
+        "sha256": "sha256:5ffe1f2c068718f664497bf11b022d5fa73adfca341e64a0efba03fa8b5d3fec"
+      },
+      "retained_pdf_facts": {
+        "locator": {
+          "url": "https://archive.org/download/statementofdisbu20081unit/statementofdisbu20081unit.pdf",
+          "source_host": "archive.org",
+          "chamber": null,
+          "package_id": null
+        },
+        "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+        "byte_size": 81081273,
+        "pdf_version": "1.5",
+        "linearized_byte_size": null,
+        "terminal_xref_offset": 80829595,
+        "bytes_after_linearized_revision": 0
+      },
+      "evidence_directory": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/historical-pdf-acquisition/source-evidence/c82b735075d84978bfeeeea72b223815",
+      "status": "retained",
+      "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+      "source_byte_size": 81081273,
+      "normalization_qualification": {
+        "physical_pages": 1252,
+        "keep_every_physical_page": true,
+        "page_status_counts": {
+          "native-text": 1251,
+          "sparse-native-text-with-image": 1
+        },
+        "fingerprint_summary": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/pdf-qualification/fingerprints/documents/6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1/summary.json",
+          "sha256": "sha256:ccf9a95377df268590217629deac90de61be4a2f29420729d21e649023c33b47",
+          "byte_size": 3016
+        },
+        "reason": "Only retained source variant for this selection; no full/part equivalence inferred."
+      },
+      "reading_pages": [
+        49
+      ],
+      "physical_page_count": 1252,
+      "reading_scope": "Bounded source-reviewed financial field roles; text and office continuity remain explicitly unresolved.",
+      "structured_observations": [
+        {
+          "page": 49,
+          "qualification": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/house-flex-ledger-consumer-v1/p49-pilot-v1/qualification.json",
+            "sha256": "sha256:9da80d9877adcdc1495dcf337a6650b8be17e27bfaecb761e079c32efd42daa1",
+            "bytes": 106356
+          },
+          "image": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/house-flex-ledger-consumer-v1/p49-pilot-v1/model-input.png",
+            "sha256": "sha256:4476c3723123d2f83021b239d149518edd9cf889d800943777b673c3ae7f8065",
+            "bytes": 1447184
+          },
+          "capture_binding": {
+            "observation": {
+              "bytes": 16115,
+              "sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316"
+            },
+            "page": 49,
+            "plan": {
+              "bytes": 7070,
+              "sha256": "sha256:78e986aa10a38559d013a4f86a75d1698a8ea90d992da41b8dd441f102239c98"
+            },
+            "source_byte_size": 81081273,
+            "source_id": "house-2008-01-01-pdf-part-1",
+            "source_sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1"
+          },
+          "result": {
+            "bytes": 16115,
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/observation-00000.json",
+            "sha256": "sha256:96594fba8c733c7526bdc2c75b2b7d62a852dbeca2f3e8b7f9e1b1e81f5ab316"
+          },
+          "page_record": {
+            "bytes": 1294,
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/page-00000.json",
+            "sha256": "sha256:c6c1904f2735f91fdde781dd78176ccc4a8fca0078124b985d0428389698d4f6"
+          },
+          "request": {
+            "bytes": 1453308,
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/restored-selected-requests/page-49-request.json.gz",
+            "sha256": "sha256:9e687c06f19c3089ab756c256859d8a4ec44a03684200458168f7af02b3e9cde"
+          },
+          "response": {
+            "bytes": 25340,
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/response-00000.json",
+            "sha256": "sha256:9ed87c848375a30ea7847b92b02e5e7e1bdb2fd324954b7fa62942f595ab5518"
+          },
+          "plan": {
+            "bytes": 7070,
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/plan.json",
+            "sha256": "sha256:78e986aa10a38559d013a4f86a75d1698a8ea90d992da41b8dd441f102239c98"
+          }
+        }
+      ]
+    }
+  ]
+}

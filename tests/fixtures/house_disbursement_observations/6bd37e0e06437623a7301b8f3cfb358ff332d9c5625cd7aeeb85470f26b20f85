@@ -1,0 +1,80 @@
+{
+  "schema": "reviewed-original-heading-scope/1",
+  "source_oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-oracle.json",
+    "sha256": "sha256:12736ab402c972b0ca771b352381228ba148407c7a694b40caedf2249be0f3a7",
+    "bytes": 214401
+  },
+  "method": "Direct fresh view of full original p17 and p33 images after peer identified the title-association effect. No model output used to determine the printed hierarchy.",
+  "dispositions": [
+    {
+      "source_page": 17,
+      "source_visual_row": 33,
+      "source_label": "PERSONNEL BENEFITS TOTALS",
+      "source_image_row_band": [
+        1412,
+        1447
+      ],
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p17-rotation90-300dpi.png",
+        "sha256": "sha256:f57fb3719fd8ba9c5599fa4797f7c3250528c9289e11037ce4ffbf9437e6987b",
+        "bytes": 1935899
+      },
+      "proposed_inherited_table_title": "PERSONNEL BENEFITS",
+      "interpretation": "The printed PERSONNEL BENEFITS heading encloses its three detail rows and the PERSONNEL BENEFITS TOTALS row before TRAVEL begins.",
+      "source_occurrence": "Inherited title scope only; no added printed heading occurrence."
+    },
+    {
+      "source_page": 33,
+      "source_visual_row": 27,
+      "source_label": "PERSONNEL COMPENSATION TOTALS:",
+      "source_image_row_band": [
+        1189,
+        1224
+      ],
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p33-rotation90-300dpi.png",
+        "sha256": "sha256:5ddd2d1b61e9166b773a17afacb11b64c5fe5659a7430c73822fffb374aeba4e",
+        "bytes": 2467750
+      },
+      "proposed_inherited_table_title": "PERSONNEL COMPENSATION",
+      "interpretation": "The printed nested PERSONNEL COMPENSATION heading governs its separately printed category total.",
+      "source_occurrence": "Inherited title scope only; no added printed heading occurrence."
+    },
+    {
+      "source_page": 33,
+      "source_visual_row": 28,
+      "source_label": "LEADERSHIP LUMP SUM PERSONNEL TOTALS:",
+      "source_image_row_band": [
+        1228,
+        1263
+      ],
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p33-rotation90-300dpi.png",
+        "sha256": "sha256:5ddd2d1b61e9166b773a17afacb11b64c5fe5659a7430c73822fffb374aeba4e",
+        "bytes": 2467750
+      },
+      "proposed_inherited_table_title": "LEADERSHIP LUMP SUM PERSONNEL",
+      "interpretation": "The printed LEADERSHIP LUMP SUM PERSONNEL parent heading and separately printed program-total label identify a broader program total, following the category total. The raw table association with PERSONNEL COMPENSATION is too narrow.",
+      "source_occurrence": "Inherited title scope only; no added printed heading occurrence."
+    },
+    {
+      "source_page": 33,
+      "source_visual_row": 33,
+      "source_label": "PERSONNEL BENEFITS TOTALS:",
+      "source_image_row_band": [
+        1491,
+        1526
+      ],
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p33-rotation90-300dpi.png",
+        "sha256": "sha256:5ddd2d1b61e9166b773a17afacb11b64c5fe5659a7430c73822fffb374aeba4e",
+        "bytes": 2467750
+      },
+      "proposed_inherited_table_title": "PERSONNEL BENEFITS",
+      "interpretation": "The printed PERSONNEL BENEFITS heading governs its four detail rows and separate category total before TRAVEL begins.",
+      "source_occurrence": "Inherited title scope only; no added printed heading occurrence."
+    }
+  ],
+  "limits": "Title repetitions in separate normalized tables represent inherited source scope. Original headings and row contexts remain unchanged. Only p33 visual28 changes its raw per-row title association; three other subtotal title associations are preserved."
+}

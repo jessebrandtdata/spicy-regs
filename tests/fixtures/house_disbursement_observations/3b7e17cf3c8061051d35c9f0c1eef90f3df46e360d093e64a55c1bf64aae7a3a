@@ -1,0 +1,2307 @@
+{
+  "schema": "house-flex-three-chunk-image-first-oracle/2",
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/freeze_three_page_oracle.py",
+    "sha256": "sha256:0d66aff91b135ad539ec0426dfa91b8f3ff738141613b8af519c30d16f4f42d0",
+    "bytes": 21388
+  },
+  "render_receipt": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/candidate-render-pins.json",
+    "sha256": "sha256:11d1d76e69b72e9ed46eef8c983b70317098a58eff8ff4b158b23c325f1ac73d",
+    "bytes": 4388
+  },
+  "chunk_manifest_membership_only": [
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0017-0032/completion.json",
+      "sha256": "sha256:ece111d008ce1f06314d5b15ef2bd45c52f98bee142b8b65df4cb44dc983d5b3",
+      "bytes": 12107
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0033-0048/completion.json",
+      "sha256": "sha256:b59e40e691d9c06cb8ca396fd174ef66140fd3980093e02c4227b48cb87a997d",
+      "bytes": 12108
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0049-0064/completion.json",
+      "sha256": "sha256:b4d8ea6d28327cc2aa989ed14233e0e7eb0122a285df895ff3d2320c978ed240",
+      "bytes": 12106
+    }
+  ],
+  "selection": "One distinct page from each completed16-page chunk, chosen after original-image inspection and before model outcome access. Pages17/33/49 cover faint payroll continuation, clear complete payroll with summaries, and a mixed summary/detail page with zeros/negatives.",
+  "method": "Manual original-image reading only. No native text, source parser, producer implementation, or model outcome used for the oracle.",
+  "pages": [
+    {
+      "source_id": "house-2008-01-01-pdf-part-1",
+      "source_page": 17,
+      "printed_page": "5",
+      "source_render": {
+        "source_id": "house-2008-01-01-pdf-part-1",
+        "source": {
+          "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/6a/6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+          "sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+          "bytes": 81081273
+        },
+        "source_page": 17,
+        "physical_pages": 1252,
+        "image": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p17-rotation90-300dpi.png",
+          "sha256": "sha256:f57fb3719fd8ba9c5599fa4797f7c3250528c9289e11037ce4ffbf9437e6987b",
+          "bytes": 1935899
+        },
+        "recipe": {
+          "library": "PyMuPDF",
+          "version": "1.28.2",
+          "scale": 4.166666666666667,
+          "prerotation_degrees": 90,
+          "alpha": false
+        },
+        "page_rotation": 0,
+        "page_rect": [
+          0.0,
+          0.0,
+          513.0999755859375,
+          841.6799926757812
+        ],
+        "width": 3507,
+        "height": 2138,
+        "pixels_sha256": "sha256:8947d91db6607cc01f9e2f1f03103be0a4cc14e570d7964f9fe70cb2a8d06476"
+      },
+      "header_on_page": false,
+      "office_heading_on_page": null,
+      "fiscal_account_year_heading_on_page": null,
+      "money_column_meaning": {
+        "on_page_labels": null,
+        "left_amount_position": "YTD position under the established report layout; label is not printed on this page.",
+        "right_amount_position": "Quarterly position under the established report layout; label is not printed on this page.",
+        "raw_check": "Checks spatial left/right source positions separately; does not require a model to invent missing headers."
+      },
+      "rows": [
+        {
+          "visual_row": 1,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "3,263.32"
+          }
+        },
+        {
+          "visual_row": 2,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "MANATOS, ANASTASIOS",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "12,175.34"
+          }
+        },
+        {
+          "visual_row": 3,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "7,083.33"
+          }
+        },
+        {
+          "visual_row": 4,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "MCCULLOUGH, MARY T",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "10,143.51"
+          }
+        },
+        {
+          "visual_row": 5,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "MOORE, REBECCA G",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "18,777.79"
+          }
+        },
+        {
+          "visual_row": 6,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "NEWTON, KARINA L.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "20,174.01"
+          }
+        },
+        {
+          "visual_row": 7,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "NICOLEAU, AUDREY D",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "12,500.01"
+          }
+        },
+        {
+          "visual_row": 8,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "O’NEILL, CATLIN W",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "24,785.49"
+          }
+        },
+        {
+          "visual_row": 9,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "QUALLS, ELLEN S",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "38,625.00"
+          }
+        },
+        {
+          "visual_row": 10,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "RAJ, MEGHNA J",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "1,169.40"
+          }
+        },
+        {
+          "visual_row": 11,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "108.28"
+          }
+        },
+        {
+          "visual_row": 12,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "ROSE, CHERYL P",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "37,337.49"
+          }
+        },
+        {
+          "visual_row": 13,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "ROZEN, ZACHARY C",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "1,750.00"
+          }
+        },
+        {
+          "visual_row": 14,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "SAGRANS, ERICA G",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "9,785.01"
+          }
+        },
+        {
+          "visual_row": 15,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "SALEM, MERCEDES",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "7,725.00"
+          }
+        },
+        {
+          "visual_row": 16,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "779.01"
+          }
+        },
+        {
+          "visual_row": 17,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "SANCHEZ, CARLOS S",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "15,450.00"
+          }
+        },
+        {
+          "visual_row": 18,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "SHORT, PAULA M.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "14,472.99"
+          }
+        },
+        {
+          "visual_row": 19,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "SILVERMAN, DAVID",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "7,725.00"
+          }
+        },
+        {
+          "visual_row": 20,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "881.60"
+          }
+        },
+        {
+          "visual_row": 21,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "SMITH, SAMANTHA D.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "9,914.25"
+          }
+        },
+        {
+          "visual_row": 22,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "2,875.96"
+          }
+        },
+        {
+          "visual_row": 23,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "STIVERS, JONATHAN",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "25,568.25"
+          }
+        },
+        {
+          "visual_row": 24,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "STODDARD, ANDREW T",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "14,934.99"
+          }
+        },
+        {
+          "visual_row": 25,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "SURGEON, BINA G",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "7,725.00"
+          }
+        },
+        {
+          "visual_row": 26,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "3,818.26"
+          }
+        },
+        {
+          "visual_row": 27,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "VEITCH, ALEXANDRA N",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "21,887.49"
+          }
+        },
+        {
+          "visual_row": 28,
+          "row_kind_from_source": "subtotal",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "PERSONNEL COMPENSATION TOTALS",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "801,600.98"
+          }
+        },
+        {
+          "visual_row": 29,
+          "row_kind_from_source": "program_total",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "",
+          "label_or_payee": "LEADERSHIP LUMP SUM PERSONNEL TOTALS:",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "801,600.98"
+          }
+        },
+        {
+          "visual_row": 30,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "852.59"
+          }
+        },
+        {
+          "visual_row": 31,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "939.66"
+          }
+        },
+        {
+          "visual_row": 32,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "1,015.33"
+          }
+        },
+        {
+          "visual_row": 33,
+          "row_kind_from_source": "subtotal",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "PERSONNEL BENEFITS TOTALS",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "2,807.58"
+          }
+        },
+        {
+          "visual_row": 34,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "ANDREW STODDARD",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "218.05"
+          }
+        },
+        {
+          "visual_row": 35,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "CITIBANK GOV CARD SERVICE",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "169.00"
+          }
+        },
+        {
+          "visual_row": 36,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "100.00"
+          }
+        },
+        {
+          "visual_row": 37,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "301.80"
+          }
+        },
+        {
+          "visual_row": 38,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "738.80"
+          }
+        },
+        {
+          "visual_row": 39,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "624.80"
+          }
+        },
+        {
+          "visual_row": 40,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "513.48"
+          }
+        },
+        {
+          "visual_row": 41,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "120.27"
+          }
+        },
+        {
+          "visual_row": 42,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "167.96"
+          }
+        },
+        {
+          "visual_row": 43,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "48.80"
+          }
+        },
+        {
+          "visual_row": 44,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "MICAELA J FERNANDEZ",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "17.00"
+          }
+        },
+        {
+          "visual_row": 45,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "TOM MANATOS",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "72.00"
+          }
+        },
+        {
+          "visual_row": 46,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "CITIBANK GOV CARD SERVICE",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "726.80"
+          }
+        }
+      ],
+      "selected_full_fields": [
+        {
+          "visual_row": 1,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "DO",
+          "service_start": "11/01/07",
+          "service_end": "02/29/08",
+          "description": "SCHEDULING ASSISTANT (OVERTIME)"
+        },
+        {
+          "visual_row": 2,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "MANATOS, ANASTASIOS",
+          "service_start": "01/01/08",
+          "service_end": "02/29/08",
+          "description": "DIRECTOR OF ADVANCE"
+        },
+        {
+          "visual_row": 3,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "DO",
+          "service_start": "03/01/08",
+          "service_end": "03/31/08",
+          "description": "NATIONAL TRIP DIRECTOR"
+        },
+        {
+          "visual_row": 10,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "RAJ, MEGHNA J",
+          "service_start": "01/01/08",
+          "service_end": "02/24/08",
+          "description": "LEGISLATIVE CORRESPONDENT"
+        },
+        {
+          "visual_row": 11,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "DO",
+          "service_start": "02/01/08",
+          "service_end": "02/24/08",
+          "description": "LEGISLATIVE CORRESPONDENT (OTHER COMPENSATION)"
+        },
+        {
+          "visual_row": 30,
+          "posting_date": "01-31",
+          "source_code": "S7",
+          "voucher": "08031000365",
+          "payee": "",
+          "service_start": "01/01/08",
+          "service_end": "01/31/08",
+          "description": "TRANSIT BENEFITS"
+        },
+        {
+          "visual_row": 34,
+          "posting_date": "01-02",
+          "source_code": "P1",
+          "voucher": "08SH0100201",
+          "payee": "ANDREW STODDARD",
+          "service_start": "11/16/07",
+          "service_end": "11/17/07",
+          "description": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "visual_row": 36,
+          "posting_date": "01-02",
+          "source_code": "P1",
+          "voucher": "08SH0100209",
+          "payee": "DO",
+          "service_start": "10/26/07",
+          "service_end": "11/02/07",
+          "description": "AGENCY FEES"
+        },
+        {
+          "visual_row": 45,
+          "posting_date": "01-02",
+          "source_code": "P1",
+          "voucher": "08SH0100204",
+          "payee": "TOM MANATOS",
+          "service_start": "10/13/07",
+          "service_end": "12/01/07",
+          "description": "LOCAL TRANSPORTATION"
+        }
+      ],
+      "all_payroll_blank_positions": {
+        "visual_rows": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27
+        ],
+        "fields": [
+          "posting_date",
+          "source_code",
+          "voucher"
+        ]
+      },
+      "notes": [
+        "The opening payroll is a continuation; the first printed payee is DO and its preceding explicit payee is outside this sample.",
+        "No posting-date, source-code or voucher is printed on any of the27 payroll rows. Service dates and descriptions are present.",
+        "The payroll/program scope is supported by the two closing total labels, not a fresh upper heading.",
+        "The two801,600.98 totals are separately printed and include preceding-page payroll; this page subset must not be forced to sum to them.",
+        "LEADERSHIP LUMP SUM NONPERS., PERSONNEL BENEFITS and TRAVEL headings are printed before the relevant nonpayroll rows.",
+        "Banding and pale text affect the original image; all monetary digits were nevertheless read. No zero or negative money is printed here."
+      ],
+      "counts": {
+        "financial_rows": 46,
+        "monetary_slots": 92,
+        "blank_money_positions": 46,
+        "monetary_occurrences": 46,
+        "negative_occurrences": 0,
+        "zero_occurrences": 0
+      },
+      "uncertain_monetary_positions": [],
+      "unreviewed_fields": "Full voucher/date/description literals outside the selected witnesses; office/fiscal context outside the image. This is not a full text transcript."
+    },
+    {
+      "source_id": "house-2008-01-01-pdf-part-1",
+      "source_page": 33,
+      "printed_page": "21",
+      "source_render": {
+        "source_id": "house-2008-01-01-pdf-part-1",
+        "source": {
+          "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/6a/6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+          "sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+          "bytes": 81081273
+        },
+        "source_page": 33,
+        "physical_pages": 1252,
+        "image": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p33-rotation90-300dpi.png",
+          "sha256": "sha256:5ddd2d1b61e9166b773a17afacb11b64c5fe5659a7430c73822fffb374aeba4e",
+          "bytes": 2467750
+        },
+        "recipe": {
+          "library": "PyMuPDF",
+          "version": "1.28.2",
+          "scale": 4.166666666666667,
+          "prerotation_degrees": 90,
+          "alpha": false
+        },
+        "page_rotation": 0,
+        "page_rect": [
+          0.0,
+          0.0,
+          513.0999755859375,
+          841.6799926757812
+        ],
+        "width": 3507,
+        "height": 2138,
+        "pixels_sha256": "sha256:3717b5402308628fe553a79a440f381e590745667a907884381de26f3e26433d"
+      },
+      "header_on_page": false,
+      "office_heading_on_page": null,
+      "fiscal_account_year_heading_on_page": null,
+      "money_column_meaning": {
+        "on_page_labels": null,
+        "left_amount_position": "YTD position under the established report layout; label is not printed on this page.",
+        "right_amount_position": "Quarterly position under the established report layout; label is not printed on this page.",
+        "raw_check": "Checks spatial left/right source positions separately; does not require a model to invent missing headers."
+      },
+      "rows": [
+        {
+          "visual_row": 1,
+          "row_kind_from_source": "summary_total",
+          "program": "",
+          "category": "",
+          "label_or_payee": "LEADERSHIP OFFICIAL EXPENSES TOTALS:",
+          "money": {
+            "left_amount_position": "2,499.96",
+            "right_amount_position": "1,249.98"
+          }
+        },
+        {
+          "visual_row": 2,
+          "row_kind_from_source": "summary_office_total",
+          "program": "",
+          "category": "",
+          "label_or_payee": "OFFICE TOTALS:",
+          "money": {
+            "left_amount_position": "693,038.58",
+            "right_amount_position": "368,728.47"
+          }
+        },
+        {
+          "visual_row": 3,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "ANDRES, DOUGLAS R",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "6,066.67"
+          }
+        },
+        {
+          "visual_row": 4,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "412.50"
+          }
+        },
+        {
+          "visual_row": 5,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "BRAVO, MATTHEW",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "7,500.00"
+          }
+        },
+        {
+          "visual_row": 6,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "BURGESS, DANIEL M",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "4,526.67"
+          }
+        },
+        {
+          "visual_row": 7,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "328.12"
+          }
+        },
+        {
+          "visual_row": 8,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DIFFELL, BRIAN",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "20,000.01"
+          }
+        },
+        {
+          "visual_row": 9,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "EDDINGS, RICHARD B.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "23,166.67"
+          }
+        },
+        {
+          "visual_row": 10,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "FERENCE, MICHAEL J.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "20,166.67"
+          }
+        },
+        {
+          "visual_row": 11,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "FERRIER, ANTONIA H",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "26,916.67"
+          }
+        },
+        {
+          "visual_row": 12,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "HANSON, JUSTIN W.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "486.11"
+          }
+        },
+        {
+          "visual_row": 13,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "288.46"
+          }
+        },
+        {
+          "visual_row": 14,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "HAWKS, MICHELLE L.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "11,250.00"
+          }
+        },
+        {
+          "visual_row": 15,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "JAEGER, CHERYL L.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "25,500.00"
+          }
+        },
+        {
+          "visual_row": 16,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "KABERLE, JONNI A.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "24,416.66"
+          }
+        },
+        {
+          "visual_row": 17,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "LITTLE, SARAH E.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "6,999.99"
+          }
+        },
+        {
+          "visual_row": 18,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "LOONEY, MELANIE L",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "25,625.01"
+          }
+        },
+        {
+          "visual_row": 19,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "MERRICK, KRISTINA D.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "8,791.67"
+          }
+        },
+        {
+          "visual_row": 20,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "MULHERN, SHANNON E.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "15,000.00"
+          }
+        },
+        {
+          "visual_row": 21,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "NEVINS, KYLE W.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "23,750.00"
+          }
+        },
+        {
+          "visual_row": 22,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "SIMPSON, NICKLAUS P",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "15,166.67"
+          }
+        },
+        {
+          "visual_row": 23,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "STIPICEVIC, JOHN A.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "9,916.66"
+          }
+        },
+        {
+          "visual_row": 24,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "TUCKER, CHRISTOPHER",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "13,749.99"
+          }
+        },
+        {
+          "visual_row": 25,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "VIESON, CHRISTOPHER W.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "9,916.66"
+          }
+        },
+        {
+          "visual_row": 26,
+          "row_kind_from_source": "payroll",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "WALKER, JOHN S.",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "300.00"
+          }
+        },
+        {
+          "visual_row": 27,
+          "row_kind_from_source": "subtotal",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "PERSONNEL COMPENSATION TOTALS:",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "300,241.86"
+          }
+        },
+        {
+          "visual_row": 28,
+          "row_kind_from_source": "program_total",
+          "program": "LEADERSHIP LUMP SUM PERSONNEL",
+          "category": "",
+          "label_or_payee": "LEADERSHIP LUMP SUM PERSONNEL TOTALS:",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "300,241.86"
+          }
+        },
+        {
+          "visual_row": 29,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "338.33"
+          }
+        },
+        {
+          "visual_row": 30,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "86.42"
+          }
+        },
+        {
+          "visual_row": 31,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "3.96"
+          }
+        },
+        {
+          "visual_row": 32,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "23.55"
+          }
+        },
+        {
+          "visual_row": 33,
+          "row_kind_from_source": "subtotal",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "PERSONNEL BENEFITS TOTALS:",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "452.26"
+          }
+        },
+        {
+          "visual_row": 34,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "BRIAN CHRISTOPHER DIFFELL",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "18.00"
+          }
+        },
+        {
+          "visual_row": 35,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "JOHN STIPICEVIC",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "20.00"
+          }
+        },
+        {
+          "visual_row": 36,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "KYLE WILLIAM NEVINS",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "13.00"
+          }
+        },
+        {
+          "visual_row": 37,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "MATTHEW BRAVO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "27.00"
+          }
+        },
+        {
+          "visual_row": 38,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "25.00"
+          }
+        },
+        {
+          "visual_row": 39,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "BRIAN S. GASTON",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "61.00"
+          }
+        },
+        {
+          "visual_row": 40,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "MICHAEL J. FERENCE",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "9.00"
+          }
+        },
+        {
+          "visual_row": 41,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "MARSHALL T KINNE",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "25.00"
+          }
+        },
+        {
+          "visual_row": 42,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "MATTHEW BRAVO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "18.00"
+          }
+        },
+        {
+          "visual_row": 43,
+          "row_kind_from_source": "detail",
+          "program": "LEADERSHIP LUMP SUM NONPERS.",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "38.00"
+          }
+        }
+      ],
+      "selected_full_fields": [
+        {
+          "visual_row": 3,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "ANDRES, DOUGLAS R",
+          "service_start": "01/07/08",
+          "service_end": "03/31/08",
+          "description": "STAFF ASSISTANT"
+        },
+        {
+          "visual_row": 4,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "DO",
+          "service_start": "01/07/08",
+          "service_end": "01/31/08",
+          "description": "STAFF ASSISTANT (OVERTIME)"
+        },
+        {
+          "visual_row": 12,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "HANSON, JUSTIN W.",
+          "service_start": "01/01/08",
+          "service_end": "01/07/08",
+          "description": "STAFF ASSISTANT"
+        },
+        {
+          "visual_row": 13,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "DO",
+          "service_start": "12/01/07",
+          "service_end": "12/31/07",
+          "description": "STAFF ASSISTANT (OVERTIME)"
+        },
+        {
+          "visual_row": 26,
+          "posting_date": "",
+          "source_code": "",
+          "voucher": "",
+          "payee": "WALKER, JOHN S.",
+          "service_start": "01/01/08",
+          "service_end": "03/31/08",
+          "description": "SPECIAL PROJECT COORDINATOR"
+        },
+        {
+          "visual_row": 32,
+          "posting_date": "03-28",
+          "source_code": "S7",
+          "voucher": "08088000277",
+          "payee": "",
+          "service_start": "03/19/08",
+          "service_end": "03/19/08",
+          "description": "TRANSIT BENEFITS"
+        },
+        {
+          "visual_row": 39,
+          "posting_date": "02-11",
+          "source_code": "P1",
+          "voucher": "08NW0100090",
+          "payee": "BRIAN S. GASTON",
+          "service_start": "12/05/07",
+          "service_end": "02/01/08",
+          "description": "LOCAL TRANSPORTATION"
+        },
+        {
+          "visual_row": 43,
+          "posting_date": "03-31",
+          "source_code": "P1",
+          "voucher": "08NW0100106",
+          "payee": "DO",
+          "service_start": "03/17/08",
+          "service_end": "03/17/08",
+          "description": "TRAIN (6155)"
+        }
+      ],
+      "all_payroll_blank_positions": {
+        "visual_rows": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26
+        ],
+        "fields": [
+          "posting_date",
+          "source_code",
+          "voucher"
+        ]
+      },
+      "notes": [
+        "The two upper summary totals carry two amounts each; they are distinct from the later payroll subtotals.",
+        "The complete24-row payroll block has blank posting-date/source-code/voucher positions and sums to300,241.86.",
+        "The300,241.86 amount is printed twice as separate category/program totals; neither occurrence is a detail payment.",
+        "Hanson regular pay is dated January1–7,2008, while the immediately following DO overtime row is December1–31,2007. Do not copy the regular-pay dates.",
+        "The complete four-row benefits block sums to452.26. Travel begins afterward and has no closing total on this page.",
+        "No zero or negative amount is printed on this page."
+      ],
+      "counts": {
+        "financial_rows": 43,
+        "monetary_slots": 86,
+        "monetary_occurrences": 45,
+        "negative_occurrences": 0,
+        "zero_occurrences": 0,
+        "blank_money_positions": 41
+      },
+      "uncertain_monetary_positions": [],
+      "unreviewed_fields": "Full voucher/date/description literals outside the selected witnesses; office/fiscal context outside the image. This is not a full text transcript.",
+      "post_outcome_additional_literal_fields": [
+        {
+          "visual_row": 31,
+          "field": "voucher",
+          "literal": "08088100002",
+          "original_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p33-transit-vouchers.png",
+            "bytes": 26669,
+            "sha256": "sha256:0118833d4147994cd9711881c8633d01c490f9a6ab20e07712d9f4f929080c50"
+          },
+          "reason": "Independent peer read the third benefit voucher; this is additional post-outcome source scope, not a correction to an initially selected oracle field."
+        }
+      ]
+    },
+    {
+      "source_id": "house-2008-01-01-pdf-part-1",
+      "source_page": 49,
+      "printed_page": "37",
+      "source_render": {
+        "source_id": "house-2008-01-01-pdf-part-1",
+        "source": {
+          "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/6a/6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+          "sha256": "sha256:6a2b8cdc5b34f8afdc1ff7df8c6a55daad0e4d19e829f0768600d560d1b1d4d1",
+          "bytes": 81081273
+        },
+        "source_page": 49,
+        "physical_pages": 1252,
+        "image": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p49-rotation90-300dpi.png",
+          "sha256": "sha256:f4e0e9251dc73cb2afdb9ae66b7f2196d21f41695b729b2c2b6640651b4eaced",
+          "bytes": 1952450
+        },
+        "recipe": {
+          "library": "PyMuPDF",
+          "version": "1.28.2",
+          "scale": 4.166666666666667,
+          "prerotation_degrees": 90,
+          "alpha": false
+        },
+        "page_rotation": 0,
+        "page_rect": [
+          0.0,
+          0.0,
+          513.0999755859375,
+          841.6799926757812
+        ],
+        "width": 3507,
+        "height": 2138,
+        "pixels_sha256": "sha256:e6c4b912b315eb857b6a3441e7d050ee0ad5ae84cb3021cacf7ba55cd19cf30a"
+      },
+      "header_on_page": false,
+      "office_heading_on_page": null,
+      "fiscal_account_year_heading_on_page": null,
+      "money_column_meaning": {
+        "on_page_labels": null,
+        "left_amount_position": "YTD position under the established report layout; label is not printed on this page.",
+        "right_amount_position": "Quarterly position under the established report layout; label is not printed on this page.",
+        "raw_check": "Checks spatial left/right source positions separately; does not require a model to invent missing headers."
+      },
+      "rows": [
+        {
+          "visual_row": 1,
+          "row_kind_from_source": "summary",
+          "program": "PERSONNEL",
+          "category": "PERSONNEL COMPENSATION",
+          "label_or_payee": "PERSONNEL COMPENSATION",
+          "money": {
+            "left_amount_position": "4,945,319.07",
+            "right_amount_position": "2,518,063.60"
+          }
+        },
+        {
+          "visual_row": 2,
+          "row_kind_from_source": "summary",
+          "program": "PERSONNEL",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "PERSONNEL BENEFITS",
+          "money": {
+            "left_amount_position": "464.31",
+            "right_amount_position": "0.00"
+          }
+        },
+        {
+          "visual_row": 3,
+          "row_kind_from_source": "summary",
+          "program": "PERSONNEL",
+          "category": "RENT, COMMUNICATION, UTILITIES",
+          "label_or_payee": "RENT, COMMUNICATION, UTILITIES",
+          "money": {
+            "left_amount_position": "204.96",
+            "right_amount_position": "-3,358.02"
+          }
+        },
+        {
+          "visual_row": 4,
+          "row_kind_from_source": "summary",
+          "program": "PERSONNEL",
+          "category": "PRINTING AND REPRODUCTION",
+          "label_or_payee": "PRINTING AND REPRODUCTION",
+          "money": {
+            "left_amount_position": "0.00",
+            "right_amount_position": "0.00"
+          }
+        },
+        {
+          "visual_row": 5,
+          "row_kind_from_source": "summary",
+          "program": "PERSONNEL",
+          "category": "SUPPLIES AND MATERIALS",
+          "label_or_payee": "SUPPLIES AND MATERIALS",
+          "money": {
+            "left_amount_position": "3,861.39",
+            "right_amount_position": "1,579.22"
+          }
+        },
+        {
+          "visual_row": 6,
+          "row_kind_from_source": "summary",
+          "program": "PERSONNEL",
+          "category": "EQUIPMENT",
+          "label_or_payee": "EQUIPMENT",
+          "money": {
+            "left_amount_position": "3,421.56",
+            "right_amount_position": "-1,316.86"
+          }
+        },
+        {
+          "visual_row": 7,
+          "row_kind_from_source": "summary_program_total",
+          "program": "PERSONNEL",
+          "category": "",
+          "label_or_payee": "PERSONNEL TOTALS:",
+          "money": {
+            "left_amount_position": "4,953,271.29",
+            "right_amount_position": "2,514,967.94"
+          }
+        },
+        {
+          "visual_row": 8,
+          "row_kind_from_source": "summary_office_total",
+          "program": "",
+          "category": "",
+          "label_or_payee": "OFFICE TOTALS:",
+          "money": {
+            "left_amount_position": "6,884,791.21",
+            "right_amount_position": "3,425,616.19"
+          }
+        },
+        {
+          "visual_row": 9,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "511.50"
+          }
+        },
+        {
+          "visual_row": 10,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "464.27"
+          }
+        },
+        {
+          "visual_row": 11,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "401.27"
+          }
+        },
+        {
+          "visual_row": 12,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "464.24"
+          }
+        },
+        {
+          "visual_row": 13,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "527.31"
+          }
+        },
+        {
+          "visual_row": 14,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "485.33"
+          }
+        },
+        {
+          "visual_row": 15,
+          "row_kind_from_source": "subtotal",
+          "program": "ADMINISTRATION",
+          "category": "PERSONNEL BENEFITS",
+          "label_or_payee": "PERSONNEL BENEFITS TOTALS",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "2,853.92"
+          }
+        },
+        {
+          "visual_row": 16,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "CITIBANK GOV CARD SERVICE",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "37.13"
+          }
+        },
+        {
+          "visual_row": 17,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "124.50"
+          }
+        },
+        {
+          "visual_row": 18,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "123.50"
+          }
+        },
+        {
+          "visual_row": 19,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "249.00"
+          }
+        },
+        {
+          "visual_row": 20,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "249.00"
+          }
+        },
+        {
+          "visual_row": 21,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DANIEL P BEARD",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "243.21"
+          }
+        },
+        {
+          "visual_row": 22,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "PERRY PLUMART",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "316.25"
+          }
+        },
+        {
+          "visual_row": 23,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "CITIBANK GOV CARD SERVICE",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "124.50"
+          }
+        },
+        {
+          "visual_row": 24,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "123.50"
+          }
+        },
+        {
+          "visual_row": 25,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DANIEL P BEARD",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "41.28"
+          }
+        },
+        {
+          "visual_row": 26,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "CITIBANK GOV CARD SERVICE",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "75.00"
+          }
+        },
+        {
+          "visual_row": 27,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "123.50"
+          }
+        },
+        {
+          "visual_row": 28,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "196.15"
+          }
+        },
+        {
+          "visual_row": 29,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "GRANT SCHERLING",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "1,599.81"
+          }
+        },
+        {
+          "visual_row": 30,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "CITIBANK GOV CARD SERVICE",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "124.50"
+          }
+        },
+        {
+          "visual_row": 31,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "123.50"
+          }
+        },
+        {
+          "visual_row": 32,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "123.50"
+          }
+        },
+        {
+          "visual_row": 33,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "124.50"
+          }
+        },
+        {
+          "visual_row": 34,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "2,113.35"
+          }
+        },
+        {
+          "visual_row": 35,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "188.50"
+          }
+        },
+        {
+          "visual_row": 36,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "124.50"
+          }
+        },
+        {
+          "visual_row": 37,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "GALA RODRIGUEZ",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "247.60"
+          }
+        },
+        {
+          "visual_row": 38,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "PERRY PLUMART",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "248.06"
+          }
+        },
+        {
+          "visual_row": 39,
+          "row_kind_from_source": "subtotal",
+          "program": "ADMINISTRATION",
+          "category": "TRAVEL",
+          "label_or_payee": "TRAVEL TOTALS:",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "7,044.34"
+          }
+        },
+        {
+          "visual_row": 40,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "RENT, COMMUNICATION, UTILITIES",
+          "label_or_payee": "VERIZON WIRELESS",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "37.49"
+          }
+        },
+        {
+          "visual_row": 41,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "RENT, COMMUNICATION, UTILITIES",
+          "label_or_payee": "DO",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "79.98"
+          }
+        },
+        {
+          "visual_row": 42,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "RENT, COMMUNICATION, UTILITIES",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "96.00"
+          }
+        },
+        {
+          "visual_row": 43,
+          "row_kind_from_source": "detail",
+          "program": "ADMINISTRATION",
+          "category": "RENT, COMMUNICATION, UTILITIES",
+          "label_or_payee": "",
+          "money": {
+            "left_amount_position": "",
+            "right_amount_position": "588.00"
+          }
+        }
+      ],
+      "selected_full_fields": [
+        {
+          "visual_row": 9,
+          "posting_date": "01-31",
+          "source_code": "S7",
+          "voucher": "08031000006",
+          "payee": "",
+          "service_start": "01/01/08",
+          "service_end": "01/31/08",
+          "description": "TRANSIT BENEFITS"
+        },
+        {
+          "visual_row": 19,
+          "posting_date": "02-06",
+          "source_code": "P1",
+          "voucher": "08AO0100080",
+          "payee": "DO",
+          "service_start": "01/22/08",
+          "service_end": "01/23/08",
+          "description": "AIRFARE #5437 DAIGLE"
+        },
+        {
+          "visual_row": 20,
+          "posting_date": "02-06",
+          "source_code": "P1",
+          "voucher": "08AO0100081",
+          "payee": "DO",
+          "service_start": "01/28/08",
+          "service_end": "02/01/08",
+          "description": "AIRFARE #7548 DAIGLE"
+        },
+        {
+          "visual_row": 34,
+          "posting_date": "03-20",
+          "source_code": "P1",
+          "voucher": "08AO0100114",
+          "payee": "DO",
+          "service_start": "01/27/08",
+          "service_end": "02/15/08",
+          "description": "TRAVEL SUBSISTENCE"
+        },
+        {
+          "visual_row": 40,
+          "posting_date": "01-07",
+          "source_code": "P2",
+          "voucher": "HCV0800467",
+          "payee": "VERIZON WIRELESS",
+          "service_start": "12/11/07",
+          "service_end": "12/11/07",
+          "description": "1, BLUETOOTH"
+        },
+        {
+          "visual_row": 41,
+          "posting_date": "01-17",
+          "source_code": "P2",
+          "voucher": "HCV0800561",
+          "payee": "DO",
+          "service_start": "12/18/07",
+          "service_end": "12/18/07",
+          "description": "8830 BLACKBERRY"
+        },
+        {
+          "visual_row": 42,
+          "posting_date": "01-23",
+          "source_code": "S5",
+          "voucher": "DY080100010",
+          "payee": "",
+          "service_start": "12/01/07",
+          "service_end": "12/31/07",
+          "description": "DC TEL EQUIP (TRANSFER)"
+        }
+      ],
+      "all_payroll_blank_positions": {
+        "visual_rows": [],
+        "fields": [
+          "posting_date",
+          "source_code",
+          "voucher"
+        ]
+      },
+      "notes": [
+        "The PERSONNEL upper summary contains eight rows, including personnel and office totals, with separate left and right amounts.",
+        "Three printed zero occurrences and two negative right-column occurrences are genuine source cells.",
+        "The lower detailed rows begin a different program, ADMINISTRATION; do not carry PERSONNEL into their program field.",
+        "Six blank-payee TRANSIT BENEFITS rows sum to2,853.92;23 travel rows sum to7,044.34.",
+        "Two separately printed249.00 airfare rows have distinct vouchers80/81 and service intervals; preserve both.",
+        "The final two DC TEL EQUIP transfers have blank payees; the prior Verizon DO row must not fill them.",
+        "Row34 is printed01/27/08–02/15/08. Initial reversed-date reading was a manual transcription error, corrected from original pixels after outcome comparison and independently confirmed."
+      ],
+      "counts": {
+        "financial_rows": 43,
+        "monetary_slots": 86,
+        "monetary_occurrences": 51,
+        "negative_occurrences": 2,
+        "zero_occurrences": 3,
+        "blank_money_positions": 35
+      },
+      "uncertain_monetary_positions": [],
+      "unreviewed_fields": "Full voucher/date/description literals outside the selected witnesses; office/fiscal context outside the image. This is not a full text transcript.",
+      "uncertain_nonmonetary_fields": [
+        {
+          "visual_row": 19,
+          "field": "voucher",
+          "allowed_visual_readings": [
+            "08AO0100080",
+            "08A00100080"
+          ],
+          "reason": "The fourth raster glyph is visually ambiguous letter O/zero. Neither reader may establish that character by pattern inference alone.",
+          "source_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-airfare-vouchers.png",
+            "bytes": 27851,
+            "sha256": "sha256:b7edb88cdbe699e7beac8528b3f7a401521014a9c990793868deb744cffddae5"
+          },
+          "scope_note": "Rows19/20 are directly in this tight crop; row34 is on the full original image and shares the glyph ambiguity."
+        },
+        {
+          "visual_row": 20,
+          "field": "voucher",
+          "allowed_visual_readings": [
+            "08AO0100081",
+            "08A00100081"
+          ],
+          "reason": "The fourth raster glyph is visually ambiguous letter O/zero. Neither reader may establish that character by pattern inference alone.",
+          "source_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-airfare-vouchers.png",
+            "bytes": 27851,
+            "sha256": "sha256:b7edb88cdbe699e7beac8528b3f7a401521014a9c990793868deb744cffddae5"
+          },
+          "scope_note": "Rows19/20 are directly in this tight crop; row34 is on the full original image and shares the glyph ambiguity."
+        },
+        {
+          "visual_row": 34,
+          "field": "voucher",
+          "allowed_visual_readings": [
+            "08AO0100114",
+            "08A00100114"
+          ],
+          "reason": "The fourth raster glyph is visually ambiguous letter O/zero. Neither reader may establish that character by pattern inference alone.",
+          "source_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-airfare-vouchers.png",
+            "bytes": 27851,
+            "sha256": "sha256:b7edb88cdbe699e7beac8528b3f7a401521014a9c990793868deb744cffddae5"
+          },
+          "scope_note": "Rows19/20 are directly in this tight crop; row34 is on the full original image and shares the glyph ambiguity."
+        }
+      ],
+      "post_outcome_additional_literal_fields": [
+        {
+          "visual_row": 10,
+          "field": "voucher",
+          "literal": "08031000007",
+          "original_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-transit-vouchers.png",
+            "bytes": 41311,
+            "sha256": "sha256:90150a89757f60621fad30b8dd7b9060a65c2eca1bb39a8124a5edb1989f283f"
+          },
+          "reason": "Bounded extension across the same six original voucher rows after a zero-run model discrepancy was found."
+        },
+        {
+          "visual_row": 11,
+          "field": "voucher",
+          "literal": "08060000007",
+          "original_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-transit-vouchers.png",
+            "bytes": 41311,
+            "sha256": "sha256:90150a89757f60621fad30b8dd7b9060a65c2eca1bb39a8124a5edb1989f283f"
+          },
+          "reason": "Bounded extension across the same six original voucher rows after a zero-run model discrepancy was found."
+        },
+        {
+          "visual_row": 12,
+          "field": "voucher",
+          "literal": "08060000008",
+          "original_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-transit-vouchers.png",
+            "bytes": 41311,
+            "sha256": "sha256:90150a89757f60621fad30b8dd7b9060a65c2eca1bb39a8124a5edb1989f283f"
+          },
+          "reason": "Bounded extension across the same six original voucher rows after a zero-run model discrepancy was found."
+        },
+        {
+          "visual_row": 13,
+          "field": "voucher",
+          "literal": "08088000005",
+          "original_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-transit-vouchers.png",
+            "bytes": 41311,
+            "sha256": "sha256:90150a89757f60621fad30b8dd7b9060a65c2eca1bb39a8124a5edb1989f283f"
+          },
+          "reason": "Bounded extension across the same six original voucher rows after a zero-run model discrepancy was found."
+        },
+        {
+          "visual_row": 14,
+          "field": "voucher",
+          "literal": "08088000006",
+          "original_crop": {
+            "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-transit-vouchers.png",
+            "bytes": 41311,
+            "sha256": "sha256:90150a89757f60621fad30b8dd7b9060a65c2eca1bb39a8124a5edb1989f283f"
+          },
+          "reason": "Bounded extension across the same six original voucher rows after a zero-run model discrepancy was found."
+        }
+      ],
+      "initial_notes_preserved_in_v1": [
+        "The PERSONNEL upper summary contains eight rows, including personnel and office totals, with separate left and right amounts.",
+        "Three printed zero occurrences and two negative right-column occurrences are genuine source cells.",
+        "The lower detailed rows begin a different program, ADMINISTRATION; do not carry PERSONNEL into their program field.",
+        "Six blank-payee TRANSIT BENEFITS rows sum to2,853.92;23 travel rows sum to7,044.34.",
+        "Two separately printed249.00 airfare rows have distinct vouchers80/81 and service intervals; preserve both.",
+        "The2,113.35 DO row visibly prints01/27/08 to01/15/08. That is a raw reversed interval. This oracle proposes no date repair.",
+        "The final two DC TEL EQUIP transfers have blank payees; the prior Verizon DO row must not fill them."
+      ]
+    }
+  ],
+  "counts": {
+    "financial_rows": 132,
+    "monetary_slots": 264,
+    "blank_money_positions": 122,
+    "monetary_occurrences": 142,
+    "negative_occurrences": 2,
+    "zero_occurrences": 3
+  },
+  "independent_arithmetic_checks": [
+    {
+      "name": "p17 benefits",
+      "sum_of_visually_transcribed_details": "2807.58",
+      "printed_total": "2807.58",
+      "matches": true
+    },
+    {
+      "name": "p33 complete payroll",
+      "sum_of_visually_transcribed_details": "300241.86",
+      "printed_total": "300241.86",
+      "matches": true
+    },
+    {
+      "name": "p33 benefits",
+      "sum_of_visually_transcribed_details": "452.26",
+      "printed_total": "452.26",
+      "matches": true
+    },
+    {
+      "name": "p49 benefits",
+      "sum_of_visually_transcribed_details": "2853.92",
+      "printed_total": "2853.92",
+      "matches": true
+    },
+    {
+      "name": "p49 complete travel",
+      "sum_of_visually_transcribed_details": "7044.34",
+      "printed_total": "7044.34",
+      "matches": true
+    }
+  ],
+  "scope_limits": [
+    "Three selected pages only; the other45 model outcomes remain unexamined.",
+    "Repeated values, DO, actual blanks, original dates and different program scopes remain separate source occurrences.",
+    "Left/right money positions are complete; fixed-column normalization of a headerless response is a separate boundary.",
+    "Visual apostrophe/minus glyphs and optional spaces after commas do not establish PDF Unicode/codepoint identity.",
+    "No correction to original dates or money is proposed."
+  ],
+  "source_first_oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle.json",
+    "sha256": "sha256:e4a0adc76f6bb3150a38e3fe946b6b160891bc4781b11f7386972255b3e079fa",
+    "bytes": 67842
+  },
+  "post_outcome_reinspection": {
+    "peer": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-page-source-crops-second-review-v1/review.json",
+      "sha256": "sha256:a6a42070a94cbaed125080d0f211223e5b25f897df287b6fa0851f17ced851df",
+      "bytes": 15985
+    },
+    "six_voucher_peer": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/three-page-source-crops-second-review-v1/six-p49-vouchers-addendum.json",
+      "sha256": "sha256:563b5429c5cc6c468772b8abb238d1d3efc48c17f89bf3dc1714ab7d9aafa6a7",
+      "bytes": 15426
+    },
+    "crop_provenance": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/provenance.json",
+      "sha256": "sha256:ee904b73bb6d660ec2fa8f919c2dfb30fb01d858445ca6860304cbe068572a41",
+      "bytes": 7976
+    },
+    "exact_changed_fields": [
+      {
+        "physical_page": 17,
+        "section": "rows",
+        "visual_row": 8,
+        "field": "label_or_payee",
+        "before": "O’NEILL, CAITLIN W",
+        "after": "O’NEILL, CATLIN W",
+        "original_crop": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p17-names.png",
+          "bytes": 28663,
+          "sha256": "sha256:f2b3e925931a5841da17a4587d3ee6be9cc15b34e1f0eb28834911dc722d7b65"
+        }
+      },
+      {
+        "physical_page": 17,
+        "section": "rows",
+        "visual_row": 10,
+        "field": "label_or_payee",
+        "before": "RAU, MEGHNA J",
+        "after": "RAJ, MEGHNA J",
+        "original_crop": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p17-names.png",
+          "bytes": 28663,
+          "sha256": "sha256:f2b3e925931a5841da17a4587d3ee6be9cc15b34e1f0eb28834911dc722d7b65"
+        }
+      },
+      {
+        "physical_page": 17,
+        "section": "selected_full_fields",
+        "visual_row": 10,
+        "field": "payee",
+        "before": "RAU, MEGHNA J",
+        "after": "RAJ, MEGHNA J",
+        "original_crop": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p17-names.png",
+          "bytes": 28663,
+          "sha256": "sha256:f2b3e925931a5841da17a4587d3ee6be9cc15b34e1f0eb28834911dc722d7b65"
+        }
+      },
+      {
+        "physical_page": 17,
+        "section": "rows",
+        "visual_row": 25,
+        "field": "label_or_payee",
+        "before": "SURGEON, BINA C",
+        "after": "SURGEON, BINA G",
+        "original_crop": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p17-surgeon.png",
+          "bytes": 15441,
+          "sha256": "sha256:c90d5ccf3fe7caaa81ccd69d06fad99519222345988d8f078db591ef12165c08"
+        }
+      },
+      {
+        "physical_page": 33,
+        "section": "selected_full_fields",
+        "visual_row": 26,
+        "field": "service_end",
+        "before": "01/08/08",
+        "after": "03/31/08",
+        "original_crop": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p33-walker.png",
+          "bytes": 42396,
+          "sha256": "sha256:d18c7e8b68541b17c498050ccf9785c8ab0e0a068e966827df2661b338e3403f"
+        }
+      },
+      {
+        "physical_page": 49,
+        "section": "selected_full_fields",
+        "visual_row": 34,
+        "field": "service_end",
+        "before": "01/15/08",
+        "after": "02/15/08",
+        "original_crop": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-travel-endpoint.png",
+          "bytes": 16511,
+          "sha256": "sha256:4990225ca737ee6eff774111f4c8e9a34a1dd5df4096cb43999c25216325c0e0"
+        }
+      },
+      {
+        "physical_page": 49,
+        "section": "selected_full_fields",
+        "visual_row": 40,
+        "field": "description",
+        "before": "1. BLUETOOTH",
+        "after": "1, BLUETOOTH",
+        "original_crop": {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/source-crops/p49-bluetooth.png",
+          "bytes": 11003,
+          "sha256": "sha256:bd80e453fc0061b9436423115c2e0ec51527d251da079ef484bf3a9519a829b0"
+        }
+      }
+    ],
+    "counts": {
+      "corrected_source_facts": 6,
+      "corrected_json_leaves": 7,
+      "initial_selected_fields_corrected": 4,
+      "initial_row_labels_corrected": 3,
+      "monetary_values_changed": 0,
+      "additional_post_outcome_voucher_fields": 6,
+      "ambiguous_selected_voucher_fields": 3
+    },
+    "rejected_erratum": "Shortening row9 voucher08031000006 is rejected; the source has11 glyphs and the original oracle was right.",
+    "agreement_limit": "The corrected small-text facts and added voucher fields are not counted as blind-oracle agreement. All142 money occurrences remain the original blind source assertions."
+  }
+}

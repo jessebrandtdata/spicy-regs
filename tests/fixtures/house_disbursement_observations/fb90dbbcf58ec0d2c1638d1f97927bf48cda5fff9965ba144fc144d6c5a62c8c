@@ -1,0 +1,398 @@
+{
+  "actual_images_manually_reviewed": [
+    {
+      "bytes": 1935899,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p17-rotation90-300dpi.png",
+      "sha256": "f57fb3719fd8ba9c5599fa4797f7c3250528c9289e11037ce4ffbf9437e6987b"
+    },
+    {
+      "bytes": 2467750,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p33-rotation90-300dpi.png",
+      "sha256": "5ddd2d1b61e9166b773a17afacb11b64c5fe5659a7430c73822fffb374aeba4e"
+    },
+    {
+      "bytes": 1952450,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p49-rotation90-300dpi.png",
+      "sha256": "f4e0e9251dc73cb2afdb9ae66b7f2196d21f41695b729b2c2b6640651b4eaced"
+    }
+  ],
+  "crop_provenance": {
+    "bytes": 6686,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crop-provenance.json",
+    "sha256": "02adf2a8683d2cb417d8bc072a3ed0d96955c4f29f16cf52348bce7888309343"
+  },
+  "disposition": "Approve the 114 aligned absent detail YTD entries and 153 payroll prefix blanks as explicit empty literals. Preserve eight spanning-label totals as label plus quarterly amount and ten paired summary rows as distinct paired values. No zeros or printed headers may be inferred.",
+  "independently_read_row_membership": {
+    "17": {
+      "detail": [
+        30,
+        31,
+        32,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "paired": [],
+      "payroll": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27
+      ],
+      "span": [
+        28,
+        29,
+        33
+      ]
+    },
+    "33": {
+      "detail": [
+        29,
+        30,
+        31,
+        32,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43
+      ],
+      "paired": [
+        1,
+        2
+      ],
+      "payroll": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "span": [
+        27,
+        28,
+        33
+      ]
+    },
+    "49": {
+      "detail": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40,
+        41,
+        42,
+        43
+      ],
+      "paired": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "payroll": [],
+      "span": [
+        15,
+        39
+      ]
+    }
+  },
+  "limits": [
+    "This confirms source structure only. No normalization proposal, adapter or candidate output was read for these judgments.",
+    "Absence of an aligned monetary entry does not establish zero or a missing numerical value. The pages do not have separately drawn vertical cells.",
+    "The eight spanning labels do not authorize independently empty YTD cells or 12 additional payroll-subtotal prefix placeholders.",
+    "Existing raw OCR outputs, six exact voucher repairs, O/0 ambiguity, headerless office boundaries and dates remain unchanged.",
+    "Original PDF custody and original-render derivation reuse the pinned completed raw review; images/crops were rehashed and crop pixels checked here.",
+    "Coordinates remain review annotations. This does not authorize adding model geometry or propagating these three-page decisions to other pages."
+  ],
+  "model_calls": 0,
+  "network_calls": 0,
+  "prior_qualified_source_readback": {
+    "bytes": 10680,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/completion.json",
+    "sha256": "41952bac8b9ffb4058a3616e1301700b0715ae741569479da8e492411b4ca50b"
+  },
+  "producer_imports": false,
+  "script": {
+    "bytes": 7204,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/structural-source-second-review-v1/check_source.py",
+    "sha256": "cd40942da449f48fa7cdd68ef5830f93e40201c8093bb52a9cc4df663472548b"
+  },
+  "source_counts": {
+    "detail_YTD_blanks": 114,
+    "financial_rows": 132,
+    "paired_summary_rows": 10,
+    "payroll_prefix_blanks": 153,
+    "spanning_total_rows_not_blank_YTD_cells": 8
+  },
+  "source_crop_checks": [
+    {
+      "box": [
+        280,
+        160,
+        3315,
+        250
+      ],
+      "crop": {
+        "bytes": 59009,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crops/p13-printed-header.png",
+        "sha256": "e2782a17fd83309acc57b1cd966f2d67dc469209e4ed598b6d9cb31d11816f40"
+      },
+      "manually_viewed": true,
+      "original": {
+        "bytes": 1960857,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/historical-expansion/house-2008q1-page13-rotation90-300dpi.png",
+        "sha256": "d2b122c786da6ec654795cbe60015192ab10d4922dbe4c0fc5735b2bc625c433"
+      },
+      "pixels_equal": true
+    },
+    {
+      "box": [
+        260,
+        60,
+        615,
+        1160
+      ],
+      "crop": {
+        "bytes": 27511,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crops/p17-payroll-empty-prefix.png",
+        "sha256": "6c9f3edac058277c124c6cb75b4b064dade2a42307ede82e203a37a53d061f41"
+      },
+      "manually_viewed": true,
+      "original": {
+        "bytes": 1935899,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p17-rotation90-300dpi.png",
+        "sha256": "f57fb3719fd8ba9c5599fa4797f7c3250528c9289e11037ce4ffbf9437e6987b"
+      },
+      "pixels_equal": true
+    },
+    {
+      "box": [
+        260,
+        250,
+        615,
+        1190
+      ],
+      "crop": {
+        "bytes": 24899,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crops/p33-payroll-empty-prefix.png",
+        "sha256": "2936d06c31a46bc662c1304c48dc3e8844e6e9efbc45f7faaeecb6144460cbf9"
+      },
+      "manually_viewed": true,
+      "original": {
+        "bytes": 2467750,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p33-rotation90-300dpi.png",
+        "sha256": "5ddd2d1b61e9166b773a17afacb11b64c5fe5659a7430c73822fffb374aeba4e"
+      },
+      "pixels_equal": true
+    },
+    {
+      "box": [
+        2740,
+        65,
+        3030,
+        1170
+      ],
+      "crop": {
+        "bytes": 43472,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crops/p17-payroll-ytd-position.png",
+        "sha256": "21bd4dcfb0818f7b497e3089cdfe8042af0c39c277ddc4eddf59b3f52b1bc9e1"
+      },
+      "manually_viewed": true,
+      "original": {
+        "bytes": 1935899,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p17-rotation90-300dpi.png",
+        "sha256": "f57fb3719fd8ba9c5599fa4797f7c3250528c9289e11037ce4ffbf9437e6987b"
+      },
+      "pixels_equal": true
+    },
+    {
+      "box": [
+        2740,
+        250,
+        3030,
+        1260
+      ],
+      "crop": {
+        "bytes": 61480,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crops/p33-payroll-ytd-position.png",
+        "sha256": "017d9db4ce90e14a211e553d03f4ad3f501769eac7cfb4b9bf731ad68c487b72"
+      },
+      "manually_viewed": true,
+      "original": {
+        "bytes": 2467750,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p33-rotation90-300dpi.png",
+        "sha256": "5ddd2d1b61e9166b773a17afacb11b64c5fe5659a7430c73822fffb374aeba4e"
+      },
+      "pixels_equal": true
+    },
+    {
+      "box": [
+        2750,
+        65,
+        3310,
+        805
+      ],
+      "crop": {
+        "bytes": 93293,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crops/p49-summary-and-detail-money-positions.png",
+        "sha256": "0fc023c95be412f7e14fd17df970e50b6f18a1a3a82f9dcb315a5fa67fe4f497"
+      },
+      "manually_viewed": true,
+      "original": {
+        "bytes": 1952450,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p49-rotation90-300dpi.png",
+        "sha256": "f4e0e9251dc73cb2afdb9ae66b7f2196d21f41695b729b2c2b6640651b4eaced"
+      },
+      "pixels_equal": true
+    },
+    {
+      "box": [
+        2740,
+        1530,
+        3310,
+        1985
+      ],
+      "crop": {
+        "bytes": 50352,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/crops/p49-travel-total-and-transfer-money.png",
+        "sha256": "c3f828f11d82538267080c1def3bddde4ce7be256cf6cdf02c5484ede96e1860"
+      },
+      "manually_viewed": true,
+      "original": {
+        "bytes": 1952450,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/images/house-2008q1-part1-p49-rotation90-300dpi.png",
+        "sha256": "f4e0e9251dc73cb2afdb9ae66b7f2196d21f41695b729b2c2b6640651b4eaced"
+      },
+      "pixels_equal": true
+    }
+  ],
+  "source_declaration_mutations": [
+    {
+      "copy": {
+        "bytes": 214403,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/structural-source-second-review-v1/invent_subtotal_YTD_blank.json",
+        "sha256": "477b604b2f6b31dfbb7b3a54d5060653c486faa1180ac6bd66292d51333ae71b"
+      },
+      "detected": [
+        "p17r28:label_spans_YTD_no_independent_blank"
+      ],
+      "name": "invent_subtotal_YTD_blank"
+    },
+    {
+      "copy": {
+        "bytes": 214405,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/structural-source-second-review-v1/turn_payroll_prefix_blank_into_zero.json",
+        "sha256": "8b939c3216815e06ededfb8db2a7b4354f3b8e9fab617a5ad8081a3e50ce5d9c"
+      },
+      "detected": [
+        "p33r3:payroll_visible_prefix_blanks"
+      ],
+      "name": "turn_payroll_prefix_blank_into_zero"
+    },
+    {
+      "copy": {
+        "bytes": 214414,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/structural-source-second-review-v1/invent_header.json",
+        "sha256": "7d918c08ac8ef27e67ff2471d4a82dc37024f090740ef90de24e5278d5b8e9c2"
+      },
+      "detected": [
+        "p49r9:invented_header_literal"
+      ],
+      "name": "invent_header"
+    }
+  ],
+  "source_oracle": {
+    "bytes": 214401,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-oracle.json",
+    "sha256": "12736ab402c972b0ca771b352381228ba148407c7a694b40caedf2249be0f3a7"
+  },
+  "status": "source_structure_approved"
+}

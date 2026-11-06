@@ -1,0 +1,444 @@
+{
+  "schema": "source-position-array-proposal-check/1",
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/check_structural_proposal.py",
+    "sha256": "sha256:c8c3d0e9aeca84f0cd6b69439c267e87407b2fb1ff5b106047f1ea72b4bad6ab",
+    "bytes": 7961
+  },
+  "proposal": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/proposal.json",
+    "sha256": "sha256:569712c840c44758bee1dc5776d7142dfed6941c0681aef445a1eeea151cca53",
+    "bytes": 91572
+  },
+  "source_oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/source-oracle.json",
+    "sha256": "sha256:12736ab402c972b0ca771b352381228ba148407c7a694b40caedf2249be0f3a7",
+    "bytes": 214401
+  },
+  "source_literals": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/three-page-source-oracle-v2.json",
+    "sha256": "sha256:3b7e17cf3c8061051d35c9f0c1eef90f3df46e360d093e64a55c1bf64aae7a3a",
+    "bytes": 80881
+  },
+  "pages": [
+    {
+      "source_page": 17,
+      "input": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0017-0032/observation-00000.json",
+        "sha256": "sha256:845102dbc3b48745442208907afb2ed94ebdaa3ea5f4fa4c6a8471adf61264ae",
+        "bytes": 14729
+      },
+      "proposed_outcome": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p17-proposed-outcome.json",
+        "sha256": "sha256:7aa17450008d1773857d6e11916ab526dbb7ab106f9d341ad874521fbf4e2733",
+        "bytes": 13735
+      },
+      "source_result": {
+        "errors": [],
+        "counts": {
+          "detail_rows": 43,
+          "explicit_detail_ytd_blanks": 43,
+          "explicit_payroll_prefix_blanks": 81,
+          "money_occurrences": 46,
+          "zero_occurrences": 0,
+          "negative_occurrences": 0,
+          "spanning_label_rows": 3
+        }
+      },
+      "nonempty_literals_contexts_and_other_outcome_fields_exact": true
+    },
+    {
+      "source_page": 33,
+      "input": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/house-2008-01-01-pdf-part-1-p0033-0048/observation-00000.json",
+        "sha256": "sha256:76fda364dcf6744e5b83eedcaaa81b863bb3ce9028adfc199b1ce5d80f4fb30b",
+        "bytes": 17979
+      },
+      "proposed_outcome": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p33-proposed-outcome.json",
+        "sha256": "sha256:4585eaa658928b29b1e907b071395f757bc53cadec3a94de1befb3e771b0b9f7",
+        "bytes": 14762
+      },
+      "source_result": {
+        "errors": [],
+        "counts": {
+          "paired_summary_rows": 2,
+          "money_occurrences": 45,
+          "zero_occurrences": 0,
+          "negative_occurrences": 0,
+          "detail_rows": 38,
+          "explicit_detail_ytd_blanks": 38,
+          "explicit_payroll_prefix_blanks": 72,
+          "spanning_label_rows": 3
+        }
+      },
+      "nonempty_literals_contexts_and_other_outcome_fields_exact": true
+    },
+    {
+      "source_page": 49,
+      "input": {
+        "bytes": 19074,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-normalized-v1/house-2008q1-part1-p49/normalized-observation.json",
+        "sha256": "sha256:133d4885f3f1d5e08543768b136fde810d49799306f10eede74187ef487a8a1a"
+      },
+      "proposed_outcome": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p49-proposed-outcome.json",
+        "sha256": "sha256:8e85e969a349c2e301d639fc89eda69d2bf186463a8e9c608b674b2d08ad13a5",
+        "bytes": 13308
+      },
+      "source_result": {
+        "errors": [],
+        "counts": {
+          "paired_summary_rows": 8,
+          "money_occurrences": 51,
+          "zero_occurrences": 3,
+          "negative_occurrences": 2,
+          "detail_rows": 33,
+          "explicit_detail_ytd_blanks": 33,
+          "spanning_label_rows": 2
+        }
+      },
+      "nonempty_literals_contexts_and_other_outcome_fields_exact": true
+    }
+  ],
+  "counts": {
+    "detail_rows": 114,
+    "explicit_detail_ytd_blanks": 114,
+    "explicit_payroll_prefix_blanks": 153,
+    "money_occurrences": 142,
+    "zero_occurrences": 3,
+    "negative_occurrences": 2,
+    "spanning_label_rows": 8,
+    "paired_summary_rows": 10
+  },
+  "challenges": [
+    {
+      "id": "fill_payroll_ytd_with_zero",
+      "source_page": 17,
+      "pristine": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p17-proposed-outcome.json",
+        "sha256": "sha256:7aa17450008d1773857d6e11916ab526dbb7ab106f9d341ad874521fbf4e2733",
+        "bytes": 13735
+      },
+      "copy": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/proposal-challenges/fill_payroll_ytd_with_zero.json",
+        "sha256": "sha256:dd10197159f623f07207832c23eec951ab4de0367f4ba44d78307a0555987209",
+        "bytes": 13739
+      },
+      "source_failure_kind": "source_absent_ytd",
+      "errors": [
+        {
+          "kind": "source_absent_ytd",
+          "row": 1,
+          "observed": "0.00"
+        }
+      ]
+    },
+    {
+      "id": "fill_blank_payroll_date",
+      "source_page": 17,
+      "pristine": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p17-proposed-outcome.json",
+        "sha256": "sha256:7aa17450008d1773857d6e11916ab526dbb7ab106f9d341ad874521fbf4e2733",
+        "bytes": 13735
+      },
+      "copy": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/proposal-challenges/fill_blank_payroll_date.json",
+        "sha256": "sha256:252368a53cb7d1e9a301a7417511b2b17cd5d7f25aad01eebf9a3b6b758661dc",
+        "bytes": 13740
+      },
+      "source_failure_kind": "source_payroll_prefix_blank",
+      "errors": [
+        {
+          "kind": "source_payroll_prefix_blank",
+          "row": 1,
+          "field": "posting_date",
+          "observed": "01-01"
+        },
+        {
+          "kind": "source_literal",
+          "row": 1,
+          "field": "posting_date",
+          "expected": "",
+          "observed": "01-01"
+        }
+      ]
+    },
+    {
+      "id": "drop_true_zero",
+      "source_page": 49,
+      "pristine": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p49-proposed-outcome.json",
+        "sha256": "sha256:8e85e969a349c2e301d639fc89eda69d2bf186463a8e9c608b674b2d08ad13a5",
+        "bytes": 13308
+      },
+      "copy": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/proposal-challenges/drop_true_zero.json",
+        "sha256": "sha256:47a59f4da2c95494e8fbd8fc32ee25b9d3cbba571dc74b83e07979bdde1ed118",
+        "bytes": 13304
+      },
+      "source_failure_kind": "money_literal",
+      "errors": [
+        {
+          "kind": "money_literal",
+          "row": 2,
+          "role": "right_amount_position",
+          "expected": "0.00",
+          "observed": ""
+        }
+      ]
+    },
+    {
+      "id": "invent_header",
+      "source_page": 33,
+      "pristine": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p33-proposed-outcome.json",
+        "sha256": "sha256:4585eaa658928b29b1e907b071395f757bc53cadec3a94de1befb3e771b0b9f7",
+        "bytes": 14762
+      },
+      "copy": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/proposal-challenges/invent_header.json",
+        "sha256": "sha256:48e424155f8f5a30ebf77c6a42a3539deaca548f43e31331542df8188e01ec9b",
+        "bytes": 14772
+      },
+      "source_failure_kind": "invented_header",
+      "errors": [
+        {
+          "kind": "invented_header",
+          "table": 1
+        }
+      ]
+    },
+    {
+      "id": "invent_subtotal_ytd_slot",
+      "source_page": 17,
+      "pristine": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p17-proposed-outcome.json",
+        "sha256": "sha256:7aa17450008d1773857d6e11916ab526dbb7ab106f9d341ad874521fbf4e2733",
+        "bytes": 13735
+      },
+      "copy": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/proposal-challenges/invent_subtotal_ytd_slot.json",
+        "sha256": "sha256:aeab2e0d741639f4d6d72ef8c909c893cc7de16f38fdd492532cb82f0c7360b1",
+        "bytes": 13763
+      },
+      "source_failure_kind": "source_row_span",
+      "errors": [
+        {
+          "kind": "array_arity",
+          "table": 1,
+          "row": 1
+        },
+        {
+          "kind": "source_row_span",
+          "row": 28,
+          "expected_slots": 2,
+          "observed_slots": 3
+        }
+      ]
+    },
+    {
+      "id": "drop_repeated_subtotal",
+      "source_page": 33,
+      "pristine": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/p33-proposed-outcome.json",
+        "sha256": "sha256:4585eaa658928b29b1e907b071395f757bc53cadec3a94de1befb3e771b0b9f7",
+        "bytes": 14762
+      },
+      "copy": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-raw-review-v2/structural-normalization-v1/proposal-challenges/drop_repeated_subtotal.json",
+        "sha256": "sha256:fa5355f4adfa23aa813dc629801b254358d8413672a2fa012f82cd4539774f97",
+        "bytes": 14576
+      },
+      "source_failure_kind": "row_count",
+      "errors": [
+        {
+          "kind": "row_count"
+        },
+        {
+          "kind": "source_row_span",
+          "row": 28,
+          "expected_slots": 2,
+          "observed_slots": 9
+        },
+        {
+          "kind": "money_literal",
+          "row": 29,
+          "role": "right_amount_position",
+          "expected": "338.33",
+          "observed": "86.42"
+        },
+        {
+          "kind": "money_literal",
+          "row": 30,
+          "role": "right_amount_position",
+          "expected": "86.42",
+          "observed": "3.96"
+        },
+        {
+          "kind": "money_literal",
+          "row": 31,
+          "role": "right_amount_position",
+          "expected": "3.96",
+          "observed": "23.55"
+        },
+        {
+          "kind": "source_row_span",
+          "row": 32,
+          "expected_slots": 9,
+          "observed_slots": 2
+        },
+        {
+          "kind": "source_row_span",
+          "row": 33,
+          "expected_slots": 2,
+          "observed_slots": 9
+        },
+        {
+          "kind": "source_row_label",
+          "row": 34,
+          "observed": "JOHN STIPICEVIC"
+        },
+        {
+          "kind": "money_literal",
+          "row": 34,
+          "role": "right_amount_position",
+          "expected": "18.00",
+          "observed": "20.00"
+        },
+        {
+          "kind": "source_row_label",
+          "row": 35,
+          "observed": "KYLE WILLIAM NEVINS"
+        },
+        {
+          "kind": "money_literal",
+          "row": 35,
+          "role": "right_amount_position",
+          "expected": "20.00",
+          "observed": "13.00"
+        },
+        {
+          "kind": "source_row_label",
+          "row": 36,
+          "observed": "MATTHEW BRAVO"
+        },
+        {
+          "kind": "money_literal",
+          "row": 36,
+          "role": "right_amount_position",
+          "expected": "13.00",
+          "observed": "27.00"
+        },
+        {
+          "kind": "source_row_label",
+          "row": 37,
+          "observed": "DO"
+        },
+        {
+          "kind": "money_literal",
+          "row": 37,
+          "role": "right_amount_position",
+          "expected": "27.00",
+          "observed": "25.00"
+        },
+        {
+          "kind": "source_row_label",
+          "row": 38,
+          "observed": "BRIAN S. GASTON"
+        },
+        {
+          "kind": "money_literal",
+          "row": 38,
+          "role": "right_amount_position",
+          "expected": "25.00",
+          "observed": "61.00"
+        },
+        {
+          "kind": "source_row_label",
+          "row": 39,
+          "observed": "MICHAEL J. FERENCE"
+        },
+        {
+          "kind": "money_literal",
+          "row": 39,
+          "role": "right_amount_position",
+          "expected": "61.00",
+          "observed": "9.00"
+        },
+        {
+          "kind": "source_row_label",
+          "row": 40,
+          "observed": "MARSHALL T KINNE"
+        },
+        {
+          "kind": "money_literal",
+          "row": 40,
+          "role": "right_amount_position",
+          "expected": "9.00",
+          "observed": "25.00"
+        },
+        {
+          "kind": "source_row_label",
+          "row": 41,
+          "observed": "MATTHEW BRAVO"
+        },
+        {
+          "kind": "money_literal",
+          "row": 41,
+          "role": "right_amount_position",
+          "expected": "25.00",
+          "observed": "18.00"
+        },
+        {
+          "kind": "source_row_label",
+          "row": 42,
+          "observed": "DO"
+        },
+        {
+          "kind": "money_literal",
+          "row": 42,
+          "role": "right_amount_position",
+          "expected": "18.00",
+          "observed": "38.00"
+        },
+        {
+          "kind": "source_literal",
+          "row": 39,
+          "field": "voucher",
+          "expected": "08NW0100090",
+          "observed": "08NW0100091"
+        },
+        {
+          "kind": "source_literal",
+          "row": 39,
+          "field": "payee",
+          "expected": "BRIAN S. GASTON",
+          "observed": "MICHAEL J. FERENCE"
+        },
+        {
+          "kind": "source_literal",
+          "row": 39,
+          "field": "service_start",
+          "expected": "12/05/07",
+          "observed": "01/22/08"
+        },
+        {
+          "kind": "source_literal",
+          "row": 39,
+          "field": "service_end",
+          "expected": "02/01/08",
+          "observed": "01/22/08"
+        },
+        {
+          "kind": "source_literal",
+          "row": 31,
+          "field": "voucher",
+          "expected": "08088100002",
+          "observed": "08088000277"
+        }
+      ]
+    }
+  ],
+  "scope": "Proposed manual-normalization outcomes and six proposal copies only; no actual producer/helper application or publication acceptance. Check uses original-image source roles/literals rather than normalizer implementation."
+}

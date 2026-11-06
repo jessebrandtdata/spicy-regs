@@ -31,10 +31,6 @@ def read_source_pages(source, body, profile):
 
     module = import_module(reader_module(source["chamber"], profile))
     reader = getattr(module, READERS[source["chamber"], profile][1])
-    if source.get("structured_observations"):
-        if (source["chamber"], profile) != ("senate", "financial-summary"):
-            raise ValueError("Retained structured observations are supported only for Senate financial summaries")
-        return _structured_summary_pages(source, body, reader)
     options = {}
     if "reading_pages" in source:
         options["pages"] = source["reading_pages"]
@@ -43,10 +39,14 @@ def read_source_pages(source, body, profile):
             report_period_start=date.fromisoformat(source["period_start"]),
             report_period_end=date.fromisoformat(source["period_end"]),
         )
+    if source.get("structured_observations"):
+        if (source["chamber"], profile) not in {("senate", "financial-summary"), ("house", "ledger")}:
+            raise ValueError("This source/profile has no retained structured observation reader")
+        return _structured_pages(source, body, reader, profile, options)
     return reader(body, **options)
 
 
-def _structured_summary_pages(source, body, native_reader):
+def _structured_pages(source, body, native_reader, profile, options):
     """Replay selected observations; no backend, new rendering or inferred boxes."""
     import hashlib
     from spicy_docs.extraction import DefaultReader
@@ -63,13 +63,13 @@ def _structured_summary_pages(source, body, native_reader):
             raise ValueError("Structured page original physical page count differs")
     selected = {item["page"]: item for item in source["structured_observations"]}
     native_pages = [page for page in source["reading_pages"] if page not in selected]
-    native = native_reader(body, pages=native_pages) if native_pages else iter(())
+    native = native_reader(body, **{**options, "pages": native_pages}) if native_pages else iter(())
     try:
         for page in source["reading_pages"]:
             if page not in selected:
                 yield next(native)
                 continue
-            yield read_retained_summary_observation(selected[page])
+            yield read_retained_observation(selected[page], chamber=source["chamber"], profile=profile)
     finally:
         close_native = getattr(native, "close", None)
         if callable(close_native):
@@ -97,6 +97,45 @@ def read_retained_summary_observation(item):
     )
 
 
+def read_retained_observation(item, *, chamber, profile):
+    """Dispatch exact retained evidence through its source-owned interpretation."""
+    if (chamber, profile) == ("senate", "financial-summary"):
+        return read_retained_summary_observation(item)
+    if (chamber, profile) != ("house", "ledger"):
+        raise ValueError("No retained observation reader for this source/profile")
+    import json
+    from PIL import Image
+    from spicy_docs.extraction import Raster
+    from spicy_docs.reading.ocr_observations import retained_capture_observation
+    from spicy_docs.reading.house_disbursements_observations import read_house_ledger_observation
+    from spicy_regs.pipelines.congressional_disbursement_pages import verify_pin
+
+    for key in ("result", "image", "page_record", "request", "response", "plan", "qualification"):
+        if item[key]["bytes"] > (16 if key == "image" else 32) * 1024**2:
+            raise ValueError("Retained House observation exceeds its bounded input size")
+    image_path = verify_pin(item["image"])
+    with Image.open(image_path) as image:
+        if image.format != "PNG" or image.width * image.height > 40_000_000:
+            raise ValueError("Unsupported or oversized retained House page raster")
+        raster = Raster(image_path.read_bytes(), image.width, image.height)
+    qualification = json.loads(verify_pin(item["qualification"]).read_text())
+    outcome, configuration = retained_capture_observation(
+        verify_pin(item["result"]).read_bytes(),
+        raster,
+        page_bytes=verify_pin(item["page_record"]).read_bytes(),
+        request_gzip=verify_pin(item["request"]).read_bytes(),
+        response_bytes=verify_pin(item["response"]).read_bytes(),
+        plan_bytes=verify_pin(item["plan"]).read_bytes(),
+        binding=item["capture_binding"],
+    )
+    return read_house_ledger_observation(
+        outcome,
+        binding=qualification["binding"],
+        qualification=qualification,
+        configuration=configuration,
+    )
+
+
 def record_kind(row):
     return row.get("row_kind") or row.get("table_kind") or "unresolved_summary_kind"
 
@@ -105,6 +144,12 @@ def validate_page_content(page, profile):
     """Check retained indices and row occurrence identity, without reinterpreting cells."""
     if profile == "allowance-formula":
         import_module(reader_module("house", profile)).validate_formula_page(page)
+        return
+    if page.get("reading_method") == "reviewed_structured_observation":
+        if profile != "ledger":
+            raise ValueError("Reviewed House ledger cannot enter another reading profile")
+        module = import_module("spicy_docs.reading.house_disbursements_observations")
+        module.validate_house_ledger_observation(page)
         return
     if page.get("reading_method") == "qualified_structured_observation":
         if profile != "financial-summary":
