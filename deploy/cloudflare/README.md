@@ -218,6 +218,13 @@ calls `getContainer` without a name, so every request reaches one container.
 More instances would each run their own cold build against the bucket.
 Re-measure after changes.
 
+`list_sources` and `describe_table` have a 15-second request budget, including
+worker admission and input reads, so a stalled discovery can return a terminal
+MCP tool error (`isError: true`) before the ordinary client's 20-second deadline.
+A shorter configured statement limit still applies. Query and receipt-reading
+budgets keep the configured statement limit. A failed refresh retains the prior
+connection; a later eligible call can recover without a restart.
+
 ### Separate MCP connection guide
 
 `MCP_GUIDE_URL` optionally redirects browser GET/HEAD requests for `/` to an

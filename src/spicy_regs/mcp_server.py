@@ -334,6 +334,9 @@ def _parse_timeout_seconds(raw: str) -> float | None:
 
 
 STATEMENT_TIMEOUT_SECONDS = _parse_timeout_seconds(STATEMENT_TIMEOUT)
+# Discovery must finish before the ordinary MCP client's 20-second deadline,
+# including worker admission and input reads. Queries retain their own budget.
+_DISCOVERY_TIMEOUT_SECONDS = 15.0
 
 INSTRUCTIONS = (
     "Query Spicy Regs public datasets across government and attributed third-party sources. "
@@ -2678,12 +2681,17 @@ def _tools() -> list[Tool]:
         characters). The reply's text block is the compact JSON of its structured
         content; the SDK's default text is the same object indented, sent twice.
         """
+        name = getattr(fn, "__name__", None)
 
         @functools.wraps(fn)
         async def call(**arguments: Any) -> CallToolResult:
-            bound = RequestBound(STATEMENT_TIMEOUT_SECONDS, f"Request exceeded the {STATEMENT_TIMEOUT} timeout, including input admission")
+            timeout = STATEMENT_TIMEOUT_SECONDS
+            label = STATEMENT_TIMEOUT
+            if name in ("list_sources", "describe_table"):
+                timeout = min(timeout, _DISCOVERY_TIMEOUT_SECONDS) if timeout is not None else _DISCOVERY_TIMEOUT_SECONDS
+                label = f"{timeout:g}s"
+            bound = RequestBound(timeout, f"Request exceeded the {label} timeout, including input admission")
             def run():
-                name = getattr(fn, "__name__", None)
                 # Receipt lookups admit their selected index themselves. Keep local
                 # native row validation, without restoring unrelated remote views.
                 remote_lookup = name == "read_receipt_fields" and DATA_DIR is None
@@ -2709,7 +2717,7 @@ def _tools() -> list[Tool]:
                     _discovery_only.reset(token)
                     _physical_receipt_lookup.reset(lookup_token)
             try:
-                with anyio.fail_after(STATEMENT_TIMEOUT_SECONDS):
+                with anyio.fail_after(timeout):
                     result = await anyio.to_thread.run_sync(run, limiter=limiter, abandon_on_cancel=True)
             except TimeoutError as exc:
                 raise ToolError(bound.label) from exc

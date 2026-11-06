@@ -290,6 +290,58 @@ def test_request_timeout_covers_cold_build_and_worker_stops(tmp_path, monkeypatc
     assert server._cached_connection is None
 
 
+def test_hosted_discovery_budget_returns_terminal_error_and_same_client_recovers(monkeypatch, record_property):
+    from starlette.testclient import TestClient
+    from tests.test_mcp_query_results import call
+    from tests.test_mcp_server import _make_local_connection
+
+    _make_local_connection(monkeypatch, server)
+    monkeypatch.setattr(server, "STATEMENT_TIMEOUT_SECONDS", 600)
+    monkeypatch.setattr(server, "STATEMENT_TIMEOUT", "600s")
+    original = server._get_connection
+    stalled, stopped = [True], Event()
+    query_budget = []
+
+    def connection():
+        if stalled[0]:
+            try:
+                while True:
+                    sleep(.005)
+                    checkpoint()
+            finally:
+                stopped.set()
+        held = current_bound()
+        assert held is not None and held.deadline is not None
+        query_budget.append(held.deadline - monotonic())
+        return original()
+
+    monkeypatch.setattr(server, "_get_connection", connection)
+    with TestClient(server.build_app()) as http:
+        started = monotonic()
+        failed = call(http, "list_sources", {})
+        terminal_seconds = monotonic() - started
+        record_property("terminal_error_seconds", terminal_seconds)
+        assert 14 <= terminal_seconds < 18
+        assert failed["isError"] is True
+        assert "15s timeout, including input admission" in failed["content"][0]["text"]
+        cleanup_started = monotonic()
+        assert stopped.wait(1)
+        record_property("remaining_cleanup_seconds", monotonic() - cleanup_started)
+        assert server._cached_discovery_connection is None
+        stalled[0] = False
+        recovery_started = monotonic()
+        recovered = call(http, "list_sources", {})
+        record_property("recovery_seconds", monotonic() - recovery_started)
+        assert recovered["isError"] is False
+        assert recovered["structuredContent"]["subjects"]
+        assert 0 < query_budget[-1] <= 15
+        queried = call(http, "query_sql", {"sql": "SELECT docket_count FROM agency_stats"})
+        assert queried["isError"] is False
+        assert _records(queried["structuredContent"]) == [{"docket_count": 1}]
+        assert query_budget[-1] > 590
+        record_property("query_budget_remaining_seconds", query_budget[-1])
+
+
 def test_external_tool_cancellation_stops_cold_worker(tmp_path, monkeypatch):
     selected_family(tmp_path, monkeypatch)
     monkeypatch.setattr(server, 'DATA_DIR', tmp_path)
