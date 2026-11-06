@@ -4,11 +4,11 @@
 
 **CBO letters in committee reports**
 
-One row per CBO cost-estimate letter reprinted in one committee report part, keyed `(package_id, part_id, letter_seq)`. The span indexes into the text the parent row's text_sha256 digests; letter_date is the letterhead's dateline.
+One row per CBO cost-estimate letter reprinted in one committee report part, keyed `(package_id, part_id, last_modified, letter_seq)`. The span indexes into the text the parent row's text_sha256 digests; letter_date is the letterhead's dateline.
 
 **Coverage.** Sampled. Every CBO cost-estimate letter located in the report parts of committee_reports whose cover declares the estimate; an omnibus report reprints several (CRPT-105hrpt149 has 11). A declared part with no located letter has no row here and cbo_letter_count 0 on its committee_reports row. *(measured 2026-10-31)*
 
-**Data quality.** (package_id, part_id) names the committee_reports row the letter was read from and letter_seq counts from zero in reading order within that part. A 1997-2011 letter's span runs from its heading or CBO letterhead through the enclosed estimate's "Estimate approved by ... Analysis." line; 118th-Congress letters end at the Director's attribution. letter_date is NULL where the letter prints no dateline, as every 118th-Congress letter does (its date is cbo_cost_estimates' publication date). Census 2026-10-31 over the 202 retained PDF and 199 committee-reports HTM bodies: 117 and 24 letters, 113 and 3 of them dated, 5 PDF letters a bare transmittal whose enclosure prints no approval line.
+**Data quality.** last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. (package_id, part_id, last_modified) names the committee_reports row the letter was read from and letter_seq counts from zero in reading order within that part. A 1997-2011 letter's span runs from its heading or CBO letterhead through the enclosed estimate's "Estimate approved by ... Analysis." line; 118th-Congress letters end at the Director's attribution. letter_date is NULL where the letter prints no dateline, as every 118th-Congress letter does (its date is cbo_cost_estimates' publication date). Census 2026-10-31 over the 202 retained PDF and 199 committee-reports HTM bodies: 117 and 24 letters, 113 and 3 of them dated, 5 PDF letters a bare transmittal whose enclosure prints no approval line.
 
 - **Parquet file:** `committee_report_cbo_letters.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
@@ -18,7 +18,7 @@ One row per CBO cost-estimate letter reprinted in one committee report part, key
 | Column | Type | Description |
 | --- | --- | --- |
 | `package_id` | `VARCHAR` | The report package the letter was read from. |
-| `part_id` | `VARCHAR` | The report part the letter was read from, spelled as `committee_reports.part_id`, so (package_id, part_id) is the parent row. |
+| `part_id` | `VARCHAR` | The report part the letter was read from, spelled as `committee_reports.part_id`, so (package_id, part_id, last_modified) is the parent row. |
 | `letter_seq` | `BIGINT` | Zero-based position of this letter in its part, in reading order. |
 | `estimate_heading` | `VARCHAR` | The section heading the letter opens on, as the committee spelled it, collapsed to one line where GPO wrapped it across two.  NULL where the letter opens on its CBO letterhead because no vocabulary heading precedes it (CRPT-111hrpt385-pt1 prints its heading after the letter). |
 | `letter_span_start` | `BIGINT` | Character offset of the letter in the extracted text the parent row's text_sha256 digests, counted from zero.  The letter is not carried in the row, so the span is how it is re-read. |

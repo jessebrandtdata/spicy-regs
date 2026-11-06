@@ -741,19 +741,21 @@
     {
       "child": "hearing_bill_links",
       "child_columns": [
-        "package_id"
+        "package_id",
+        "last_modified"
       ],
       "parent": "hearing_transcripts",
       "parent_columns": [
-        "package_id"
+        "package_id",
+        "last_modified"
       ],
-      "kind": "complete",
-      "reason": "",
+      "kind": "unmeasured",
+      "reason": "A link names its exact dated hearing revision; the rule digest and held date are not revision dates.",
       "measured_via": null,
-      "baseline_keys": 9,
+      "baseline_keys": 0,
       "baseline_missing": 0,
-      "floor_pct": 100.0,
-      "expected_cardinality": "unspecified",
+      "floor_pct": null,
+      "expected_cardinality": "one",
       "measurement": null
     },
     {
@@ -833,61 +835,36 @@
       "child": "report_sections",
       "child_columns": [
         "package_id",
-        "part_id"
+        "part_id",
+        "last_modified"
       ],
       "parent": "committee_reports",
       "parent_columns": [
         "package_id",
-        "part_id"
+        "part_id",
+        "last_modified"
       ],
-      "kind": "complete",
-      "reason": "Full selected-input measurement on 2026-09-27; immutable URLs, SQL and cardinality in join_measurements.json. Full-key hardening does not assert prior production amplification.",
+      "kind": "unmeasured",
+      "reason": "A section belongs to exactly one report part at its publisher revision.",
       "measured_via": null,
-      "baseline_keys": 146,
+      "baseline_keys": 0,
       "baseline_missing": 0,
-      "floor_pct": 100.0,
+      "floor_pct": null,
       "expected_cardinality": "one",
-      "measurement": {
-        "join": "report_sections.package_id+part_id -> committee_reports.package_id+part_id",
-        "kind": "complete",
-        "status": "OK",
-        "keys": 146,
-        "missing": 0,
-        "resolved_pct": 100.0,
-        "floor_pct": 100.0,
-        "baseline_keys": 146,
-        "baseline_missing": 0,
-        "examples": [],
-        "child_input_rows": 1953,
-        "child_nonnull_rows": 1953,
-        "parent_input_rows": 146,
-        "parent_distinct_keys": 146,
-        "parent_duplicate_keys": 0,
-        "max_parent_multiplicity": 1,
-        "max_matched_parent_multiplicity": 1,
-        "inner_join_rows": 1953,
-        "left_join_nonnull_rows": 1953,
-        "scope": "full_selected_inputs",
-        "child_urls": [
-          "https://pub-72e95c0c20a84508b42b03a6ff6d55f8.r2.dev/generations/committee-reports/607484a1c1e29358d36adf33a94852e26500531d6b6c7212669c1451d31a8aba/report_sections.parquet"
-        ],
-        "parent_urls": [
-          "https://pub-72e95c0c20a84508b42b03a6ff6d55f8.r2.dev/generations/committee-reports/607484a1c1e29358d36adf33a94852e26500531d6b6c7212669c1451d31a8aba/committee_reports.parquet"
-        ],
-        "sql": "\n        WITH child_input AS (SELECT \"package_id\", \"part_id\" FROM read_parquet(['https://pub-72e95c0c20a84508b42b03a6ff6d55f8.r2.dev/generations/committee-reports/607484a1c1e29358d36adf33a94852e26500531d6b6c7212669c1451d31a8aba/report_sections.parquet'], hive_partitioning = false)),\n             parent_input AS (SELECT \"package_id\", \"part_id\" FROM read_parquet(['https://pub-72e95c0c20a84508b42b03a6ff6d55f8.r2.dev/generations/committee-reports/607484a1c1e29358d36adf33a94852e26500531d6b6c7212669c1451d31a8aba/committee_reports.parquet'], hive_partitioning = false)),\n             c AS (SELECT \"package_id\" AS c0, \"part_id\" AS c1, count(*) AS child_rows\n                   FROM child_input WHERE \"package_id\" IS NOT NULL AND \"part_id\" IS NOT NULL\n                   GROUP BY ALL),\n             p AS (SELECT \"package_id\" AS p0, \"part_id\" AS p1, count(*) AS parent_rows\n                   FROM parent_input WHERE \"package_id\" IS NOT NULL AND \"part_id\" IS NOT NULL\n                   GROUP BY ALL),\n             j AS (SELECT c0, c1, child_rows, coalesce(parent_rows, 0) AS parent_rows\n                   FROM c LEFT JOIN p ON c.c0 = p.p0 AND c.c1 = p.p1)\n        SELECT count(*) AS keys, count(*) FILTER (WHERE parent_rows=0) AS missing,\n               (list(concat_ws('|', c0, c1) ORDER BY c0, c1) FILTER (WHERE parent_rows=0))[1:3] AS examples,\n               (SELECT count(*) FROM child_input) AS child_input_rows,\n               coalesce(sum(child_rows),0) AS child_nonnull_rows,\n               (SELECT count(*) FROM parent_input) AS parent_input_rows,\n               (SELECT count(*) FROM p) AS parent_distinct_keys,\n               (SELECT count(*) FROM p WHERE parent_rows>1) AS parent_duplicate_keys,\n               coalesce((SELECT max(parent_rows) FROM p),0) AS max_parent_multiplicity,\n               coalesce(max(parent_rows),0) AS max_matched_parent_multiplicity,\n               coalesce(sum(child_rows*parent_rows),0) AS inner_join_rows,\n               coalesce(sum(child_rows*greatest(parent_rows,1)),0) AS left_join_nonnull_rows\n        FROM j",
-        "expected_cardinality": "one"
-      }
+      "measurement": null
     },
     {
       "child": "committee_report_cbo_letters",
       "child_columns": [
         "package_id",
-        "part_id"
+        "part_id",
+        "last_modified"
       ],
       "parent": "committee_reports",
       "parent_columns": [
         "package_id",
-        "part_id"
+        "part_id",
+        "last_modified"
       ],
       "kind": "empty",
       "reason": "Written by the committee-reports family from the spicy-docs reader that reads every CBO letter (ss-uep5); no generation publishes it yet.",
@@ -3952,7 +3929,7 @@
         "body_version_id"
       ],
       "kind": "unmeasured",
-      "reason": "Native subject keys replace source capture keys. The original measured relationship remains in processing_joins; this subject-key relationship has no measured baseline yet.",
+      "reason": "A body can occur in several dated metadata revisions. Historical navigation returns each matching parent revision; current citation reads first select the latest package revision.",
       "measured_via": null,
       "baseline_keys": 0,
       "baseline_missing": 0,
@@ -3972,7 +3949,7 @@
         "body_version_id"
       ],
       "kind": "unmeasured",
-      "reason": "Native subject keys replace source capture keys. The original measured relationship remains in processing_joins; this subject-key relationship has no measured baseline yet.",
+      "reason": "A body can occur in several dated metadata revisions. Historical navigation returns each matching parent revision; current citation reads first select the latest package revision.",
       "measured_via": null,
       "baseline_keys": 0,
       "baseline_missing": 0,
@@ -8452,8 +8429,8 @@
         "package_id",
         "text_sha256"
       ],
-      "kind": "scope",
-      "reason": "Package identity plus text digest binds these printed citations to this body. Other document kinds have different parents and remain unmatched in this navigation relationship. Parent keys were unique in the complete selected inputs checked on 2026-10-03; CI enforces that cardinality.",
+      "kind": "unmeasured",
+      "reason": "A body can occur in several dated metadata revisions. Historical navigation returns each matching parent revision; current citation reads first select the latest package revision.",
       "measured_via": null,
       "baseline_keys": 79,
       "baseline_missing": 53,
@@ -8505,8 +8482,8 @@
         "package_id",
         "text_sha256"
       ],
-      "kind": "scope",
-      "reason": "Package identity plus text digest binds these printed citations to this body. Other document kinds have different parents and remain unmatched in this navigation relationship. Parent keys were unique in the complete selected inputs checked on 2026-10-03; CI enforces that cardinality.",
+      "kind": "unmeasured",
+      "reason": "A body can occur in several dated metadata revisions. Historical navigation returns each matching parent revision; current citation reads first select the latest package revision.",
       "measured_via": null,
       "baseline_keys": 79,
       "baseline_missing": 38,
@@ -8935,11 +8912,13 @@
       },
       {
         "child_columns": [
-          "package_id"
+          "package_id",
+          "last_modified"
         ],
         "parent_table": "hearing_transcripts",
         "parent_columns": [
-          "package_id"
+          "package_id",
+          "last_modified"
         ]
       }
     ],
@@ -9202,12 +9181,14 @@
       {
         "child_columns": [
           "package_id",
-          "part_id"
+          "part_id",
+          "last_modified"
         ],
         "parent_table": "committee_reports",
         "parent_columns": [
           "package_id",
-          "part_id"
+          "part_id",
+          "last_modified"
         ]
       }
     ],
@@ -9215,12 +9196,14 @@
       {
         "child_columns": [
           "package_id",
-          "part_id"
+          "part_id",
+          "last_modified"
         ],
         "parent_table": "committee_reports",
         "parent_columns": [
           "package_id",
-          "part_id"
+          "part_id",
+          "last_modified"
         ]
       }
     ],

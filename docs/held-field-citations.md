@@ -30,7 +30,7 @@ input stops the run.
 | Kind | Full source identity | Literal field |
 |---|---|---|
 | `bill_section` | `bill_id, version_code, source, seq` | `bill_sections.body` |
-| `report_section` | `package_id, part_id, seq` | `report_sections.body` |
+| `report_section` | `package_id, part_id, last_modified, seq` | `report_sections.body` |
 | `lobbying_activity` | `filing_uuid, activity_index` | `lobbying_activities.description` |
 | `comment_inline` | `comment_id` | `comments.comment` |
 

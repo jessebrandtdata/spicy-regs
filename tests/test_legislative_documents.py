@@ -23,7 +23,10 @@ def required_subject(dataset, values):
 
 
 def row(dataset, **values):
-    return {f["name"]: None for f in field_registry()[dataset]["fields"]} | values
+    return {f["name"]: None for f in field_registry()[dataset]["fields"]} | (
+        {"last_modified": "2026-09-18T12:00:00Z"} if dataset in {"budget_volumes", "house_activity_reports",
+        "committee_reports", "report_sections", "committee_report_cbo_letters", "hearing_transcripts", "hearing_bill_links"}
+        else {}) | values
 
 
 def printing(dataset, **values):

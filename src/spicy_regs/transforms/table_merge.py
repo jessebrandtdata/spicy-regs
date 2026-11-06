@@ -519,6 +519,16 @@ def merge_table(
 
     # 2. Shape the freshly fetched rows into a "new rows" parquet.
     row_list = list(rows)
+    from spicy_regs.govinfo_revisions import DATED_TABLES, revision_instant
+
+    if name in DATED_TABLES and "last_modified" in identity:
+        # Refuse before the generic NULL-identity filter can erase an undated
+        # input or prior. The retained source and selected prior stay untouched.
+        for row in row_list:
+            revision_instant(row.get("last_modified"))
+        if have_prior:
+            if "last_modified" not in pq.read_schema(prior_file).names:
+                raise ValueError(f"{name}: prior lacks publisher last_modified; rebuild from retained originals")
     table = pa.Table.from_pylist(row_list, schema=schema) if row_list else schema.empty_table()
     pq.write_table(table, new_file, compression="zstd")
     logger.info("{}: {:,} fresh rows this run", name, len(row_list))
@@ -534,6 +544,35 @@ def merge_table(
     # version column, not by whichever the scan happened to reach first, so a
     # re-run over the same input produces the same file.
     newest = f"_src DESC, {version_column} DESC" if version_column else "_src DESC"
+
+    if name in DATED_TABLES and "last_modified" in identity:
+        if have_prior and con.execute(
+            "SELECT EXISTS(SELECT 1 FROM read_parquet(?) WHERE last_modified IS NULL "
+            "OR NOT regexp_full_match(last_modified, "
+            "'\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})') "
+            "OR try_cast(last_modified AS TIMESTAMPTZ) IS NULL)", [str(prior_file)]
+        ).fetchone()[0]:
+            con.close()
+            raise ValueError(f"{name}: prior has missing or invalid last_modified; rebuild from retained originals")
+        # Two conflicting incoming readings at one coordinate have no chosen
+        # correction order. Refuse rather than make parquet scan order policy.
+        duplicate = con.execute(
+            f"SELECT {key_cols} FROM read_parquet(?) GROUP BY {key_cols} "
+            f"HAVING count(DISTINCT row({cols})) > 1 LIMIT 1", [str(new_file)]
+        ).fetchone()
+        if duplicate:
+            con.close()
+            raise ValueError(f"{name}: conflicting incoming rows at one publisher revision: {duplicate}")
+        digest = "sha256" if "sha256" in columns else "text_sha256" if "text_sha256" in columns else None
+        if have_prior and digest and set(identity + (digest,)) <= set(pq.read_schema(prior_file).names):
+            same = " AND ".join(f"p.{key} = n.{key}" for key in identity)
+            conflicts = con.execute(
+                f"SELECT count(*) FROM read_parquet(?) p JOIN read_parquet(?) n ON {same} "
+                f"WHERE p.{digest} IS DISTINCT FROM n.{digest}", [str(prior_file), str(new_file)]
+            ).fetchone()[0]
+            if conflicts:
+                logger.warning("{}: {} same-revision rereads changed {}; incoming corrections replace those "
+                               "readings, while retained receipts and originals keep their evidence", name, conflicts, digest)
 
     prior_select = ""
     prior_filter = ""

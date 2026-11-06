@@ -33,7 +33,7 @@ TEXT_SOURCES = {
         "house_communications", ("congress", "communication_type", "number"), "record_entry_text", "txt"
     ),
     "bill_section": TextSource("bill_sections", ("bill_id", "version_code", "printing_id", "seq"), "body", "txt"),
-    "report_section": TextSource("report_sections", ("package_id", "part_id", "seq"), "body", "txt"),
+    "report_section": TextSource("report_sections", ("package_id", "part_id", "last_modified", "seq"), "body", "txt"),
     "lobbying_activity": TextSource("lobbying_activities", ("filing_uuid", "activity_index"), "description", "txt"),
     "comment_inline": TextSource("comments", ("comment_id",), "comment", "htm"),
 }

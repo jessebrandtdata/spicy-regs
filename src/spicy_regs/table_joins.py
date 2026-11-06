@@ -251,7 +251,9 @@ JOINS: tuple[Join, ...] = (
           reason="Complete once committees lists every Congress: meetings keep the previous Congress, whose House "
                  "bodies hlfd00, hlvc00 and htzt00 are on no 119th list. Same local run and receipt."),
     _join("hearing_bill_links", "committee_system_code", "committees", "system_code", 4, 0),
-    _join("hearing_bill_links", "package_id", "hearing_transcripts", "package_id", 9, 0),
+    _join("hearing_bill_links", ("package_id", "last_modified"), "hearing_transcripts", ("package_id", "last_modified"), 0, 0, "unmeasured",
+          "A link names its exact dated hearing revision; the rule digest and held date are not revision dates.",
+          expected_cardinality="one"),
     _join("hearing_transcripts", ("congress", "chamber", "event_id"), "committee_meetings", ("congress", "chamber", "event_id"), 16, 0,
           reason="Complete since committee_meetings keeps the previous Congress: the 7 orphans of the first "
                  "baseline were 118th-Congress meetings it had not listed (join-gaps-2026-09-26/f/). Receipt "
@@ -262,8 +264,9 @@ JOINS: tuple[Join, ...] = (
           "from the reader over the 185 retained MODS (round 5, implementer E, 2026-10-03): 42 of 43 keys name a held "
           "meeting; CHRG-119hhrg60746's 417109 names none. Where Congress.gov's event_id also names one they agree "
           "21 of 21."),
-    _join("report_sections", ("package_id", "part_id"), "committee_reports", ("package_id", "part_id"), 142, 0),
-    _join("committee_report_cbo_letters", ("package_id", "part_id"), "committee_reports", ("package_id", "part_id"),
+    _join("report_sections", ("package_id", "part_id", "last_modified"), "committee_reports", ("package_id", "part_id", "last_modified"), 0, 0, "unmeasured",
+          "A section belongs to exactly one report part at its publisher revision.", expected_cardinality="one"),
+    _join("committee_report_cbo_letters", ("package_id", "part_id", "last_modified"), "committee_reports", ("package_id", "part_id", "last_modified"),
           0, 0, "empty", "Written by the committee-reports family from the spicy-docs reader that reads every CBO "
           "letter (ss-uep5); no generation publishes it yet."),
     _join("law_sections", "law_id", "laws", "law_id", 0, 0, "empty",
@@ -926,18 +929,16 @@ JOINS: tuple[Join, ...] = (
           expected_cardinality="one"),
     _join('document_citations', ('document_key', 'text_sha256'),
           'budget_volumes', ('package_id', 'text_sha256'),
-          79, 53, 'scope',
-          'Package identity plus text digest binds these printed citations to this body. Other document kinds have '
-          'different parents and remain unmatched in this navigation relationship. Parent keys were unique in the '
-          'complete selected inputs checked on 2026-10-03; CI enforces that cardinality.',
-          expected_cardinality="one"),
+          0, 0, 'unmeasured',
+          'A body can occur in several dated metadata revisions. Historical navigation returns each matching '
+          'parent revision; current citation reads first select the latest package revision.',
+          expected_cardinality="many"),
     _join('document_citations', ('document_key', 'text_sha256'),
           'house_activity_reports', ('package_id', 'text_sha256'),
-          79, 38, 'scope',
-          'Package identity plus text digest binds these printed citations to this body. Other document kinds have '
-          'different parents and remain unmatched in this navigation relationship. Parent keys were unique in the '
-          'complete selected inputs checked on 2026-10-03; CI enforces that cardinality.',
-          expected_cardinality="one"),
+          0, 0, 'unmeasured',
+          'A body can occur in several dated metadata revisions. Historical navigation returns each matching '
+          'parent revision; current citation reads first select the latest package revision.',
+          expected_cardinality="many"),
     _join('house_activity_reports', 'committee_system_code',
           'committees', 'system_code',
           27, 0, 'complete',
@@ -1115,8 +1116,9 @@ def _native_join(join):
         raise ValueError(f"Native join loses its declared key: {join.name}")
     return replace(join, child_columns=child, parent_columns=parent,
                    baseline_keys=0, baseline_missing=0, kind="unmeasured", measurement=None,
-                   reason="Native subject keys replace source capture keys. The original measured relationship "
-                          "remains in processing_joins; this subject-key relationship has no measured baseline yet.")
+                   reason=(join.reason if join.parent in {"budget_volumes", "house_activity_reports"} else
+                           "Native subject keys replace source capture keys. The original measured relationship "
+                           "remains in processing_joins; this subject-key relationship has no measured baseline yet."))
 
 
 JOINS = tuple(_native_join(join) for join in SOURCE_JOINS if not _processing_join(join))

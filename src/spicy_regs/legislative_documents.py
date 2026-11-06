@@ -292,6 +292,13 @@ def _identity_value(column: str, row: Mapping[str, Any]) -> str | None:
 def map_subject(dataset: str, row: Mapping[str, Any]) -> dict[str, Any] | None:
     """Map one qualified source-owner row; keep the untouched input for its receipt."""
     spec = field_registry()[dataset]
+    from spicy_regs.govinfo_revisions import DATED_TABLES, revision_instant
+
+    if dataset in DATED_TABLES:
+        try:
+            revision_instant(row.get("last_modified"))
+        except ValueError as error:
+            raise LegislativeShapeError(f"{dataset}: {error}") from error
     # ``retired_fields`` are columns an earlier policy version's source rows carry and this one no longer maps; they
     # stay in the receipt's original row (committee_reports' per-letter columns, legislative-documents/1).
     allowed = {f["name"] for f in spec["fields"]} | set(spec.get("retired_fields", ()))

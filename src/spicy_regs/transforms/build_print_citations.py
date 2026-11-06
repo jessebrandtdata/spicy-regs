@@ -86,6 +86,7 @@ from spicy_docs.sources.govinfo.body_acquisition import (
 from spicy_docs.sources.govinfo.discovery import GovInfoDiscoveryReader, published_url
 from spicy_docs.transport.credentials import CredentialRefusedError, scrub_credential
 
+from spicy_regs.govinfo_revisions import latest_package_rows, latest_read, revision_instant
 from spicy_regs.sources import r2
 from spicy_regs.sources.congress_bills import API_KEY_ENV_VARS, _resolve_api_key
 from spicy_regs.transforms.congress_scope import current_congress
@@ -255,7 +256,7 @@ class _Held(NamedTuple):
 
 
 def _held_packages(prior_file: Path | None) -> dict[str, _Held]:
-    """Each published parent row's read state, including legacy rows to reread."""
+    """The latest dated parent revision's read state, independent of parquet row order."""
     if prior_file is None:
         return {}
     import duckdb
@@ -263,7 +264,8 @@ def _held_packages(prior_file: Path | None) -> dict[str, _Held]:
     return {
         package_id: _Held(modified, text_sha256, rule_set_version)
         for package_id, modified, text_sha256, rule_set_version in duckdb.sql(
-            f"SELECT package_id, last_modified, text_sha256, rule_set_version FROM read_parquet('{prior_file}')"
+            "SELECT package_id, last_modified, text_sha256, rule_set_version FROM ("
+            + latest_package_rows(f"read_parquet('{prior_file}')") + ")"
         ).fetchall()
     }
 
@@ -665,6 +667,7 @@ def build_print_citations(
             continue
         try:
             package, derived = _read_body(acquirer, package_id)
+            revision_instant(package.summary.last_modified)
         except CredentialRefusedError:
             raise
         except GovInfoFormatNotOfferedError as error:
@@ -756,6 +759,17 @@ def build_print_citations(
             prior_states = tuple(checkpoints[name].get(package_id, {}) for name in _OUTPUTS[collection])
             superseded = _superseded_readings(prior_states, source_sha256=source_sha256,
                                               current=provenance.text_sha256)
+            if superseded and (prior_parent := priors[_OUTPUTS[collection][0]]) is not None:
+                # A metadata-only revision can share the same text. Keep its
+                # findings while that retained parent still names the digest.
+                import duckdb
+
+                referenced = {digest for (digest,) in duckdb.sql(
+                    "SELECT DISTINCT text_sha256 FROM read_parquet(?) "
+                    "WHERE package_id = ? AND last_modified <> ?",
+                    params=[str(prior_parent), package_id, package.summary.last_modified],
+                ).fetchall()}
+                superseded -= referenced
             evaluated[collection].update((package_id, digest) for digest in superseded)
             unresolved = {state["text_sha256"] for state in prior_states
                           if state.get("text_sha256") and state["text_sha256"] != provenance.text_sha256
@@ -772,7 +786,7 @@ def build_print_citations(
                  "source_sha256": source_sha256, "text_sha256": provenance.text_sha256,
                  "processing_version": processing_versions[collection], "read_at": _now()}
         for name in _OUTPUTS[collection]:
-            checkpoints[name][package_id] = state
+            checkpoints[name][package_id] = latest_read(checkpoints[name].get(package_id, {}), state)
 
         depth = len(derived.pages) if derived.pages is not None else 0
         pages_read += depth

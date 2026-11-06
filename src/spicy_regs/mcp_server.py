@@ -2448,9 +2448,12 @@ def _source_read(
         raise ValueError(f"Citation source {parent} requires selected native ETL receipts")
     try:
         if kind not in TEXT_SOURCES:
+            from spicy_regs.govinfo_revisions import latest_package_rows
+
+            current = latest_package_rows(f'"{inputs[parent]}"')
             values = cursor.execute(
                 "SELECT DISTINCT text_sha256, pages_read IS NOT NULL AND rule_set_version IS NOT NULL, "
-                f'CAST(citation_rows AS BIGINT) FROM "{inputs[parent]}" WHERE package_id = ? LIMIT 2',
+                f'CAST(citation_rows AS BIGINT) FROM ({current}) WHERE package_id = ? LIMIT 2',
                 [key],
             ).fetchall()
         else:

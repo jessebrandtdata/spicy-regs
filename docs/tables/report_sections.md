@@ -4,11 +4,11 @@
 
 **Committee report heading and text blocks**
 
-One row per heading or unheaded text block in one part of a committee report, keyed `(package_id, part_id, seq)`. `heading` preserves the source title; agency identity fields remain unresolved. `pattern` records which header pattern fired, which is this table's provenance column.
+One row per heading or unheaded text block in one part of a committee report, keyed `(package_id, part_id, last_modified, seq)`. `heading` preserves the source title; agency identity fields remain unresolved. `pattern` records which header pattern fired, which is this table's provenance column.
 
 **Coverage.** Sampled. Heading/text blocks of the reports in committee_reports. heading retains the source title while agency_label and agency_key remain unresolved NULLs. HTML bodies carry no page boundaries, so none are inferred. *(measured 2026-09-28)*
 
-**Data quality.** part_id names the committee_reports row a block was parsed from, so (package_id, part_id) is its parent, and seq counts from zero within that part. By decision 29 (`docs/research/fork-delivery-decisions-2026-09-22.md`) part_id is the package id for a report published in one part and the part's granule id for a report published as parts, CRPT-119hrpt494's unsuffixed Part 1 aside; a package whose one part is spelled -pt1 (CRPT-119hrpt811; spicy-docs `docs/tables.md` names the others it measured) carries that spelling, so the parent's row count tells a lone part from Part 1 of several. A block published before part_id existed carries its package id there until its report is read again, which replaces every block of the package.
+**Data quality.** last_modified is the publisher package addition/update time, including metadata-only updates. Dated revisions remain in this table; date_issued and held_date do not replace that coordinate. A latest-package query selects one revision before current-document joins (see govinfo-revisions.md). Same-date rereads replace that revision explicitly; retained receipts and original captures keep prior evidence. part_id names the committee_reports row a block was parsed from, so (package_id, part_id, last_modified) is its parent, and seq counts from zero within that part. By decision 29 (`docs/research/fork-delivery-decisions-2026-09-22.md`) part_id is the package id for a report published in one part and the part's granule id for a report published as parts, CRPT-119hrpt494's unsuffixed Part 1 aside; a package whose one part is spelled -pt1 (CRPT-119hrpt811; spicy-docs `docs/tables.md` names the others it measured) carries that spelling, so the parent's row count within one revision tells a lone part from Part 1 of several. A reread replaces the selected revision's blocks together.
 
 - **Parquet file:** `report_sections.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
@@ -25,4 +25,4 @@ One row per heading or unheaded text block in one part of a committee report, ke
 | `body_chars` | `BIGINT` | Character length of body, which can be shorter than the span it sits in. |
 | `last_modified` | `VARCHAR` | The parent report's last_modified, carried so this table versions with the package it came from. |
 | `heading` | `VARCHAR` | The source heading as spelled and trimmed, including actual agency names and generic titles; NULL for preamble or full_report blocks, which have no source heading. |
-| `part_id` | `VARCHAR` | The report part this block was parsed from, spelled as `committee_reports.part_id`, so (package_id, part_id) is the parent row.  Appended last. |
+| `part_id` | `VARCHAR` | The report part this block was parsed from, spelled as `committee_reports.part_id`, so (package_id, part_id, last_modified) is the parent row.  Appended last. |

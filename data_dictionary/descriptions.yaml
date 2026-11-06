@@ -2878,9 +2878,14 @@ tables:
     measured_on: "2026-09-28"
     summary: >-
       One row per published part of a captured GovInfo committee report package,
-      keyed `(package_id, part_id)`. `bill_id` is the measure the report accompanies,
+      keyed `(package_id, part_id, last_modified)`. `bill_id` is the measure the report accompanies,
       read from the package's own MODS metadata.
     data_quality: >-
+      last_modified is the publisher package addition/update time, including metadata-only
+      updates. Dated revisions remain in this table; date_issued and held_date do not
+      replace that coordinate. A latest-package query selects one revision before
+      current-document joins (see govinfo-revisions.md). Same-date rereads replace
+      that revision explicitly; retained receipts and original captures keep prior evidence.
       Only the MODS PRIMARY bill fills bill_id. The CBO columns come from spicy-docs
       read_cbo_estimate on the same body already acquired. The cover recital gates publication
       of a letter: a CBO heading alone is not an estimate. report_states_estimate=false records
@@ -2909,11 +2914,8 @@ tables:
       -pt1 (CRPT-119hrpt811; spicy-docs `docs/tables.md` names the others it measured) is
       (package-pt1, 1), the same shape as Part 1 of two, so a reader counts a package's rows to
       tell a lone part from Part 1 of several. title, date_issued and last_modified are the
-      package's and repeat on every part row. A row published before part_id existed is kept as
-      its package's one part (part_id the package id, part_number NULL) until the package is
-      read again, which replaces its rows as a set; the committee_report_reads rule version
-      re-reads every report once for this, which is what re-keys the CRPT-119hrpt811 row
-      published 2026-09-24 as (CRPT-119hrpt811-pt1, 1).
+      package's and repeat on every part row. A successful reread replaces the selected
+      package revision as a set; earlier revisions keep their original parts and children.
     columns_from: spicy_docs
 
   report_sections:
@@ -2927,19 +2929,23 @@ tables:
     measured_on: "2026-09-28"
     summary: >-
       One row per heading or unheaded text block in one part of a committee report,
-      keyed `(package_id, part_id, seq)`. `heading` preserves the source title; agency
+      keyed `(package_id, part_id, last_modified, seq)`. `heading` preserves the source title; agency
       identity fields remain unresolved. `pattern` records which header pattern fired,
       which is this table's provenance column.
     data_quality: >-
-      part_id names the committee_reports row a block was parsed from, so (package_id, part_id)
+      last_modified is the publisher package addition/update time, including metadata-only
+      updates. Dated revisions remain in this table; date_issued and held_date do not
+      replace that coordinate. A latest-package query selects one revision before
+      current-document joins (see govinfo-revisions.md). Same-date rereads replace
+      that revision explicitly; retained receipts and original captures keep prior evidence.
+      part_id names the committee_reports row a block was parsed from, so (package_id, part_id, last_modified)
       is its parent, and seq counts from zero within that part. By decision 29
       (`docs/research/fork-delivery-decisions-2026-09-22.md`) part_id is the package id for a
       report published in one part and the part's granule id for a report published as parts,
       CRPT-119hrpt494's unsuffixed Part 1 aside; a package whose one part is spelled -pt1
       (CRPT-119hrpt811; spicy-docs `docs/tables.md` names the others it measured) carries that
-      spelling, so the parent's row count tells a lone part from Part 1 of several. A block
-      published before part_id existed carries its package id there until its report is read
-      again, which replaces every block of the package.
+      spelling, so the parent's row count within one revision tells a lone part from Part 1
+      of several. A reread replaces the selected revision's blocks together.
     columns_from: spicy_docs
 
   committee_report_cbo_letters:
@@ -2953,10 +2959,15 @@ tables:
     measured_on: "2026-10-31"
     summary: >-
       One row per CBO cost-estimate letter reprinted in one committee report part, keyed
-      `(package_id, part_id, letter_seq)`. The span indexes into the text the parent row's
+      `(package_id, part_id, last_modified, letter_seq)`. The span indexes into the text the parent row's
       text_sha256 digests; letter_date is the letterhead's dateline.
     data_quality: >-
-      (package_id, part_id) names the committee_reports row the letter was read from and
+      last_modified is the publisher package addition/update time, including metadata-only
+      updates. Dated revisions remain in this table; date_issued and held_date do not
+      replace that coordinate. A latest-package query selects one revision before
+      current-document joins (see govinfo-revisions.md). Same-date rereads replace
+      that revision explicitly; retained receipts and original captures keep prior evidence.
+      (package_id, part_id, last_modified) names the committee_reports row the letter was read from and
       letter_seq counts from zero in reading order within that part. A 1997-2011 letter's span
       runs from its heading or CBO letterhead through the enclosed estimate's "Estimate approved
       by ... Analysis." line; 118th-Congress letters end at the Director's attribution.
@@ -2975,9 +2986,14 @@ tables:
       complete hearing history.
     measured_on: "2026-09-28"
     summary: >-
-      One row per captured GovInfo hearing transcript. bill_id is always NULL:
+      One row per dated revision of a captured GovInfo hearing transcript. bill_id is always NULL:
       a hearing can concern several bills, represented in hearing_bill_links.
     data_quality: >-
+      last_modified is the publisher package addition/update time, including metadata-only
+      updates. Dated revisions remain in this table; date_issued and held_date do not
+      replace that coordinate. A latest-package query selects one revision before
+      current-document joins (see govinfo-revisions.md). Same-date rereads replace
+      that revision explicitly; retained receipts and original captures keep prior evidence.
       Cover bills come from the package's MODS and cost no extra requests.
       BODY mentions do not become hearing links. event_id is the meeting the
       Congress.gov hearing record names (its associatedMeeting), carried as the
@@ -3635,13 +3651,18 @@ tables:
       rule. Not an earlier-archive census.
     measured_on: "2026-09-28"
     summary: >-
-      One row per captured end-of-Congress committee activity report package,
+      One row per dated package revision of an end-of-Congress committee activity report package,
       House or Senate (the table's name predates its Senate rows; the package
       id's `hrpt`/`srpt` says which), with what its print adds to its own MODS
       index. Joins
       `document_citations` on `package_id` = `document_key` and
       `text_sha256`.
     data_quality: >-
+      last_modified is the publisher package addition/update time, including metadata-only
+      updates. Dated revisions remain in this table; date_issued and held_date do not
+      replace that coordinate. A latest-package query selects one revision before
+      current-document joins (see govinfo-revisions.md). Same-date rereads replace
+      that revision explicitly; retained receipts and original captures keep prior evidence.
       **The MODS is authoritative for bills, laws and Code sections, and this
       table's own columns say so.** Read at full page depth across the eight
       reports spicy-docs sampled, the print named 0 of 1,406 bills, 0 of 174
@@ -3712,10 +3733,15 @@ tables:
       attempted.
     measured_on: "2026-09-28"
     summary: >-
-      One row per published volume of the President's budget, with what its
+      One row per dated package revision of a published volume of the President's budget, with what its
       print adds to its own MODS index. Thirteen measured package parts are
       accepted; only volumes offering a supported package-root body yield rows.
     data_quality: >-
+      last_modified is the publisher package addition/update time, including metadata-only
+      updates. Dated revisions remain in this table; date_issued and held_date do not
+      replace that coordinate. A latest-package query selects one revision before
+      current-document joins (see govinfo-revisions.md). Same-date rereads replace
+      that revision explicitly; retained receipts and original captures keep prior evidence.
       **The bill counts are congress-blind and are not join keys.** A BUDGET
       package states no Congress anywhere — not in its id, not in its summary
       — so the print can only spell `HR7806` where the MODS states
@@ -3940,16 +3966,21 @@ tables:
       records, agendas, bill actions or transcript text, and does not measure
       recall; agenda acquisition remains deferred.
     summary: >-
-      One row per package, bill and link source, shaped by spicy-docs.
+      One row per package revision, bill and link source, keyed by package_id, last_modified, bill_id and link source.
     data_quality: >-
+      last_modified is the publisher package addition/update time, including metadata-only
+      updates. Dated revisions remain in this table; date_issued and held_date do not
+      replace that coordinate. A latest-package query selects one revision before
+      current-document joins (see govinfo-revisions.md). Same-date rereads replace
+      that revision explicitly; retained receipts and original captures keep prior evidence.
       mods_cover means held_on. The package measured confirmation on 19 of 20
       cover pairs and 18 of 18 pairs where cover and agenda agreed. Agenda
       links mean noticed, not held_on: agenda-only pairs were confirmed 1 of
       18, contradicted 1 and unverifiable 16. Recall is unmeasured. Only 2 of
       20 sampled House hearings and 0 of 3 Senate hearings stated COVER bills;
       a missing row does not establish that a hearing concerned no bills.
-      A successfully re-read cover replaces that hearing's prior links, including
-      an empty result. Unread or refused bodies retain their prior links.
+      A successfully re-read cover replaces only that package revision's prior links, including
+      an empty result. Earlier revisions remain retained. Unread or refused bodies retain their prior links.
       held_date is the one date the hearing's MODS states. A compiled volume
       that states several dates has held_date NULL and every native date, in
       source order, in held_dates; the list does not establish that each

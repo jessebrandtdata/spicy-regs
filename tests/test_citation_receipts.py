@@ -39,6 +39,32 @@ def occurrence(digest, **overrides):
                target_rule="public_law", rule_version="test-rule") | overrides
 
 
+def test_current_print_citations_select_latest_parent_before_joining_shared_body(tmp_path, monkeypatch):
+    from spicy_regs.govinfo_revisions import latest_package_rows
+
+    digest = "sha256:" + "c" * 64
+    select(tmp_path, "document_citations", [occurrence(digest, target_resolved="true")])
+    parent = row("budget_volumes", package_id="BUDGET-2027", text_sha256=digest,
+                 pages_read="1", rule_set_version="test", citation_rows="1")
+    select(tmp_path, "budget_volumes", [
+        parent | {"last_modified": "2026-09-01T00:00:00Z"},
+        parent | {"last_modified": "2026-08-01T00:00:00Z"},
+        parent | {"last_modified": "2026-07-01T00:00:00Z", "text_sha256": "sha256:" + "a" * 64},
+    ])
+    select(tmp_path, "laws", [row("laws", congress="119", law_type="public", number="1", law_id="119-public-1")])
+    with connection(tmp_path, monkeypatch)[0] as con:
+        result = _tool_data(mcp_server.build_server(), "resolve_document_citations", {
+            "document_kind": "budget_volume", "document_key": "BUDGET-2027"})
+        assert result["source_read"]["status"] == "read"
+        assert len(result["occurrences"]) == 1
+        assert result["occurrences"][0]["target_status"] == "found"
+        current = latest_package_rows("budget_volumes")
+        # Native body IDs keep their existing identity; one latest metadata
+        # parent is selected before the current-document join.
+        assert con.sql(f"SELECT count(*) FROM document_citations c JOIN ({current}) p "
+                       "ON c.document_key = p.package_id AND c.body_version_id = p.body_version_id").fetchone()[0] == 1
+
+
 @pytest.mark.parametrize("settled", [False, True])
 def test_native_citation_tool_preserves_unsettled_key_and_private_processing(tmp_path, monkeypatch, settled):
     digest = "sha256:" + "c" * 64
@@ -124,7 +150,7 @@ def test_held_text_zero_result_comes_from_receipt_only_read(tmp_path, monkeypatc
     select(tmp_path, "document_citations", [])
     select(tmp_path, "report_sections", [row("report_sections", package_id="CRPT-119hrpt1",
         part_id="1", seq="0", body=text)])
-    key = '["CRPT-119hrpt1","1","0"]'
+    key = '["CRPT-119hrpt1","1","2026-09-18T12:00:00Z","0"]'
     select(tmp_path, "document_citation_reads", [row("document_citation_reads",
         document_kind="report_section", document_key=key, text_sha256=digest,
         citation_rows="0", read_at="2026-10-04T00:00:00Z", rule_set_version="test")])
@@ -137,7 +163,7 @@ def test_held_text_zero_result_comes_from_receipt_only_read(tmp_path, monkeypatc
         # copy of a source body (comments and full document text can be large).
         cache = "_spicy_citation_digests_report_sections"
         assert {name for name, *_ in con.execute(f"DESCRIBE {cache}").fetchall()} == {
-            "package_id", "part_id", "seq", "sha256_body"}
+            "package_id", "part_id", "last_modified", "seq", "sha256_body"}
         assert con.execute(f"SELECT sha256_body FROM {cache}").fetchone() == (digest,)
         assert reply["occurrences"] == []
         assert "document_citation_reads" not in mcp_server._available_tables(con)

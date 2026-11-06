@@ -995,14 +995,15 @@
   },
   "budget_volumes": {
     "identity_fields": [
-      "package_id"
+      "package_id",
+      "last_modified"
     ],
     "processing_only": false,
     "fields": [
       {
         "name": "package_id",
         "source_type": "VARCHAR",
-        "meaning": "The GovInfo package id, which is this row's identity.",
+        "meaning": "The GovInfo package id; package_id and last_modified identify this retained revision.",
         "decision": "keep",
         "target": "package_id",
         "target_type": "string",
@@ -1047,11 +1048,12 @@
       {
         "name": "last_modified",
         "source_type": "VARCHAR",
-        "meaning": "When the publisher last modified the package; the merge prefers the larger value.",
+        "meaning": "The publisher's package addition/update timestamp, including metadata-only updates. Together with package_id it identifies a retained revision; it is not first publication or a promise that every text change has a unique timestamp.",
         "decision": "keep",
         "target": "last_modified",
         "target_type": "string",
-        "reason": "Published domain value or stable subject key; preserve its literal meaning."
+        "reason": "Published domain value or stable subject key; preserve its literal meaning.",
+        "nullable": false
       },
       {
         "name": "stated_page_count",
@@ -1543,7 +1545,8 @@
   "committee_reports": {
     "identity_fields": [
       "package_id",
-      "part_id"
+      "part_id",
+      "last_modified"
     ],
     "processing_only": false,
     "retired_fields": [
@@ -1557,7 +1560,7 @@
       {
         "name": "package_id",
         "source_type": "VARCHAR",
-        "meaning": "The GovInfo package id: with part_id, this row's identity.  Summary facts (title, date_issued, last_modified) are the package's and repeat on every part row.",
+        "meaning": "The GovInfo package id: with part_id and last_modified, this row's identity.  Summary facts (title, date_issued, last_modified) are the package's and repeat on every part row.",
         "decision": "keep",
         "target": "package_id",
         "target_type": "string",
@@ -1629,11 +1632,12 @@
       {
         "name": "last_modified",
         "source_type": "VARCHAR",
-        "meaning": "When the publisher last modified the package; the merge prefers the larger value.",
+        "meaning": "The publisher's package addition/update timestamp, including metadata-only updates. Together with package_id it identifies a retained revision; it is not first publication or a promise that every text change has a unique timestamp.",
         "decision": "keep",
         "target": "last_modified",
         "target_type": "string",
-        "reason": "Published domain value or stable subject key; preserve its literal meaning."
+        "reason": "Published domain value or stable subject key; preserve its literal meaning.",
+        "nullable": false
       },
       {
         "name": "bill_id",
@@ -1836,7 +1840,7 @@
       {
         "name": "cbo_letter_count",
         "source_type": "VARCHAR",
-        "meaning": "How many reprinted CBO letters were located in this part, each a committee_report_cbo_letters row keyed (package_id, part_id, letter_seq).  0 where the cover declares an estimate and no letter's both ends were found, or where it declares none; NULL where no estimate rule was run, which is not the same as a count of zero.",
+        "meaning": "How many reprinted CBO letters were located in this part, each a committee_report_cbo_letters row keyed (package_id, part_id, last_modified, letter_seq).  0 where the cover declares an estimate and no letter's both ends were found, or where it declares none; NULL where no estimate rule was run, which is not the same as a count of zero.",
         "decision": "flatten",
         "target": "cbo_letter_count",
         "target_type": "int64",
@@ -1848,6 +1852,7 @@
     "identity_fields": [
       "package_id",
       "part_id",
+      "last_modified",
       "letter_seq"
     ],
     "processing_only": false,
@@ -1864,7 +1869,7 @@
       {
         "name": "part_id",
         "source_type": "VARCHAR",
-        "meaning": "The report part the letter was read from, spelled as `committee_reports.part_id`, so (package_id, part_id) is the parent row.",
+        "meaning": "The report part the letter was read from, spelled as `committee_reports.part_id`, so (package_id, part_id, last_modified) is the parent row.",
         "decision": "keep",
         "target": "part_id",
         "target_type": "string",
@@ -1958,7 +1963,8 @@
         "decision": "keep",
         "target": "last_modified",
         "target_type": "string",
-        "reason": "Published domain value or stable subject key; preserve its literal meaning."
+        "reason": "Published domain value or stable subject key; preserve its literal meaning.",
+        "nullable": false
       }
     ]
   },
@@ -2418,6 +2424,7 @@
   "hearing_bill_links": {
     "identity_fields": [
       "package_id",
+      "last_modified",
       "bill_id",
       "link_id"
     ],
@@ -2539,19 +2546,30 @@
         "target": "held_dates",
         "target_type": "list<string>",
         "reason": "Ordered repeated domain values. Preserve duplicates, empty list, null list, and null elements; retain the original representation in the receipt."
+      },
+      {
+        "name": "last_modified",
+        "source_type": "VARCHAR",
+        "meaning": "The parent hearing package's publisher modification timestamp. Joins the exact dated transcript revision; neither held_date nor link_rule_version supplies this source coordinate.",
+        "decision": "keep",
+        "target": "last_modified",
+        "target_type": "string",
+        "reason": "Publisher revision coordinate shared with the exact hearing transcript revision.",
+        "nullable": false
       }
     ]
   },
   "hearing_transcripts": {
     "identity_fields": [
-      "package_id"
+      "package_id",
+      "last_modified"
     ],
     "processing_only": false,
     "fields": [
       {
         "name": "package_id",
         "source_type": "VARCHAR",
-        "meaning": "The GovInfo package id, which is this row's identity.",
+        "meaning": "The GovInfo package id; last_modified identifies its retained package revision.",
         "decision": "keep",
         "target": "package_id",
         "target_type": "string",
@@ -2614,7 +2632,7 @@
       {
         "name": "date_issued",
         "source_type": "VARCHAR",
-        "meaning": "The date the package was issued.",
+        "meaning": "The date GovInfo issued the package; for CHRG packages this is the (first) held date: the summary's dateIssued equals the MODS's first heldDate on 185 of 185 published transcripts (2026-10-03), and the meeting's date on 117 of 117 matched to committee_meetings.  held_date states it from the MODS itself.",
         "decision": "keep",
         "target": "date_issued",
         "target_type": "string",
@@ -2623,11 +2641,12 @@
       {
         "name": "last_modified",
         "source_type": "VARCHAR",
-        "meaning": "When the publisher last modified the package; the merge prefers the larger value.",
+        "meaning": "The publisher's package addition/update timestamp, including metadata-only updates. Together with package_id it identifies a retained revision; it is not first publication or a promise that every text change has a unique timestamp.",
         "decision": "keep",
         "target": "last_modified",
         "target_type": "string",
-        "reason": "Published domain value or stable subject key; preserve its literal meaning."
+        "reason": "Published domain value or stable subject key; preserve its literal meaning.",
+        "nullable": false
       },
       {
         "name": "bill_id",
@@ -2749,7 +2768,7 @@
       {
         "name": "witnesses_json",
         "source_type": "VARCHAR",
-        "meaning": "Literal witness statements in publisher order.",
+        "meaning": "Every witness the package's GovInfo MODS states, as a JSON array of its `<witness>` strings verbatim in document order -- name, position and organization as GPO wrote them, unsplit, because the record joins them in one string and spells them differently by chamber.  NULL where the MODS states none, never `[]`: MODS has no element for an empty witness list, so its silence is absence.  The Congress.gov meeting record lists no Senate witness at all, while the MODS lists them for 63 of 85 published Senate transcripts (2026-10-03).",
         "decision": "native-list",
         "target": "witnesses",
         "target_type": "list<string>",
@@ -2758,7 +2777,7 @@
       {
         "name": "committee_system_codes_json",
         "source_type": "VARCHAR",
-        "meaning": "Committees named by the hearing MODS.",
+        "meaning": "The committees the package's GovInfo MODS names as holding the hearing: each `congCommittee` `authorityId`, the system code committees.system_code and committee_meetings.committee_system_code key on (`hswm00`), lower-cased the way they key it, once each in the order the MODS first states it, as a JSON array. Read from the record and then each of its granules, because a hearing published as several states its committee only there (15 of 185 published transcripts, 2026-10-03); a joint hearing names two (3 of 185). `[]` where the MODS names none (1 of 185); NULL on a row not read since the column was added.",
         "decision": "native-list",
         "target": "committee_system_codes",
         "target_type": "list<string>",
@@ -2767,7 +2786,7 @@
       {
         "name": "held_date",
         "source_type": "VARCHAR",
-        "meaning": "First hearing date stated by the package MODS.",
+        "meaning": "The day the hearing was held, as the package's MODS states it in `<heldDate>`; NULL where the MODS states none.  A compiled volume states several (2 of 185 published transcripts, 2026-10-03; CHRG-117shrg56721 states eleven) and this is the first: it dates the package, as date_issued does, so there it is when the series began, not each session's date.  hearing_bill_links.held_date is NULL on the same volume for a different reason: a link pairs a date with a bill, and the volume pairs none.",
         "decision": "keep",
         "target": "held_date",
         "target_type": "string",
@@ -2776,7 +2795,7 @@
       {
         "name": "mods_event_id",
         "source_type": "VARCHAR",
-        "meaning": "Meeting event identifier stated by GovInfo MODS.",
+        "meaning": "The committee-meeting event id the package's GovInfo MODS states in `<eventId>` (the first, where it states several), which committee_meetings.event_id joins on with congress and chamber.  A second publisher's statement beside event_id, never overriding it: a consumer may fall back to it where event_id is NULL.  43 of 185 published transcripts state one, 22 where Congress.gov names none, 21 of them Senate; where both state one they agree 21 of 21 (2026-10-03), including a misassignment both make (CHRG-118hhrg63377 names 116369, another subcommittee's hearing that day), so agreement is not independent confirmation.",
         "decision": "keep",
         "target": "mods_event_id",
         "target_type": "string",
@@ -2786,14 +2805,15 @@
   },
   "house_activity_reports": {
     "identity_fields": [
-      "package_id"
+      "package_id",
+      "last_modified"
     ],
     "processing_only": false,
     "fields": [
       {
         "name": "package_id",
         "source_type": "VARCHAR",
-        "meaning": "The GovInfo package id, which is this row's identity.",
+        "meaning": "The GovInfo package id; package_id and last_modified identify this retained revision.",
         "decision": "keep",
         "target": "package_id",
         "target_type": "string",
@@ -2838,11 +2858,12 @@
       {
         "name": "last_modified",
         "source_type": "VARCHAR",
-        "meaning": "When the publisher last modified the package; the merge prefers the larger value.",
+        "meaning": "The publisher's package addition/update timestamp, including metadata-only updates. Together with package_id it identifies a retained revision; it is not first publication or a promise that every text change has a unique timestamp.",
         "decision": "keep",
         "target": "last_modified",
         "target_type": "string",
-        "reason": "Published domain value or stable subject key; preserve its literal meaning."
+        "reason": "Published domain value or stable subject key; preserve its literal meaning.",
+        "nullable": false
       },
       {
         "name": "committee_system_code",
@@ -4027,6 +4048,7 @@
     "identity_fields": [
       "package_id",
       "part_id",
+      "last_modified",
       "seq"
     ],
     "processing_only": false,
@@ -4137,7 +4159,8 @@
         "decision": "keep",
         "target": "last_modified",
         "target_type": "string",
-        "reason": "Published domain value or stable subject key; preserve its literal meaning."
+        "reason": "Published domain value or stable subject key; preserve its literal meaning.",
+        "nullable": false
       },
       {
         "name": "heading",
@@ -4151,7 +4174,7 @@
       {
         "name": "part_id",
         "source_type": "VARCHAR",
-        "meaning": "The report part this block was parsed from, spelled as `committee_reports.part_id`, so (package_id, part_id) is the parent row.  Appended last.",
+        "meaning": "The report part this block was parsed from, spelled as `committee_reports.part_id`, so (package_id, part_id, last_modified) is the parent row.  Appended last.",
         "decision": "keep",
         "target": "part_id",
         "target_type": "string",

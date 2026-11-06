@@ -4,9 +4,9 @@ MODS cover links and the CBO letter rule use bytes already fetched. Agenda
 acquisition is deferred: this pass has no verified meeting-to-jacket join or
 House repository locator. Pending reads precede discovery under the same cap;
 completed empty covers are checkpointed without inventing a link row. A report
-is one row per published part (decision 29): every part is read or none, and a
-package's part rows are replaced as a set, while the checkpoint stays keyed by
-package.
+is one row per published part and dated package revision: every part is read
+or none, and that revision's part rows are replaced as a set. The current
+checkpoint stays keyed by package.
 """
 
 from __future__ import annotations
@@ -54,6 +54,7 @@ from spicy_docs.sources.congress.listing import LIST_ROUTES, hearing_detail_even
 from spicy_docs.sources.govinfo.discovery import GovInfoDiscoveryReader, collection_url
 from spicy_docs.transport.credentials import CredentialRefusedError, scrub_credential
 
+from spicy_regs.govinfo_revisions import latest_read, revision_instant
 from spicy_regs.sources import r2
 from spicy_regs.sources.congress_bills import API_KEY_ENV_VARS, _resolve_api_key, listing_reader
 from spicy_regs.transforms.table_merge import (
@@ -141,11 +142,6 @@ MAX_PACKAGES_PER_RUN = 200
 
 MAX_PAGES = 40
 
-#: A row published before the report tables keyed parts is the package's one
-#: part: right for every report published in one part and for
-#: CRPT-119hrpt494's unsuffixed Part 1 (spicy-docs ``docs/tables.md``).
-PART_BACKFILL = {"part_id": "package_id"}
-
 
 def _prior_watermark(prior_file: Path) -> datetime | None:
     """The largest ``last_modified`` already published, or None."""
@@ -153,7 +149,7 @@ def _prior_watermark(prior_file: Path) -> datetime | None:
         return None
     import duckdb
 
-    row = duckdb.sql(f"SELECT max(last_modified) FROM read_parquet('{prior_file}')").fetchone()
+    row = duckdb.sql(f"SELECT max(try_cast(last_modified AS TIMESTAMPTZ)) FROM read_parquet('{prior_file}')").fetchone()
     if not row or row[0] is None:
         return None
     try:
@@ -270,6 +266,10 @@ def _read_bodies(acquirer: PackageBodySource, package_id: str, collection: str,
     bodies = acquirer.acquire_parts(package_id) if collection == "CRPT" else (acquirer.acquire(package_id),)
     if evidence:
         _retain(evidence, bodies, package_id + ":used")
+    stamps = {body.summary.last_modified for body in bodies}
+    if len(stamps) != 1:
+        raise ValueError(f"{package_id}: report parts disagree on publisher last_modified")
+    revision_instant(next(iter(stamps)))
     reads = [_read(body) for body in bodies]
     keys = [_part_key(read.body, package_id) for read in reads]
     placeholders = {key: read for key, read in zip(keys, reads, strict=True) if read.completeness == PLACEHOLDER}
@@ -300,6 +300,8 @@ def _read_bodies(acquirer: PackageBodySource, package_id: str, collection: str,
         if evidence:
             _retain(evidence, [by_part[key] for key in offered], package_id + ":pdf-fallback")
         reads = [_read(by_part[key]) if key in offered else read for key, read in zip(keys, reads, strict=True)]
+        if any(read.body.summary.last_modified not in stamps for read in reads):
+            raise ValueError(f"{package_id}: publisher revision changed during PDF fallback")
     if evidence:
         for key, read in zip(keys, reads, strict=True):
             if read.derived.pages is not None:
@@ -447,12 +449,13 @@ def _link_committee_codes(links: Path, transcripts: Path) -> int:
     """
     import pyarrow.parquet as pq
 
-    stated = pq.read_table(transcripts, columns=["package_id", "committee_system_codes_json"]).to_pylist()
-    first = {row["package_id"]: next(iter(json.loads(row["committee_system_codes_json"])), None)
+    stated = pq.read_table(transcripts, columns=["package_id", "last_modified", "committee_system_codes_json"]).to_pylist()
+    first = {(row["package_id"], row["last_modified"]): next(iter(json.loads(row["committee_system_codes_json"])), None)
              for row in stated if row["committee_system_codes_json"] is not None}
     table = pq.read_table(links)
     held = table["committee_system_code"].to_pylist()
-    codes = [first.get(package_id, code) for package_id, code in zip(table["package_id"].to_pylist(), held)]
+    codes = [first.get((package_id, modified), code) for package_id, modified, code in zip(
+        table["package_id"].to_pylist(), table["last_modified"].to_pylist(), held)]
     moved = sum(new != old for new, old in zip(codes, held))
     if moved:
         write_in_place(set_column(table, "committee_system_code", codes), links)
@@ -500,6 +503,7 @@ def build_committee_reports(
     }
     checkpoint = published_table(output_dir, READS_TABLE, download_prior)
     reads = prior_reads(checkpoint, prior_files)
+    previous_reads = dict(reads)
     if reread:
         _refuse_unsafe_reread(reread, set(prior_reads(checkpoint, {})), reads)
     since = _since(prior_files["committee_reports"])
@@ -511,8 +515,8 @@ def build_committee_reports(
                        max_packages_per_collection=max_packages, max_pages=MAX_PAGES,
                        agenda_cap=0, checkpoint_observed_at=observed_at)
     link_rows: list[dict] = []
-    evaluated_hearings: set[str] = set()
-    evaluated_reports: set[str] = set()
+    evaluated_hearings: set[tuple[str, str]] = set()
+    evaluated_reports: set[tuple[str, str]] = set()
     report_rows: list[dict] = []
     letter_rows: list[dict] = []
     section_rows: list[dict] = []
@@ -595,7 +599,8 @@ def build_committee_reports(
                     if outcome == "refused":
                         state["outcome"] = "detail_refused"
                     hearing_rows.append(shape_hearing_transcript(body, event_id=event_id, **common))
-                    link_rows.extend(shape_hearing_bill_link(link) for link in cover_links(body.mods, event_id=event_id))
+                    link_rows.extend(shape_hearing_bill_link(link, last_modified=modified)
+                                     for link in cover_links(body.mods, event_id=event_id))
                 else:
                     estimate = read_cbo_estimate(derived.text)
                     report_rows.append(shape_committee_report(
@@ -607,11 +612,12 @@ def build_committee_reports(
                     section_rows.extend(shape_report_section(
                         block, package_id=package_id, part_id=body.part.part_id, seq=seq, last_modified=modified
                     ) for seq, block in enumerate(parse_agency_blocks(_section_input(derived))))
-            (evaluated_hearings if collection == "CHRG" else evaluated_reports).add(package_id)
+            (evaluated_hearings if collection == "CHRG" else evaluated_reports).add((package_id, modified))
             if evidence:
                 evidence.event("package-outcome", **state)
 
-    if unfinished := sorted(key for key in reread if key not in evaluated_hearings or reads[key]["outcome"] != "complete"):
+    completed_hearings = {key for key, _modified in evaluated_hearings}
+    if unfinished := sorted(key for key in reread if key not in completed_hearings or reads[key]["outcome"] != "complete"):
         # A refused named read would publish a checkpoint every later run
         # retries, and a refused hearing detail would drop the prior event_id.
         raise RuntimeError(f"reread did not complete, so nothing is merged: {unfinished}")
@@ -639,24 +645,20 @@ def build_committee_reports(
         logger.info("Committee reports: renditions read — {}; body completeness — {}",
                     dict(renditions), dict(completeness))
     logger.info("Committee reports: {} cover links; agenda deferred (no verified meeting-to-jacket join)", len(link_rows))
-    # A read package's part rows are replaced as a set, so a part it no longer
-    # states goes; a refused or unread package keeps its prior rows. A prior
-    # row published before ``part_id`` existed is spelled as the package's one
-    # part first, since the merge drops a row with a NULL in its identity. The
-    # one row here that spelling gets wrong is CRPT-119hrpt811's, whose one part
-    # is ``-pt1``; the ``parts=`` rule version re-reads it to replace it.
+    # Replace only the successfully read package revision. A removed part or
+    # child stays in its earlier revision; failed and unread scopes stay whole.
     replaced = {"committee_reports": evaluated_reports, "report_sections": evaluated_reports,
                 "committee_report_cbo_letters": evaluated_reports,
                 "hearing_bill_links": evaluated_hearings, "hearing_transcripts": evaluated_hearings}
     paths = {name: merge_contract_table(output_dir, name, rows, download_prior=download_prior,
-                                        replace_parents=("package_id", replaced[name]) if name in replaced else None,
-                                        backfill_prior=PART_BACKFILL if name in ("committee_reports", "report_sections") else None,
+                                        replace_parents=(("package_id", "last_modified"), replaced[name]),
                                         prior_present=(prior_files[name] is not None) if name in prior_files else None)
              for name, rows in (("committee_reports", report_rows), ("report_sections", section_rows),
                                 ("hearing_transcripts", hearing_rows), ("hearing_bill_links", link_rows),
                                 ("committee_report_cbo_letters", letter_rows))}
     relinked = _link_committee_codes(paths["hearing_bill_links"], paths["hearing_transcripts"])
     logger.info("Committee reports: {:,} hearing links take their hearing's committee code", relinked)
+    reads = {key: latest_read(previous_reads.get(key, {}), row) for key, row in reads.items()}
     return (*paths.values(), merge_table(output_dir, name=READS_TABLE, columns=READ_COLUMNS,
                                          identity=("package_id",), version_column="observed_at", rows=reads.values(),
                                          remote_key=f"{READS_TABLE}.parquet", download_prior=download_prior,

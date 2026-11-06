@@ -229,12 +229,12 @@
   },
   "budget_volumes": {
     "columns": {
-      "package_id": "The GovInfo package id, which is this row's identity.",
+      "package_id": "The GovInfo package id; package_id and last_modified identify this retained revision.",
       "fiscal_year": "The fiscal year this volume is the budget for, as the MODS states it in `field name=\"Fiscal Year\"`, falling back to the year the package id itself carries where the MODS states none.  Not the year it was issued: BUDGET-2026-MSR was issued 2025-09-05.",
       "part": "Which part of the budget this volume is, in the publisher's own id spelling (`APP` for the Appendix, `MSR` for the Mid-Session Review).  The sealed vocabulary is in `sources/govinfo/bodies.py`'s package-id grammar, so a part no measurement has seen is a refusal rather than a row.",
       "title": "The volume's title as the keyed summary states it.",
       "date_issued": "The date the package was issued, as the summary states it.",
-      "last_modified": "When the publisher last modified the package; the merge prefers the larger value.",
+      "last_modified": "The publisher's package addition/update timestamp, including metadata-only updates. Together with package_id it identifies a retained revision; it is not first publication or a promise that every text change has a unique timestamp.",
       "stated_page_count": "How many pages the volume has, as the keyed summary's own `pages` field states it -- never re-derived from the bytes, so a capped read reports how far it got beside the document's own extent rather than publishing its own count as the volume's.",
       "associated_bill_count": "How many bills the MODS names; every one is in associated_bills.",
       "associated_bills": "Every root-level `<bill>` the MODS names, as a Native list of objects carrying the bill's natural key and the publisher's own `context` marker, in document order.  Published whole because it is the only statement of this edge that carries a Congress: a budget volume's print names a bill without one, so a printed key can be compared with these only congress-blind and can join `congress_bills` not at all. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
@@ -443,7 +443,7 @@
   },
   "committee_reports": {
     "columns": {
-      "package_id": "The GovInfo package id: with part_id, this row's identity.  Summary facts (title, date_issued, last_modified) are the package's and repeat on every part row.",
+      "package_id": "The GovInfo package id: with part_id and last_modified, this row's identity.  Summary facts (title, date_issued, last_modified) are the package's and repeat on every part row.",
       "collection": "The GovInfo collection the package belongs to (CRPT, CHRG).",
       "congress": "The numbered Congress, parsed from the package id's own grammar.",
       "report_type": "The report's document-type code (hrpt, srpt, erpt).",
@@ -451,7 +451,7 @@
       "chamber": "The chamber, from the package id's document-type code rather than from its first letter.",
       "title": "The package title as the keyed summary states it.",
       "date_issued": "The date the package was issued.",
-      "last_modified": "When the publisher last modified the package; the merge prefers the larger value.",
+      "last_modified": "The publisher's package addition/update timestamp, including metadata-only updates. Together with package_id it identifies a retained revision; it is not first publication or a promise that every text change has a unique timestamp.",
       "bill_id": "The bill this package concerns, where a linkage exists; nullable by design (C11).",
       "body_version_id": "Digest of the extracted text, so a re-extraction that changed nothing is visible as such.",
       "report_states_estimate": "Whether the report's own cover carries the statutory recital `Including cost estimate of the Congressional Budget Office`, printed in brackets.  This is the gate and a heading is never one: three retained reports print a CBO heading over a section saying the estimate was not received, and one prints the estimate under a heading no pattern set had.  `false` is requested-empty with estimate_absence_reason attached, never absence: 3 of 13 reported bills whose index named an estimate had none in the report.",
@@ -460,7 +460,7 @@
       "estimate_absence_reason": "The publisher's own paragraph saying why the estimate is not here, verbatim, where the cover declares none.  Carried whole rather than as a span, unlike the letter: it is a paragraph, and a row that holds the words needs no offset to read them.",
       "part_id": "The part of the report this row is: the publisher's own granule id for it, which is also the file stem its body was read at (`CRPT-119hrpt455-pt2`).  The package id itself where the part's stem is the package's: a report published in one part, and a Part 1 the publisher left unsuffixed (`CRPT-119hrpt494`).  Never NULL, because it is half the identity; a package's part rows are replaced as a set.",
       "part_number": "The part's number as the publisher states it (its `partNumber`, or the `-pt{N}` its id carries, which must agree).  NULL on a report published in one part at the package id, whose record numbers none; a report the publisher issued as a lone `-pt1` is (`{package}-pt1`, 1), so a reader counts rows per package to tell it from Part 1 of several.",
-      "cbo_letter_count": "How many reprinted CBO letters were located in this part, each a committee_report_cbo_letters row keyed (package_id, part_id, letter_seq).  0 where the cover declares an estimate and no letter's both ends were found, or where it declares none; NULL where no estimate rule was run, which is not the same as a count of zero."
+      "cbo_letter_count": "How many reprinted CBO letters were located in this part, each a committee_report_cbo_letters row keyed (package_id, part_id, last_modified, letter_seq).  0 where the cover declares an estimate and no letter's both ends were found, or where it declares none; NULL where no estimate rule was run, which is not the same as a count of zero."
     }
   },
   "committees": {
@@ -3546,12 +3546,13 @@
       "link_id": "Which rule in `interpretation/hearing_bill_links.py` stated this pair, from a sealed additions-only vocabulary: `mods_cover` (the package MODS's own cover list) and `docs_house_br` (the House Committee Repository's agenda) are implemented; `daily_digest_entry`, `congress_related_items` and `front_matter_designator` are measured, named and not yet filled.  Part of the identity, because two sources naming one pair is the evidence and collapsing them would delete it; additions-only because this value is published and a rename rewrites rows already out.",
       "relation": "What the row asserts, from the sealed vocabulary `held_on` and `noticed`.  `mods_cover` rows are `held_on`, confirmed 19 of 20 by the bill's own action list; `docs_house_br` rows are `noticed`, because an agenda states intent and an agenda-only bill is confirmed 1 of 18, contradicted 1 and unverifiable 16.",
       "evidence_text": "The exact string the rule read, so a wrong row is readable without the record in hand: the MODS `context` marker on a cover row, and the `BILLS-118HR188ih.pdf` file name, the `legis-num` or the `description` on an agenda row.",
-      "held_dates": "Every nonempty `heldDate` the package MODS states, as a Native list in document order with repetitions kept; `[]` where it states none.  A compiled volume states several, and which bill was heard on which day is not stated, so no bill is paired with a date.  NULL on a row not re-read since the column was added (`mods_cover` 002). Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
+      "held_dates": "Every nonempty `heldDate` the package MODS states, as a Native list in document order with repetitions kept; `[]` where it states none.  A compiled volume states several, and which bill was heard on which day is not stated, so no bill is paired with a date.  NULL on a row not re-read since the column was added (`mods_cover` 002). Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
+      "last_modified": "The parent hearing package's publisher modification timestamp. Joins the exact dated transcript revision; neither held_date nor link_rule_version supplies this source coordinate."
     }
   },
   "hearing_transcripts": {
     "columns": {
-      "package_id": "The GovInfo package id, which is this row's identity.",
+      "package_id": "The GovInfo package id; last_modified identifies its retained package revision.",
       "collection": "The GovInfo collection the package belongs to (CRPT, CHRG).",
       "congress": "The numbered Congress, parsed from the package id's own grammar.",
       "hearing_type": "The hearing's document-type code (hhrg, shrg, jhrg).",
@@ -3559,27 +3560,27 @@
       "chamber": "The chamber, from the package id's document-type code rather than from its first letter.",
       "title": "The package title as the keyed summary states it.",
       "date_issued": "The date GovInfo issued the package; for CHRG packages this is the (first) held date: the summary's dateIssued equals the MODS's first heldDate on 185 of 185 published transcripts (2026-10-03), and the meeting's date on 117 of 117 matched to committee_meetings.  held_date states it from the MODS itself.",
-      "last_modified": "When the publisher last modified the package; the merge prefers the larger value.",
+      "last_modified": "The publisher's package addition/update timestamp, including metadata-only updates. Together with package_id it identifies a retained revision; it is not first publication or a promise that every text change has a unique timestamp.",
       "body_version_id": "Digest of the extracted text, so a re-extraction that changed nothing is visible as such.",
       "event_id": "The committee-meeting event id the Congress.gov hearing record names as its associatedMeeting, which committee_meetings.event_id joins on; NULL where the hearing names none or was not looked up.",
-      "witnesses": "Literal witness statements in publisher order. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
-      "committee_system_codes": "Committees named by the hearing MODS. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
+      "witnesses": "Every witness the package's GovInfo MODS states, as a Native list of its `<witness>` strings verbatim in document order -- name, position and organization as GPO wrote them, unsplit, because the record joins them in one string and spells them differently by chamber.  NULL where the MODS states none, never `[]`: MODS has no element for an empty witness list, so its silence is absence.  The Congress.gov meeting record lists no Senate witness at all, while the MODS lists them for 63 of 85 published Senate transcripts (2026-10-03). Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
+      "committee_system_codes": "The committees the package's GovInfo MODS names as holding the hearing: each `congCommittee` `authorityId`, the system code committees.system_code and committee_meetings.committee_system_code key on (`hswm00`), lower-cased the way they key it, once each in the order the MODS first states it, as a Native list. Read from the record and then each of its granules, because a hearing published as several states its committee only there (15 of 185 published transcripts, 2026-10-03); a joint hearing names two (3 of 185). `[]` where the MODS names none (1 of 185); NULL on a row not read since the column was added. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
       "held_date": "The day the hearing was held, as the package's MODS states it in `<heldDate>`; NULL where the MODS states none.  A compiled volume states several (2 of 185 published transcripts, 2026-10-03; CHRG-117shrg56721 states eleven) and this is the first: it dates the package, as date_issued does, so there it is when the series began, not each session's date.  hearing_bill_links.held_date is NULL on the same volume for a different reason: a link pairs a date with a bill, and the volume pairs none.",
       "mods_event_id": "The committee-meeting event id the package's GovInfo MODS states in `<eventId>` (the first, where it states several), which committee_meetings.event_id joins on with congress and chamber.  A second publisher's statement beside event_id, never overriding it: a consumer may fall back to it where event_id is NULL.  43 of 185 published transcripts state one, 22 where Congress.gov names none, 21 of them Senate; where both state one they agree 21 of 21 (2026-10-03), including a misassignment both make (CHRG-118hhrg63377 names 116369, another subcommittee's hearing that day), so agreement is not independent confirmation."
     }
   },
   "house_activity_reports": {
     "columns": {
-      "package_id": "The GovInfo package id, which is this row's identity.",
+      "package_id": "The GovInfo package id; package_id and last_modified identify this retained revision.",
       "congress": "The numbered Congress, as the keyed summary states it: the Congress the report was *filed* in.  For a Senate report that is the Congress after the one it covers; `covered_congress` is the one its printed bills belong to.",
       "session": "The session of Congress the summary states.",
       "title": "The package title as the keyed summary states it.",
       "date_issued": "The date the package was issued.",
-      "last_modified": "When the publisher last modified the package; the merge prefers the larger value.",
+      "last_modified": "The publisher's package addition/update timestamp, including metadata-only updates. Together with package_id it identifies a retained revision; it is not first publication or a promise that every text change has a unique timestamp.",
       "committee_system_code": "The `authorityId` of the first `congCommittee` the MODS names: the committee whose activity this report is, already keyed the way `committees.system_code` is.  Never read off the printed cover, which the citation rules read for a different purpose.",
       "committee_name": "That committee's `authority-standard` name, as the MODS spells it.",
       "submitted_by_bioguide_id": "The `bioGuideId` of the member the MODS names with `role=\"SUBMITTEDBY\"`.  The one bioguide id any of these documents states -- the citation rules measured zero *printed* ones across ten families -- and NULL where the publisher states the member without an id, which CRPT-118hrpt965 does.",
-      "committee_count": "How many committees the MODS names; every one is in committees.",
+      "committee_count": "How many committees the MODS names; every one is in committees_json.",
       "committees": "Every `congCommittee` the MODS names, as a Native list of objects carrying the authority id, chamber, name and the Congress the authority record itself states -- which is the roster's Congress and not necessarily this report's. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
       "associated_bill_count": "How many bills the MODS names; every one is in associated_bills.",
       "associated_bills": "Every root-level `<bill>` the MODS names, as a Native list of objects carrying the bill's natural key and the publisher's own `context` marker, in document order.  The context is kept because document order is not priority order. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
@@ -4024,7 +4025,7 @@
       "body_chars": "Character length of body, which can be shorter than the span it sits in.",
       "last_modified": "The parent report's last_modified, carried so this table versions with the package it came from.",
       "heading": "The source heading as spelled and trimmed, including actual agency names and generic titles; NULL for preamble or full_report blocks, which have no source heading.",
-      "part_id": "The report part this block was parsed from, spelled as `committee_reports.part_id`, so (package_id, part_id) is the parent row.  Appended last."
+      "part_id": "The report part this block was parsed from, spelled as `committee_reports.part_id`, so (package_id, part_id, last_modified) is the parent row.  Appended last."
     }
   },
   "roll_call_votes": {
@@ -4956,7 +4957,7 @@
   "committee_report_cbo_letters": {
     "columns": {
       "package_id": "The report package the letter was read from.",
-      "part_id": "The report part the letter was read from, spelled as `committee_reports.part_id`, so (package_id, part_id) is the parent row.",
+      "part_id": "The report part the letter was read from, spelled as `committee_reports.part_id`, so (package_id, part_id, last_modified) is the parent row.",
       "letter_seq": "Zero-based position of this letter in its part, in reading order.",
       "estimate_heading": "The section heading the letter opens on, as the committee spelled it, collapsed to one line where GPO wrapped it across two.  NULL where the letter opens on its CBO letterhead because no vocabulary heading precedes it (CRPT-111hrpt385-pt1 prints its heading after the letter).",
       "letter_span_start": "Character offset of the letter in the extracted text the parent row's text_sha256 digests, counted from zero.  The letter is not carried in the row, so the span is how it is re-read.",

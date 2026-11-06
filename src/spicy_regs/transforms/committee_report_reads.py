@@ -55,12 +55,17 @@ RULE_VERSIONS = {
 
 
 def prior_reads(path: Path | None, priors: dict[str, Path | None]) -> dict[str, dict]:
-    """Old package rows need enrichment once, even outside the discovery window."""
+    """Seed absent checkpoints from each package's latest retained revision."""
+    import duckdb
+    from spicy_regs.govinfo_revisions import latest_package_rows, newer_revision
+
     rows = {} if path is None else {row["package_id"]: row for row in pq.read_table(path).to_pylist()}
     for prior in priors.values():
         if prior is not None:
-            for row in pq.read_table(prior, columns=["package_id", "last_modified"]).to_pylist():
-                rows.setdefault(row["package_id"], row | {"outcome": "pending", "rule_version": None})
+            current = latest_package_rows(f"read_parquet('{prior}')")
+            for key, modified in duckdb.sql(f"SELECT DISTINCT package_id, last_modified FROM ({current})").fetchall():
+                if key not in rows or newer_revision(modified, rows[key].get("last_modified")):
+                    rows[key] = {"package_id": key, "last_modified": modified, "outcome": "pending", "rule_version": None}
     return rows
 
 

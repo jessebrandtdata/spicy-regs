@@ -18,7 +18,10 @@ from spicy_regs.legislative_receipts import (
 
 
 def row(dataset, **values):
-    return {f["name"]: None for f in field_registry()[dataset]["fields"]} | values
+    return {f["name"]: None for f in field_registry()[dataset]["fields"]} | (
+        {"last_modified": "2026-09-18T12:00:00Z"} if dataset in {"budget_volumes", "house_activity_reports",
+        "committee_reports", "report_sections", "committee_report_cbo_letters", "hearing_transcripts", "hearing_bill_links"}
+        else {}) | values
 
 
 def retained(directory, dataset, rows, metadata=None):
@@ -580,20 +583,15 @@ def _committee_reports_v1_registry():
     for field in registry["committee_reports"]["fields"]:
         if field["name"] == "cbo_letter_count":
             continue
-        fields.append(field)
+        fields.append(field | {"nullable": True} if field["name"] == "last_modified" else field)
         if field["name"] == "estimate_heading_rule":
             fields.extend(letters[name] for name in LETTER_COLUMNS)
     spec = {k: v for k, v in registry["committee_reports"].items() if k != "retired_fields"} | {"fields": fields}
     return registry | {"committee_reports": spec}
 
 
-def test_a_bundle_written_before_the_letters_moved_restores_under_the_new_policy(tmp_path, monkeypatch):
-    """A legislative-documents/1 committee_reports generation still restores its exact source rows after the bump.
-
-    Its subjects keep their /1 shape (the four letter columns that were native, no cbo_letter_count), the next run's
-    prior is the original row with the five retired columns, and a /2 write of the same row drops them from the
-    subject while the receipt keeps the whole original.
-    """
+def test_greenfield_report_build_refuses_prior_policy_but_preserves_original_source(tmp_path, monkeypatch):
+    """A fresh dated build keeps source evidence and refuses automatic old-policy migration."""
     import json
     from importlib.resources import files
 
@@ -601,7 +599,7 @@ def test_a_bundle_written_before_the_letters_moved_restores_under_the_new_policy
     from spicy_regs.etl_receipts import DatasetPolicy
 
     current = policy("committee_reports")
-    assert current.policy_version == "legislative-documents/2"
+    assert current.policy_version == "legislative-documents/3"
     old_registry = _committee_reports_v1_registry()
     with monkeypatch.context() as patch:
         patch.setattr(legislative_documents, "field_registry", lambda: old_registry)
@@ -611,14 +609,14 @@ def test_a_bundle_written_before_the_letters_moved_restores_under_the_new_policy
         for module in (legislative_documents, legislative_receipts):
             patch.setattr(module, "subject_schema", uncached)
         patch.setattr(legislative_receipts, "policy", lambda name, _p=policy: (
-            DatasetPolicy("committee_reports", legislative_documents.subject_schema(name), current.identity_fields,
+            DatasetPolicy("committee_reports", legislative_documents.subject_schema(name), ("package_id", "part_id"),
                           current.receipt_fields, policy_version="legislative-documents/1")
             if name == "committee_reports" else _p(name)))
         recorded = DatasetPolicy.from_descriptor(json.loads(
             files("spicy_regs").joinpath("legislative_policy_history.json").read_text())["committee_reports"])
         assert legislative_documents.subject_schema("committee_reports").equals(recorded.subject_schema)
         source = {f["name"]: None for f in old_registry["committee_reports"]["fields"]} | dict(
-            package_id="CRPT-105hrpt149", part_id="CRPT-105hrpt149", report_states_estimate="true",
+            package_id="CRPT-105hrpt149", part_id="CRPT-105hrpt149", last_modified="2026-09-18T12:00:00Z", report_states_estimate="true",
             estimate_heading="COMMITTEE COST ESTIMATE", estimate_heading_rule="committee_cost_estimate",
             letter_span_start="5402", letter_span_end="16376", letter_text_sha256="sha256:" + "a" * 64,
             letter_end_rule="named_director+estimate_approval", letter_signatory="JUNE E. O'NEILL")
@@ -631,11 +629,12 @@ def test_a_bundle_written_before_the_letters_moved_restores_under_the_new_policy
     v1_subject = pq.read_table(tmp_path / "v1/committee_reports.parquet")
     assert v1_subject.schema.equals(recorded.subject_schema)
     assert v1_subject.to_pylist()[0]["letter_span_start"] == 5402
-    # Restoring under the bumped policy reproduces the /1 subject from its receipt and returns the original row.
-    restored = restore_prior(tmp_path / "v1", tmp_path / "prior")
-    assert pq.read_table(restored["committee_reports"]).to_pylist() == [source]
-    # The same original written now publishes the /2 shape: no letter columns, the heading kept, an unread count.
-    write_legislative_outputs([restored["committee_reports"]], tmp_path / "v2", generation_id="g2")
+    # The new dated build deliberately has no automatic old-policy migration.
+    with pytest.raises(ValueError, match="Subject schema differs from policy"):
+        restore_prior(tmp_path / "v1", tmp_path / "prior")
+    # Its immutable original can be used for an explicit fresh build.
+    assert pq.read_table(written).to_pylist() == [source]
+    write_legislative_outputs([written], tmp_path / "v2", generation_id="g2")
     [published] = pq.read_table(tmp_path / "v2/committee_reports.parquet").to_pylist()
     assert not set(LETTER_COLUMNS) & published.keys()
     assert published["estimate_heading"] == "COMMITTEE COST ESTIMATE"
@@ -644,3 +643,30 @@ def test_a_bundle_written_before_the_letters_moved_restores_under_the_new_policy
                                dataset="committee_reports")
     [joined] = read_with_receipts([tmp_path / "v2/committee_reports.parquet"], [receipts], current, generation_id="g2")
     assert joined[RAW] == source
+
+
+def test_dated_print_refresh_carries_original_revision_receipt_and_witness(tmp_path):
+    from tests.test_print_citations import _Reader, _Acquirer, _NoRosters, _package, _listing, BUDGET_ID, BUDGET_PAGES
+    from spicy_regs.transforms.build_print_citations import build_print_citations
+
+    old, new = "2026-08-01T00:00:00Z", "2026-09-01T00:00:00Z"
+    reader = _Reader({"BUDGET": [_listing(BUDGET_ID, "Mid-Session Review", old)]})
+    acquirer = _Acquirer({BUDGET_ID: _package(BUDGET_ID, pages=BUDGET_PAGES, last_modified=old)})
+    kwargs = {"reader": reader, "acquirer": acquirer, "rosters": _NoRosters()}
+    build_with_receipts(build_print_citations, tmp_path / "run1", tmp_path / "bundle1",
+                        generation_id="g1", builder_kwargs=kwargs)
+    original = [row for row in pq.read_table(tmp_path / "bundle1/etl_receipts.parquet").to_pylist()
+                if row["dataset"] == "budget_volumes" and row["outcome"] == "accepted"]
+    assert len(original) == 1
+    reader = _Reader({"BUDGET": [_listing(BUDGET_ID, "Mid-Session Review", new)]})
+    acquirer.packages[BUDGET_ID] = _package(BUDGET_ID, pages=BUDGET_PAGES, last_modified=new)
+    build_with_receipts(build_print_citations, tmp_path / "run2", tmp_path / "bundle2",
+                        generation_id="g2", prior_bundle=tmp_path / "bundle1",
+                        builder_kwargs=kwargs | {"reader": reader})
+    receipts = pq.read_table(tmp_path / "bundle2/etl_receipts.parquet").to_pylist()
+    assert original[0] in receipts
+    selected = select_receipts(tmp_path / "bundle2/etl_receipts.parquet", tmp_path / "selected.parquet",
+                               dataset="budget_volumes")
+    restored = list(read_with_receipts([tmp_path / "bundle2/budget_volumes.parquet"], [selected],
+                                      policy("budget_volumes"), generation_id="g2"))
+    assert {row[RAW]["last_modified"] for row in restored} == {old, new}

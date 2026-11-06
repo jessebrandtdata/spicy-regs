@@ -362,7 +362,7 @@ def test_changed_bytes_keep_both_readings_even_under_an_equal_stamp(tmp_path, mo
     assert [row for row in rows if row["text_sha256"] != current] == citations
 
 
-def test_a_moved_stamp_over_the_same_bytes_is_not_a_revision(tmp_path, monkeypatch):
+def test_a_moved_stamp_keeps_metadata_revision_and_its_referenced_reading(tmp_path, monkeypatch):
     listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
     acquirer = _Acquirer({CRPT_ID: _package(CRPT_ID, pages=REPORT_PAGES)})
     paths = _build(tmp_path, _Reader({"CRPT": [listing]}), acquirer)
@@ -373,8 +373,12 @@ def test_a_moved_stamp_over_the_same_bytes_is_not_a_revision(tmp_path, monkeypat
     acquirer.packages[CRPT_ID] = _package(CRPT_ID, pages=REPORT_PAGES, last_modified=modified)
     _read_differently(monkeypatch)
     paths = _build(tmp_path, _Reader({"CRPT": [dict(listing, lastModified=modified)]}), acquirer)
-    assert {row["text_sha256"] for row in _rows(paths[3])} == {_rows(paths[0])[0]["text_sha256"]}
-    assert _spans(_rows(paths[3])) == _spans(citations)
+    parents = _rows(paths[0])
+    assert len(parents) == 2
+    assert {row["text_sha256"] for row in _rows(paths[3])} == {row["text_sha256"] for row in parents}
+    current = parents[0]["text_sha256"]
+    assert [row for row in _rows(paths[3]) if row["text_sha256"] != current] == citations
+    assert _spans([row for row in _rows(paths[3]) if row["text_sha256"] == current]) == _spans(citations)
 
 
 def test_a_checkpoint_without_a_digest_keeps_ambiguous_readings(tmp_path, monkeypatch):
@@ -1292,3 +1296,52 @@ def test_each_named_reading_input_moves_the_processing_version(monkeypatch, move
     after = module._processing_versions({})
     assert {collection: after[collection] != baseline[collection] for collection in baseline} == {
         "CRPT": True, "BUDGET": True}
+
+
+@pytest.mark.parametrize(("package_id", "collection", "table_index", "pages"), [
+    (CRPT_ID, "CRPT", 0, REPORT_PAGES), (BUDGET_ID, "BUDGET", 1, BUDGET_PAGES),
+])
+def test_dated_print_builder_refresh_replay_and_metadata_only_correction(
+    tmp_path, monkeypatch, package_id, collection, table_index, pages,
+):
+    from spicy_regs.transforms.build_print_citations import _held_packages
+
+    old, new = "2026-08-01T00:00:00Z", "2026-09-01T00:00:00Z"
+    listing = _listing(package_id, "ACTIVITY REPORT" if collection == "CRPT" else "Mid-Session Review", old)
+    acquirer = _Acquirer({package_id: _package(package_id, pages=pages, last_modified=old)})
+    before = None
+    for index, stamp in enumerate((old, new, new, old, None)):
+        if before:
+            # Reverse parent row order to make scan-order dependence observable.
+            for path in before[:2]:
+                table = pq.read_table(path)
+                if table.num_rows:
+                    pq.write_table(table.take(list(reversed(range(table.num_rows)))), path)
+            _publish_as_prior(before)
+        acquirer.asked.clear()
+        if stamp:
+            listing["lastModified"] = stamp
+            acquirer.packages[package_id] = _package(package_id, pages=pages, last_modified=stamp)
+        before = _build(tmp_path, _Reader({collection: [listing] if stamp else []}), acquirer)
+        parents = _rows(before[table_index])
+        assert {row["last_modified"] for row in parents} == ({old} if index == 0 else {old, new})
+        assert len(parents) == (1 if index == 0 else 2)
+        assert len({row["text_sha256"] for row in parents}) == 1
+        assert acquirer.asked == ([] if index in (2, 4) else [package_id])
+        selected = _held_packages(before[table_index])[package_id]
+        assert selected.last_modified == (old if index == 0 else new)
+        checkpoint = read_checkpoints(before[table_index], CHECKPOINT_NAMESPACE)
+        assert [row["last_modified"] for row in checkpoint] == [old if index == 0 else new]
+
+    assert before is not None
+    original_digest = _rows(before[table_index])[0]["text_sha256"]
+    _publish_as_prior(before)
+    listing["lastModified"] = new
+    acquirer.packages[package_id] = _package(package_id, pages=pages, last_modified=new)
+    _read_differently(monkeypatch)
+    corrected = _build(tmp_path, _Reader({collection: [listing]}), acquirer)
+    parents = _rows(corrected[table_index])
+    assert len(parents) == 2
+    current = _held_packages(corrected[table_index])[package_id]
+    assert current.last_modified == new and current.text_sha256 != original_digest
+    assert {row["text_sha256"] for row in _rows(corrected[3])} == {original_digest, current.text_sha256}

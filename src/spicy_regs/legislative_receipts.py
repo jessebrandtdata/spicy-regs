@@ -39,6 +39,7 @@ from spicy_regs.legislative_documents import (
     recorded_subject,
     subject_schema,
 )
+from spicy_regs.govinfo_revisions import DATED_TABLES
 from spicy_regs.transforms.parquet_rows import write_rows
 from spicy_regs.navigation_read_outcomes import POLICIES as OUTCOME_POLICIES, READ_TABLES, checkpoint_rows, file_rows
 
@@ -57,9 +58,10 @@ def policy(dataset: str) -> DatasetPolicy:
         (RAW,),
         # committee_reports/2 moves per-letter columns to committee_report_cbo_letters (ss-uep5).
         # CRS /2 adds update_date to the key; the earlier policy still reads existing summaries.
-        policy_version="legislative-documents/2" if dataset in {
+        # GovInfo /3 defines dated keys for fresh builds; no implicit prior-key migration.
+        policy_version="legislative-documents/3" if dataset in DATED_TABLES else "legislative-documents/2" if dataset in {
             "native_legal_references", "native_legal_reference_reads", "document_citations",
-            "committee_reports", "bill_publisher_summaries",
+            "bill_publisher_summaries",
         } else "legislative-documents/1",
         receipt_only=spec["processing_only"],
     )
