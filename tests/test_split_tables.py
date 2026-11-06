@@ -97,6 +97,20 @@ def test_only_version_2_may_list_a_split_table():
         _parse({**_index(), "version": 1})
 
 
+def test_partition_directory_order_comes_from_declared_columns_after_canonical_json():
+    index = _index(columns=[*COLUMNS, ["session", "VARCHAR"]], partitionColumns=["session", "congress"])
+    table = index["families"]["bills"]["tables"]["fixture_bill_sections.parquet"]
+    for member in table["members"]:
+        member["partition"]["session"] = "1"
+        member["key"] = member["key"].replace("/congress=", "/session=1/congress=")
+    parsed = pub.parse_index(json.dumps(index, sort_keys=True).encode())
+    assert parsed == index
+    # The object may be reordered; the explicit directory declaration may not.
+    table["partitionColumns"].reverse()
+    with pytest.raises(pub.PublicationError, match="Invalid publication index"):
+        _parse(index)
+
+
 def test_readers_read_only_the_version_2_index(monkeypatch):
     """A bucket serving only the retired ``publication.json`` has no pointer: its tables resolve as legacy."""
     retired: dict[str, Any] = {**_index(), "version": 1}

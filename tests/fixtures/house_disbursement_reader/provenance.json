@@ -1,0 +1,23 @@
+{
+  "artifact_digest": "sha256:0d6125404263a107429712fa5e29fbbbd3d64e95832f4b4f6d319e876a0b7282",
+  "logical_id": "urn:spicy:artifact:spicy-regs-rollup-generation:db232027dbc71b0d6d51d851bef24a78e5e7bb7fbe5b87ed4e168950907ab95e",
+  "scope": "Bounded typed rows for reader regression; original semantic qualification is separately sealed. No full report is represented by the fixture.",
+  "files": [
+    {
+      "fixture": "house_disbursements.parquet",
+      "fixture_sha256": "sha256:e4761641f291fdd7984d84edc1b2ebbb540c29b6ed4c54984666e29a28f6cfa4",
+      "original_member": "house_disbursements/report_year=2022/report_quarter=2/part-000000.parquet",
+      "original_sha256": "sha256:177197edcd2cb5b6d5fc48d1b9125f6222ca358c069864c3d45bcf6b0d3381b2",
+      "source_record_number": 4033,
+      "source_sha256": "sha256:b39d780da1bd28b0320c3ee8e474c75402b991991cdd445a4df1d1b0e3976852"
+    },
+    {
+      "fixture": "house_disbursements_summary.parquet",
+      "fixture_sha256": "sha256:952ca57b3eb038712b2a99e94355b68fde1fe8547a6db95d108180742a2f5680",
+      "original_member": "house_disbursements_summary/report_year=2022/report_quarter=2/part-000000.parquet",
+      "original_sha256": "sha256:1ecba8c9d493788ab89229695c8613bf9156ee36478a9cf4975141c74a792473",
+      "source_record_number": 2,
+      "source_sha256": "sha256:3126df6676217a26479ded453e686843fa96be0a1c449e9488f0f13c91e2c339"
+    }
+  ]
+}

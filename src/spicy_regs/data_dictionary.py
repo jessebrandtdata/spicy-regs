@@ -588,6 +588,8 @@ TABLES: tuple[str, ...] = (
     "ofac_entity_observations",
     "ofac_snapshots",
     "executive_order_observations",
+    "house_disbursements",
+    "house_disbursements_summary",
     "fec_financial_profiles",
     "treasury_debt_observations",
     "treasury_statement_periods",
@@ -669,6 +671,8 @@ MCP_QUERYABLE: frozenset[str] = frozenset(
         "ofac_entity_observations",
         "ofac_snapshots",
         "executive_order_observations",
+        "house_disbursements",
+        "house_disbursements_summary",
         "fec_financial_profiles",
         "treasury_debt_observations",
         "treasury_statement_periods",
@@ -888,6 +892,7 @@ def expected_schemas(*, native: bool = True) -> dict[str, list[tuple[str, str]]]
     from spicy_regs.transforms.build_grants_opportunities import SCHEMA as GRANTS_SCHEMA
     from spicy_regs.transforms.build_ofac import SCHEMAS as OFAC_SCHEMAS
     from spicy_regs.transforms.build_executive_orders import SCHEMA as EXECUTIVE_ORDER_SCHEMA
+    from spicy_regs.schemas.house_disbursements import SCHEMAS as HOUSE_DISBURSEMENT_SCHEMAS
     from spicy_regs.transforms.build_fec_financial_profiles import SCHEMA as FEC_PROFILE_SCHEMA
     from spicy_regs.transforms.build_census_acs import SCHEMA as CENSUS_ACS_SCHEMA
     from spicy_regs.transforms.build_agency_lifecycle_stats import SCHEMA as AGENCY_LIFECYCLE_STATS_SCHEMA
@@ -993,6 +998,7 @@ def expected_schemas(*, native: bool = True) -> dict[str, list[tuple[str, str]]]
         "grants_opportunity_observations": GRANTS_SCHEMA,
         **OFAC_SCHEMAS,
         "executive_order_observations": EXECUTIVE_ORDER_SCHEMA,
+        **HOUSE_DISBURSEMENT_SCHEMAS,
         "fec_financial_profiles": FEC_PROFILE_SCHEMA,
         "census_acs_county_observations": CENSUS_ACS_SCHEMA,
         "fec_collections": COLLECTION_SCHEMA,

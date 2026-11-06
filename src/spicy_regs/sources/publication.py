@@ -163,10 +163,12 @@ def _split_table(key: str, table: Mapping) -> None:
         if set(member) != {"key", "sha256", "byteSize", "rows", "partition"} or not _counts(member):
             raise ValueError("invalid member descriptor")
         partition = member["partition"]
-        if (not isinstance(partition, dict) or list(partition) != by
+        if (not isinstance(partition, dict) or set(partition) != set(by)
                 or not all(isinstance(v, str) and _PARTITION_VALUE.fullmatch(v) for v in partition.values())):
             raise ValueError("invalid member partition")
-        directory = "/".join([key[:-8], *(f"{column}={value}" for column, value in partition.items())])
+        # JSON object order is not directory order: canonical serialization sorts
+        # keys. The explicit partitionColumns list alone declares their order.
+        directory = "/".join([key[:-8], *(f"{column}={partition[column]}" for column in by)])
         name = member["key"].removeprefix(directory + "/")
         if name == member["key"] or not _PART.fullmatch(name) or member["key"] in seen:
             raise ValueError("member key differs from its partition")

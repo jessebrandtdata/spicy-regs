@@ -165,3 +165,35 @@ class Store:
 
     def abort_multipart_upload(self, *, Bucket, Key, UploadId):
         self.uploads.pop(Key, None)
+
+
+def download_generation(monkeypatch, generation, evidence, output, tables):
+    """Exercise the real publication and download paths using an in-memory bucket."""
+    import argparse
+    from contextlib import contextmanager
+
+    import httpx
+
+    from spicy_regs import cli
+    from spicy_regs.sources import publication
+
+    store = Store()
+    publication.publish_generation(
+        generation, client=store, bucket="test", prior_index=publication.empty_index(),
+        evidence_directories=(evidence,) if evidence is not None else (),
+    )
+
+    @contextmanager
+    def stream(method, url, **kwargs):
+        key = url.removeprefix("https://test/")
+        yield httpx.Response(
+            200 if key in store.objects else 404, content=store.objects.get(key, b""),
+            request=httpx.Request(method, url),
+        )
+
+    monkeypatch.setattr(httpx, "stream", stream)
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://test")
+    monkeypatch.delenv("SPICY_REGS_R2_URL", raising=False)
+    monkeypatch.setattr(publication, "load_index", lambda _: publication.parse_index(store.objects[publication.INDEX_V2_KEY]))
+    cli.cmd_download(argparse.Namespace(output_dir=output, types=list(tables), force=False))
+    return output

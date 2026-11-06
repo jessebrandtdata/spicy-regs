@@ -22470,6 +22470,345 @@
     "grain": "One dated Federal Register document in the admitted source release; EO number is a lookup value, not the sole source identity. History is the publisher's literal notes, not an inferred legal status.",
     "identity_columns": []
   },
+  "house_disbursements": {
+    "table": "house_disbursements",
+    "label": "House Statement of Disbursements detail ledger",
+    "summary": "One original detail CSV record, including payments, subtotals and organization totals. Filter row_kind to transaction before summing payments; printed totals are separate levels.",
+    "coverage": "Window. Explicitly selected official quarterly House CSVs, available from 2016 onward. Each admitted generation requires every file in its selected detail and summary scope. Earlier PDF reports are outside this CSV table population.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Original bytes and original row positions remain available. Qualified repairs retain original values and evidence in the row audit. Unresolved dates remain flagged, and valid service periods can precede or follow the reporting quarter. Repeated source rows and signed credits remain separate observations. Organization labels identify reporting accounts and do not establish an elected member's identity.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected report file identity; pair with source_sha256 and source_record_number."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact advertised publisher CSV URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained original CSV, before repairs."
+      },
+      {
+        "column_name": "source_record_number",
+        "column_type": "BIGINT",
+        "description": "One-based original CSV record, including the header; repeated rows remain distinct."
+      },
+      {
+        "column_name": "source_line_start",
+        "column_type": "BIGINT",
+        "description": "First physical line of the original CSV record."
+      },
+      {
+        "column_name": "source_line_end",
+        "column_type": "BIGINT",
+        "description": "Last physical line of the original CSV record."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year of the report, independent of the account's fiscal or legislative year."
+      },
+      {
+        "column_name": "report_quarter",
+        "column_type": "INTEGER",
+        "description": "Calendar quarter of the report, from 1 through 4."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the publisher's evidenced reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the publisher's evidenced reporting interval."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source row level: transaction, subtotal, organization_total or summary; sum transactions separately from totals."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Source-owner review flags. Service outside the reporting interval can be valid."
+      },
+      {
+        "column_name": "correction_rules",
+        "column_type": "VARCHAR[]",
+        "description": "Evidence-qualified corrections applied to this exact original record."
+      },
+      {
+        "column_name": "correction_confidence",
+        "column_type": "VARCHAR[]",
+        "description": "Confidence labels for applied corrections; unapplied proposals remain in audit_json."
+      },
+      {
+        "column_name": "source_encoding",
+        "column_type": "VARCHAR",
+        "description": "Explicit lossless encoding used to decode the original CSV."
+      },
+      {
+        "column_name": "source_layout",
+        "column_type": "VARCHAR",
+        "description": "Layout identified from source column headers, not inferred from the year."
+      },
+      {
+        "column_name": "normalization_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned normalization behavior."
+      },
+      {
+        "column_name": "normalization_receipt_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the receipt pinning this file's normalization implementation and artifacts."
+      },
+      {
+        "column_name": "audit_json",
+        "column_type": "VARCHAR",
+        "description": "Source-owner audit for a flagged or corrected row, including original values, reasons, evidence and unapplied proposals."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Literal reporting office/account label with outer whitespace removed; not an elected-member identity."
+      },
+      {
+        "column_name": "fiscal_or_legislative_year",
+        "column_type": "VARCHAR",
+        "description": "Publisher fiscal/legislative year label where supplied; distinct from the report year."
+      },
+      {
+        "column_name": "organization_code",
+        "column_type": "VARCHAR",
+        "description": "Publisher organization identifier, preserving leading zeros and nonnumeric values."
+      },
+      {
+        "column_name": "program",
+        "column_type": "VARCHAR",
+        "description": "Publisher program label."
+      },
+      {
+        "column_name": "program_code",
+        "column_type": "VARCHAR",
+        "description": "Publisher program identifier where supplied."
+      },
+      {
+        "column_name": "cost_category",
+        "column_type": "VARCHAR",
+        "description": "Publisher cost category. A program subtotal can carry the last category; inspect row_kind and description."
+      },
+      {
+        "column_name": "budget_object_class",
+        "column_type": "VARCHAR",
+        "description": "Publisher budget object class where supplied."
+      },
+      {
+        "column_name": "sort_sequence",
+        "column_type": "VARCHAR",
+        "description": "Original DETAIL, SUBTOTAL or GRAND TOTAL FOR ORGANIZATION label."
+      },
+      {
+        "column_name": "transaction_date",
+        "column_type": "DATE",
+        "description": "Source transaction date; source errors remain flagged and original values remain in the audit."
+      },
+      {
+        "column_name": "data_source",
+        "column_type": "VARCHAR",
+        "description": "Publisher transaction source, such as AP, AR or GL."
+      },
+      {
+        "column_name": "document",
+        "column_type": "VARCHAR",
+        "description": "Exact publisher document/voucher identifier; no padding inferred from the PDF."
+      },
+      {
+        "column_name": "vendor_name",
+        "column_type": "VARCHAR",
+        "description": "Source payee name, retaining literal accents and punctuation after evidenced CSV alignment repair."
+      },
+      {
+        "column_name": "vendor_id",
+        "column_type": "VARCHAR",
+        "description": "Publisher vendor identifier where supplied; not a cross-source identity."
+      },
+      {
+        "column_name": "service_start_date",
+        "column_type": "DATE",
+        "description": "Printed service start after qualified repairs; missing or invalid dates are null with audit evidence."
+      },
+      {
+        "column_name": "service_end_date",
+        "column_type": "DATE",
+        "description": "Printed service end after qualified repairs; valid advance service can fall outside the reporting quarter."
+      },
+      {
+        "column_name": "description",
+        "column_type": "VARCHAR",
+        "description": "Publisher expense or subtotal description."
+      },
+      {
+        "column_name": "budget_object_code",
+        "column_type": "VARCHAR",
+        "description": "Publisher budget object code where supplied."
+      },
+      {
+        "column_name": "amount",
+        "column_type": "DECIMAL(38,2)",
+        "description": "Exact signed U.S. dollar amount. Credits and repeated observations remain separate; totals are identified by row_kind."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_record_number"
+    ]
+  },
+  "house_disbursements_summary": {
+    "table": "house_disbursements_summary",
+    "label": "House Statement of Disbursements quarterly summary",
+    "summary": "One original summary CSV record with separate year-to-date and quarter-to-date amounts. Category and total rows remain as published; these summary amounts must not be added to the detail ledger.",
+    "coverage": "Window. Explicitly selected official quarterly House CSVs, available from 2016 onward. Each admitted generation requires every file in its selected detail and summary scope. Earlier PDF reports are outside this CSV table population.",
+    "kind": "window",
+    "measured_on": "2026-11-06",
+    "data_quality": "Original bytes and original row positions remain available. Qualified repairs retain original values and evidence in the row audit. Unresolved dates remain flagged, and valid service periods can precede or follow the reporting quarter. Repeated source rows and signed credits remain separate observations. Organization labels identify reporting accounts and do not establish an elected member's identity.",
+    "columns": [
+      {
+        "column_name": "source_file_id",
+        "column_type": "VARCHAR",
+        "description": "Selected report file identity; pair with source_sha256 and source_record_number."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "Exact advertised publisher CSV URL."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained original CSV, before repairs."
+      },
+      {
+        "column_name": "source_record_number",
+        "column_type": "BIGINT",
+        "description": "One-based original CSV record, including the header; repeated rows remain distinct."
+      },
+      {
+        "column_name": "source_line_start",
+        "column_type": "BIGINT",
+        "description": "First physical line of the original CSV record."
+      },
+      {
+        "column_name": "source_line_end",
+        "column_type": "BIGINT",
+        "description": "Last physical line of the original CSV record."
+      },
+      {
+        "column_name": "report_year",
+        "column_type": "INTEGER",
+        "description": "Calendar year of the report, independent of the account's fiscal or legislative year."
+      },
+      {
+        "column_name": "report_quarter",
+        "column_type": "INTEGER",
+        "description": "Calendar quarter of the report, from 1 through 4."
+      },
+      {
+        "column_name": "report_period_start",
+        "column_type": "DATE",
+        "description": "First day of the publisher's evidenced reporting interval."
+      },
+      {
+        "column_name": "report_period_end",
+        "column_type": "DATE",
+        "description": "Last day of the publisher's evidenced reporting interval."
+      },
+      {
+        "column_name": "row_kind",
+        "column_type": "VARCHAR",
+        "description": "Source row level: transaction, subtotal, organization_total or summary; sum transactions separately from totals."
+      },
+      {
+        "column_name": "issue_codes",
+        "column_type": "VARCHAR[]",
+        "description": "Source-owner review flags. Service outside the reporting interval can be valid."
+      },
+      {
+        "column_name": "correction_rules",
+        "column_type": "VARCHAR[]",
+        "description": "Evidence-qualified corrections applied to this exact original record."
+      },
+      {
+        "column_name": "correction_confidence",
+        "column_type": "VARCHAR[]",
+        "description": "Confidence labels for applied corrections; unapplied proposals remain in audit_json."
+      },
+      {
+        "column_name": "source_encoding",
+        "column_type": "VARCHAR",
+        "description": "Explicit lossless encoding used to decode the original CSV."
+      },
+      {
+        "column_name": "source_layout",
+        "column_type": "VARCHAR",
+        "description": "Layout identified from source column headers, not inferred from the year."
+      },
+      {
+        "column_name": "normalization_version",
+        "column_type": "VARCHAR",
+        "description": "Version of the source-owned normalization behavior."
+      },
+      {
+        "column_name": "normalization_receipt_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the receipt pinning this file's normalization implementation and artifacts."
+      },
+      {
+        "column_name": "audit_json",
+        "column_type": "VARCHAR",
+        "description": "Source-owner audit for a flagged or corrected row, including original values, reasons, evidence and unapplied proposals."
+      },
+      {
+        "column_name": "organization",
+        "column_type": "VARCHAR",
+        "description": "Literal reporting office/account label with outer whitespace removed; not an elected-member identity."
+      },
+      {
+        "column_name": "program",
+        "column_type": "VARCHAR",
+        "description": "Publisher program label."
+      },
+      {
+        "column_name": "description",
+        "column_type": "VARCHAR",
+        "description": "Publisher expense or subtotal description."
+      },
+      {
+        "column_name": "ytd_amount",
+        "column_type": "DECIMAL(38,2)",
+        "description": "Exact signed publisher year-to-date U.S. dollar amount; never sum this with qtd_amount."
+      },
+      {
+        "column_name": "qtd_amount",
+        "column_type": "DECIMAL(38,2)",
+        "description": "Exact signed publisher quarter-to-date U.S. dollar amount; summary totals remain separate row levels."
+      }
+    ],
+    "subject": "spending",
+    "grain": null,
+    "identity_columns": [
+      "source_sha256",
+      "source_record_number"
+    ]
+  },
   "fec_financial_profiles": {
     "table": "fec_financial_profiles",
     "label": "Reported candidate and committee financial profiles",
