@@ -144,19 +144,6 @@
       "district": "District as the cosponsor entry states it."
     }
   },
-  "bill_publisher_summaries": {
-    "columns": {
-      "bill_id": "The bill this summary describes.",
-      "summary_version_code": "The publisher's two-digit summary version code (00 introduced, 53 passed House...).",
-      "action_date": "The date of the action this summary describes.",
-      "action_desc": "The publisher's description of that action.",
-      "update_date": "Literal publisher updateDate retained in the revision key. In BILLSTATUS schema 1.0.0 it dates the list item; in schema 3.0.0 it dates the summary update. It does not establish first publication.",
-      "last_summary_update_date": "Literal legacy lastSummaryUpdateDate, separate from the item clock. Missing is NULL and an explicitly empty value stays empty. This is an update date, not a first-publication date.",
-      "source_schema_version": "BILLSTATUS schema version stated by the source document; qualifies the meaning of the two update fields.",
-      "summary_html": "The summary exactly as the publisher escaped it, from either placement, untruncated.",
-      "summary_chars": "Character length of summary_html, so a truncation upstream is visible without reading it."
-    }
-  },
   "bill_sections": {
     "columns": {
       "bill_id": "The bill this section belongs to.",

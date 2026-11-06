@@ -28139,7 +28139,7 @@
       {
         "column_name": "update_date",
         "column_type": "VARCHAR",
-        "description": "Literal publisher updateDate retained in the revision key. In BILLSTATUS schema 1.0.0 it dates the list item; in schema 3.0.0 it dates the summary update. It does not establish first publication."
+        "description": "Literal updateDate of the summary item. In BILLSTATUS 1.0.0 it dates the billSummaries item, not the summary itself; 3.0.0 states it within summary. It does not establish first publication."
       },
       {
         "column_name": "summary_html",
@@ -28154,12 +28154,12 @@
       {
         "column_name": "last_summary_update_date",
         "column_type": "VARCHAR",
-        "description": "Literal legacy lastSummaryUpdateDate, separate from the item clock. Missing is NULL and an explicitly empty value stays empty. This is an update date, not a first-publication date."
+        "description": "Literal lastSummaryUpdateDate, which dates the summary itself in BILLSTATUS 1.0.0. NULL means absent; empty and malformed source strings remain unchanged. No first-publication claim."
       },
       {
         "column_name": "source_schema_version",
         "column_type": "VARCHAR",
-        "description": "BILLSTATUS schema version stated by the source document; qualifies the meaning of the two update fields."
+        "description": "The source BILLSTATUS version that gives the two native summary clocks their context."
       }
     ],
     "subject": "congress",

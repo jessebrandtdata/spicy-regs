@@ -19,8 +19,8 @@ One row per retained CRS summary revision, keyed by bill, summary version, actio
 | `summary_version_code` | `VARCHAR` | The publisher's two-digit summary version code (00 introduced, 53 passed House...). |
 | `action_date` | `VARCHAR` | The date of the action this summary describes. |
 | `action_desc` | `VARCHAR` | The publisher's description of that action. |
-| `update_date` | `VARCHAR` | Literal publisher updateDate retained in the revision key. In BILLSTATUS schema 1.0.0 it dates the list item; in schema 3.0.0 it dates the summary update. It does not establish first publication. |
+| `update_date` | `VARCHAR` | Literal updateDate of the summary item. In BILLSTATUS 1.0.0 it dates the billSummaries item, not the summary itself; 3.0.0 states it within summary. It does not establish first publication. |
 | `summary_html` | `VARCHAR` | The summary exactly as the publisher escaped it, from either placement, untruncated. |
 | `summary_chars` | `BIGINT` | Character length of summary_html, so a truncation upstream is visible without reading it. |
-| `last_summary_update_date` | `VARCHAR` | Literal legacy lastSummaryUpdateDate, separate from the item clock. Missing is NULL and an explicitly empty value stays empty. This is an update date, not a first-publication date. |
-| `source_schema_version` | `VARCHAR` | BILLSTATUS schema version stated by the source document; qualifies the meaning of the two update fields. |
+| `last_summary_update_date` | `VARCHAR` | Literal lastSummaryUpdateDate, which dates the summary itself in BILLSTATUS 1.0.0. NULL means absent; empty and malformed source strings remain unchanged. No first-publication claim. |
+| `source_schema_version` | `VARCHAR` | The source BILLSTATUS version that gives the two native summary clocks their context. |
