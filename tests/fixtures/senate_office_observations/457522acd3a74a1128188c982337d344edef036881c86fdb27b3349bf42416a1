@@ -1,0 +1,264 @@
+{
+  "actual_copy_receipt": {
+    "bytes": 5012,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/flex-comparison-v1/actual-copy-challenges.json",
+    "sha256": "bf7097eb902ae52db4ccdc3250acc7b9b10c4830586bd50fb8cb62f0df58584b"
+  },
+  "approved_edits": [
+    {
+      "after": "B-1",
+      "before": "51",
+      "path": [
+        "page_label"
+      ]
+    },
+    {
+      "after": "NET FUNDS AVAILABLE AS OF 04/01/2008 ($)",
+      "before": "NET FUNDS AVAILABLE AS OF 04/01/2006 ($)",
+      "path": [
+        "tables",
+        0,
+        "columns",
+        1
+      ]
+    },
+    {
+      "after": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2008 THRU 09/30/2008 ($)",
+      "before": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2006 THRU 06/30/2006 ($)",
+      "path": [
+        "tables",
+        0,
+        "columns",
+        2
+      ]
+    },
+    {
+      "after": "UNEXPENDED BALANCE AS OF 09/30/2008",
+      "before": "UNEXPENDED BALANCE AS OF 06/30/2006",
+      "path": [
+        "tables",
+        0,
+        "rows",
+        6,
+        "cells",
+        0
+      ]
+    }
+  ],
+  "captures": {
+    "14": {
+      "image_declared": {
+        "bytes": 230156,
+        "height": 2707,
+        "sha256": "fa5908eb7e64eadd18bd0c4be83a9c32a27d83e05c33412eac95370bbe4f0310",
+        "width": 1652
+      },
+      "mirror": {
+        "bytes": 56017,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/remote-retention-v2.json",
+        "sha256": "5c8795f06226365efab60b6e47a888bf082bc38a2e9f9d4db76c5ac8b317dbcd"
+      },
+      "observation": {
+        "bytes": 10869,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/observation-00013.json",
+        "sha256": "494caae4bfd0eff69e703cef52a4d3015bfab5efb45787583986e18947fd10f8"
+      },
+      "page_metadata": {
+        "bytes": 1357,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/page-00013.json",
+        "sha256": "bb917054fd1c6e2e172dfd425ef59e050fe40e5e676495a5079610705216b416"
+      },
+      "plan": {
+        "bytes": 7648,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/plan.json",
+        "sha256": "242db908ead4b1a67f18135f6c6c8b40f456bec0da789bce8ffca4f60965b7cf"
+      },
+      "request": {
+        "bytes": 224606,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/request-00013.json.gz",
+        "sha256": "d629881ec7968a53af12d5186dd76ecb24488fc73dac2167ce98992728cc884e"
+      },
+      "request_bytes_freshly_decoded": false,
+      "response": {
+        "bytes": 34133,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/response-00013.json",
+        "sha256": "f20742644a5e4c6d99adb13a6fbaeb19f5912dabc76c71da76402b351b687386"
+      },
+      "retirement": {
+        "bytes": 2941,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/retired-request-staging-v2.json",
+        "sha256": "ba2866c3e7f6c10c52ddfcee8f27ee97ddc51653d0edc678cf76bc27bc538b1c"
+      }
+    },
+    "20": {
+      "image_declared": {
+        "bytes": 209546,
+        "height": 1622,
+        "sha256": "cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635",
+        "width": 2718
+      },
+      "mirror": {
+        "bytes": 56020,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/remote-retention-v2.json",
+        "sha256": "b0558bf130baa845bb9f111cd903e4af06ae866d42a53e3cf08788b7da41eb59"
+      },
+      "observation": {
+        "bytes": 6719,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/observation-00003.json",
+        "sha256": "60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0"
+      },
+      "page_metadata": {
+        "bytes": 1427,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/page-00003.json",
+        "sha256": "ad9e9401e2da9403e1a354d579cb1f3bb30aef7f8112d1dfb41bc3126e4c3f91"
+      },
+      "plan": {
+        "bytes": 7657,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/plan.json",
+        "sha256": "21177721e0c71abe0e518470b067a7fc1c8f79a2784d33d742f4498d58661afb"
+      },
+      "request": {
+        "bytes": 200051,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/request-00003.json.gz",
+        "sha256": "77b6f82b02da9b79d753c926d6ce14bf88572a17a2a88e13f6521ca0360a347e"
+      },
+      "request_bytes_freshly_decoded": false,
+      "response": {
+        "bytes": 19121,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/response-00003.json",
+        "sha256": "8e48ca8901eebdcf970e4b2b4b13ceefa81cec73492cfbb6bef644ff93a39ab3"
+      },
+      "retirement": {
+        "bytes": 2941,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/retired-request-staging-v2.json",
+        "sha256": "6739d4b7fb1ed2ccba030aa7101b6d1b612e5a5f9de48bc6fb913ff883f64f51"
+      }
+    }
+  },
+  "checker": {
+    "bytes": 9364,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/review_p20_proposal_and_copies_v2.py",
+    "sha256": "886d921b25d045f5fa13e736ca7f307cf5279e7cb4c37270ea8aa08509626728"
+  },
+  "checker_setup_refusal": {
+    "bytes": 870,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/p20-copy-checker-setup-refusal.json",
+    "sha256": "f7636263cf2257073cab53900a5256504ff1262c5c5f2cf9e35a9beccabc0857"
+  },
+  "copy_cases": [
+    {
+      "all_other_outcome_fields_unchanged": true,
+      "copy": {
+        "bytes": 15656,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/flex-comparison-v1/actual-copies/p14_receipt_blank_to_zero.json",
+        "sha256": "88b981b00ac9529832a2ceeece0f6deb79440b0b623a307b9a407919578ac588"
+      },
+      "id": "p14_receipt_blank_to_zero",
+      "known_baseline_differences_retained_as_author_scope": 9,
+      "mutant_target_fail": true,
+      "new_failed_source_position": [
+        "tables",
+        0,
+        "rows",
+        1,
+        "cells",
+        7
+      ],
+      "pristine": {
+        "bytes": 10869,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/observation-00013.json",
+        "sha256": "494caae4bfd0eff69e703cef52a4d3015bfab5efb45787583986e18947fd10f8"
+      },
+      "pristine_target_pass": true,
+      "raw_response_reference_unchanged": true,
+      "source_predicate": "Printed money position is visibly blank, not zero"
+    },
+    {
+      "all_other_outcome_fields_unchanged": true,
+      "copy": {
+        "bytes": 9274,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/flex-comparison-v1/actual-copies/p20_land_blank_to_zero.json",
+        "sha256": "0b8ca43c3df8fd4927b0760b881a4cd2c5a947e5d8179cf8930910591db74db4"
+      },
+      "id": "p20_land_blank_to_zero",
+      "known_baseline_differences_retained_as_author_scope": 4,
+      "mutant_target_fail": true,
+      "new_failed_source_position": [
+        "tables",
+        0,
+        "rows",
+        4,
+        "cells",
+        3
+      ],
+      "pristine": {
+        "bytes": 6719,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/observation-00003.json",
+        "sha256": "60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0"
+      },
+      "pristine_target_pass": true,
+      "raw_response_reference_unchanged": true,
+      "source_predicate": "Printed money position is visibly blank, not zero"
+    }
+  ],
+  "corrections": {
+    "bytes": 3905,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-correction-proposal-v1/corrections.json",
+    "sha256": "eebd50ebfedee53655472a9e0044b467e0ae35de63ed63d46fb6b4d8c841311b"
+  },
+  "limits": [
+    "Source-only correction approval and two bounded actual observation-copy failures; no provider/host/typed/consumer application acceptance.",
+    "Original image judgment and body identity are reused from the prior sealed pixel/source review; no original-volume rehash or fresh render.",
+    "Retired requests are bound by exact metadata, response and mirror/retirement membership; no archived request was downloaded or freshly decoded in this review.",
+    "P14 existing disagreements and all unresolved source glyphs remain ungraded here. The copy changes exactly one additional qualified blank position; no full-page pass is claimed.",
+    "No producer imports, OCR, model calls, network calls, production or RAW writes."
+  ],
+  "preserved": {
+    "all_outside_four_paths": true,
+    "blank_money_positions": 13,
+    "funding_year": "2006",
+    "money": 8,
+    "observed_empty_ledger_rows": 0,
+    "raw_model_uncertainty_unchanged": true
+  },
+  "prior_source_pixel_review": {
+    "bytes": 9526,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+    "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73"
+  },
+  "source_guard_verified": {
+    "image_sha256": "sha256:cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635",
+    "page": 20,
+    "result_sha256": "sha256:60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0",
+    "source_byte_size": 64772880,
+    "source_sha256": "sha256:8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7"
+  },
+  "source_images": [
+    {
+      "bytes": 97451,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+      "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d"
+    },
+    {
+      "bytes": 57600,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-summary.png",
+      "sha256": "f0d4161eb71dadaa9253679895617ead8a444abd34189121037861b8aebb1138"
+    }
+  ],
+  "source_oracle": {
+    "bytes": 97901,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-oracle.json",
+    "sha256": "18d0a117835e8b6240740dc57c7ab49ebcbaf00c54857328ad950872ba8f8a7f"
+  },
+  "source_proposal_review": {
+    "bytes": 40843,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-correction-proposal-v1/review.json",
+    "sha256": "2c612dd947ef3b108ede4b4d49f70e19a642846c35e6c7d928498c82ca102a65"
+  },
+  "status": "approved_four_exact_p20_source_edits_and_confirmed_two_actual_copy_failures",
+  "whole_proposed_outcome": {
+    "bytes": 2541,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-correction-proposal-v1/proposed-outcome.json",
+    "sha256": "11cac59bbd12760368c5da9671e5e461837a985dd99a5dc29887472d29a147c6"
+  }
+}

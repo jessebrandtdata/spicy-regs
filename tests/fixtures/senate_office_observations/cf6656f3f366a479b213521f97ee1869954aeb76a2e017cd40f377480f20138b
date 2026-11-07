@@ -1,0 +1,46 @@
+{
+  "status": "selected_capture_request_restored",
+  "retention": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/remote-retention-v2.json",
+    "sha256": "sha256:b0558bf130baa845bb9f111cd903e4af06ae866d42a53e3cf08788b7da41eb59",
+    "bytes": 56020
+  },
+  "retirement": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/retired-request-staging-v2.json",
+    "sha256": "sha256:6739d4b7fb1ed2ccba030aa7101b6d1b612e5a5f9de48bc6fb913ff883f64f51",
+    "bytes": 2941
+  },
+  "page": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/page-00003.json",
+    "sha256": "sha256:ad9e9401e2da9403e1a354d579cb1f3bb30aef7f8112d1dfb41bc3126e4c3f91",
+    "bytes": 1427
+  },
+  "archive": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/senate-flex-office-provider-v1/capture-inputs-v1/retained-chunk.tar",
+    "sha256": "sha256:59b026d01a7f3d99caccaa30fbfb1c0657595c437e2c3ea6ae932eaea77b5dac",
+    "bytes": 4444160
+  },
+  "request": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/senate-flex-office-provider-v1/capture-inputs-v1/request-00003.json.gz",
+    "sha256": "sha256:77b6f82b02da9b79d753c926d6ce14bf88572a17a2a88e13f6521ca0360a347e",
+    "bytes": 200051
+  },
+  "image": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/senate-flex-office-provider-v1/capture-inputs-v1/model-input-p20.png",
+    "sha256": "sha256:cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635",
+    "bytes": 209546
+  },
+  "fetch_implementation": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/house-reviewed-continuity-consumer-v1/source/src/spicy_regs/sources/publication.py",
+    "sha256": "sha256:a4fdc13a147364c8b89cce027a8511bcbdb119b2c5fb5c0669739abfb962a33f",
+    "bytes": 104211
+  },
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/house-reviewed-continuity-consumer-v1/source/../../senate-flex-office-provider-v1/restore_p20_capture.py",
+    "sha256": "sha256:87378dd34275adf0ce41aca45ac869f9541e09dc66de1aa9d55c9f38c63f211b",
+    "bytes": 3686
+  },
+  "model_calls": 0,
+  "new_renders": 0,
+  "limits": "One existing immutable processing archive fetched with maintained byte verification; one exact request member restored and its existing PNG decoded. No original PDF download, capture resubmission, source qualification or RAW write."
+}

@@ -1,0 +1,213 @@
+{
+  "schema": "reviewed-senate-office-summary/1",
+  "status": "reviewed_fields_with_unresolved_text_or_context",
+  "binding": {
+    "source_sha256": "sha256:8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+    "source_byte_size": 64772880,
+    "page": 20,
+    "result_sha256": "sha256:60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0",
+    "image_sha256": "sha256:cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635"
+  },
+  "source_sha256": "sha256:8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+  "source_byte_size": 64772880,
+  "page": 20,
+  "physical_pages": 1069,
+  "result": {
+    "sha256": "sha256:60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0",
+    "bytes": 6719
+  },
+  "image": {
+    "sha256": "sha256:cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635",
+    "bytes": 209546
+  },
+  "report_period_start": "2008-04-01",
+  "report_period_end": "2008-09-30",
+  "review_evidence": [
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-oracle.json",
+      "sha256": "sha256:18d0a117835e8b6240740dc57c7ab49ebcbaf00c54857328ad950872ba8f8a7f",
+      "bytes": 97901
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-crops.json",
+      "sha256": "sha256:e5648db6613c3124210bcadbf3688e43924725b9851ec4ae4ba515f17d93e32d",
+      "bytes": 4319
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+      "sha256": "sha256:d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+      "bytes": 97451
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-summary.png",
+      "sha256": "sha256:f0d4161eb71dadaa9253679895617ead8a444abd34189121037861b8aebb1138",
+      "bytes": 57600
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+      "sha256": "sha256:33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+      "bytes": 9526
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/four-declaration-copies-confirmation.json",
+      "sha256": "sha256:2e89cbcc53557c7d82cf8413660c053c8dd40a45df6ca06dbb0864adeb297940",
+      "bytes": 5078
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/flex-comparison-v1/review.json",
+      "sha256": "sha256:ad1c0677c96c85b6d9beeb26fa6fec8f849c0e0477979881688489c713c2b306",
+      "bytes": 171567
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-correction-proposal-v1/review.json",
+      "sha256": "sha256:2c612dd947ef3b108ede4b4d49f70e19a642846c35e6c7d928498c82ca102a65",
+      "bytes": 40843
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-review-completion.json",
+      "sha256": "sha256:856a9c65cb7232bcbee99f20063b96feec345fad01a67cd0d9896d0d3a5c8f8e",
+      "bytes": 4170
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/senate-flex-office-provider-v1/capture-inputs-v1/completion.json",
+      "sha256": "sha256:cf6656f3f366a479b213521f97ee1869954aeb76a2e017cd40f377480f20138b",
+      "bytes": 2964
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/final-handoff-v1.json",
+      "sha256": "sha256:46027e3bff57e11ea5bfd0d0fecf154dd47c52bfb704c2f4df7cc0af1ab5f9dd",
+      "bytes": 4256
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/p20-proposal-and-actual-copies-v1/review.json",
+      "sha256": "sha256:457522acd3a74a1128188c982337d344edef036881c86fdb27b3349bf42416a1",
+      "bytes": 13448
+    }
+  ],
+  "corrections": [
+    {
+      "id": "senate-2008-apr-part1-p20-printed-page-and-report-period",
+      "method": "manual_review",
+      "reason": "Original B-1 labels explicitly print Apr 1 through Sep 30, 2008; the separate account Funding Year 2006 is not the reporting period. Change exactly the four existing label fields, preserving all financial values and empty ledger.",
+      "source_sha256": "sha256:8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+      "source_byte_size": 64772880,
+      "page": 20,
+      "result_sha256": "sha256:60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0",
+      "image_sha256": "sha256:cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635",
+      "review_evidence": [
+        {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-oracle.json",
+          "sha256": "sha256:18d0a117835e8b6240740dc57c7ab49ebcbaf00c54857328ad950872ba8f8a7f",
+          "bytes": 97901
+        },
+        {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-crops.json",
+          "sha256": "sha256:e5648db6613c3124210bcadbf3688e43924725b9851ec4ae4ba515f17d93e32d",
+          "bytes": 4319
+        },
+        {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+          "sha256": "sha256:d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+          "bytes": 97451
+        },
+        {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-summary.png",
+          "sha256": "sha256:f0d4161eb71dadaa9253679895617ead8a444abd34189121037861b8aebb1138",
+          "bytes": 57600
+        },
+        {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+          "sha256": "sha256:33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+          "bytes": 9526
+        },
+        {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/four-declaration-copies-confirmation.json",
+          "sha256": "sha256:2e89cbcc53557c7d82cf8413660c053c8dd40a45df6ca06dbb0864adeb297940",
+          "bytes": 5078
+        },
+        {
+          "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/flex-comparison-v1/review.json",
+          "sha256": "sha256:ad1c0677c96c85b6d9beeb26fa6fec8f849c0e0477979881688489c713c2b306",
+          "bytes": 171567
+        }
+      ],
+      "edits": [
+        {
+          "path": [
+            "page_label"
+          ],
+          "before": "51",
+          "after": "B-1"
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            1
+          ],
+          "before": "NET FUNDS AVAILABLE AS OF 04/01/2006 ($)",
+          "after": "NET FUNDS AVAILABLE AS OF 04/01/2008 ($)"
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            2
+          ],
+          "before": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2006 THRU 06/30/2006 ($)",
+          "after": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2008 THRU 09/30/2008 ($)"
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            0
+          ],
+          "before": "UNEXPENDED BALANCE AS OF 06/30/2006",
+          "after": "UNEXPENDED BALANCE AS OF 09/30/2008"
+        }
+      ]
+    }
+  ],
+  "raw_outcome_sha256": "sha256:b1d8d66e2276e78acec50c029be9b13653e8d14b378f7a93188d59d85f775d6e",
+  "normalized_outcome_sha256": "sha256:535b3c5b6ed2412b731783635ba70cfd0b1b9b93a2d2140f471c2a4ae281a7e2",
+  "context_fields": {
+    "section_heading": [
+      "headings",
+      0
+    ],
+    "office": [
+      "headings",
+      1
+    ],
+    "appropriation_title": [
+      "headings",
+      2
+    ],
+    "funding_label": [
+      "other_text",
+      0
+    ]
+  },
+  "table_roles": [
+    {
+      "table": 0,
+      "role": "office_summary"
+    },
+    {
+      "table": 1,
+      "role": "observed_empty_ledger"
+    }
+  ],
+  "counts": {
+    "records": 7,
+    "amounts": 8,
+    "blanks": 13
+  },
+  "unread_scope": "Only the source-reviewed financial fields, office/funding context, reporting labels and empty ledger on physical p20. Other pages and complete text transcription remain unqualified; p14 uncertain amounts are not included."
+}

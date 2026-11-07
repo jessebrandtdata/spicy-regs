@@ -99,24 +99,36 @@ def read_retained_summary_observation(item):
 
 def read_retained_observation(item, *, chamber, profile):
     """Dispatch exact retained evidence through its source-owned interpretation."""
-    if (chamber, profile) == ("senate", "financial-summary"):
+    if (chamber, profile) == ("senate", "financial-summary") and "capture_binding" not in item:
         return read_retained_summary_observation(item)
-    if (chamber, profile) != ("house", "ledger"):
-        raise ValueError("No retained observation reader for this source/profile")
+    readers = {
+        ("house", "ledger"): ("house_disbursements_observations", "read_house_ledger_observation"),
+        ("senate", "financial-summary"): ("senate_office_observations", "read_senate_office_observation"),
+    }
+    try:
+        module, function = readers[chamber, profile]
+    except KeyError as error:
+        raise ValueError("No retained observation reader for this source/profile") from error
+    outcome, configuration, qualification = _read_retained_capture(item)
+    reader = getattr(import_module("spicy_docs.reading." + module), function)
+    return reader(outcome, binding=qualification["binding"], qualification=qualification, configuration=configuration)
+
+
+def _read_retained_capture(item):
+    """Replay exact capture bytes once for either chamber's source-owned reader."""
     import json
     from PIL import Image
     from spicy_docs.extraction import Raster
     from spicy_docs.reading.ocr_observations import retained_capture_observation
-    from spicy_docs.reading.house_disbursements_observations import read_house_ledger_observation
     from spicy_regs.pipelines.congressional_disbursement_pages import verify_pin
 
     for key in ("result", "image", "page_record", "request", "response", "plan", "qualification"):
         if item[key]["bytes"] > (16 if key == "image" else 32) * 1024**2:
-            raise ValueError("Retained House observation exceeds its bounded input size")
+            raise ValueError("Retained observation exceeds its bounded input size")
     image_path = verify_pin(item["image"])
     with Image.open(image_path) as image:
         if image.format != "PNG" or image.width * image.height > 40_000_000:
-            raise ValueError("Unsupported or oversized retained House page raster")
+            raise ValueError("Unsupported or oversized retained page raster")
         raster = Raster(image_path.read_bytes(), image.width, image.height)
     qualification = json.loads(verify_pin(item["qualification"]).read_text())
     outcome, configuration = retained_capture_observation(
@@ -128,12 +140,7 @@ def read_retained_observation(item, *, chamber, profile):
         plan_bytes=verify_pin(item["plan"]).read_bytes(),
         binding=item["capture_binding"],
     )
-    return read_house_ledger_observation(
-        outcome,
-        binding=qualification["binding"],
-        qualification=qualification,
-        configuration=configuration,
-    )
+    return outcome, configuration, qualification
 
 
 def record_kind(row):
@@ -144,6 +151,12 @@ def validate_page_content(page, profile):
     """Check retained indices and row occurrence identity, without reinterpreting cells."""
     if profile == "allowance-formula":
         import_module(reader_module("house", profile)).validate_formula_page(page)
+        return
+    if page.get("reading_method") == "reviewed_structured_summary":
+        if profile != "financial-summary":
+            raise ValueError("Reviewed Senate summary cannot enter another reading profile")
+        module = import_module("spicy_docs.reading.senate_office_observations")
+        module.validate_senate_office_observation(page)
         return
     if page.get("reading_method") == "reviewed_structured_observation":
         if profile != "ledger":

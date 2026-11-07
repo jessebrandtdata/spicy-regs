@@ -1,0 +1,97 @@
+{
+  "author_receipt": {
+    "bytes": 9294,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-declaration-challenges/receipt.json",
+    "sha256": "a714ad707fe2656dd4e5322ecc846409692f120f0debe39e20848f24ac29b840"
+  },
+  "baseline_all_pass": true,
+  "cases": [
+    {
+      "copy": {
+        "bytes": 97910,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-declaration-challenges/p14_receipt_blank_to_zero.json",
+        "sha256": "ef33184d37ff84741538cf0a340a161924b9ffb17d431551f9ccdf6506e6bcbe"
+      },
+      "exact_declared_change_only": true,
+      "failures": [
+        "p14_receipt_blank_to_zero"
+      ],
+      "id": "p14_receipt_blank_to_zero",
+      "pristine_pass": true
+    },
+    {
+      "copy": {
+        "bytes": 97899,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-declaration-challenges/p14_transfer_sign_loss.json",
+        "sha256": "5ca766ca48cbda5c575aafcbba60968e8835d5dcf67912f981cd51ca01267365"
+      },
+      "exact_declared_change_only": true,
+      "failures": [
+        "p14_transfer_sign_loss"
+      ],
+      "id": "p14_transfer_sign_loss",
+      "pristine_pass": true
+    },
+    {
+      "copy": {
+        "bytes": 97910,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-declaration-challenges/p20_land_structures_invented_zero.json",
+        "sha256": "54da68c4b188ab6c09aeac99cd5c8428eb7a499a64a15aa0e3d723cbe171a9b7"
+      },
+      "exact_declared_change_only": true,
+      "failures": [
+        "p20_land_structures_invented_zero"
+      ],
+      "id": "p20_land_structures_invented_zero",
+      "pristine_pass": true
+    },
+    {
+      "copy": {
+        "bytes": 95833,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-declaration-challenges/p540_dropped_second_equal_fee.json",
+        "sha256": "74c6479242ec155b85200db7b247287ac385748531aa79717dac2773ec15930e"
+      },
+      "exact_declared_change_only": true,
+      "failures": [
+        "p540_dropped_second_equal_fee"
+      ],
+      "id": "p540_dropped_second_equal_fee",
+      "pristine_pass": true
+    }
+  ],
+  "checker": {
+    "bytes": 3751,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/confirm_four_declarations.py",
+    "sha256": "d3a70d89f4431d9eadacca16548b4c5cc6ad7c2d0f4f716ed72ae6257bf74219"
+  },
+  "images_freshly_viewed": [
+    {
+      "bytes": 57413,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p14-financial.png",
+      "sha256": "fc60826d4d01984357bf4181d6d1c7dd98244aaa50be81bcfcebc3741ed7bc1b"
+    },
+    {
+      "bytes": 57600,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-summary.png",
+      "sha256": "f0d4161eb71dadaa9253679895617ead8a444abd34189121037861b8aebb1138"
+    },
+    {
+      "bytes": 4003,
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p540-original-money.png",
+      "sha256": "1fc967d1b39799ff08acdcd9db4690bbfebb86a3a0626c60f77586d2546d93f8"
+    }
+  ],
+  "oracle": {
+    "bytes": 97901,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-oracle.json",
+    "sha256": "18d0a117835e8b6240740dc57c7ab49ebcbaf00c54857328ad950872ba8f8a7f"
+  },
+  "prior_independent_pixel_review": {
+    "bytes": 9526,
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+    "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73"
+  },
+  "scope": "Four source-declaration predicates only, not actual model or reader output acceptance. P14 receipt blanks and the lower 0108/2008 transfer minus, P20 three Land and Structures blanks, and two separately printed P540 30.00 occurrences were read directly from retained original pixels.",
+  "status": "confirmed_four_bounded_source_declaration_failures",
+  "unread_scope": "No new full 87-amount transcription; prior ambiguous p14 account/digits and p540 subtotal/voucher/date/punctuation remain unresolved exactly as before. No original PDF body rehash, model call, OCR, producer import or arithmetic inference."
+}

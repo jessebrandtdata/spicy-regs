@@ -28,7 +28,7 @@ The House and `senate-ledger` profiles use their distinct source-owned associati
 readers. A supported profile still requires independent source review; recognition
 alone does not qualify a financial page.
 
-## Reuse retained structured House observations
+## Reuse retained structured observations
 
 The ordinary `congressional_disbursement_pages` ledger profile also accepts
 explicitly selected House `structured_observations`. Each item pins the original
@@ -46,6 +46,22 @@ voucher ambiguities, unresolved `DO` payees and missing office continuity. That
 status permits bounded source observations without claiming a fully qualified
 office ledger. The table builder reconstructs the exact retained capture and
 reviewed mapping before accepting its typed rows.
+
+The Senate `financial-summary` profile uses the same capture replay for
+`reviewed-senate-office-summary/1` qualifications. The source-owned reader binds
+reviewed context and table roles, preserves every summary row and monetary slot,
+and checks the printed reporting period independently of the funding year.
+Reviewed label/date corrections retain the original model output and their
+source evidence. This path refuses monetary corrections and nonempty payment
+ledgers; those require their own source review and reader.
+
+The existing Senate financial-summary tables hold these rows, values and the
+complete page reading. Blank cells remain explicit blank value rows, including
+an entirely blank component. An observed empty ledger remains in the page
+reading. Native text and word counts stay null, and the page retains
+`text_not_fully_source_qualified` until complete transcription is reviewed.
+The legacy source-qualified structured-summary path remains available for its
+existing retained inputs.
 
 | Processing outcome | Meaning |
 | --- | --- |

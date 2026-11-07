@@ -1,0 +1,110 @@
+{
+  "schema": "exact-original-image-crops/1",
+  "crops": [
+    {
+      "name": "p14-labels",
+      "physical_page": 14,
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+        "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+        "bytes": 130888
+      },
+      "box": [
+        300,
+        70,
+        1007,
+        1375
+      ],
+      "crop": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p14-labels.png",
+        "sha256": "37a8c6c9d916b8eba2702674ccde6c8d85649b21a77e6a4636333f86ac717cca",
+        "bytes": 50619
+      },
+      "recipe": "exact source pixels, no scaling"
+    },
+    {
+      "name": "p14-financial",
+      "physical_page": 14,
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+        "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+        "bytes": 130888
+      },
+      "box": [
+        988,
+        120,
+        2310,
+        1375
+      ],
+      "crop": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p14-financial.png",
+        "sha256": "fc60826d4d01984357bf4181d6d1c7dd98244aaa50be81bcfcebc3741ed7bc1b",
+        "bytes": 57413
+      },
+      "recipe": "exact source pixels, no scaling"
+    },
+    {
+      "name": "p20-summary",
+      "physical_page": 20,
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+        "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+        "bytes": 97451
+      },
+      "box": [
+        90,
+        35,
+        2470,
+        620
+      ],
+      "crop": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-summary.png",
+        "sha256": "f0d4161eb71dadaa9253679895617ead8a444abd34189121037861b8aebb1138",
+        "bytes": 57600
+      },
+      "recipe": "exact source pixels, no scaling"
+    },
+    {
+      "name": "p540-left-fields",
+      "physical_page": 540,
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+        "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+        "bytes": 60397
+      },
+      "box": [
+        150,
+        65,
+        1440,
+        375
+      ],
+      "crop": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p540-left-fields.png",
+        "sha256": "2d1734196c3b93abdeef76dcf33419693ffbd1de092cf7d88ae0f77804695082",
+        "bytes": 16553
+      },
+      "recipe": "exact source pixels, no scaling"
+    },
+    {
+      "name": "p540-description-amount",
+      "physical_page": 540,
+      "source_image": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+        "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+        "bytes": 60397
+      },
+      "box": [
+        1425,
+        65,
+        2460,
+        375
+      ],
+      "crop": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p540-description-amount.png",
+        "sha256": "cd840a662523c96d437a5fd55885fd3275bfdf760d47f91221a261dd4d6d2932",
+        "bytes": 15393
+      },
+      "recipe": "exact source pixels, no scaling"
+    }
+  ]
+}

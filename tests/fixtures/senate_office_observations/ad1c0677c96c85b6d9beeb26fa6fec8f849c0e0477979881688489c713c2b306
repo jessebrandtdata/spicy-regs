@@ -1,0 +1,5167 @@
+{
+  "schema": "senate-2008-retained-flex-source-comparison/1",
+  "created_at": "2026-11-07T00:40:23.300091+00:00",
+  "status": "source_disagreements_retained_no_full_page_acceptance",
+  "oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-oracle.json",
+    "sha256": "18d0a117835e8b6240740dc57c7ab49ebcbaf00c54857328ad950872ba8f8a7f",
+    "bytes": 97901
+  },
+  "source": {
+    "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/89/8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+    "sha256": "8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+    "bytes": 64772880
+  },
+  "source_declaration_challenges": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-declaration-challenges/receipt.json",
+    "sha256": "a714ad707fe2656dd4e5322ecc846409692f120f0debe39e20848f24ac29b840",
+    "bytes": 9294
+  },
+  "source_declaration_peer": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/four-declaration-copies-confirmation.json",
+    "sha256": "2e89cbcc53557c7d82cf8413660c053c8dd40a45df6ca06dbb0864adeb297940",
+    "bytes": 5078
+  },
+  "captures": {
+    "14": {
+      "observation": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/observation-00013.json",
+        "sha256": "494caae4bfd0eff69e703cef52a4d3015bfab5efb45787583986e18947fd10f8",
+        "bytes": 10869
+      },
+      "response": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/response-00013.json",
+        "sha256": "f20742644a5e4c6d99adb13a6fbaeb19f5912dabc76c71da76402b351b687386",
+        "bytes": 34133
+      },
+      "page_metadata": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/page-00013.json",
+        "sha256": "bb917054fd1c6e2e172dfd425ef59e050fe40e5e676495a5079610705216b416",
+        "bytes": 1357
+      },
+      "completion": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/completion.json",
+        "sha256": "2f70fd56627165bb3c8f50270b643354a065410a9c68645554f5bb5527f1c3ce",
+        "bytes": 12574
+      },
+      "plan": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/plan.json",
+        "sha256": "242db908ead4b1a67f18135f6c6c8b40f456bec0da789bce8ffca4f60965b7cf",
+        "bytes": 7648
+      },
+      "mirror_receipt": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/remote-retention-v2.json",
+        "sha256": "5c8795f06226365efab60b6e47a888bf082bc38a2e9f9d4db76c5ac8b317dbcd",
+        "bytes": 56017
+      },
+      "retirement_receipt": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/retired-request-staging-v2.json",
+        "sha256": "ba2866c3e7f6c10c52ddfcee8f27ee97ddc51653d0edc678cf76bc27bc538b1c",
+        "bytes": 2941
+      },
+      "request_declared_pin": {
+        "bytes": 224606,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/request-00013.json.gz",
+        "sha256": "d629881ec7968a53af12d5186dd76ecb24488fc73dac2167ce98992728cc884e"
+      },
+      "request_archive_member": {
+        "bytes": 224606,
+        "name": "request-00013.json.gz",
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0001-0016-recovered-v11/request-00013.json.gz",
+        "sha256": "d629881ec7968a53af12d5186dd76ecb24488fc73dac2167ce98992728cc884e"
+      },
+      "archive_sha256": "1e3697f507b5c92700f3f6d7365889a7c2236608ee81571527a8087cc5d6c445",
+      "archive_key": "spicyregs/processing/congressional-disbursements/ocr/sha256/1e3697f507b5c92700f3f6d7365889a7c2236608ee81571527a8087cc5d6c445.tar",
+      "capture_image_declared": {
+        "bytes": 230156,
+        "height": 2707,
+        "sha256": "fa5908eb7e64eadd18bd0c4be83a9c32a27d83e05c33412eac95370bbe4f0310",
+        "width": 1652
+      },
+      "orientation": {
+        "clockwise_degrees": 0,
+        "command": [
+          "/opt/homebrew/Cellar/tesseract/5.5.4/bin/tesseract",
+          "stdin",
+          "stdout",
+          "--psm",
+          "0",
+          "-l",
+          "osd",
+          "--tessdata-dir",
+          "/opt/homebrew/Cellar/tesseract/5.5.4/share/tessdata"
+        ],
+        "method": "tesseract-osd",
+        "orientation_confidence": null,
+        "orientation_resolved": false,
+        "orientation_suggestion_available": false,
+        "returncode": 1,
+        "script": null,
+        "script_confidence": null,
+        "stderr": "Too few characters. Skipping this page\nError during processing.\n",
+        "stdout": "",
+        "unrotated_image_sha256": "fa5908eb7e64eadd18bd0c4be83a9c32a27d83e05c33412eac95370bbe4f0310"
+      },
+      "raw_response_text_equals_observation_text_and_outcome": true,
+      "request_local_exists": false,
+      "request_scope_limit": "Local request staging was intentionally retired. This review checks declared request membership against exact retained mirror and retirement receipts; it does not freshly fetch or decode the archived request image."
+    },
+    "20": {
+      "observation": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/observation-00003.json",
+        "sha256": "60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0",
+        "bytes": 6719
+      },
+      "response": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/response-00003.json",
+        "sha256": "8e48ca8901eebdcf970e4b2b4b13ceefa81cec73492cfbb6bef644ff93a39ab3",
+        "bytes": 19121
+      },
+      "page_metadata": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/page-00003.json",
+        "sha256": "ad9e9401e2da9403e1a354d579cb1f3bb30aef7f8112d1dfb41bc3126e4c3f91",
+        "bytes": 1427
+      },
+      "completion": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/completion.json",
+        "sha256": "c63669b3bc863659774dc2a2bb28a1a12d4a44bce3542c2e3e09cf251339f71a",
+        "bytes": 12579
+      },
+      "plan": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/plan.json",
+        "sha256": "21177721e0c71abe0e518470b067a7fc1c8f79a2784d33d742f4498d58661afb",
+        "bytes": 7657
+      },
+      "mirror_receipt": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/remote-retention-v2.json",
+        "sha256": "b0558bf130baa845bb9f111cd903e4af06ae866d42a53e3cf08788b7da41eb59",
+        "bytes": 56020
+      },
+      "retirement_receipt": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/retired-request-staging-v2.json",
+        "sha256": "6739d4b7fb1ed2ccba030aa7101b6d1b612e5a5f9de48bc6fb913ff883f64f51",
+        "bytes": 2941
+      },
+      "request_declared_pin": {
+        "bytes": 200051,
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/request-00003.json.gz",
+        "sha256": "77b6f82b02da9b79d753c926d6ce14bf88572a17a2a88e13f6521ca0360a347e"
+      },
+      "request_archive_member": {
+        "bytes": 200051,
+        "name": "request-00003.json.gz",
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0017-0032-recovered-v11/request-00003.json.gz",
+        "sha256": "77b6f82b02da9b79d753c926d6ce14bf88572a17a2a88e13f6521ca0360a347e"
+      },
+      "archive_sha256": "59b026d01a7f3d99caccaa30fbfb1c0657595c437e2c3ea6ae932eaea77b5dac",
+      "archive_key": "spicyregs/processing/congressional-disbursements/ocr/sha256/59b026d01a7f3d99caccaa30fbfb1c0657595c437e2c3ea6ae932eaea77b5dac.tar",
+      "capture_image_declared": {
+        "bytes": 209546,
+        "height": 1622,
+        "sha256": "cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635",
+        "width": 2718
+      },
+      "orientation": {
+        "clockwise_degrees": 90,
+        "command": [
+          "/opt/homebrew/Cellar/tesseract/5.5.4/bin/tesseract",
+          "stdin",
+          "stdout",
+          "--psm",
+          "0",
+          "-l",
+          "osd",
+          "--tessdata-dir",
+          "/opt/homebrew/Cellar/tesseract/5.5.4/share/tessdata"
+        ],
+        "method": "tesseract-osd",
+        "orientation_confidence": 0.69,
+        "orientation_resolved": false,
+        "orientation_suggestion_available": true,
+        "returncode": 0,
+        "script": "Cyrillic",
+        "script_confidence": 0.95,
+        "stderr": "",
+        "stdout": "Page number: 0\nOrientation in degrees: 270\nRotate: 90\nOrientation confidence: 0.69\nScript: Cyrillic\nScript confidence: 0.95\n",
+        "unrotated_image_sha256": "0313b9f322b29ccfa3e353e8ef893704f1450ff166e5f54a785715ba20e6a77a"
+      },
+      "raw_response_text_equals_observation_text_and_outcome": true,
+      "request_local_exists": false,
+      "request_scope_limit": "Local request staging was intentionally retired. This review checks declared request membership against exact retained mirror and retirement receipts; it does not freshly fetch or decode the archived request image."
+    }
+  },
+  "pages": [
+    {
+      "physical_page": 14,
+      "source_financial_rows": 12,
+      "counts": {
+        "source_unresolved_model_string_ungraded": 7,
+        "exact_amount": 48,
+        "exact_blank": 12,
+        "source_unresolved_model_unread": 8,
+        "different_from_qualified_source": 7,
+        "model_unread_qualified_amount": 2
+      },
+      "financial_slots": [
+        {
+          "physical_page": 14,
+          "source_row": 1,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 1
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            2
+          ],
+          "observed": "644,415.26",
+          "result": "source_unresolved_model_string_ungraded"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 1,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 1
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 1,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 1
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 1,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 1
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            5
+          ],
+          "observed": "-644,420.41",
+          "result": "source_unresolved_model_string_ungraded"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 1,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 1
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "5.15",
+          "source_decimal_usd": "5.15",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            6
+          ],
+          "observed": "5.15",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 1,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 1
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 1,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 1
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            8
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 2,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 2
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            2
+          ],
+          "observed": null,
+          "result": "source_unresolved_model_unread"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 2,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 2
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 2,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 2
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 2,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 2
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            5
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 2,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 2
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            6
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 2,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 2
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 2,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 2
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            8
+          ],
+          "observed": null,
+          "result": "source_unresolved_model_unread"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 3,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 3
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            2
+          ],
+          "observed": "12,323,219.80",
+          "result": "source_unresolved_model_string_ungraded"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 3,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 3
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 3,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 3
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 3,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 3
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            5
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 3,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 3
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            6
+          ],
+          "observed": "-10,942,945.31",
+          "result": "source_unresolved_model_string_ungraded"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 3,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 3
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 3,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 3
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            8
+          ],
+          "observed": "1,380,274.49",
+          "result": "source_unresolved_model_string_ungraded"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 4,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 4
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            2
+          ],
+          "observed": "88,234.84",
+          "result": "source_unresolved_model_string_ungraded"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 4,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 4
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 4,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 4
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 4,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 4
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            5
+          ],
+          "observed": "-88,234.84",
+          "result": "source_unresolved_model_string_ungraded"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 4,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 4
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            6
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 4,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 4
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 4,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 4
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            8
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 5,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 5
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            2
+          ],
+          "observed": null,
+          "result": "source_unresolved_model_unread"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 5,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 5
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 5,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 5
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 5,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 5
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            5
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 5,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 5
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            6
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 5,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 5
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 5,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 5
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            8
+          ],
+          "observed": null,
+          "result": "source_unresolved_model_unread"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 6,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 6
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            2
+          ],
+          "observed": null,
+          "result": "source_unresolved_model_unread"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 6,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 6
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 6,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 6
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            4
+          ],
+          "observed": null,
+          "result": "source_unresolved_model_unread"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 6,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 6
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            5
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 6,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 6
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            6
+          ],
+          "observed": null,
+          "result": "source_unresolved_model_unread"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 6,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 6
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 6,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 6
+          },
+          "source_state": "printed_amount_unresolved",
+          "source_raw_literal": null,
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            8
+          ],
+          "observed": null,
+          "result": "source_unresolved_model_unread"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 7,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 7
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "1,000.00",
+          "source_decimal_usd": "1000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            2
+          ],
+          "observed": "1,000.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 7,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 7
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 7,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 7
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 7,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 7
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "-1,000.00",
+          "source_decimal_usd": "-1000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            5
+          ],
+          "observed": "-1,000.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 7,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 7
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            6
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 7,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 7
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 7,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 7
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            8
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "15,000.00",
+          "source_decimal_usd": "15000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            2
+          ],
+          "observed": "16,000.00",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            5
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            6
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "15,000.00",
+          "source_decimal_usd": "15000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            8
+          ],
+          "observed": "16,000.00",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 9,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 9
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "30,000.00",
+          "source_decimal_usd": "30000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            2
+          ],
+          "observed": "30,000.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 9,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 9
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 9,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 9
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "-28,000.00",
+          "source_decimal_usd": "-28000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            4
+          ],
+          "observed": "-28,000.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 9,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 9
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            5
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 9,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 9
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            6
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 9,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 9
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 9,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 9
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "2,000.00",
+          "source_decimal_usd": "2000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            8
+          ],
+          "observed": "2,000.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "224,766.76",
+          "source_decimal_usd": "224766.76",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            2
+          ],
+          "observed": "224,708.78",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "-224,766.76",
+          "source_decimal_usd": "-224766.76",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            5
+          ],
+          "observed": "-224,708.78",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            6
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            8
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "857,335.67",
+          "source_decimal_usd": "857335.67",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            2
+          ],
+          "observed": "867,330.67",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            4
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            5
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            6
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "857,335.67",
+          "source_decimal_usd": "857335.67",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            8
+          ],
+          "observed": "867,330.67",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "87,417,090.60",
+          "source_decimal_usd": "87417090.60",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            2
+          ],
+          "observed": "87,417,000.00",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 2,
+          "source_column_role": "supplementals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            3
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 3,
+          "source_column_role": "transfers",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "-10,153,000.00",
+          "source_decimal_usd": "-10153000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            4
+          ],
+          "observed": "-10,153,000.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            5
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "-76,112,969.73",
+          "source_decimal_usd": "-76112969.73",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            6
+          ],
+          "observed": null,
+          "result": "model_unread_qualified_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 6,
+          "source_column_role": "revolving_fund_receipts",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            7
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "1,151,120.87",
+          "source_decimal_usd": "1151120.87",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            8
+          ],
+          "observed": null,
+          "result": "model_unread_qualified_amount"
+        }
+      ],
+      "nonmonetary_facts": [
+        {
+          "path": [
+            "page_label"
+          ],
+          "role": "printed_page_label",
+          "expected": "A-1",
+          "observed": "A-1",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            0
+          ],
+          "role": "source_column_role",
+          "expected": "APPROPRIATION TITLE",
+          "observed": "APPROPRIATION TITLE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            1
+          ],
+          "role": "source_column_role",
+          "expected": "NO.",
+          "observed": "NO.",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            2
+          ],
+          "role": "source_column_role",
+          "expected": "FUNDS AVAILABLE AS OF April 1, 2008",
+          "observed": "FUNDS AVAILABLE AS OF April 1, 2008",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            3
+          ],
+          "role": "source_column_role",
+          "expected": "FUNDING ADJUSTMENTS SUPPLEMENTALS",
+          "observed": "FUNDING ADJUSTMENTS SUPPLEMENTALS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            4
+          ],
+          "role": "source_column_role",
+          "expected": "FUNDING ADJUSTMENTS TRANSFERS",
+          "observed": "FUNDING ADJUSTMENTS TRANSFERS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            5
+          ],
+          "role": "source_column_role",
+          "expected": "FUNDING ADJUSTMENTS RESCISSIONS/WITHDRAWALS",
+          "observed": "FUNDING ADJUSTMENTS RESCISSIONS/WITHDRAWALS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            6
+          ],
+          "role": "source_column_role",
+          "expected": "NET EXPENDITURES",
+          "observed": "NET EXPENDITURES",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            7
+          ],
+          "role": "source_column_role",
+          "expected": "REVOLVING FUND RECEIPTS",
+          "observed": "REVOLVING FUND RECEIPTS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            8
+          ],
+          "role": "source_column_role",
+          "expected": "UNEXPENDED BALANCE AS OF September 30, 2008",
+          "observed": "UNEXPENDED BALANCE AS OF September 30, 2008",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "title"
+          ],
+          "role": "printed_summary_title",
+          "expected": "SUMMARY OF TRANSACTIONS BY APPROPRIATIONS",
+          "observed": "SUMMARY OF TRANSACTIONS BY APPROPRIATIONS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            0
+          ],
+          "role": "printed_group_title",
+          "expected": "COMPENSATION OF MEMBERS, SENATE",
+          "observed": "COMPENSATION OF MEMBERS, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            2
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            3
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            4
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            5
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            6
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            7
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            8
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            0
+          ],
+          "role": "printed_group_title",
+          "expected": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "observed": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            1
+          ],
+          "role": "printed_account_number",
+          "expected": "0107",
+          "observed": "0107",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            2
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            3
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            4
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            5
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            6
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            7
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            8
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            0
+          ],
+          "role": "printed_group_title",
+          "expected": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "observed": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            1
+          ],
+          "role": "printed_account_number",
+          "expected": "0108",
+          "observed": "0108",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            2
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            3
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            4
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            5
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            6
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            7
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            8,
+            "cells",
+            8
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            0
+          ],
+          "role": "printed_group_title",
+          "expected": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "observed": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            1
+          ],
+          "role": "printed_account_number",
+          "expected": "0110",
+          "observed": "0110",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            2
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            3
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            4
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            5
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            6
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            7
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            12,
+            "cells",
+            8
+          ],
+          "role": "group_row_placeholder_not_financial_blank",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2006",
+          "observed": "2006",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "COMPENSATION OF MEMBERS, SENATE",
+          "observed": "COMPENSATION OF MEMBERS, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2007",
+          "observed": "2007",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "COMPENSATION OF MEMBERS, SENATE",
+          "observed": "COMPENSATION OF MEMBERS, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2008",
+          "observed": "2008",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "COMPENSATION OF MEMBERS, SENATE",
+          "observed": "COMPENSATION OF MEMBERS, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2006",
+          "observed": "2006",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "observed": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2007",
+          "observed": "2007",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "observed": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2008",
+          "observed": "2008",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "observed": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            7,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2006",
+          "observed": "2006",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "observed": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            9,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2007",
+          "observed": "2007",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "observed": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2008",
+          "observed": "2008",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "observed": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            11,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2006",
+          "observed": "2006",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "observed": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2007",
+          "observed": "2007",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "observed": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            0
+          ],
+          "role": "funding_year",
+          "expected": "2008",
+          "observed": "2008",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "observed": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            1
+          ],
+          "role": "account_in_enclosing_group_not_duplicate_year_cell",
+          "expected": "",
+          "observed": "",
+          "matches": true
+        }
+      ],
+      "representations": [
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            1
+          ],
+          "observed": "0100",
+          "status": "source_account_unresolved_not_graded",
+          "source_candidates": [
+            "0100",
+            "0150"
+          ]
+        },
+        {
+          "observation_row": 0,
+          "role": "standalone_group_heading",
+          "covered_money_placeholders": 7,
+          "note": "These seven empty representation cells do not add source monetary positions."
+        },
+        {
+          "observation_row": 4,
+          "role": "standalone_group_heading",
+          "covered_money_placeholders": 7,
+          "note": "These seven empty representation cells do not add source monetary positions."
+        },
+        {
+          "observation_row": 8,
+          "role": "standalone_group_heading",
+          "covered_money_placeholders": 7,
+          "note": "These seven empty representation cells do not add source monetary positions."
+        },
+        {
+          "observation_row": 12,
+          "role": "standalone_group_heading",
+          "covered_money_placeholders": 7,
+          "note": "These seven empty representation cells do not add source monetary positions."
+        }
+      ],
+      "differences": [
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "15,000.00",
+          "source_decimal_usd": "15000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            2
+          ],
+          "observed": "16,000.00",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 8,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "15,000.00",
+          "source_decimal_usd": "15000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            10,
+            "cells",
+            8
+          ],
+          "observed": "16,000.00",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "224,766.76",
+          "source_decimal_usd": "224766.76",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            2
+          ],
+          "observed": "224,708.78",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 10,
+          "source_column": 4,
+          "source_column_role": "rescissions_withdrawals",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "-224,766.76",
+          "source_decimal_usd": "-224766.76",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            13,
+            "cells",
+            5
+          ],
+          "observed": "-224,708.78",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "857,335.67",
+          "source_decimal_usd": "857335.67",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            2
+          ],
+          "observed": "867,330.67",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 11,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "857,335.67",
+          "source_decimal_usd": "857335.67",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            14,
+            "cells",
+            8
+          ],
+          "observed": "867,330.67",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 1,
+          "source_column_role": "funds_available_opening",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "87,417,090.60",
+          "source_decimal_usd": "87417090.60",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            2
+          ],
+          "observed": "87,417,000.00",
+          "result": "different_from_qualified_source"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 5,
+          "source_column_role": "net_expenditures",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "-76,112,969.73",
+          "source_decimal_usd": "-76112969.73",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            6
+          ],
+          "observed": null,
+          "result": "model_unread_qualified_amount"
+        },
+        {
+          "physical_page": 14,
+          "source_row": 12,
+          "source_column": 7,
+          "source_column_role": "unexpended_balance_closing",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "1,151,120.87",
+          "source_decimal_usd": "1151120.87",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            15,
+            "cells",
+            8
+          ],
+          "observed": null,
+          "result": "model_unread_qualified_amount"
+        }
+      ],
+      "complete_both_direction_row_membership": true
+    },
+    {
+      "physical_page": 20,
+      "source_financial_rows": 7,
+      "counts": {
+        "exact_amount": 8,
+        "exact_blank": 13
+      },
+      "financial_slots": [
+        {
+          "physical_page": 20,
+          "source_row": 1,
+          "source_column": 1,
+          "source_column_role": "net_funds_available",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 1
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "$5,000.00",
+          "source_decimal_usd": "5000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            1
+          ],
+          "observed": "$5,000.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 1,
+          "source_column": 2,
+          "source_column_role": "net_expenditures_for_report_period",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 1
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            2
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 1,
+          "source_column": 3,
+          "source_column_role": "total_funding_ytd",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 1
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            3
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 2,
+          "source_column": 1,
+          "source_column_role": "net_funds_available",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 2
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            1
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 2,
+          "source_column": 2,
+          "source_column_role": "net_expenditures_for_report_period",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 2
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            2
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 2,
+          "source_column": 3,
+          "source_column_role": "total_funding_ytd",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 2
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            3
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 3,
+          "source_column": 1,
+          "source_column_role": "net_funds_available",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 3
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            1
+          ],
+          "observed": "0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 3,
+          "source_column": 2,
+          "source_column_role": "net_expenditures_for_report_period",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 3
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            2
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 3,
+          "source_column": 3,
+          "source_column_role": "total_funding_ytd",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 3
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            3
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 4,
+          "source_column": 1,
+          "source_column_role": "net_funds_available",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 4
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "-5,000.00",
+          "source_decimal_usd": "-5000.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            1
+          ],
+          "observed": "-5,000.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 4,
+          "source_column": 2,
+          "source_column_role": "net_expenditures_for_report_period",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 4
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            2
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 4,
+          "source_column": 3,
+          "source_column_role": "total_funding_ytd",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 4
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            3
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 5,
+          "source_column": 1,
+          "source_column_role": "net_funds_available",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 5
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            1
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 5,
+          "source_column": 2,
+          "source_column_role": "net_expenditures_for_report_period",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 5
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            2
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 5,
+          "source_column": 3,
+          "source_column_role": "total_funding_ytd",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 5
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            3
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 6,
+          "source_column": 1,
+          "source_column_role": "net_funds_available",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 6
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "$0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            1
+          ],
+          "observed": "$0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 6,
+          "source_column": 2,
+          "source_column_role": "net_expenditures_for_report_period",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 6
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "$0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            2
+          ],
+          "observed": "$0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 6,
+          "source_column": 3,
+          "source_column_role": "total_funding_ytd",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 6
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "$0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            3
+          ],
+          "observed": "$0.00",
+          "result": "exact_amount"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 7,
+          "source_column": 1,
+          "source_column_role": "net_funds_available",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 7
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            1
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 7,
+          "source_column": 2,
+          "source_column_role": "net_expenditures_for_report_period",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 7
+          },
+          "source_state": "visibly_blank",
+          "source_raw_literal": "",
+          "source_decimal_usd": null,
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            2
+          ],
+          "observed": "",
+          "result": "exact_blank"
+        },
+        {
+          "physical_page": 20,
+          "source_row": 7,
+          "source_column": 3,
+          "source_column_role": "total_funding_ytd",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 7
+          },
+          "source_state": "printed_amount",
+          "source_raw_literal": "$0.00",
+          "source_decimal_usd": "0.00",
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            3
+          ],
+          "observed": "$0.00",
+          "result": "exact_amount"
+        }
+      ],
+      "nonmonetary_facts": [
+        {
+          "path": [
+            "page_label"
+          ],
+          "role": "printed_page_label",
+          "expected": "B-1",
+          "observed": "51",
+          "matches": false
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            1
+          ],
+          "role": "source_column_role",
+          "expected": "NET FUNDS AVAILABLE AS OF 04/01/2008 ($)",
+          "observed": "NET FUNDS AVAILABLE AS OF 04/01/2006 ($)",
+          "matches": false
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            2
+          ],
+          "role": "source_column_role",
+          "expected": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2008 THRU 09/30/2008 ($)",
+          "observed": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2006 THRU 06/30/2006 ($)",
+          "matches": false
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            3
+          ],
+          "role": "source_column_role",
+          "expected": "TOTAL FUNDING YTD ($)",
+          "observed": "TOTAL FUNDING YTD ($)",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            0
+          ],
+          "role": "printed_description_header",
+          "expected": "DESCRIPTION",
+          "observed": "DESCRIPTION",
+          "matches": true
+        },
+        {
+          "path": [
+            "headings",
+            0
+          ],
+          "role": "printed_heading",
+          "expected": "DETAILED AND SUMMARY STATEMENT OF EXPENDITURES",
+          "observed": "DETAILED AND SUMMARY STATEMENT OF EXPENDITURES",
+          "matches": true
+        },
+        {
+          "path": [
+            "headings",
+            1
+          ],
+          "role": "printed_heading",
+          "expected": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "observed": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "matches": true
+        },
+        {
+          "path": [
+            "headings",
+            2
+          ],
+          "role": "printed_heading",
+          "expected": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "observed": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "matches": true
+        },
+        {
+          "path": [
+            "other_text",
+            0
+          ],
+          "role": "funding_year_distinct_from_report_dates",
+          "expected": "Funding Year 2006",
+          "observed": "Funding Year 2006",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "cells",
+            0
+          ],
+          "role": "printed_row_label",
+          "expected": "Authorization",
+          "observed": "Authorization",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            0,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "observed": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "cells",
+            0
+          ],
+          "role": "printed_row_label",
+          "expected": "Supplementals",
+          "observed": "Supplementals",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            1,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "observed": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "cells",
+            0
+          ],
+          "role": "printed_row_label",
+          "expected": "Transfers",
+          "observed": "Transfers",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            2,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "observed": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "cells",
+            0
+          ],
+          "role": "printed_row_label",
+          "expected": "Resc / Withdrawals",
+          "observed": "Resc / Withdrawals",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            3,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "observed": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "cells",
+            0
+          ],
+          "role": "printed_row_label",
+          "expected": "Land and Structures",
+          "observed": "Land and Structures",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            4,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "observed": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "cells",
+            0
+          ],
+          "role": "printed_row_label",
+          "expected": "ORGANIZATION TOTALS",
+          "observed": "ORGANIZATION TOTALS",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            5,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "observed": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "matches": true
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            0
+          ],
+          "role": "printed_row_label",
+          "expected": "UNEXPENDED BALANCE AS OF 09/30/2008",
+          "observed": "UNEXPENDED BALANCE AS OF 06/30/2006",
+          "matches": false
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "context"
+          ],
+          "role": "row_scope",
+          "expected": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "observed": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+          "matches": true
+        }
+      ],
+      "representations": [
+        {
+          "observation_table": 1,
+          "role": "observed_empty_ledger",
+          "source_rows": 0,
+          "observation_rows": 0,
+          "note": "Empty ledger is not an empty financial page; the seven summary rows remain."
+        }
+      ],
+      "differences": [
+        {
+          "path": [
+            "page_label"
+          ],
+          "role": "printed_page_label",
+          "expected": "B-1",
+          "observed": "51",
+          "matches": false
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            1
+          ],
+          "role": "source_column_role",
+          "expected": "NET FUNDS AVAILABLE AS OF 04/01/2008 ($)",
+          "observed": "NET FUNDS AVAILABLE AS OF 04/01/2006 ($)",
+          "matches": false
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "columns",
+            2
+          ],
+          "role": "source_column_role",
+          "expected": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2008 THRU 09/30/2008 ($)",
+          "observed": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2006 THRU 06/30/2006 ($)",
+          "matches": false
+        },
+        {
+          "path": [
+            "tables",
+            0,
+            "rows",
+            6,
+            "cells",
+            0
+          ],
+          "role": "printed_row_label",
+          "expected": "UNEXPENDED BALANCE AS OF 09/30/2008",
+          "observed": "UNEXPENDED BALANCE AS OF 06/30/2006",
+          "matches": false
+        }
+      ],
+      "complete_both_direction_row_membership": true
+    }
+  ],
+  "unavailable": [
+    {
+      "physical_page": 540,
+      "expected_observation_path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-v1/chunks/senate-2008-04-01-pdf-part-1-p0529-0544-recovered-v11/observation-00011.json",
+      "status": "not_captured_at_review",
+      "source_rows": 7,
+      "qualified_printed_amounts": 6,
+      "unresolved_printed_amounts": 1
+    }
+  ],
+  "limits": [
+    "All sixteen original uncertain amounts remain unresolved: fifteen on p14, one on unavailable p540.",
+    "No p14 financial acceptance or correction is proposed. Seven disagreements rely on the frozen primary original-image reading, not a new independent full-value peer transcription.",
+    "P14 group-heading row placeholders are not counted as twenty-eight additional source blank monetary cells.",
+    "P20 monetary and blank occurrences are exact but four page/date labels are wrong; Funding Year 2006 remains correct and separate.",
+    "P14 orientation is unresolved with zero-degree capture; p20 uses the ninety-degree suggestion with unresolved orientation confidence. Review does not change capture metadata.",
+    "No OCR/model response resolves uncertain source glyphs. No model calls, new images, production changes, or central RAW writes."
+  ],
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/compare_retained_flex.py",
+    "sha256": "d6d481d577a8f5e51590879217a556ce23e263337f8145a8d31ea0e86d9430ac",
+    "bytes": 21585
+  },
+  "producer_imports": 0
+}

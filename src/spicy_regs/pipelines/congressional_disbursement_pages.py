@@ -52,11 +52,15 @@ def processing_inputs(source: dict) -> list[dict]:
         raise ValueError("Structured observations require distinct selected physical pages")
     for item in selected:
         qualification = json.loads(verify_pin(item["qualification"]).read_text())
-        house_ledger = qualification.get("schema") == "reviewed-house-ledger-observation/1"
+        capture_chambers = {
+            "reviewed-house-ledger-observation/1": "house",
+            "reviewed-senate-office-summary/1": "senate",
+        }
+        capture_chamber = capture_chambers.get(qualification.get("schema"))
         accepted = (
-            source["chamber"] == "house"
+            source["chamber"] == capture_chamber
             and qualification.get("status") == "reviewed_fields_with_unresolved_text_or_context"
-            if house_ledger
+            if capture_chamber
             else qualification.get("schema") == "source-qualified-structured-summary/1"
             and qualification.get("status") in {"accepted_observation", "accepted_with_reviewed_corrections"}
         )
@@ -73,7 +77,7 @@ def processing_inputs(source: dict) -> list[dict]:
             if qualification[key] != {field: item[key][field] for field in ("sha256", "bytes")}:
                 raise ValueError("Structured qualification differs from its selected input pins")
         extra = []
-        if house_ledger:
+        if capture_chamber:
             binding = qualification["binding"]
             if (
                 any(binding[key] != source[key] for key in ("source_sha256", "source_byte_size"))
@@ -91,7 +95,7 @@ def processing_inputs(source: dict) -> list[dict]:
                     "observation": {key: item["result"][key] for key in ("sha256", "bytes")},
                 }
             ):
-                raise ValueError("House retained capture differs from its selected source, period or observation")
+                raise ValueError("Retained capture differs from its selected source, period or observation")
             extra = [item[key] for key in ("page_record", "request", "response", "plan")]
         for artifact in [
             item["qualification"],
@@ -164,6 +168,11 @@ def implementation(chamber: str, profile: str = "ledger") -> dict:
                 "spicy_docs.sources.disbursements_index",
             ),
         )
+        if (chamber, profile) == ("senate", "financial-summary"):
+            names += derivation_modules(
+                "spicy_docs.reading.senate_office_observations",
+                packages=("spicy_docs.reading", "spicy_docs.extraction", "spicy_docs.schemas"),
+            )
         names = tuple(dict.fromkeys(names))
     elif chamber == "house":
         from spicy_docs.extraction.derivation import derivation_modules

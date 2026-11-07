@@ -9,25 +9,13 @@ import pytest
 from spicy_regs.pipelines.congressional_disbursement_pages import pin, processing_inputs
 from spicy_regs.pipelines.disbursement_page_profiles import read_retained_observation
 from spicy_regs.transforms.disbursement_pdf_tables import pages
+from tests.disbursement_capture_fixtures import selected_capture
 
 FIXTURE = Path(__file__).parent / "fixtures/house_disbursement_observations"
 
 
 def selected(tmp_path):
-    source = json.loads((FIXTURE / "selection.json").read_text())["files"][0]
-    item = source["structured_observations"][0]
-    for key in ("result", "image", "page_record", "request", "response", "plan", "qualification"):
-        artifact = item[key]
-        artifact["path"] = str((FIXTURE / artifact["sha256"].removeprefix("sha256:")).resolve())
-    qualification = json.loads(Path(item["qualification"]["path"]).read_text())
-    for artifact in qualification["review_evidence"] + [
-        a for rule in qualification["corrections"] for a in rule["review_evidence"]
-    ]:
-        artifact["path"] = str((FIXTURE / artifact["sha256"].removeprefix("sha256:")).resolve())
-    target = tmp_path / "qualification.json"
-    target.write_text(json.dumps(qualification))
-    item["qualification"] = pin(target)
-    return source, item
+    return selected_capture(FIXTURE, tmp_path)
 
 
 def entry_for(page, path):

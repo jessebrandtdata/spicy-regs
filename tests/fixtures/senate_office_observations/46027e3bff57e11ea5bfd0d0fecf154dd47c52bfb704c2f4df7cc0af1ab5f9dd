@@ -1,0 +1,82 @@
+{
+  "schema": "senate-2008-source-and-bounded-proposal-handoff/1",
+  "status": "source_oracle_and_exact_p20_proposal_independently_reviewed",
+  "artifacts": {
+    "source-review-completion.json": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-review-completion.json",
+      "sha256": "856a9c65cb7232bcbee99f20063b96feec345fad01a67cd0d9896d0d3a5c8f8e",
+      "bytes": 4170
+    },
+    "source-oracle.json": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-oracle.json",
+      "sha256": "18d0a117835e8b6240740dc57c7ab49ebcbaf00c54857328ad950872ba8f8a7f",
+      "bytes": 97901
+    },
+    "flex-comparison-v1/review.json": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/flex-comparison-v1/review.json",
+      "sha256": "ad1c0677c96c85b6d9beeb26fa6fec8f849c0e0477979881688489c713c2b306",
+      "bytes": 171567
+    },
+    "flex-comparison-v1/actual-copy-challenges.json": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/flex-comparison-v1/actual-copy-challenges.json",
+      "sha256": "bf7097eb902ae52db4ccdc3250acc7b9b10c4830586bd50fb8cb62f0df58584b",
+      "bytes": 5012
+    },
+    "p20-correction-proposal-v1/review.json": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-correction-proposal-v1/review.json",
+      "sha256": "2c612dd947ef3b108ede4b4d49f70e19a642846c35e6c7d928498c82ca102a65",
+      "bytes": 40843
+    },
+    "p20-correction-proposal-v1/corrections.json": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-correction-proposal-v1/corrections.json",
+      "sha256": "eebd50ebfedee53655472a9e0044b467e0ae35de63ed63d46fb6b4d8c841311b",
+      "bytes": 3905
+    },
+    "p20-correction-proposal-v1/proposed-outcome.json": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-correction-proposal-v1/proposed-outcome.json",
+      "sha256": "11cac59bbd12760368c5da9671e5e461837a985dd99a5dc29887472d29a147c6",
+      "bytes": 2541
+    }
+  },
+  "peer": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/p20-proposal-and-actual-copies-v1/review.json",
+    "sha256": "457522acd3a74a1128188c982337d344edef036881c86fdb27b3349bf42416a1",
+    "bytes": 13448
+  },
+  "p20_scope": {
+    "changed_fields": 4,
+    "money_values_unchanged": 8,
+    "blank_positions_unchanged": 13,
+    "funding_year_unchanged": "2006",
+    "summary_rows_preserved": 7,
+    "ledger_rows": 0,
+    "raw_model_uncertainty_preserved": true,
+    "applied_by_this_reviewer": false
+  },
+  "p14_scope": {
+    "qualified_source_amounts": 57,
+    "exact_amount_matches": 48,
+    "different_amounts": 7,
+    "model_unread_qualified_amounts": 2,
+    "exact_blanks": 12,
+    "unresolved_source_amounts_ungraded": 15,
+    "financial_acceptance": false
+  },
+  "p540_scope": {
+    "observation": "unavailable_at_comparison_cutoff",
+    "qualified_source_amounts": 6,
+    "unresolved_source_amounts": 1
+  },
+  "all_uncertain_source_amounts_still_unresolved": 16,
+  "actual_copy_checks": {
+    "cases": 2,
+    "peer_confirmed": 2,
+    "baseline_disagreements_retained": true
+  },
+  "limits": [
+    "No model response resolved an uncertain original glyph.",
+    "Request gzip staging has been retired; this reviewer used exact mirrored-membership receipts rather than a fresh archive request-image fetch.",
+    "No provider/application/typed/consumer acceptance is implied by this source proposal.",
+    "No new images, paid calls, producer imports, production edits, or central RAW writes."
+  ]
+}

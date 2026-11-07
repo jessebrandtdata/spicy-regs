@@ -1,0 +1,284 @@
+{
+  "status": "bounded_original_pixel_readings_with_unresolved_digits",
+  "scope": "Manual source pixels only; no author final oracle, model observation, normalized output or OCR read. Five requested crops plus original p14 and p20 page images viewed. Crop reinspection requested after author draft; this is not a new blind full-page oracle.",
+  "source_pixel_evidence": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/embedded-source-pixel-evidence.json",
+    "sha256": "fbf542a64ab856e2653efb2b73b46720554010739b5afe6a84e130914c42a224",
+    "bytes": 5429
+  },
+  "derived_detail_crops": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/crop-pins.json",
+    "sha256": "e04affc574cc7b9f8de393af36d8683fd66488acbe4fa1b3a53ea34a4a5dfd79",
+    "bytes": 3704
+  },
+  "additional_images": [
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/p20-summary.png",
+      "sha256": "f0d4161eb71dadaa9253679895617ead8a444abd34189121037861b8aebb1138",
+      "bytes": 57600
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+      "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+      "bytes": 97451
+    }
+  ],
+  "p14": {
+    "physical_page": 14,
+    "printed_page": "A-1",
+    "columns_left_to_right": [
+      "funds_available_2008_04_01",
+      "supplementals",
+      "transfers",
+      "rescissions_withdrawals",
+      "net_expenditures",
+      "revolving_fund_receipts",
+      "unexpended_balance_2008_09_30"
+    ],
+    "account_groups": [
+      {
+        "id_literal": "0150",
+        "funding_years": [
+          "2006",
+          "2007",
+          "2008"
+        ],
+        "title": "COMPENSATION OF MEMBERS, SENATE"
+      },
+      {
+        "id_literal": "0107",
+        "funding_years": [
+          "2006",
+          "2007",
+          "2008"
+        ],
+        "title_scope": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE"
+      }
+    ],
+    "certain_cells": {
+      "0150/2006/supplementals": "0.00",
+      "0150/2006/transfers": "0.00",
+      "0150/2006/net_expenditures": "5.15",
+      "0150/2006/unexpended_balance": "0.00",
+      "0150/2007/supplementals": "0.00",
+      "0150/2007/transfers": "0.00",
+      "0150/2007/rescissions_withdrawals": "0.00",
+      "0150/2007/net_expenditures": "0.00",
+      "0150/2008/supplementals": "0.00",
+      "0150/2008/transfers": "0.00",
+      "0150/2008/rescissions_withdrawals": "0.00",
+      "0107/2006/supplementals": "0.00",
+      "0107/2006/transfers": "0.00",
+      "0107/2006/net_expenditures": "0.00",
+      "0107/2006/unexpended_balance": "0.00",
+      "0107/2007/supplementals": "0.00",
+      "0107/2007/transfers": "0.00",
+      "0107/2007/rescissions_withdrawals": "0.00",
+      "0107/2007/net_expenditures": "0.00",
+      "0107/2008/supplementals": "0.00",
+      "0107/2008/rescissions_withdrawals": "0.00"
+    },
+    "certain_blanks": [
+      "0150/2006/revolving_fund_receipts",
+      "0150/2007/revolving_fund_receipts",
+      "0150/2008/revolving_fund_receipts",
+      "0107/2006/revolving_fund_receipts",
+      "0107/2007/revolving_fund_receipts",
+      "0107/2008/revolving_fund_receipts"
+    ],
+    "unresolved_printed_cells": [
+      {
+        "slots": [
+          "0150/2006/funds_available"
+        ],
+        "provisional_reading": "644,415.26",
+        "limit": "Leading hundreds-thousands glyph and cents are too merged for an independent exact qualification."
+      },
+      {
+        "slots": [
+          "0150/2006/rescissions_withdrawals"
+        ],
+        "provisional_reading": "-644,420.41",
+        "limit": "Sign is clear; dark internal digit clusters remain uncertain."
+      },
+      {
+        "slots": [
+          "0150/2007/funds_available",
+          "0150/2007/unexpended_balance"
+        ],
+        "provisional_reading": "1,365,767.34",
+        "limit": "The three-digit group following the first comma is merged."
+      },
+      {
+        "slots": [
+          "0150/2008/funds_available"
+        ],
+        "provisional_reading": "12,323,219.50",
+        "limit": "Cents and internal digit cluster not independently exact."
+      },
+      {
+        "slots": [
+          "0150/2008/net_expenditures"
+        ],
+        "provisional_reading": "-10,942,945.31",
+        "limit": "Negative sign clear; interior glyphs remain uncertain."
+      },
+      {
+        "slots": [
+          "0150/2008/unexpended_balance"
+        ],
+        "provisional_reading": "1,380,274.19",
+        "limit": "First three-digit group and cents remain uncertain."
+      },
+      {
+        "slots": [
+          "0107/2006/funds_available",
+          "0107/2006/rescissions_withdrawals"
+        ],
+        "provisional_reading": null,
+        "visible_signs": [
+          "positive",
+          "negative"
+        ],
+        "limit": "Opening/withdrawal cluster resembles 96,235.64 or 56,235.64; no exact reading accepted."
+      },
+      {
+        "slots": [
+          "0107/2007/funds_available",
+          "0107/2007/unexpended_balance"
+        ],
+        "provisional_reading": "80,216.34",
+        "limit": "Leading two digits and cents are insufficiently distinct."
+      },
+      {
+        "slots": [
+          "0107/2008/funds_available"
+        ],
+        "provisional_reading": "134,206.80",
+        "limit": "Internal digit cluster and cents unresolved."
+      },
+      {
+        "slots": [
+          "0107/2008/transfers"
+        ],
+        "provisional_reading": null,
+        "alternatives": [
+          "28,000.00",
+          "29,000.00"
+        ],
+        "limit": "Second digit unclear; no arithmetic-based choice."
+      },
+      {
+        "slots": [
+          "0107/2008/net_expenditures"
+        ],
+        "provisional_reading": "-62,539.38",
+        "limit": "Sign clear; interior digits unresolved."
+      },
+      {
+        "slots": [
+          "0107/2008/unexpended_balance"
+        ],
+        "provisional_reading": "100,667.42",
+        "limit": "Middle group and cents not independently qualified."
+      }
+    ]
+  },
+  "p540": {
+    "physical_page": 540,
+    "money_top_to_bottom": [
+      {
+        "literal": "30.00",
+        "status": "read"
+      },
+      {
+        "literal": "30.00",
+        "status": "read"
+      },
+      {
+        "literal": null,
+        "status": "printed_amount_unresolved",
+        "alternatives": [
+          "3,011.45",
+          "3,811.45"
+        ],
+        "limit": "First glyph after comma has a merged interior; no sum used to choose."
+      },
+      {
+        "literal": "1,332,753.50",
+        "status": "read"
+      },
+      {
+        "literal": "5,746.32",
+        "status": "read"
+      },
+      {
+        "literal": "5,710.00",
+        "status": "read"
+      },
+      {
+        "literal": "1,344,209.82",
+        "status": "read"
+      }
+    ],
+    "identity_rows": [
+      {
+        "voucher_exact": null,
+        "readable_prefix": "DBIN",
+        "readable_suffix": "0853",
+        "limit": "Intervening 200/208 digit cluster unresolved; not repaired by assumed voucher format.",
+        "posted": "07/30/2008",
+        "payee": "MCCARTIN,JUDE E",
+        "start": "06/30/2008",
+        "end": "07/03/2008"
+      },
+      {
+        "voucher_exact": null,
+        "readable_prefix": "DBIN",
+        "readable_suffix": "0901",
+        "limit": "Intervening 200/208 digit cluster unresolved; not repaired by assumed voucher format.",
+        "posted": "08/29/2008",
+        "payee": "SILVA-BANUELOS,JORGE G",
+        "start": "05/24/2008",
+        "end": "06/01/2008"
+      }
+    ]
+  },
+  "p20": {
+    "physical_page": 20,
+    "printed_page": "B-1",
+    "office": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+    "funding_year": "2006",
+    "summary_rows": [
+      "Authorization",
+      "Supplementals",
+      "Transfers",
+      "Resc / Withdrawals",
+      "Land and Structures",
+      "ORGANIZATION TOTALS",
+      "UNEXPENDED BALANCE AS OF 09/30/2008"
+    ],
+    "certain_money": {
+      "Authorization/net_funds_available": "$5,000.00",
+      "Supplementals/net_funds_available": "0.00",
+      "Transfers/net_funds_available": "0.00",
+      "Resc / Withdrawals/net_funds_available": "-5,000.00",
+      "ORGANIZATION TOTALS/net_funds_available": "$0.00",
+      "ORGANIZATION TOTALS/net_expenditures": "$0.00",
+      "ORGANIZATION TOTALS/total_funding_ytd": "$0.00",
+      "UNEXPENDED BALANCE/total_funding_ytd": "$0.00"
+    },
+    "land_and_structures": [
+      null,
+      null,
+      null
+    ],
+    "land_and_structures_status": "Three visibly empty monetary positions, not three zeros.",
+    "lower_ledger": "Printed headers and empty body only; no transaction row."
+  },
+  "limits": [
+    "No financial inference from totals or column arithmetic used to settle a dark glyph.",
+    "This qualifies only the explicitly certain source readings; provisional amounts and voucher clusters remain unresolved printed facts, distinct from source blanks.",
+    "Other source rows and final author oracle were not read."
+  ]
+}

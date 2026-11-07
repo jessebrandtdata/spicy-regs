@@ -1,0 +1,61 @@
+{
+  "schema": "bounded-2008-senate-source-review-completion/1",
+  "status": "source_oracle_sealed_with_explicit_uncertainty",
+  "source": {
+    "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/89/8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+    "sha256": "8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+    "bytes": 64772880
+  },
+  "oracle": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-oracle.json",
+    "sha256": "18d0a117835e8b6240740dc57c7ab49ebcbaf00c54857328ad950872ba8f8a7f",
+    "bytes": 97901
+  },
+  "counts": {
+    "pages": 3,
+    "financial_or_printed_summary_rows": 26,
+    "monetary_positions": 112,
+    "printed_amount_occurrences": 87,
+    "qualified_amount_literals": 71,
+    "unresolved_printed_amount_literals": 16,
+    "visibly_blank_positions": 25,
+    "printed_zeros": 47,
+    "visible_negative_signs": 10,
+    "transaction_rows": 2,
+    "observed_empty_ledger_tables": 1
+  },
+  "visual_peer": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+    "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+    "bytes": 9526
+  },
+  "source_challenges": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-declaration-challenges/receipt.json",
+    "sha256": "a714ad707fe2656dd4e5322ecc846409692f120f0debe39e20848f24ac29b840",
+    "bytes": 9294
+  },
+  "source_challenge_confirmation": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/four-declaration-copies-confirmation.json",
+    "sha256": "2e89cbcc53557c7d82cf8413660c053c8dd40a45df6ca06dbb0864adeb297940",
+    "bytes": 5078
+  },
+  "scope": [
+    "Only physical pages14,20,540 are financially transcribed; all other1,066 physical pages are outside this oracle.",
+    "The25 blank monetary positions are empty source positions, never zero. The16 unresolved printed amounts are not blanks and have no qualified numeric value. The empty transaction grid creates no transaction or fabricated monetary cells.",
+    "A-1 funding adjustments bind exactly three child columns. Swapping transfer and net expenditure amounts can leave arithmetic unchanged but violates the source columns.",
+    "The p540 office/account cannot be selected without a preceding source heading and printed continuity. Do not infer it from DBIN, the payees, dates or a later heading.",
+    "Two p540 payee separators, two voucher literals and the second posting month remain uncertain. First account number onA-1 remains0100/0150 uncertain. Source candidates are retained separately from qualified literals.",
+    "The current maximum-resolution source pixels do not resolve all thick digit clusters. A clearer independent scan or exact same original statement in PartII could adjudicate these; neither is supplied by this oracle.",
+    "The original is a scanned PDF with hidden OCR. OCR text is retained independently and is not silently substituted for visible source text.",
+    "The bounded peer scope covers the first sixA-1 rows, p20 summary and selected p540 cells. The remaining sixA-1 rows have primary manual image review only.",
+    "No derived output, parser, Flex response or model outcome has been opened for this oracle; no production normalization or whole-report acceptance is claimed."
+  ],
+  "separate_model_comparison": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/flex-comparison-v1/review.json",
+    "sha256": "ad1c0677c96c85b6d9beeb26fa6fec8f849c0e0477979881688489c713c2b306",
+    "bytes": 171567
+  },
+  "comparison_is_not_source_evidence": true,
+  "no_central_raw_writes": true,
+  "no_new_model_calls": true
+}

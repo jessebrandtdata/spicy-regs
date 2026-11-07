@@ -1,0 +1,83 @@
+{
+  "schema": "congressional-disbursement-selection/1",
+  "files": [
+    {
+      "id": "senate-2008-04-01-pdf-part-1",
+      "chamber": "senate",
+      "format": "pdf",
+      "kind": "part",
+      "part": 1,
+      "url": "https://books.google.com/books/download/Report_of_the_Secretary_of_the_Senate_Ap.pdf?id=oNBdgDMqdJEC&output=pdf",
+      "source_sha256": "sha256:8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+      "source_byte_size": 64772880,
+      "physical_page_count": 1069,
+      "period_start": "2008-04-01",
+      "period_end": "2008-09-30",
+      "reading_pages": [
+        20
+      ],
+      "reading_scope": "Only the source-reviewed financial fields, office/funding context, reporting labels and empty ledger on physical p20. Other pages and complete text transcription remain unqualified; p14 uncertain amounts are not included.",
+      "structured_observations": [
+        {
+          "page": 20,
+          "result": {
+            "path": "60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0",
+            "sha256": "sha256:60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0",
+            "bytes": 6719
+          },
+          "image": {
+            "path": "cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635",
+            "sha256": "sha256:cca5a6233ef5c4b825c7d1cd73767c524933abdaf7c1f007eccc26b9bf7ce635",
+            "bytes": 209546
+          },
+          "page_record": {
+            "path": "ad9e9401e2da9403e1a354d579cb1f3bb30aef7f8112d1dfb41bc3126e4c3f91",
+            "sha256": "sha256:ad9e9401e2da9403e1a354d579cb1f3bb30aef7f8112d1dfb41bc3126e4c3f91",
+            "bytes": 1427
+          },
+          "request": {
+            "path": "77b6f82b02da9b79d753c926d6ce14bf88572a17a2a88e13f6521ca0360a347e",
+            "sha256": "sha256:77b6f82b02da9b79d753c926d6ce14bf88572a17a2a88e13f6521ca0360a347e",
+            "bytes": 200051
+          },
+          "response": {
+            "path": "8e48ca8901eebdcf970e4b2b4b13ceefa81cec73492cfbb6bef644ff93a39ab3",
+            "sha256": "sha256:8e48ca8901eebdcf970e4b2b4b13ceefa81cec73492cfbb6bef644ff93a39ab3",
+            "bytes": 19121
+          },
+          "plan": {
+            "path": "21177721e0c71abe0e518470b067a7fc1c8f79a2784d33d742f4498d58661afb",
+            "sha256": "sha256:21177721e0c71abe0e518470b067a7fc1c8f79a2784d33d742f4498d58661afb",
+            "bytes": 7657
+          },
+          "capture_binding": {
+            "source_id": "senate-2008-04-01-pdf-part-1",
+            "source_sha256": "sha256:8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+            "source_byte_size": 64772880,
+            "page": 20,
+            "plan": {
+              "sha256": "sha256:21177721e0c71abe0e518470b067a7fc1c8f79a2784d33d742f4498d58661afb",
+              "bytes": 7657
+            },
+            "observation": {
+              "sha256": "sha256:60bfe52e650ddf6a93b47c887c5c9762297b0a05652502bebbfa88a124edacd0",
+              "bytes": 6719
+            }
+          },
+          "qualification": {
+            "path": "b42461e5fb12d3fe8616142934af03389c95832912c3b71a0d59155a2759edd0",
+            "sha256": "sha256:b42461e5fb12d3fe8616142934af03389c95832912c3b71a0d59155a2759edd0",
+            "bytes": 9800
+          },
+          "evidence": [
+            {
+              "path": "cf6656f3f366a479b213521f97ee1869954aeb76a2e017cd40f377480f20138b",
+              "sha256": "sha256:cf6656f3f366a479b213521f97ee1869954aeb76a2e017cd40f377480f20138b",
+              "bytes": 2964
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

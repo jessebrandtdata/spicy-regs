@@ -1,0 +1,2178 @@
+{
+  "schema": "manual-original-financial-source-oracle/1",
+  "frozen_at": "2026-11-07T00:28:39.668811+00:00",
+  "source_id": "senate-2008-04-01-pdf-part-1",
+  "source": {
+    "path": "/Users/mikewolfd/Work/corpora/spicyregs/raw/objects/sha256/89/8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+    "sha256": "8998dd01ad14d5ffe4a10a8b827f8f0fb543efd0eafd55ac625a67dc29d917c7",
+    "bytes": 64772880
+  },
+  "report_period": {
+    "start": "2008-04-01",
+    "end": "2008-09-30"
+  },
+  "document": "S. Doc. 110-19, Part I",
+  "source_identity": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/missing-pdf-recovery-v11-signed-in-browser/independent-identity-review/identity-and-extent-review.json",
+    "sha256": "4060329faca704b2f1ada67b531a3869893716845d593607966291ef80823f2d",
+    "bytes": 8693
+  },
+  "status": "complete_position_census_with_explicit_uncertain_glyphs",
+  "method": "Original images first, initial visible notes frozen, then raw native OCR retained as secondary/unqualified signal and exact embedded scan pixels inspected for small bold glyphs. A second reviewer read selected original crops without final primary values or native OCR; disagreements remain unresolved. No model outcomes or producer imports.",
+  "initial_visual_notes": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/initial-visual-reading-notes.json",
+    "sha256": "983182a0cd4c65434dd2d41a99b0dcc45c92cfa9c880ab408f44865940eeda09",
+    "bytes": 4057
+  },
+  "input_images": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-image-pins.json",
+    "sha256": "158c9eb15617e1c964ef015b3d3f2715f2026350afcb79a1343c8c1ada5c044b",
+    "bytes": 5707
+  },
+  "legibility_views": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/legibility-views.json",
+    "sha256": "7ec65d147046edaa38ec86753f74b21985a39f0125a9e223ff42c6dbff39cd8f",
+    "bytes": 5240
+  },
+  "exact_crops": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/source-crops.json",
+    "sha256": "e5648db6613c3124210bcadbf3688e43924725b9851ec4ae4ba515f17d93e32d",
+    "bytes": 4319
+  },
+  "native_resolution_pixel_evidence": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/embedded-source-pixel-evidence.json",
+    "sha256": "fbf542a64ab856e2653efb2b73b46720554010739b5afe6a84e130914c42a224",
+    "bytes": 5429
+  },
+  "native_text_unqualified": [
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/native-p14-layout.txt",
+      "sha256": "3fb75ce955fe75b5104a3ffb3cd8b9a920b3a570275a858e5debb2a327ac7480",
+      "bytes": 5265
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/native-p20-layout.txt",
+      "sha256": "b3cd17f58b65a104dab934ee132fc642a32b419e00c7496ab3a09699f0f7bead",
+      "bytes": 8172
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/native-p540-layout.txt",
+      "sha256": "5d1c3cc877cf58439655847ff7db0a310360597bee92461cbeae166de6d795b3",
+      "bytes": 4183
+    }
+  ],
+  "bounded_source_peer": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+    "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+    "bytes": 9526
+  },
+  "pages": [
+    {
+      "physical_page": 14,
+      "printed_page": "A-1",
+      "reading_scope": "complete_visible_financial_position_census_with_uncertain_digits",
+      "title": "SUMMARY OF TRANSACTIONS BY APPROPRIATIONS",
+      "currency_literal": "($)",
+      "unit": "USD",
+      "scale": "ones; no thousands multiplier printed",
+      "nonmonetary_columns": [
+        "APPROPRIATION TITLE",
+        "NO."
+      ],
+      "funding_year_role": "Each printed year is a separate row under the shared title and account number; report year is not substituted.",
+      "monetary_columns": [
+        {
+          "index": 1,
+          "role": "funds_available_opening",
+          "printed_label": "FUNDS AVAILABLE AS OF April 1, 2008",
+          "date": "2008-04-01",
+          "parent_group": null
+        },
+        {
+          "index": 2,
+          "role": "supplementals",
+          "printed_label": "SUPPLEMENTALS",
+          "parent_group": "FUNDING ADJUSTMENTS"
+        },
+        {
+          "index": 3,
+          "role": "transfers",
+          "printed_label": "TRANSFERS",
+          "parent_group": "FUNDING ADJUSTMENTS"
+        },
+        {
+          "index": 4,
+          "role": "rescissions_withdrawals",
+          "printed_label": "RESCISSIONS/ WITHDRAWALS",
+          "parent_group": "FUNDING ADJUSTMENTS"
+        },
+        {
+          "index": 5,
+          "role": "net_expenditures",
+          "printed_label": "NET EXPENDITURES",
+          "parent_group": null
+        },
+        {
+          "index": 6,
+          "role": "revolving_fund_receipts",
+          "printed_label": "REVOLVING FUND RECEIPTS",
+          "parent_group": null
+        },
+        {
+          "index": 7,
+          "role": "unexpended_balance_closing",
+          "printed_label": "UNEXPENDED BALANCE AS OF September 30, 2008",
+          "date": "2008-09-30",
+          "parent_group": null
+        }
+      ],
+      "groups": [
+        {
+          "group_index": 1,
+          "appropriation_number": null,
+          "appropriation_number_candidates": [
+            "0100",
+            "0150"
+          ],
+          "issue": "source_account_digit_disagrees_between_original_image_reviewers",
+          "title_lines": [
+            "COMPENSATION OF",
+            "MEMBERS, SENATE"
+          ]
+        },
+        {
+          "group_index": 2,
+          "appropriation_number": "0107",
+          "title_lines": [
+            "EXP. ALLOWANCES OF THE",
+            "VICE PRES., PRES. PRO",
+            "TEMPORE, PRES. PRO",
+            "TEMPORE EMERITUS, MAJ",
+            "AND MIN LEADERS AND",
+            "MAJ AND MIN WHIPS AND",
+            "CHAIRMEN OF THE MAJ",
+            "AND MIN CONFERENCE AND",
+            "POLICY COMMITTEES,",
+            "SENATE"
+          ]
+        },
+        {
+          "group_index": 3,
+          "appropriation_number": "0108",
+          "title_lines": [
+            "REPRESENTATION",
+            "ALLOWANCES FOR THE",
+            "MAJORITY AND MINORITY",
+            "LEADERS"
+          ]
+        },
+        {
+          "group_index": 4,
+          "appropriation_number": "0110",
+          "title_lines": [
+            "SALARIES, OFFICERS AND",
+            "EMPLOYEES, SENATE"
+          ]
+        }
+      ],
+      "rows": [
+        {
+          "row_index": 1,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 1,
+          "appropriation_number": null,
+          "appropriation_title": "COMPENSATION OF MEMBERS, SENATE",
+          "funding_year_literal": "2006",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 1
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "844,415.26",
+              "provisional_primary_decimal_usd": "844415.26",
+              "candidate_literals": [
+                "844,415.26",
+                "644,415.26"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "-844,420.41",
+              "provisional_primary_decimal_usd": "-844420.41",
+              "candidate_literals": [
+                "-844,420.41",
+                "-644,420.41"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "5.15",
+              "state": "printed_amount",
+              "decimal_usd": "5.15",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 2,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 1,
+          "appropriation_number": null,
+          "appropriation_title": "COMPENSATION OF MEMBERS, SENATE",
+          "funding_year_literal": "2007",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 2
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "1,856,767.94",
+              "provisional_primary_decimal_usd": "1856767.94",
+              "candidate_literals": [
+                "1,856,767.94",
+                "1,365,767.34"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "1,856,767.94",
+              "provisional_primary_decimal_usd": "1856767.94",
+              "candidate_literals": [
+                "1,856,767.94",
+                "1,365,767.34"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            }
+          ]
+        },
+        {
+          "row_index": 3,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 1,
+          "appropriation_number": null,
+          "appropriation_title": "COMPENSATION OF MEMBERS, SENATE",
+          "funding_year_literal": "2008",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 3
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "12,323,219.50",
+              "provisional_primary_decimal_usd": "12323219.50",
+              "candidate_literals": [
+                "12,323,219.50"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "-10,942,945.31",
+              "provisional_primary_decimal_usd": "-10942945.31",
+              "candidate_literals": [
+                "-10,942,945.31"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "1,380,274.19",
+              "provisional_primary_decimal_usd": "1380274.19",
+              "candidate_literals": [
+                "1,380,274.19"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            }
+          ]
+        },
+        {
+          "row_index": 4,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 2,
+          "appropriation_number": "0107",
+          "appropriation_title": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "funding_year_literal": "2006",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 4
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "98,235.04",
+              "provisional_primary_decimal_usd": "98235.04",
+              "candidate_literals": [
+                "98,235.04",
+                "96,235.64",
+                "56,235.64"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "-98,235.04",
+              "provisional_primary_decimal_usd": "-98235.04",
+              "candidate_literals": [
+                "-98,235.04",
+                "-96,235.64",
+                "-56,235.64"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 5,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 2,
+          "appropriation_number": "0107",
+          "appropriation_title": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "funding_year_literal": "2007",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 5
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "80,216.94",
+              "provisional_primary_decimal_usd": "80216.94",
+              "candidate_literals": [
+                "80,216.94",
+                "80,216.34"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "80,216.94",
+              "provisional_primary_decimal_usd": "80216.94",
+              "candidate_literals": [
+                "80,216.94",
+                "80,216.34"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            }
+          ]
+        },
+        {
+          "row_index": 6,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 2,
+          "appropriation_number": "0107",
+          "appropriation_title": "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND MIN LEADERS AND MAJ AND MIN WHIPS AND CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND POLICY COMMITTEES, SENATE",
+          "funding_year_literal": "2008",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 6
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "134,296.80",
+              "provisional_primary_decimal_usd": "134296.80",
+              "candidate_literals": [
+                "134,296.80",
+                "134,206.80"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "28,000.00",
+              "provisional_primary_decimal_usd": "28000.00",
+              "candidate_literals": [
+                "28,000.00",
+                "29,000.00"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "-52,639.38",
+              "provisional_primary_decimal_usd": "-52639.38",
+              "candidate_literals": [
+                "-52,639.38",
+                "-62,539.38"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "109,657.42",
+              "provisional_primary_decimal_usd": "109657.42",
+              "candidate_literals": [
+                "109,657.42",
+                "100,667.42"
+              ],
+              "uncertainty": "Merged/dark original scan glyphs lack independent exact reading. Candidate text and OCR agreement are not a normalized value; arithmetic is not used to decide.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            }
+          ]
+        },
+        {
+          "row_index": 7,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 3,
+          "appropriation_number": "0108",
+          "appropriation_title": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "funding_year_literal": "2006",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 7
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": "1,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "1000.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "-1,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "-1000.00",
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 8,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 3,
+          "appropriation_number": "0108",
+          "appropriation_title": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "funding_year_literal": "2007",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 8
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": "15,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "15000.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": "15,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "15000.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 9,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 3,
+          "appropriation_number": "0108",
+          "appropriation_title": "REPRESENTATION ALLOWANCES FOR THE MAJORITY AND MINORITY LEADERS",
+          "funding_year_literal": "2008",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 9
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": "30,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "30000.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "-28,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "-28000.00",
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": "2,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "2000.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 10,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 4,
+          "appropriation_number": "0110",
+          "appropriation_title": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "funding_year_literal": "2006",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 10
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": "224,766.76",
+              "state": "printed_amount",
+              "decimal_usd": "224766.76",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "-224,766.76",
+              "state": "printed_amount",
+              "decimal_usd": "-224766.76",
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 11,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 4,
+          "appropriation_number": "0110",
+          "appropriation_title": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "funding_year_literal": "2007",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 11
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": "857,335.67",
+              "state": "printed_amount",
+              "decimal_usd": "857335.67",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": "857,335.67",
+              "state": "printed_amount",
+              "decimal_usd": "857335.67",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 12,
+          "row_role": "appropriation_funding_year_balance",
+          "group_index": 4,
+          "appropriation_number": "0110",
+          "appropriation_title": "SALARIES, OFFICERS AND EMPLOYEES, SENATE",
+          "funding_year_literal": "2008",
+          "source_anchor": {
+            "physical_page": 14,
+            "printed_page": "A-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p14-clockwise90-300dpi.png",
+              "sha256": "996d3f0a42e3dc494dcde3abc8fc91f0f14cc4d316e65a395885748cc66614cd",
+              "bytes": 130888
+            },
+            "table": "whole_page_appropriation_summary",
+            "financial_row": 12
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "funds_available_opening",
+              "raw_literal": "87,417,090.60",
+              "state": "printed_amount",
+              "decimal_usd": "87417090.60",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "supplementals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "transfers",
+              "raw_literal": "-10,153,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "-10153000.00",
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 4,
+              "column_role": "rescissions_withdrawals",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 5,
+              "column_role": "net_expenditures",
+              "raw_literal": "-76,112,969.73",
+              "state": "printed_amount",
+              "decimal_usd": "-76112969.73",
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 6,
+              "column_role": "revolving_fund_receipts",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 7,
+              "column_role": "unexpended_balance_closing",
+              "raw_literal": "1,151,120.87",
+              "state": "printed_amount",
+              "decimal_usd": "1151120.87",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        }
+      ],
+      "page_total_printed": false,
+      "issues": [
+        "15_printed_amount_literals_unresolved",
+        "first_account_number_unresolved"
+      ]
+    },
+    {
+      "physical_page": 20,
+      "printed_page": "B-1",
+      "reading_scope": "complete_office_top_summary_and_observed_empty_ledger",
+      "title": "DETAILED AND SUMMARY STATEMENT OF EXPENDITURES",
+      "office_literal": "CHAIRMAN MINORITY CONFERENCE COMMITTEE (D)",
+      "funding_year_label": "Funding Year",
+      "funding_year_literal": "2006",
+      "appropriation_title_lines": [
+        "EXP. ALLOWANCES OF THE VICE PRES., PRES. PRO",
+        "TEMPORE, PRES. PRO TEMPORE EMERITUS, MAJ AND",
+        "MIN LEADERS AND MAJ AND MIN WHIPS AND",
+        "CHAIRMEN OF THE MAJ AND MIN CONFERENCE AND",
+        "POLICY COMMITTEES, SENATE"
+      ],
+      "appropriation_number": null,
+      "appropriation_number_status": "not printed locally; no borrowing of 0107 from A-1",
+      "monetary_columns": [
+        {
+          "index": 1,
+          "role": "net_funds_available",
+          "printed_label": "NET FUNDS AVAILABLE AS OF 04/01/2008 ($)",
+          "date_literal": "04/01/2008",
+          "date": "2008-04-01"
+        },
+        {
+          "index": 2,
+          "role": "net_expenditures_for_report_period",
+          "printed_label": "NET EXPENDITURES FOR THE PERIOD OF 04/01/2008 THRU 09/30/2008 ($)",
+          "start_literal": "04/01/2008",
+          "end_literal": "09/30/2008"
+        },
+        {
+          "index": 3,
+          "role": "total_funding_ytd",
+          "printed_label": "TOTAL FUNDING YTD ($)",
+          "limit": "The source says funding, not year-to-date expenditures."
+        }
+      ],
+      "rows": [
+        {
+          "row_index": 1,
+          "printed_label": "Authorization",
+          "row_role": "funding_component",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 1
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "net_funds_available",
+              "raw_literal": "$5,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "5000.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "net_expenditures_for_report_period",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "total_funding_ytd",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 2,
+          "printed_label": "Supplementals",
+          "row_role": "funding_component",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 2
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "net_funds_available",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "net_expenditures_for_report_period",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "total_funding_ytd",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 3,
+          "printed_label": "Transfers",
+          "row_role": "funding_component",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 3
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "net_funds_available",
+              "raw_literal": "0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "net_expenditures_for_report_period",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "total_funding_ytd",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 4,
+          "printed_label": "Resc / Withdrawals",
+          "row_role": "funding_component",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 4
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "net_funds_available",
+              "raw_literal": "-5,000.00",
+              "state": "printed_amount",
+              "decimal_usd": "-5000.00",
+              "sign": "negative",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "net_expenditures_for_report_period",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "total_funding_ytd",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 5,
+          "printed_label": "Land and Structures",
+          "row_role": "printed_category_label_with_empty_money_positions",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 5
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "net_funds_available",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "net_expenditures_for_report_period",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "total_funding_ytd",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 6,
+          "printed_label": "ORGANIZATION TOTALS",
+          "row_role": "organization_total",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 6
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "net_funds_available",
+              "raw_literal": "$0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "net_expenditures_for_report_period",
+              "raw_literal": "$0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "total_funding_ytd",
+              "raw_literal": "$0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        },
+        {
+          "row_index": 7,
+          "printed_label": "UNEXPENDED BALANCE AS OF 09/30/2008",
+          "row_role": "unexpended_balance",
+          "source_anchor": {
+            "physical_page": 20,
+            "printed_page": "B-1",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p20-clockwise90-300dpi.png",
+              "sha256": "d192bb452becc5f36e993d640f7b02a71a0b58a2a0a0e87c3795cd1a5534468d",
+              "bytes": 97451
+            },
+            "table": "office_top_summary",
+            "printed_row": 7
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "net_funds_available",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 2,
+              "column_role": "net_expenditures_for_report_period",
+              "raw_literal": "",
+              "state": "visibly_blank",
+              "decimal_usd": null,
+              "sign": null,
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            },
+            {
+              "column_index": 3,
+              "column_role": "total_funding_ytd",
+              "raw_literal": "$0.00",
+              "state": "printed_amount",
+              "decimal_usd": "0.00",
+              "sign": "zero",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ]
+        }
+      ],
+      "ledger": {
+        "columns": [
+          "DOCUMENT NO.",
+          "DATE POSTED",
+          "PAYEE NAME",
+          "OBLIGATION/SERVICE DATES / START",
+          "OBLIGATION/SERVICE DATES / END",
+          "DESCRIPTION",
+          "AMOUNT ($)"
+        ],
+        "rows": [],
+        "status": "observed_empty",
+        "source_evidence": "Full original lower table viewed; header and open body contain no transaction record. The report has financial summary values above, so the page is not empty."
+      },
+      "issues": []
+    },
+    {
+      "physical_page": 540,
+      "printed_page": "B-521",
+      "reading_scope": "complete_visible_continuation_ledger_with_explicit_uncertainties",
+      "columns": [
+        "DOCUMENT NO.",
+        "DATE POSTED",
+        "PAYEE NAME",
+        "OBLIGATION/SERVICE DATES / START",
+        "OBLIGATION/SERVICE DATES / END",
+        "DESCRIPTION",
+        "AMOUNT ($)"
+      ],
+      "rows": [
+        {
+          "row_index": 1,
+          "row_role": "transaction",
+          "document_literal": null,
+          "posted_literal": "07/30/2008",
+          "payee_letter_sequence": "MCCARTIN JUDE E",
+          "payee_literal_candidates": [
+            "MCCARTIN.JUDE E",
+            "MCCARTIN,JUDE E"
+          ],
+          "payee_literal": null,
+          "service_start_literal": "06/30/2008",
+          "service_end_literal": "07/03/2008",
+          "description_literal": "FEES AND OTHER CHARGES",
+          "issues": [
+            "payee_separator_period_or_comma_unresolved",
+            "voucher_digit_cluster_and_suffix_unresolved"
+          ],
+          "source_anchor": {
+            "physical_page": 540,
+            "printed_page": "B-521",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+              "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+              "bytes": 60397
+            },
+            "table": "continuation_ledger",
+            "financial_row": 1
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "amount",
+              "raw_literal": "30.00",
+              "state": "printed_amount",
+              "decimal_usd": "30.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ],
+          "provisional_primary_document_literal": "DBIN20800653",
+          "document_visible_prefix": "DBIN",
+          "document_suffix_candidates": [
+            "0653",
+            "0853"
+          ]
+        },
+        {
+          "row_index": 2,
+          "row_role": "transaction",
+          "document_literal": null,
+          "posted_literal": null,
+          "payee_letter_sequence": "SILVA-BANUELOS JORGE G",
+          "payee_literal_candidates": [
+            "SILVA-BANUELOS.JORGE G",
+            "SILVA-BANUELOS,JORGE G"
+          ],
+          "payee_literal": null,
+          "service_start_literal": "05/24/2008",
+          "service_end_literal": "06/01/2008",
+          "description_literal": "FEES AND OTHER CHARGES",
+          "issues": [
+            "payee_separator_period_or_comma_unresolved",
+            "voucher_digit_cluster_and_suffix_unresolved",
+            "posted_month_08_or_09_unresolved"
+          ],
+          "source_anchor": {
+            "physical_page": 540,
+            "printed_page": "B-521",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+              "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+              "bytes": 60397
+            },
+            "table": "continuation_ledger",
+            "financial_row": 2
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "amount",
+              "raw_literal": "30.00",
+              "state": "printed_amount",
+              "decimal_usd": "30.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ],
+          "provisional_primary_document_literal": "DBIN20800801",
+          "document_visible_prefix": "DBIN",
+          "document_suffix_candidates": [
+            "0801",
+            "0901"
+          ],
+          "provisional_primary_posted_literal": "09/29/2008",
+          "posted_literal_candidates": [
+            "09/29/2008",
+            "08/29/2008"
+          ]
+        },
+        {
+          "row_index": 3,
+          "row_role": "category_subtotal",
+          "printed_label": "OTHER CONTRACTUAL SERVICES",
+          "source_anchor": {
+            "physical_page": 540,
+            "printed_page": "B-521",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+              "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+              "bytes": 60397
+            },
+            "table": "continuation_ledger",
+            "financial_row": 3
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "amount",
+              "raw_literal": null,
+              "state": "printed_amount_unresolved",
+              "decimal_usd": null,
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box",
+              "provisional_primary_raw_literal": "3,811.45",
+              "provisional_primary_decimal_usd": "3811.45",
+              "candidate_literals": [
+                "3,811.45",
+                "3,011.45"
+              ],
+              "uncertainty": "First digit after the comma is not independently resolved as8 versus0 in the original scan.",
+              "source_peer": {
+                "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/retained-pdf-flex-independent-v1/senate2008-source-crops-v1/independent-source-readings.json",
+                "sha256": "33c3ab8329d91f93ce481dc0b00508ccebd4d0978c5110aff23c5ffbb2e11d73",
+                "bytes": 9526
+              }
+            }
+          ],
+          "transaction_identity_fields": "not applicable to this subtotal/total; no payee/date/voucher is invented from empty space"
+        },
+        {
+          "row_index": 4,
+          "row_role": "payroll_component_subtotal",
+          "printed_label": "PERSONNEL COMP. FULL-TIME PERMANENT",
+          "source_anchor": {
+            "physical_page": 540,
+            "printed_page": "B-521",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+              "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+              "bytes": 60397
+            },
+            "table": "continuation_ledger",
+            "financial_row": 4
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "amount",
+              "raw_literal": "1,332,753.50",
+              "state": "printed_amount",
+              "decimal_usd": "1332753.50",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ],
+          "transaction_identity_fields": "not applicable to this subtotal/total; no payee/date/voucher is invented from empty space"
+        },
+        {
+          "row_index": 5,
+          "row_role": "payroll_component_subtotal",
+          "printed_label": "RE-EMPLOYED ANNUITANTS",
+          "source_anchor": {
+            "physical_page": 540,
+            "printed_page": "B-521",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+              "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+              "bytes": 60397
+            },
+            "table": "continuation_ledger",
+            "financial_row": 5
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "amount",
+              "raw_literal": "5,746.32",
+              "state": "printed_amount",
+              "decimal_usd": "5746.32",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ],
+          "transaction_identity_fields": "not applicable to this subtotal/total; no payee/date/voucher is invented from empty space"
+        },
+        {
+          "row_index": 6,
+          "row_role": "payroll_component_subtotal",
+          "printed_label": "PERSONNEL BENEFITS",
+          "source_anchor": {
+            "physical_page": 540,
+            "printed_page": "B-521",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+              "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+              "bytes": 60397
+            },
+            "table": "continuation_ledger",
+            "financial_row": 6
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "amount",
+              "raw_literal": "5,710.00",
+              "state": "printed_amount",
+              "decimal_usd": "5710.00",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ],
+          "transaction_identity_fields": "not applicable to this subtotal/total; no payee/date/voucher is invented from empty space"
+        },
+        {
+          "row_index": 7,
+          "row_role": "net_payroll_total",
+          "printed_label": "NET PAYROLL EXPENSES",
+          "source_anchor": {
+            "physical_page": 540,
+            "printed_page": "B-521",
+            "image": {
+              "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/original-p540-clockwise90-300dpi.png",
+              "sha256": "5f1e677e8822347207eb6ec7c6e7ea2c76d495b6de3b6a7aec82f17a96a2a9f4",
+              "bytes": 60397
+            },
+            "table": "continuation_ledger",
+            "financial_row": 7
+          },
+          "monetary_slots": [
+            {
+              "column_index": 1,
+              "column_role": "amount",
+              "raw_literal": "1,344,209.82",
+              "state": "printed_amount",
+              "decimal_usd": "1344209.82",
+              "sign": "positive",
+              "position_basis": "Manually read row/column intersection in pinned original image, not a model geometry box"
+            }
+          ],
+          "transaction_identity_fields": "not applicable to this subtotal/total; no payee/date/voucher is invented from empty space"
+        }
+      ],
+      "office_literal": null,
+      "funding_year_literal": null,
+      "appropriation_title": null,
+      "appropriation_number": null,
+      "context_status": "unresolved_no_local_heading",
+      "context_boundary": "The page begins with two continuing fee transactions and closes category/payroll totals. No preceding account heading was selected or read, so voucher prefix/payee/date/printed position are not used to infer office or funding account.",
+      "issues": [
+        "office_and_account_context_unread",
+        "two_payee_separators_unresolved",
+        "two_voucher_literals_unresolved",
+        "one_posted_month_unresolved",
+        "one_subtotal_literal_unresolved"
+      ],
+      "category_subtotal_scope": "OTHER CONTRACTUAL SERVICES has an unresolved printed subtotal (provisional3,811.45 versus3,011.45). Only two visible30.00 details are on this page. The rest of the category is outside this selected page, and no arithmetic chooses its subtotal."
+    }
+  ],
+  "counts": {
+    "pages": 3,
+    "financial_or_printed_summary_rows": 26,
+    "monetary_positions": 112,
+    "printed_amount_occurrences": 87,
+    "qualified_amount_literals": 71,
+    "unresolved_printed_amount_literals": 16,
+    "visibly_blank_positions": 25,
+    "printed_zeros": 47,
+    "visible_negative_signs": 10,
+    "transaction_rows": 2,
+    "observed_empty_ledger_tables": 1
+  },
+  "arithmetic_diagnostics": {
+    "purpose": "Consistency check after literal transcription; never a source for replacing a printed digit or filling a blank. No equation is evaluated for rows with unresolved amount digits.",
+    "appropriation_signed_equation": "opening + supplementals + transfers + rescissions/withdrawals + net expenditures + receipts = closing",
+    "appropriation_checks": [
+      {
+        "row_index": 1,
+        "status": "skipped_unresolved_amounts",
+        "sum_of_printed_components_minus_printed_closing": null,
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 2,
+        "status": "skipped_unresolved_amounts",
+        "sum_of_printed_components_minus_printed_closing": null,
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 3,
+        "status": "skipped_unresolved_amounts",
+        "sum_of_printed_components_minus_printed_closing": null,
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 4,
+        "status": "skipped_unresolved_amounts",
+        "sum_of_printed_components_minus_printed_closing": null,
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 5,
+        "status": "skipped_unresolved_amounts",
+        "sum_of_printed_components_minus_printed_closing": null,
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 6,
+        "status": "skipped_unresolved_amounts",
+        "sum_of_printed_components_minus_printed_closing": null,
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 7,
+        "status": "sum_of_printed_components_checked",
+        "sum_of_printed_components_minus_printed_closing": "0.00",
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 8,
+        "status": "sum_of_printed_components_checked",
+        "sum_of_printed_components_minus_printed_closing": "0.00",
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 9,
+        "status": "sum_of_printed_components_checked",
+        "sum_of_printed_components_minus_printed_closing": "0.00",
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 10,
+        "status": "sum_of_printed_components_checked",
+        "sum_of_printed_components_minus_printed_closing": "0.00",
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 11,
+        "status": "sum_of_printed_components_checked",
+        "sum_of_printed_components_minus_printed_closing": "0.00",
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      },
+      {
+        "row_index": 12,
+        "status": "sum_of_printed_components_checked",
+        "sum_of_printed_components_minus_printed_closing": "0.00",
+        "blank_receipts_preserved": true,
+        "not_a_proof_of_blank_numeric_value": true
+      }
+    ],
+    "p20_funding_component_sum": "0.00",
+    "p540_printed_payroll_component_sum": "1344209.82",
+    "p540_printed_net_payroll": "1344209.82",
+    "p540_visible_fee_subset_sum": "60.00",
+    "p540_category_subtotal": null,
+    "no_complete_category_sum_claim": true
+  },
+  "initial_visual_reinspection_dispositions": [
+    {
+      "page": 540,
+      "row": 3,
+      "initial_300dpi_reading": "3,811.46",
+      "later_primary_native_pixel_reading": "3,811.45",
+      "final": "unresolved between3,811.45 and3,011.45; no exact numeric value qualified"
+    },
+    {
+      "page": 540,
+      "row": 4,
+      "initial_300dpi_reading": "1,332,753.60",
+      "final_qualified_literal": "1,332,753.50",
+      "basis": "Native-resolution source pixels and independent image reading agree; initial draft remains retained."
+    },
+    {
+      "page": 540,
+      "row": 7,
+      "initial_300dpi_reading": "1,344,209.92",
+      "final_qualified_literal": "1,344,209.82",
+      "basis": "Native-resolution source pixels and independent image reading agree; initial draft remains retained."
+    }
+  ],
+  "limits": [
+    "Only physical pages14,20,540 are financially transcribed; all other1,066 physical pages are outside this oracle.",
+    "The25 blank monetary positions are empty source positions, never zero. The16 unresolved printed amounts are not blanks and have no qualified numeric value. The empty transaction grid creates no transaction or fabricated monetary cells.",
+    "A-1 funding adjustments bind exactly three child columns. Swapping transfer and net expenditure amounts can leave arithmetic unchanged but violates the source columns.",
+    "The p540 office/account cannot be selected without a preceding source heading and printed continuity. Do not infer it from DBIN, the payees, dates or a later heading.",
+    "Two p540 payee separators, two voucher literals and the second posting month remain uncertain. First account number onA-1 remains0100/0150 uncertain. Source candidates are retained separately from qualified literals.",
+    "The current maximum-resolution source pixels do not resolve all thick digit clusters. A clearer independent scan or exact same original statement in PartII could adjudicate these; neither is supplied by this oracle.",
+    "The original is a scanned PDF with hidden OCR. OCR text is retained independently and is not silently substituted for visible source text.",
+    "The bounded peer scope covers the first sixA-1 rows, p20 summary and selected p540 cells. The remaining sixA-1 rows have primary manual image review only.",
+    "No derived output, parser, Flex response or model outcome has been opened for this oracle; no production normalization or whole-report acceptance is claimed."
+  ],
+  "script": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/congress-disbursements-2008-20261106/raw-review/senate-2008-apr-financial-source-v1/freeze_source_oracle.py",
+    "sha256": "34bf2d0fa9de208958d4385170eeaa5f4222f37097d1de6ce8b241cc53e177e6",
+    "bytes": 19895
+  },
+  "central_raw_writes": 0,
+  "model_calls": 0
+}
