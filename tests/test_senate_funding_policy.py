@@ -13,7 +13,7 @@ from spicy_docs.schemas import TABLE_CONTRACTS
 from spicy_docs.schemas.senate_expenditure_tables import page_context
 from spicy_regs import legislative_documents as ld, legislative_receipts as lr
 from spicy_regs.contract_types import arrow_schema
-from spicy_regs.etl_receipts import receipt_policies
+from spicy_regs.etl_receipts import decode_exact_json, receipt_policies
 
 
 DATASET = "senate_expenditures"
@@ -62,14 +62,10 @@ def test_senate_policy_history_changes_only_the_two_funding_types_and_version():
         receipt_policies(replace(current, identity_fields=current.identity_fields[:-1]))
 
 
-@pytest.fixture
-def earlier_bundle(tmp_path, monkeypatch):
-    """A retained /1 bundle produced through the maintained original integer mapping."""
+def make_earlier_bundle(tmp_path, monkeypatch, raw, schema):
+    """Produce a /1 bundle through the maintained original integer mapping."""
     previous = receipt_policies(lr.policy(DATASET))[1]
-    raw = [source_row("2021", "2023"), source_row("0509", ordinal=1), source_row("509", ordinal=2),
-           source_row(None, ordinal=3)]
     source = tmp_path / f"{DATASET}.parquet"
-    schema = pa.schema([(name, pa.string()) for name in raw[0]], metadata={b"scope": b"earlier-fixture"})
     pq.write_table(pa.Table.from_pylist(raw, schema=schema), source)
     old_registry = deepcopy(ld.field_registry())
     for field in old_registry[DATASET]["fields"]:
@@ -84,10 +80,57 @@ def earlier_bundle(tmp_path, monkeypatch):
         patch.setattr(lr, "policy", lambda name: previous if name == DATASET else current_policy(name))
         patch.setattr(lr, "_processor", lambda name: previous.policy_version if name == DATASET else current_processor(name))
         lr.write_legislative_outputs([source], tmp_path / "old", generation_id="old", bulk=False)
-    subject = tmp_path / "old" / f"{DATASET}.parquet"
+    return tmp_path / "old"
+
+
+@pytest.fixture
+def earlier_bundle(tmp_path, monkeypatch):
+    raw = [source_row("2021", "2023"), source_row("0509", ordinal=1), source_row("509", ordinal=2),
+           source_row(None, ordinal=3)]
+    schema = pa.schema([(name, pa.string()) for name in raw[0]], metadata={b"scope": b"earlier-fixture"})
+    bundle = make_earlier_bundle(tmp_path, monkeypatch, raw, schema)
+    subject = bundle / f"{DATASET}.parquet"
     values = pq.read_table(subject).to_pylist()
     assert [(r["funding_year"], r["funding_year_end"]) for r in values] == [(2021, 2023), (509, None), (509, None), (None, None)]
-    return tmp_path / "old", raw, schema
+    return bundle, raw, schema
+
+
+@pytest.mark.parametrize("bulk", [False, True])
+def test_historical_numeric_raw_restores_without_becoming_new_literal_text(tmp_path, monkeypatch, bulk):
+    raw = [source_row(509, 511), source_row(2021, 2023, ordinal=1), source_row(None, ordinal=2)]
+    schema = pa.schema([(name, pa.int64() if name in FUNDING else pa.string()) for name in raw[0]],
+                       metadata={b"scope": b"earlier-numeric-fixture"})
+    bundle = make_earlier_bundle(tmp_path, monkeypatch, raw, schema)
+    held = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.iterdir()}
+    subjects = pq.read_table(bundle / f"{DATASET}.parquet").to_pylist()
+    assert [(r["funding_year"], r["funding_year_end"]) for r in subjects] == [(509, 511), (2021, 2023), (None, None)]
+    current, previous = receipt_policies(lr.policy(DATASET))
+    records = [s | {lr.RAW: r} for s, r in zip(subjects, raw, strict=True)]
+    assert list(lr.retained_source_rows(DATASET, previous, records)) == raw
+    restored = lr.restore_prior(bundle, tmp_path / "restored", bulk=bulk)
+    original = pq.read_table(restored[DATASET])
+    assert original.schema.equals(schema, check_metadata=True)
+    assert original.to_pylist() == raw
+    with pytest.raises(ld.LegislativeShapeError, match="expected string"):
+        list(lr.retained_source_rows(DATASET, current, records))
+    # The writer retains rejected source rows as refusal receipts rather than
+    # aborting the bundle or inventing text from the old integer.
+    manifest = lr.write_legislative_outputs([restored[DATASET]], tmp_path / "new", generation_id="new", bulk=bulk)
+    assert manifest["refused_rows"] == {DATASET: 2}
+    published = pq.read_table(tmp_path / "new" / f"{DATASET}.parquet").to_pylist()
+    assert len(published) == 1 and all(published[0][name] is None for name in FUNDING)
+    refused = [r for r in pq.read_table(tmp_path / "new/etl_receipts.parquet").to_pylist()
+               if r["dataset"] == DATASET and r["outcome"] == "refused"]
+    assert [decode_exact_json(r["processing_json"])[lr.RAW] for r in refused] == raw[:2]
+    with pytest.raises(ValueError, match="conversion refusals cannot qualify"):
+        lr.restore_prior(tmp_path / "new", tmp_path / "new-restored", bulk=bulk)
+    assert held == {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.iterdir()}
+
+
+@pytest.mark.parametrize("value", [True, 509.0, "X", 2**63])
+def test_selected_historical_policy_preserves_its_integer_refusals(value):
+    with pytest.raises(ld.LegislativeShapeError, match="expected integer|cannot be represented exactly"):
+        ld.recorded_subject(DATASET, source_row(value), {}, policy_version="legislative-documents/1")
 
 
 @pytest.mark.parametrize("bulk", [False, True])

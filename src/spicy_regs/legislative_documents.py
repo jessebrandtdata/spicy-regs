@@ -397,16 +397,31 @@ def recorded_subject(dataset: str, raw: Mapping[str, Any], subject: Mapping[str,
     retained raw input. The same column names under /2 are strings; names or
     values alone cannot select the historical conversion.
     """
-    mapped = map_subject(dataset, raw)
-    if mapped is not None and dataset == "senate_expenditures":
+    mapping_input = raw
+    earlier_funding = None
+    if dataset == "senate_expenditures":
         if policy_version == "legislative-documents/1":
-            earlier = _earlier_legislative_schema(dataset)
-            if earlier is None:
+            earlier_funding = _earlier_legislative_schema(dataset)
+            if earlier_funding is None:
                 raise LegislativeShapeError("Senate funding history is not declared")
-            for name in ("funding_year", "funding_year_end"):
-                mapped[name] = _typed(raw.get(name), earlier.field(name).type, name)
+            # /1 accepted integer inputs as well as integer text. Validate these
+            # fields under that recorded schema before the current string mapper;
+            # its temporary nulls leave every other field on the normal path.
+            # The original input remains untouched, including numeric 509.
+            historical_funding = {
+                name: _typed(raw.get(name), earlier_funding.field(name).type, name)
+                for name in ("funding_year", "funding_year_end")
+            }
+            mapping_input = {**raw, **dict.fromkeys(historical_funding)}
         elif policy_version not in (None, "legislative-documents/2"):
             raise LegislativeShapeError("Unknown Senate funding policy")
+    mapped = map_subject(dataset, mapping_input)
+    if mapped is not None and earlier_funding is not None:
+        mapped.update(historical_funding)
+        try:
+            pa.Table.from_pylist([mapped], schema=earlier_funding)
+        except (pa.ArrowException, OverflowError) as error:
+            raise LegislativeShapeError(f"{dataset}: historical subject cannot be represented exactly") from error
     if mapped is not None and dataset == "native_legal_references":
         # Earlier native observations omitted these recorded main fields and
         # nested diagnostics. Verify against that exact reviewed shape, while
