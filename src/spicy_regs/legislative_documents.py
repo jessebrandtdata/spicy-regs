@@ -385,15 +385,28 @@ def _earlier_native_schema() -> pa.Schema:
     return DatasetPolicy.from_descriptor(history["native_legal_references"]).subject_schema
 
 
-def recorded_subject(dataset: str, raw: Mapping[str, Any], subject: Mapping[str, Any]) -> dict[str, Any] | None:
+def recorded_subject(dataset: str, raw: Mapping[str, Any], subject: Mapping[str, Any], *,
+                     policy_version: str | None = None) -> dict[str, Any] | None:
     """Map a receipt's source row in the exact key spelling its selected subject used.
 
     Historical court citations kept the original opinion/digest tuple. New
     citations use its derived body ID. Admit either spelling only for that same
     retained tuple; callers still compare every other field with this result.
     Neither the selected public subject nor its original receipt is rewritten.
+    A selected Senate /1 policy reconstructs its integer funding fields from the
+    retained raw input. The same column names under /2 are strings; names or
+    values alone cannot select the historical conversion.
     """
     mapped = map_subject(dataset, raw)
+    if mapped is not None and dataset == "senate_expenditures":
+        if policy_version == "legislative-documents/1":
+            earlier = _earlier_legislative_schema(dataset)
+            if earlier is None:
+                raise LegislativeShapeError("Senate funding history is not declared")
+            for name in ("funding_year", "funding_year_end"):
+                mapped[name] = _typed(raw.get(name), earlier.field(name).type, name)
+        elif policy_version not in (None, "legislative-documents/2"):
+            raise LegislativeShapeError("Unknown Senate funding policy")
     if mapped is not None and dataset == "native_legal_references":
         # Earlier native observations omitted these recorded main fields and
         # nested diagnostics. Verify against that exact reviewed shape, while

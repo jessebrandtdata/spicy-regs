@@ -20,6 +20,26 @@ EARLIER_COLUMNS = {
 
 def earlier_policies(policy):
     from spicy_regs.etl_receipts import DatasetPolicy
+    if policy.dataset == "senate_expenditures" and policy.policy_version == "legislative-documents/2":
+        import pyarrow as pa
+
+        current = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs").joinpath(
+            "etl_policies/senate_expenditures.json").read_text()))
+        if policy.descriptor() != current.descriptor():
+            raise ValueError("Current Senate funding policy differs from its exact declaration")
+        history = json.loads(files("spicy_regs").joinpath("legislative_policy_history.json").read_text())
+        earlier = DatasetPolicy.from_descriptor(history[policy.dataset])
+        previous_schema = policy.subject_schema
+        for name in ("funding_year", "funding_year_end"):
+            at = previous_schema.get_field_index(name)
+            field = previous_schema.field(at)
+            if field.type != pa.string():
+                raise ValueError("Current Senate funding designations must be strings")
+            previous_schema = previous_schema.set(at, field.with_type(pa.int64()))
+        expected = replace(policy, subject_schema=previous_schema, policy_version="legislative-documents/1")
+        if earlier.descriptor() != expected.descriptor():
+            raise ValueError("Senate funding migration changes fields beyond the two declared types")
+        return (earlier,)
     if policy.dataset == "crs_reports" and policy.policy_version == "government-sources/3":
         from spicy_regs.crs_report_detail import DETAIL_COLUMNS, RECEIPT_COLUMNS
 

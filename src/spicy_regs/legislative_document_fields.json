@@ -4964,20 +4964,20 @@
       {
         "name": "funding_year",
         "source_type": "VARCHAR",
-        "meaning": "The funding year the page's own `Funding Year` line states, and the **first** of them where it states a span, so a single-year block and a multi-year appropriation are comparable on this column.  NULL where the page states no funding-year line, which is every continuation page.",
-        "decision": "flatten",
+        "meaning": "The funding year the page's own `Funding Year` line states, and the **first** of them where it states a span, so a single-year block and a multi-year appropriation are comparable on this column. The no-year or revolving marker remains `X`, and compact numeric labels remain literal. NULL where the page states no funding-year line, which is every continuation page.",
+        "decision": "keep",
         "target": "funding_year",
-        "target_type": "int64",
-        "reason": "A declared count or ordinal; convert strict integer text without rounding and retain original input in the receipt."
+        "target_type": "string",
+        "reason": "Publisher funding designation, not a count or ordinal; preserve its literal text, including no-year markers and leading zeros."
       },
       {
         "name": "funding_year_end",
         "source_type": "VARCHAR",
         "meaning": "The last year of a multi-year appropriation, which the print spells `Funding Year 2021-2023` and its own contents spell `FY 21/23`.  NULL where the print states one year, so a span and a single year are told apart rather than folded together.  Five of the 83 measured office pages are spans -- the Chaplain's, printed B-48 to B-55.",
-        "decision": "flatten",
+        "decision": "keep",
         "target": "funding_year_end",
-        "target_type": "int64",
-        "reason": "A declared count or ordinal; convert strict integer text without rounding and retain original input in the receipt."
+        "target_type": "string",
+        "reason": "Publisher funding designation, not a count or ordinal; preserve its literal text, including no-year markers and leading zeros."
       },
       {
         "name": "appropriation_title",

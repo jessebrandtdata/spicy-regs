@@ -60,9 +60,10 @@ def policy(dataset: str) -> DatasetPolicy:
         # Summary /3 retains both source clocks and schema context. Earlier readers dropped
         # the legacy summary clock, so only a replay of retained originals can qualify it.
         # GovInfo /3 defines dated keys for fresh builds; no implicit prior-key migration.
+        # Senate /2 preserves funding designations as source strings, including X and 0509.
         policy_version="legislative-documents/3" if dataset in DATED_TABLES or dataset == "bill_publisher_summaries" else "legislative-documents/2" if dataset in {
             "native_legal_references", "native_legal_reference_reads", "document_citations",
-            "bill_versions",
+            "bill_versions", "senate_expenditures",
         } else "legislative-documents/1",
         receipt_only=spec["processing_only"],
     )
@@ -83,6 +84,8 @@ def input_policy(dataset: str, subjects: Sequence[Path]) -> DatasetPolicy:
 def _processor(dataset: str) -> str:
     if dataset in {"native_legal_references", "native_legal_reference_reads", "bill_publisher_summaries"}:
         return "legislative-documents/3"
+    if dataset == "senate_expenditures":
+        return "legislative-documents/2"
     # The citation routing namespace is now retained on main rows.
     return "legislative-documents/3" if dataset == "document_citations" else "legislative-documents/1"
 
@@ -380,6 +383,11 @@ def _processing_rows(receipts: Path, dataset_policy: DatasetPolicy, generation_i
 
 def retained_source_rows(dataset, dataset_policy, records):
     """Restore the source spelling using the same mapping and ambiguity checks."""
+    if dataset == "senate_expenditures":
+        from spicy_regs.etl_receipts import receipt_policies
+
+        if dataset_policy.descriptor() not in [p.descriptor() for p in receipt_policies(policy(dataset))]:
+            raise ValueError("Selected Senate funding policy differs from its exact declaration")
     seen = set()
     for record in records:
         raw = record[RAW]
@@ -389,7 +397,9 @@ def retained_source_rows(dataset, dataset_policy, records):
             if identity in seen:
                 raise ValueError("Ambiguous selected processing scope")
             seen.add(identity)
-        elif recorded_subject(dataset, raw, record) != {k: v for k, v in record.items() if k != RAW}:
+        elif recorded_subject(dataset, raw, record, policy_version=dataset_policy.policy_version) != {
+            k: v for k, v in record.items() if k != RAW
+        }:
             raise ValueError("Retained conversion input disagrees with its native subject")
         yield raw
 
