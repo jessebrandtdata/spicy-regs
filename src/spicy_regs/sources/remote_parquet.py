@@ -131,6 +131,10 @@ def open_pinned_http(url: str, *, etag: str) -> Iterator[io.BufferedIOBase]:
             tracked.close()
 
 
+#: Attempts per exact range before a ranged published read fails.
+RANGE_ATTEMPTS = 4
+
+
 class _PublishedRanges(io.RawIOBase):
     """Exact ``Range: bytes=a-b`` reads of one published object, each held to its ETag and stored size.
 
@@ -159,14 +163,36 @@ class _PublishedRanges(io.RawIOBase):
         self.position = {io.SEEK_SET: 0, io.SEEK_CUR: self.position, io.SEEK_END: self.size}[whence] + offset
         return self.position
 
+    def _get(self, byte_range: str) -> Any:
+        """One exact range, asked again after a dropped connection or a 429/5xx, up to :data:`RANGE_ATTEMPTS` times.
+
+        A range is bounded by the reader's stated length, so a retry re-reads at most that range.
+        """
+        import time
+
+        import httpx
+
+        for attempt in range(1, RANGE_ATTEMPTS + 1):
+            try:
+                response = self.client.get(self.url, headers={
+                    "Range": byte_range, "If-Match": self.etag, "Accept-Encoding": "identity"})
+                response.read()
+            except httpx.TransportError:
+                if attempt == RANGE_ATTEMPTS:
+                    raise
+            else:
+                if response.status_code != 429 and response.status_code < 500 or attempt == RANGE_ATTEMPTS:
+                    response.raise_for_status()
+                    return response
+            time.sleep(min(30, 2 ** attempt))
+        raise AssertionError("unreachable")
+
     def readinto(self, buffer: Any) -> int:
         view = memoryview(buffer).cast("B")
         end = min(self.position + len(view), self.size)
         if end <= self.position:
             return 0
-        response = self.client.get(self.url, headers={
-            "Range": f"bytes={self.position}-{end - 1}", "If-Match": self.etag, "Accept-Encoding": "identity"})
-        response.raise_for_status()
+        response = self._get(f"bytes={self.position}-{end - 1}")
         data = response.content
         if (response.status_code != 206 or response.headers.get("ETag") != self.etag
                 or response.headers.get("Content-Range") != f"bytes {self.position}-{end - 1}/{self.size}"

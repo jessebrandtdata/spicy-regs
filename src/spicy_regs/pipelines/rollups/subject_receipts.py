@@ -68,7 +68,10 @@ def dataset_policy(name):
 class SelectedPriors:
     """Capture one publication index and fetch only its pinned subject/receipt pairs."""
 
-    def __init__(self, directory, *, index=None, public_url=None, root=None):
+    def __init__(self, directory, *, index=None, public_url=None, root=None, ranged=frozenset()):
+        """``ranged`` names the Congress datasets whose receipts may be read by row group (``SelectedInputs.select``):
+        another family's soft inputs, each read for its own rows. A family's own priors read many datasets of one
+        member, so they fetch it whole once."""
         from spicy_regs.selected_generations import SelectedInputs
 
         self.directory = Path(directory)
@@ -76,6 +79,7 @@ class SelectedPriors:
         self.selected = SelectedInputs(
             root or self.directory, self.directory / "native", index=index, public_url=public_url
         )
+        self.ranged = frozenset(ranged) & set(CONGRESS)
         self.restored = {}
         self.selections = {}
         self.processing_members = {}
@@ -83,11 +87,11 @@ class SelectedPriors:
     def get(self, dataset):
         if dataset in self.restored:
             if self.restored[dataset] is not None:
-                self.selected.select(dataset, scoped=dataset in CONGRESS)
+                self.selected.select(dataset, ranged=dataset in self.ranged)
                 self._check_processing(dataset)
             return self.restored[dataset]
         selected_policy = dataset_policy(dataset)
-        selection = self.selected.select(dataset, scoped=dataset in CONGRESS)
+        selection = self.selected.select(dataset, ranged=dataset in self.ranged)
         if selection is None:
             self.restored[dataset] = None
             return None
@@ -96,7 +100,9 @@ class SelectedPriors:
             selected_policy = legislative_input_policy(dataset, subjects)
         directory = self.directory / dataset
         directory.mkdir()
-        scoped = select_receipts(receipt_path, directory / "scoped.parquet", dataset=dataset)
+        # A ranged read already wrote exactly this dataset's receipts, in source order, through the same selector.
+        scoped = (receipt_path if dataset in self.selected.ranged
+                  else select_receipts(receipt_path, directory / "scoped.parquet", dataset=dataset))
         selected_policy = selected_subject_policy(selected_policy, subjects)
         # The regulatory restore below admits the pair itself: complete admission in
         # regulations_bulk._materialize_selected, or the full read_with_receipts pass in _qualified_rows.
@@ -250,6 +256,9 @@ class NativeReceiptLifecycle(RollupPipeline):
             private / "selected-priors",
             root=self.output_dir or output_dir,
             index=snapshot if os.getenv("R2_PUBLIC_URL") else None,
+            # Another family's soft inputs (votes' bill_vote_references); never this family's own priors.
+            ranged=frozenset(key.removesuffix(".parquet") for key in self.soft_inputs
+                             if key not in (self.outputs or (self.output,))),
         )
         return private, prior
 
@@ -272,7 +281,7 @@ class NativeReceiptLifecycle(RollupPipeline):
             dataset = key.removesuffix(".parquet")
             if prior.get(dataset) is None:
                 raise ValueError(f"Required selected processing input unavailable: {key}")
-            selection = prior.selected.select(dataset, scoped=dataset in CONGRESS)
+            selection = prior.selected.select(dataset)
             index = prior.selected.index
             owner = publication.table_owner(index, key) if index is not None else None
             if self._own(key, owner[0] if owner else None):
@@ -282,7 +291,7 @@ class NativeReceiptLifecycle(RollupPipeline):
             else:
                 for ordinal, path in enumerate(selection.subjects):
                     parents[f"{dataset}/subjects/{ordinal}.parquet"] = prior.selected.member_pin(path)
-            parents[f"{dataset}/etl_receipts.parquet"] = prior.selected.receipts_pin(dataset, selection.receipts)
+            parents[f"{dataset}/etl_receipts.parquet"] = prior.selected.member_pin(selection.receipts)
         self._primed_receipt_work = output_dir, private, prior
         return parents
 

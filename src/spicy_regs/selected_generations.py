@@ -35,6 +35,16 @@ def _member_pin(path, checked):
     return digest
 
 
+#: A ranged receipt read falls back to a whole download above either bound on its selected groups' stored bytes:
+#: past a quarter of the member, ranges save little; past 256 MiB, one whole streamed download is the simpler read.
+RANGED_MAX_SHARE = 0.25
+RANGED_MAX_BYTES = 256 * 1024 * 1024
+#: Stored bytes pre-buffered at once by a ranged read (one row group may exceed it). Measured on the 214 MB
+#: bill_publisher_summaries selection (2026-11-08), peak RSS: unbounded 870 MB, 64 MiB 826, 16 MiB 716 at the same
+#: 15 s, 8 MiB 631 at 21 s; the process baseline with the 30 MB bill-family footer parsed is 443 MB.
+RANGED_CHUNK_BYTES = 16 * 1024 * 1024
+
+
 @dataclass(frozen=True)
 class SelectedDataset:
     dataset: str
@@ -95,7 +105,8 @@ class SelectedInputs:
         pointer = self.root / ".native-state" / "selection.json"
         self.local = json.loads(pointer.read_text()) if self.index is None and pointer.exists() else {}
         self.cache = {}
-        self.scoped = {}
+        self.ranged = {}
+        self.footers = {}
         self.checked = {}
         self.fetched = {}
 
@@ -106,13 +117,15 @@ class SelectedInputs:
         return {"sha256": digest, "byteSize": signature[2]}
 
     def receipts_pin(self, dataset, path):
-        """The pin of the receipt member ``dataset`` was selected from: the published member's for a scoped read.
+        """The pin of the receipt member ``dataset`` was selected from: the published member's for a ranged read.
 
-        A scoped selection is a local derivative no published object holds, so lineage keeps naming the member it
-        was read from, exactly as an unscoped read does; the local selection is still held unchanged.
+        A ranged selection is a local derivative no published object holds, so lineage keeps naming the member it
+        was read from, exactly as a whole read does; the local selection is still held unchanged.
         """
+        if not isinstance(path, Path):
+            raise ValueError(f"{dataset}: a split family's receipts have no single file to bind")
         local = self.member_pin(path)
-        return dict(self.scoped[dataset]) if dataset in self.scoped else local
+        return dict(self.ranged[dataset]) if dataset in self.ranged else local
 
     def check(self):
         """Refuse changes to any original or derived member used by this session."""
@@ -141,37 +154,49 @@ class SelectedInputs:
         self.check()
         return selected
 
-    def _scoped_receipts(self, member, dataset, target):
+    def _ranged_receipts(self, member, dataset, target):
         """Only ``dataset``'s rows of one remote shared receipt member, read by row group, or ``None`` to fetch it whole.
 
         Reads the footer and the groups that can hold the dataset (a 19,767-row dataset of the 3.15 GB bill-family
-        member: 34 MB). The whole-file SHA-256 cannot be checked from a partial read; the stored size, the footer's
-        row count and one ETag across every range hold the read to the pinned object, and the caller's admission
-        checks each selected receipt's own digest against its pinned subjects.
+        member: 34 MB). Fetches whole instead when this session already holds the member, or when those groups exceed
+        :data:`RANGED_MAX_SHARE` of it or :data:`RANGED_MAX_BYTES`. A footer is parsed once per member and session.
+        The whole-file SHA-256 cannot be checked from a partial read; the stored size, the footer's row count and one
+        ETag across every range hold the read to the pinned object, and the caller's admission checks each selected
+        receipt's own digest against its pinned subjects.
         """
         import pyarrow.parquet as pq
-        from spicy_regs.etl_receipts import RECEIPT_SCHEMA, select_member_receipts
+        from spicy_regs.etl_receipts import RECEIPT_SCHEMA, dataset_row_groups, row_group_bytes, select_member_receipts
 
-        assert self.public_url  # a remote selection refuses without its base URL first
+        if not self.public_url:
+            raise ValueError(f"{dataset}: a ranged receipt read requires its public base URL")
+        identity = (member.path, member.sha256, member.byte_size)
+        if identity in self.fetched:
+            return None
         with publication.open_member(self.public_url, member) as stream:
-            # pre_buffer coalesces the selected groups' column chunks into a few range requests.
-            with pq.ParquetFile(stream, pre_buffer=True) as parquet:
+            # pre_buffer coalesces each run of selected groups' column chunks into a few range requests.
+            with pq.ParquetFile(stream, metadata=self.footers.get(identity), pre_buffer=True) as parquet:
                 if parquet.metadata.num_rows != member.rows:
                     raise ValueError(f"{dataset}: selected receipt member differs from its pinned row count")
+                self.footers[identity] = parquet.metadata
                 if not parquet.schema_arrow.equals(RECEIPT_SCHEMA):
                     return None
-                select_member_receipts(parquet, target, dataset=dataset)
+                groups = dataset_row_groups(parquet, dataset)
+                stored = sum(row_group_bytes(parquet.metadata, group) for group in groups)
+                if stored > min(RANGED_MAX_BYTES, RANGED_MAX_SHARE * member.byte_size):
+                    return None
+                select_member_receipts(parquet, target, dataset=dataset, row_groups=groups,
+                                       chunk_bytes=RANGED_CHUNK_BYTES)
         _member_pin(target, self.checked)
         return target
 
-    def select(self, dataset, *, scoped=False):
+    def select(self, dataset, *, ranged=False):
         """Pinned subjects and receipts of ``dataset``.
 
-        ``scoped`` is for a caller that reads only ``dataset``'s receipts (every Congress reader selects them by
-        dataset): a remote shared member is then read for that dataset's rows alone, not downloaded whole.
+        ``ranged`` is for a caller that reads only ``dataset``'s receipts (every Congress reader selects them by
+        dataset): a remote shared member may then be read for that dataset's rows alone (:meth:`_ranged_receipts`).
         """
         if dataset in self.cache:
-            if dataset in self.scoped and not scoped:
+            if dataset in self.ranged and not ranged:
                 raise ValueError(f"{dataset}: receipts were selected for this dataset alone")
             selected = self.cache[dataset]
             for path in (*selected.subjects, selected.receipts,
@@ -262,10 +287,10 @@ class SelectedInputs:
             specification = owners[0]["etlReceipts"]
             indexes = publication.receipt_key_members(self.index, dataset=dataset)
             # A key index describes the whole member, so a member that has one is fetched whole.
-            receipt_path = (self._scoped_receipts(receipts[0], dataset, directory / "receipts.parquet")
-                            if scoped and not indexes else None)
+            receipt_path = (self._ranged_receipts(receipts[0], dataset, directory / "receipts.parquet")
+                            if ranged and len(receipts) == 1 and not indexes else None)
             if receipt_path is not None:
-                self.scoped[dataset] = {"sha256": receipts[0].sha256, "byteSize": receipts[0].byte_size}
+                self.ranged[dataset] = {"sha256": receipts[0].sha256, "byteSize": receipts[0].byte_size}
             result = SelectedDataset(dataset, subjects, receipt_path or fetch(receipts[0]), specification["generationId"],
                                      fetch(indexes[0]) if indexes else None, specification.get("keyIndex"))
         if (result.key_index is None) != (result.key_index_descriptor is None):

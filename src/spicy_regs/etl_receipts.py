@@ -899,12 +899,12 @@ def _read_with_receipts_rows(subject_paths, receipt_paths, policy, *, generation
             yield subject | processing
 
 
-def _select_receipt_batches(parquet, destinations: Mapping[str, Path], row_groups: Sequence[int] | None = None) -> None:
+def _select_receipt_batches(batches, destinations: Mapping[str, Path]) -> None:
     """Decode every source cell once and preserve each dataset's complete ordered outcomes."""
     with ExitStack() as stack:
         writers = {dataset: stack.enter_context(pq.ParquetWriter(path, RECEIPT_SCHEMA, compression="zstd"))
                    for dataset, path in destinations.items()}
-        for batch in parquet.iter_batches(batch_size=2000, row_groups=row_groups):
+        for batch in batches:
             checkpoint()
             batch.validate(full=True)
             for dataset, writer in writers.items():
@@ -925,7 +925,7 @@ def select_receipt_family(path: ParquetInput, directory: Path, *, datasets: Sequ
         with _parquet(path) as parquet:
             if not parquet.schema_arrow.equals(RECEIPT_SCHEMA):
                 raise ValueError("Receipt family member is not the shared receipt schema")
-            _select_receipt_batches(parquet, destinations)
+            _select_receipt_batches(parquet.iter_batches(batch_size=2000), destinations)
         from rulespec_artifacts import publish_directory_no_replace
 
         publish_directory_no_replace(staging, directory)
@@ -946,17 +946,37 @@ def dataset_row_groups(parquet, dataset: str) -> list[int]:
     return groups
 
 
-def select_member_receipts(parquet, destination: Path, *, dataset: str) -> Path:
-    """Select ``dataset``'s receipts from an open shared-schema member, reading only the row groups that can hold them.
+def row_group_bytes(metadata, group: int) -> int:
+    """A row group's stored (compressed) bytes: what a ranged read of it transfers."""
+    row_group = metadata.row_group(group)
+    return sum(row_group.column(column).total_compressed_size for column in range(row_group.num_columns))
 
-    For a remote member this reads the footer and those groups instead of the whole file; the rows, their order and
-    the cell checks are :func:`select_receipts`' own. Admission remains a separate check.
+
+def select_member_receipts(parquet, destination: Path, *, dataset: str, row_groups: Sequence[int],
+                           chunk_bytes: int) -> Path:
+    """Select ``dataset``'s receipts from ``row_groups`` of an open shared-schema member, in source order.
+
+    For a remote member this reads only those groups instead of the whole file; the rows, their order and the cell
+    checks are :func:`select_receipts`' own. Groups are read in runs of at most ``chunk_bytes`` stored bytes (one
+    group may exceed it), so a pre-buffering reader holds one run at a time. Admission remains a separate check.
     """
     if not parquet.schema_arrow.equals(RECEIPT_SCHEMA):
         raise ValueError("Receipt member is not the shared receipt schema")
+
+    def batches():
+        run, size = [], 0
+        for group in [*row_groups, None]:
+            stored = 0 if group is None else row_group_bytes(parquet.metadata, group)
+            if run and (group is None or size + stored > chunk_bytes):
+                yield from parquet.iter_batches(batch_size=2000, row_groups=run)
+                run, size = [], 0
+            if group is not None:
+                run.append(group)
+                size += stored
+
     with TemporaryDirectory(dir=destination.parent) as scratch:
         temporary = Path(scratch) / "rows.parquet"
-        _select_receipt_batches(parquet, {dataset: temporary}, dataset_row_groups(parquet, dataset))
+        _select_receipt_batches(batches(), {dataset: temporary})
         temporary.replace(destination)
     return destination
 
@@ -977,7 +997,7 @@ def select_receipts(path: ParquetInput, destination: Path, *, dataset: str) -> P
                 with _parquet(path) as parquet:
                     shared = parquet.schema_arrow.equals(RECEIPT_SCHEMA)
                     if shared:
-                        _select_receipt_batches(parquet, {dataset: temporary})
+                        _select_receipt_batches(parquet.iter_batches(batch_size=2000), {dataset: temporary})
                 if shared:
                     temporary.replace(destination)
                     return destination

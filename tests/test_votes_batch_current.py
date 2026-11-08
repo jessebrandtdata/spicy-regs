@@ -328,8 +328,9 @@ def test_selected_prior_batches_exact_current_restore_and_caches_source(tmp_path
         return member_session.member_pin(path)
 
     prior.selected = SimpleNamespace(  # ty: ignore[invalid-assignment]
-        select=lambda dataset, scoped=False: SimpleNamespace(subjects=(subject,), receipts=receipts, generation_id=GENERATION),
+        select=lambda dataset, ranged=False: SimpleNamespace(subjects=(subject,), receipts=receipts, generation_id=GENERATION),
         member_pin=member_pin,
+        ranged={},
     )
     taken = _taken(monkeypatch, "restore_input")
     reference = public_restore(subject, receipts, tmp_path / "reference.parquet",

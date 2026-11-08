@@ -2,7 +2,6 @@
 
 import hashlib
 import shutil
-from contextlib import contextmanager
 
 import pyarrow.parquet as pq
 import pytest
@@ -89,13 +88,7 @@ def select_bundle(monkeypatch, directory, pipeline):
         shutil.copyfile(source, target)
         return True
 
-    @contextmanager
-    def open_member(base, member):
-        with (directory / member.key).open("rb") as stream:
-            yield stream
-
     monkeypatch.setattr(publication, "fetch_member", fetch)
-    monkeypatch.setattr(publication, "open_member", open_member)
     return index
 
 
@@ -353,7 +346,7 @@ def test_remote_selection_wins_over_stale_local_family_and_local_snapshot_is_fix
     # Advancing a pointer cannot retroactively change an already captured input.
     from spicy_regs.selected_generations import remember_selection
 
-    remember_selection(local, [selected.selected.select("members", scoped=True)])
+    remember_selection(local, [selected.selected.select("members")])
     assert captured.select("members") == old
 
 
