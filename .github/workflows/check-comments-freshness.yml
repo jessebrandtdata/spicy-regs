@@ -3,13 +3,17 @@ name: Check comments freshness
 # Guards against the comments read surface drifting from what was verified. The
 # publisher checks unique IDs, monolith and agency-file coverage of the index and
 # retention of every prior ID before upload, then reads back each public file's
-# SHA-256 into comments-publication.json. This job binds the current state to that
-# receipt: every public file must keep its receipted ETag and size, and the catalog
-# must be reachable from the receipt's source snapshot through compaction alone.
-# Only a broken catalog binding reads rows: raw catalog IDs and agency/docket/month
-# counts must then equal the public index (OMB-2026-0034: ~39k June-2026 comments in
-# the index, zero rows in `comments`, drove this check). The shared writer queue
-# prevents a scheduled check from reading a catalog during replacement.
+# SHA-256 into comments-publication.json with its catalog pair and generation.
+# This job binds the current state to that receipt: every fixed public file keeps
+# its receipted ETag and size, publication.v2.json's comments generation (what the
+# website and MCP server read) is the receipt's, and the catalog is reachable from
+# the receipt's source snapshot through compaction alone under the declared schema.
+# Only a broken binding reads rows: raw catalog IDs and agency/docket/month counts
+# must then equal the fixed and the generation index (OMB-2026-0034: ~39k June-2026
+# comments in the index, zero rows in `comments`, drove this check). The 2026-10-03
+# receipt names no generation or pair, so every run reads rows (~2 min) until the
+# next comments publication. The shared writer queue prevents a scheduled check
+# from reading a catalog during replacement.
 on:
   schedule:
     - cron: '30 23 * * *'
@@ -54,7 +58,8 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies
-        run: uv sync --frozen
+        # pyiceberg reads the declared-schema check from loaded table metadata.
+        run: uv sync --frozen --extra comments-reader
 
       - name: Check comments freshness
         env:
@@ -74,4 +79,4 @@ jobs:
           if [ "$VERIFY_CONTENT" = "true" ]; then
             ARGS+=(--verify-content)
           fi
-          uv run --frozen python scripts/check_comments_freshness.py "${ARGS[@]}"
+          uv run --frozen --extra comments-reader python scripts/check_comments_freshness.py "${ARGS[@]}"

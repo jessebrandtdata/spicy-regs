@@ -29,7 +29,7 @@ Credentials are read from the environment, alongside the existing ``R2_*`` vars:
 """
 
 import json
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from os import getenv
@@ -587,18 +587,24 @@ def _compacted_only(metadata: dict, snapshot: CatalogSnapshot) -> bool:
     return True
 
 
-def rows_unchanged_since(record_type: RecordType, snapshot: CatalogPairSnapshot) -> bool:
+def rows_unchanged_since(record_type: RecordType, snapshot: CatalogPairSnapshot, *,
+                         declared_schema: bool = False) -> bool:
     """Require unchanged subject and receipt rows, allowing compaction of either table.
 
     Reads table metadata only. ``snapshot`` was pinned under the initialization check, and a pair reached through
-    ``replace`` commits alone keeps that table, schema and initialization receipt, so the check's scan of every
-    receipt row (78 s on the 26.5M-row table, 2026-11-08) proves nothing more here.
+    ``replace`` commits alone keeps that table and initialization receipt, so the check's scan of every receipt row
+    (78 s on the 26.5M-row table, 2026-11-08) proves nothing more here. The declared policy is code and can move
+    without a commit: ``declared_schema`` also refuses a subject schema that differs from it, as that check does.
     """
+    from .regulatory_catalog import metadata_schema_difference
     namespace = _catalog_namespace(record_type)
     con = _connect()
     try:
         with _transaction(con):
-            return (_compacted_only(_table_metadata(con, record_type, namespace=namespace), snapshot)
+            subject = _table_metadata(con, record_type, namespace=namespace)
+            if declared_schema and (difference := metadata_schema_difference(subject, record_type)):
+                raise ValueError("Native catalog schema differs from declared policy: " + difference)
+            return (_compacted_only(subject, snapshot)
                     and _compacted_only(_receipt_metadata(con, record_type, namespace=namespace), snapshot.receipts))
     finally:
         con.close()
@@ -655,6 +661,31 @@ def export_public_comments(
         result = {"comments": monolith, "index": index_file, "partitions": partitions}
         result.update(receipts=selected.receipts, generation=sidecar / "generation.json")
         return result
+
+
+def check_comments_against_indexes(record_type: RecordType, indexes: Mapping[str, Sequence[str]], *, agency: str | None = None,
+                                   limit: int = 100, threads: int = 8) -> list[str]:
+    """Raw catalog IDs and agency/docket/month counts against each labelled public index's file URLs.
+
+    Remote Parquet and Iceberg scans wait on one ranged GET per column chunk; parallel requests, not CPU, set their
+    pace (the full catalog check took 53.6 s at 2 threads and 18.8 s at 8, 2026-11-08).
+    """
+    from spicy_regs.comments_health import check_comments
+    from spicy_regs.duckdb_settings import load_public_http
+    from .publication import parquet_scan
+    from .regulatory_catalog import require_initialized
+
+    where = f" WHERE agency_code = '{_sql_str(agency)}'" if agency else ""
+    con = _connect()
+    try:
+        load_public_http(con)
+        con.execute(f"SET memory_limit='4GB'; SET threads={int(threads)}; SET preserve_insertion_order=false")
+        require_initialized(con, record_type)
+        return check_comments(con, f"SELECT * FROM {_qualified(record_type)}{where}",
+                              {label: f"SELECT * FROM {parquet_scan(urls)}{where}" for label, urls in indexes.items()},
+                              limit=limit)
+    finally:
+        con.close()
 
 
 def audit_duplicates(con, record_type: RecordType) -> list[tuple[str, int, int]]:

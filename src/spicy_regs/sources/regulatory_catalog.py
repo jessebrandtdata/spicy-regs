@@ -290,6 +290,20 @@ def _schema_difference(observed, declared) -> str:
     return '; '.join(parts)
 
 
+def metadata_schema_difference(metadata: dict, record_type) -> str | None:
+    """How loaded Iceberg table metadata's current schema differs from the declared policy, or ``None``.
+
+    The same comparison :func:`require_initialized` makes through ``DESCRIBE``, without another catalog read.
+    """
+    from pyiceberg.io.pyarrow import schema_to_pyarrow
+    from pyiceberg.schema import Schema
+
+    current = next(s for s in metadata["schemas"] if s["schema-id"] == metadata["current-schema-id"])
+    observed = described_schema(schema_to_pyarrow(Schema.model_validate(current), include_field_ids=False))
+    declared = described_schema(policy(record_type.name).subject_schema)
+    return None if observed == declared else _schema_difference(observed, declared)
+
+
 def require_initialized(con, record_type):
     """Refuse an absent or merely prepared catalog; physical existence is not selection."""
     if not supports(record_type):
