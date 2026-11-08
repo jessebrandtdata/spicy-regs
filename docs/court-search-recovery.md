@@ -30,14 +30,24 @@ Choose a separate retained-search directory. Keep the run output and its evidenc
 and generation directories outside the selected prior, including any symlink targets.
 
 Set `R2_PUBLIC_URL` to the intended publication. The command preserves the existing
-`COURTLISTENER_API_TOKEN` prerequisite, including for replay. It does not read
-account quota state. Upload remains off by default; selecting
+`COURTLISTENER_API_TOKEN` prerequisite, including for replay. Upload remains off by default; selecting
 `--no-skip-upload` uses ordinary complete admission and conditional publication.
 `--max-requests` and `--max-wait-seconds` bound each traversal, including replay
-attempts and live pacing/retry waits. They do not estimate a token's free quota.
+attempts and live pacing/retry waits.
 Replayed prefix pages count toward `--max-requests` (default 50). A longer
 retained walk needs an explicit sufficient allocation; resuming does not make
 the traversal unlimited.
+
+Before its first live Search request, an incomplete walk reads the account's
+[API usage](https://wiki.free.law/c/courtlistener/help/api/rest/v4/api-usage)
+once. That read has its own throttle and spends no Search quota. A blocked
+account, any exhausted window, or an unreadable response stops the run before
+Search, with the checkpoint unchanged; the error names the window and its
+`reset_at`. Otherwise the live part of `--max-requests` shrinks to what every
+window too long to refill under the 12-second pacing can still absorb, so a
+short quota ends in an ordinary checkpointed stop instead of a 429. Another job
+sharing the token can still spend the quota first; a later `Retry-After` stays
+authoritative. A complete replay makes no usage read.
 
 After an interruption, invoke the same command with the same selection and
 retained directory. An exclusive lock protects the checkpoint. Each successful

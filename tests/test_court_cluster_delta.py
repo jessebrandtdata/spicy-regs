@@ -15,7 +15,7 @@ from spicy_docs.sources.courtlistener.search import OPINION_STATUSES, CourtListe
 from spicy_regs.court_receipts import build_court_generation, local_receipt_selection, write_court_rows
 from spicy_regs.generations import verify_generation
 from spicy_regs.source_evidence import CaptureEvidence
-from spicy_regs.sources import courtlistener, publication
+from spicy_regs.sources import courtlistener, courtlistener_resume, publication
 
 delta = importlib.import_module("spicy_regs.transforms.catch_up_court_opinion_clusters")
 
@@ -79,7 +79,32 @@ def selected(tmp_path, monkeypatch):
     return work, kwargs
 
 
-def transport(monkeypatch, *pages):
+def usage(*windows):
+    """A CourtListener api-usage body; the default is an idle account at the documented free limits."""
+    windows = windows or (("5/min", 5, 60), ("50/hour", 50, 3600), ("125/day", 125, 86400))
+    rows = [{"scope": "api_usage", "rate": "10/min", "used": 0, "limit": 10, "remaining": 10,
+             "window_seconds": 60, "reset_at": None, "blocked": False}]
+    for rate, remaining, seconds in windows:
+        limit = int(rate.split("/")[0])
+        rows.append({"scope": "user", "rate": rate, "used": limit - remaining, "limit": limit,
+                     "remaining": remaining, "window_seconds": seconds,
+                     "reset_at": None if remaining == limit else "2026-11-08T15:03:52.762401+00:00",
+                     "blocked": limit == 0})
+    return {"current_usage": rows, "historical_usage": {"total": 0}, "membership": None}
+
+
+def serving_usage(handle, body=None, reads=None):
+    """Answer the continuation's usage read; ``handle`` sees only Search requests."""
+    def serve(request):
+        if str(request.url) == courtlistener_resume.USAGE_URL:
+            if reads is not None:
+                reads.append(request)
+            return httpx.Response(200, json=usage() if body is None else body)
+        return handle(request)
+    return httpx.MockTransport(serve)
+
+
+def transport(monkeypatch, *pages, usage_body=None, reads=None):
     queued = iter(pages)
     calls = []
 
@@ -97,7 +122,7 @@ def transport(monkeypatch, *pages):
         delta,
         "CourtListenerOpinionSearchReader",
         lambda **kwargs: courtlistener.CourtListenerOpinionSearchReader(
-            transport=httpx.MockTransport(handle), api_token="fixture-token", **kwargs
+            transport=serving_usage(handle, usage_body, reads), api_token="fixture-token", **kwargs
         ),
     )
     return calls
@@ -438,7 +463,7 @@ def test_normal_cli_keeps_saved_retry_after_before_live_dispatch(local_cli, monk
 
     monkeypatch.setattr(delta, "CourtListenerOpinionSearchReader", lambda **kwargs:
                         courtlistener.CourtListenerOpinionSearchReader(
-                            transport=httpx.MockTransport(handle), api_token="fixture-token", **kwargs))
+                            transport=serving_usage(handle), api_token="fixture-token", **kwargs))
     with pytest.raises(ValueError, match="incomplete"):
         run()
     saved = (retained / "not-before.json").read_bytes()
@@ -536,6 +561,9 @@ dotenv.load_dotenv = lambda: None
 delta.court_jurisdictions = lambda **kwargs: {"ca9": "F"}
 courtlistener.MIN_REQUEST_INTERVAL_SECONDS = 0
 def handle(request):
+    if str(request.url).endswith("/api-usage/"):
+        return httpx.Response(200, json={"current_usage": [{"scope": "user", "rate": "5/min", "used": 0, "limit": 5,
+            "remaining": 5, "window_seconds": 60, "reset_at": None, "blocked": False}]})
     with Path(log).open("a") as output:
         output.write(str(request.url) + "\\n")
     if phase == "interrupt":
@@ -573,3 +601,128 @@ app(arguments)
     records = [json.loads(line) for line in (retained / "checkpoint.json").read_text().splitlines()]
     assert next(record["page"] for record in records if "page" in record) == prefix[0]
     assert any(record.get("complete") for record in records)
+
+
+@pytest.mark.parametrize(("windows", "reason"), [
+    ((("5/min", 5, 60), ("50/hour", 0, 3600), ("125/day", 70, 86400)), "50/hour quota is exhausted until 2026-11-08"),
+    ((("5/min", 5, 60), ("50/hour", 50, 3600), ("125/day", 0, 86400)), "125/day quota is exhausted"),
+    ((("0/day", 0, 86400),), "account is blocked"),
+])
+def test_quota_defers_when_any_simultaneous_window_cannot_take_a_request(windows, reason):
+    body = json.dumps(usage(*windows)).encode()
+    with pytest.raises(ValueError, match=reason):
+        courtlistener_resume.fit_quota(body, 50, request_interval=12)
+
+
+@pytest.mark.parametrize("body", [
+    b"not json", b"{}", json.dumps({"current_usage": []}).encode(),
+    json.dumps({"current_usage": usage()["current_usage"][:1]}).encode(),  # only the usage endpoint's own scope
+    json.dumps({"current_usage": [{**usage()["current_usage"][1], "remaining": True}]}).encode(),
+    json.dumps({"current_usage": [{**usage()["current_usage"][1], "window_seconds": 0}]}).encode(),
+    json.dumps({"current_usage": [{**usage()["current_usage"][1], "reset_at": 7}]}).encode(),
+    json.dumps({"current_usage": [{key: value for key, value in usage()["current_usage"][1].items()
+                                   if key != "blocked"}]}).encode(),
+])
+def test_quota_defers_on_missing_or_malformed_usage(body):
+    with pytest.raises(ValueError, match="usage response is unusable"):
+        courtlistener_resume.fit_quota(body, 50, request_interval=12)
+
+
+@pytest.mark.parametrize(("windows", "wanted", "interval", "expected"), [
+    ((), 50, 12, 50),  # idle account; an unused window's null reset is not a block
+    ((("5/min", 1, 60), ("50/hour", 50, 3600), ("125/day", 125, 86400)), 50, 12, 50),  # pacing refills the minute
+    ((("5/min", 5, 60), ("50/hour", 30, 3600), ("125/day", 125, 86400)), 50, 12, 30),  # reset_at is one slot
+    ((("5/min", 2, 60), ("50/hour", 4, 3600), ("125/day", 125, 86400)), 50, 12, 2),  # short run: minute caps too
+    ((("5/min", 5, 60), ("50/hour", 50, 3600), ("125/day", 9, 86400)), 3, 12, 3),
+    ((("5/min", 3, 60), ("50/hour", 50, 3600), ("125/day", 125, 86400)), 50, 0, 3),  # unpaced: every window caps
+])
+def test_quota_sizes_live_attempts_to_windows_that_cannot_refill(windows, wanted, interval, expected):
+    live, observed = courtlistener_resume.fit_quota(json.dumps(usage(*windows)).encode(), wanted,
+                                                    request_interval=interval)
+    assert live == expected
+    assert all(window.keys() == {"rate", "used", "limit", "remaining", "window_seconds", "reset_at", "blocked"}
+               for window in observed)
+
+
+EXHAUSTED_HOUR = usage(("5/min", 5, 60), ("50/hour", 0, 3600), ("125/day", 75, 86400))
+
+
+def test_exhausted_quota_defers_a_fresh_catch_up_before_any_search(local_cli, monkeypatch):
+    run, retained, work, _ = local_cli
+    reads = []
+    calls = transport(monkeypatch, page([4]), usage_body=EXHAUSTED_HOUR, reads=reads)
+    with pytest.raises(ValueError, match="deferred before live Search: CourtListener 50/hour quota is exhausted"):
+        run()
+    assert len(reads) == 1 and not calls and not (work / "generations").exists()
+    assert reads[0].headers["Authorization"] == "Token fixture-token"
+    assert not any("page" in line for line in (retained / "checkpoint.json").read_text().splitlines())
+
+
+def test_exhausted_quota_defers_continuation_and_keeps_checkpoint(local_cli, monkeypatch):
+    run, retained, work, _ = local_cli
+    next_url = search_url(kind="o", q="cluster_id:[3 TO 6]", opinion_statuses=OPINION_STATUSES) + "&cursor=next"
+    transport(monkeypatch, page([4], total=2, next_url=next_url), 429)
+    with pytest.raises(ValueError, match="incomplete"):
+        run()
+    checkpoint = (retained / "checkpoint.json").read_bytes()
+    reads = []
+    calls = transport(monkeypatch, page([6], total=2), usage_body=EXHAUSTED_HOUR, reads=reads)
+    with pytest.raises(ValueError, match="quota is exhausted"):
+        run()
+    assert len(reads) == 1 and not calls
+    assert (retained / "checkpoint.json").read_bytes() == checkpoint
+
+    reads = []
+    calls = transport(monkeypatch, page([6], total=2), reads=reads)
+    run()
+    assert len(reads) == 1 and [str(request.url) for request in calls] == [next_url]
+    assert (work / "generations").exists()
+
+
+def test_short_quota_shrinks_the_run_to_a_clean_checkpointed_stop(local_cli, monkeypatch):
+    run, retained, work, _ = local_cli
+    next_url = search_url(kind="o", q="cluster_id:[3 TO 6]", opinion_statuses=OPINION_STATUSES) + "&cursor=next"
+    one_left = usage(("5/min", 5, 60), ("50/hour", 1, 3600), ("125/day", 75, 86400))
+    calls = transport(monkeypatch, page([4], total=2, next_url=next_url), page([6], total=2), usage_body=one_left)
+    with pytest.raises(ValueError, match="allocation is exhausted"):
+        run(max_requests=5)
+    assert len(calls) == 1  # The second page is never requested into an exhausted hour.
+    events = [json.loads(line) for path in (work / "source-evidence").glob("*/artifact/journal.jsonl")
+              for line in path.read_text().splitlines() if "quota-preflight" in line]
+    assert [(event["requested_live"], event["allowed_live"]) for event in events] == [(5, 1)]
+
+    reads = []
+    calls = transport(monkeypatch, page([6], total=2), reads=reads)
+    run(max_requests=5)
+    assert len(reads) == 1 and [str(request.url) for request in calls] == [next_url]
+
+
+def test_complete_replay_and_saved_retry_after_make_no_usage_read(local_cli, monkeypatch, tmp_path):
+    from datetime import UTC, datetime
+    from spicy_regs.sources import courtlistener_resume
+
+    run, retained, work, _ = local_cli
+    calls = transport(monkeypatch, page([4]))
+    run()
+    reads = []
+    calls = transport(monkeypatch, reads=reads)
+    run(output_dir=tmp_path / "replayed")
+    assert not reads and not calls
+
+    # A later 429 overrides the optimistic reading; its deadline refuses before another usage read.
+    other = tmp_path / "other-search"
+    monkeypatch.setattr(courtlistener_resume, "_now", lambda: datetime(2026, 11, 8, 12, tzinfo=UTC))
+    reads = []
+
+    def throttled(request):
+        return httpx.Response(429, headers={"Retry-After": "600"}, json={"detail": "throttled"})
+
+    monkeypatch.setattr(delta, "CourtListenerOpinionSearchReader", lambda **kwargs:
+                        courtlistener.CourtListenerOpinionSearchReader(
+                            transport=serving_usage(throttled, reads=reads), api_token="fixture-token", **kwargs))
+    with pytest.raises(ValueError, match="incomplete"):
+        run(output_dir=tmp_path / "throttled", retained_search_directory=other)
+    assert len(reads) == 1 and (other / "not-before.json").exists()
+    with pytest.raises(ValueError, match="deadline has not elapsed"):
+        run(output_dir=tmp_path / "throttled-again", retained_search_directory=other)
+    assert len(reads) == 1

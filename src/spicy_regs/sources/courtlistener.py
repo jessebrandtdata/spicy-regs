@@ -161,16 +161,16 @@ class CourtListenerReader(Reader):
             self.evidence.credential = self.api_token or ""
             self.evidence.event("selection", stage="courtlistener", url=url, max_records=self.max_records)
             transport = self.evidence.transport(transport, stage="courtlistener-response", max_bytes=budget.max_page_bytes)
-        # This is one caller's allocation, not a claim about the token's remaining quota.
+        # One caller's allocation; a retained continuation also fits it to the account's usage.
         traversal = self.traversal_budget or CourtListenerTraversalBudget(max_requests=50, max_wait_seconds=600)
         recovery = (
             self.retained_search.open(
-                url=url, max_page_bytes=budget.max_page_bytes, live_transport=transport,
-                evidence=self.evidence, api_token=self.api_token,
-            ) if self.retained_search else nullcontext((transport, iter))
+                url=url, page_budget=budget, traversal_budget=traversal, live_transport=transport,
+                usage_transport=self.transport, evidence=self.evidence, api_token=self.api_token,
+            ) if self.retained_search else nullcontext((transport, iter, traversal))
         )
         try:
-            with recovery as (selected_transport, track), CourtListenerSearchReader(
+            with recovery as (selected_transport, track, traversal), CourtListenerSearchReader(
                 budget=budget, traversal_budget=traversal, api_key=self.api_token, transport=selected_transport,
             ) as reader:
                 # Commit only after the existing whole-page native checks.
