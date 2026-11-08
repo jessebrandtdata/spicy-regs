@@ -1658,6 +1658,19 @@
       "tables": []
     },
     {
+      "id": "family:regulations-mirrulations",
+      "title": "Mirrulations objects read by the regulations ETL",
+      "publisher": "Regulations.gov; Mirrulations",
+      "description": "Exact bytes of every Mirrulations record and derived-text object the regulations ETL read from November 2026, kept before parsing with key, ETag, VersionId and fetch time. Objects processed earlier were not retained and may since have changed upstream.",
+      "source_names": [
+        "regulations-mirrulations"
+      ],
+      "families": [
+        "regulations-mirrulations"
+      ],
+      "tables": []
+    },
+    {
       "id": "declared:mirrulations-cftc-discovery",
       "title": "Mirrulations CFTC bucket discovery responses",
       "publisher": "Mirrulations external mirror",

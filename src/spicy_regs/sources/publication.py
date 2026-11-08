@@ -1250,7 +1250,7 @@ class _EvidenceMembers:
             yield stream
 
 
-def publish_evidence(client, bucket: str, path: Path, artifact) -> None:
+def publish_evidence(client, bucket: str, path: Path, artifact, *, archive_root: Path | None = None) -> None:
     """Upload one locally admitted evidence artifact, sending and reading back only new blob bytes.
 
     Blob members are content-addressed, so each is stored once at
@@ -1259,7 +1259,8 @@ def publish_evidence(client, bucket: str, path: Path, artifact) -> None:
     before admission. An existing blob whose size and ETag equal the local
     bytes is not transferred again; any other existing object is read back and
     refused unless its bytes match. Small metadata stays under the artifact's
-    prefix. Uploads run ``EVIDENCE_WORKERS`` at a time. After every blob exists
+    prefix. Uploads run ``EVIDENCE_WORKERS`` at a time. ``archive_root`` names the
+    evidence's own raw archive when it is not ``SPICYGOV_RAW_ROOT``. After every blob exists
     and metadata is written, admission streams untrusted remote blobs directly
     without retaining local verification copies.
     """
@@ -1267,7 +1268,7 @@ def publish_evidence(client, bucket: str, path: Path, artifact) -> None:
     from rulespec_artifacts import admit_artifact, iter_member_descriptors
     from spicy_regs.source_evidence import EvidenceMemberSource
 
-    local = EvidenceMemberSource(path)
+    local = EvidenceMemberSource(path, archive_root=archive_root)
     prefix = f"{EVIDENCE_PREFIX}/{artifact.pin.artifact_digest.removeprefix('sha256:')}"
     declared = {member.object_key: member for member in iter_member_descriptors(artifact, local)}
     blobs, metadata = [], []
@@ -1304,6 +1305,23 @@ def publish_evidence(client, bucket: str, path: Path, artifact) -> None:
         _EvidenceMembers(client, bucket, prefix, local, set(blobs), trusted),
         expected_pin=artifact.pin,
     )
+
+
+def publish_evidence_index(client, bucket: str, family: str, path: Path) -> str:
+    """Create an append-only, content-addressed index of retained originals beside the shared blobs.
+
+    ``source-evidence/indexes/<family>/<sha256>.parquet``: an existing object
+    under that key already holds these bytes, so a rerun writes nothing new.
+    """
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", family):
+        raise PublicationError(f"Invalid evidence index family {family!r}")
+    identity = file_identity(path)
+    key = f"{EVIDENCE_PREFIX}/indexes/{family}/{identity['sha256'].removeprefix('sha256:')}.parquet"
+    _put_immutable(client, bucket, key, path, sha256=identity["sha256"])
+    stored = _head(client, bucket, key)
+    if stored is None or (stored["ContentLength"], stored.get("ETag")) != (identity["bytes"], identity["etag"]):
+        raise PublicationError(f"Evidence index {key} differs from its local bytes")
+    return key
 
 
 def publish_generation(directory: Path, *, client, bucket: str, prior_index: Mapping,
