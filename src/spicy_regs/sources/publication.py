@@ -457,6 +457,13 @@ def load_rulemaking_snapshot(base_url: str, *, read=None) -> dict | None:
 COMMENTS_EXPORT_TABLES = ("comments", "comments_index")
 
 
+def comments_file_record(record) -> bool:
+    """One export receipt file: a stored version, a non-negative size and row count, and its read-back digest."""
+    return (isinstance(record, Mapping) and isinstance(record.get("etag"), str) and bool(record["etag"])
+            and isinstance(record.get("sha256"), str) and re.fullmatch(r"[0-9a-f]{64}", record["sha256"]) is not None
+            and all(type(record.get(name)) is int and record[name] >= 0 for name in ("rows", "bytes")))
+
+
 def load_comments_publication(base_url: str, *, read=None) -> dict | None:
     """Read the catalog export receipt; fixed member URLs still require version checks.
 
@@ -476,12 +483,8 @@ def load_comments_publication(base_url: str, *, read=None) -> dict | None:
             raise ValueError("unknown receipt format or table identity")
         if any(type(source[key]) is not int or source[key] < 0 for key in ("snapshot_id", "schema_id")):
             raise ValueError("invalid catalog version")
-        for table in COMMENTS_EXPORT_TABLES:
-            record = receipt["files"][table + ".parquet"]
-            if not re.fullmatch(r"[0-9a-f]{64}", record["sha256"]) or not record["etag"]:
-                raise ValueError("invalid public file identity")
-            if any(type(record[name]) is not int or record[name] < 0 for name in ("rows", "bytes")):
-                raise ValueError("invalid public file size")
+        if not all(comments_file_record(receipt["files"][table + ".parquet"]) for table in COMMENTS_EXPORT_TABLES):
+            raise ValueError("invalid public file identity")
     except (ValueError, TypeError, KeyError, AttributeError) as exc:
         raise PublicationError("Invalid comments publication receipt") from exc
     return {"receipt_sha256": "sha256:" + hashlib.sha256(raw).hexdigest(), "receipt": receipt}
@@ -505,15 +508,10 @@ def mutable_versions_match(pins: Mapping[str, Mapping | None]) -> bool:
 
     One HEAD per comments-mirror pin; other pins are immutable and pass.
     """
-    for pin in pins.values():
-        if pin is None or pin.get("kind") != "comments-mirror":
-            continue
-        response = httpx.head(pin["urls"][0], follow_redirects=True, timeout=remaining_timeout(30),
-                              headers={"Cache-Control": "no-cache"})
-        response.raise_for_status()
-        if response.headers.get("etag") != pin["etag"] or int(response.headers.get("content-length", -1)) != pin["bytes"]:
-            return False
-    return True
+    from spicy_regs.sources.r2 import public_version_drift
+
+    mutable = {pin["urls"][0]: pin for pin in pins.values() if pin is not None and pin.get("kind") == "comments-mirror"}
+    return not mutable or not public_version_drift(mutable, timeout=remaining_timeout(30))
 
 
 def published_urls(base_url: str, *, index: Mapping | None = None) -> dict[str, list[str]]:

@@ -215,11 +215,7 @@ def receipt_files(receipt: dict | None) -> dict[str, dict] | None:
     for key, item in files.items():
         if key not in {"comments.parquet", "comments_index.parquet"} and not _AGENCY_KEY.fullmatch(key):
             return None
-        if (not isinstance(item, dict) or not isinstance(item.get("etag"), str) or not item["etag"]
-                or not isinstance(item.get("bytes"), int) or item["bytes"] <= 0
-                or not isinstance(item.get("rows"), int) or item["rows"] < 0
-                or not isinstance(item.get("sha256"), str)
-                or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])):
+        if not publication.comments_file_record(item) or item["bytes"] == 0:
             return None
     if files["comments.parquet"]["rows"] < MIN_EXPECTED_ROWS or files["comments_index.parquet"]["rows"] < 1:
         return None
@@ -256,14 +252,14 @@ def _receipt_matches(receipt: dict | None, snapshot: iceberg.CatalogPairSnapshot
     if files is None:
         return False
 
-    def unchanged(entry: tuple[str, dict]) -> bool:
+    def stored(entry: tuple[str, dict]) -> bool:
         key, item = entry
-        expected = {name: item[name] for name in ("etag", "bytes")}
-        return (r2.object_version(key) == expected
-                and r2.public_object_version(f"{base_url}/{key}") == expected)
+        return r2.object_version(key) == {name: item[name] for name in ("etag", "bytes")}
 
     with ThreadPoolExecutor(max_workers=8) as pool:
-        return all(list(pool.map(unchanged, files.items())))
+        if not all(list(pool.map(stored, files.items()))):
+            return False
+    return not r2.public_version_drift({f"{base_url}/{key}": item for key, item in files.items()})
 
 
 def _prepare_catalog(record_type) -> None:

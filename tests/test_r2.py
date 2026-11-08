@@ -283,7 +283,7 @@ def test_public_version_preserves_provider_refusals(monkeypatch, status):
     import httpx
 
     def head(url, **options):
-        assert options["headers"] == {"User-Agent": "spicy-regs", "Accept-Encoding": "identity"}
+        assert options["headers"] == {"User-Agent": "spicy-regs", "Accept-Encoding": "identity", "Cache-Control": "no-cache"}
         return httpx.Response(status, request=httpx.Request("HEAD", url))
 
     monkeypatch.setattr(r2.httpx, "head", head)
