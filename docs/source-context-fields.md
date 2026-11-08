@@ -80,11 +80,11 @@ meaning; no missing source value receives a fabricated date or historical state.
 
 This decision inspected SpicyRegs `5366faec6f4c5e50463c26235d3a7d30e52010f4`
 and SpicyDocs `3ba96ae3d45ffab832b31e4e4b69befa46091bc0`. Maintained owners:
-[profile collapse](../src/spicy_regs/transforms/build_lobbying_filings.py),
-[SAM mapping/retirement](../src/spicy_regs/transforms/build_sam_entities.py),
-[FCC preferred document](../src/spicy_regs/transforms/build_fcc_ecfs.py),
-[regulation staging selection](../src/spicy_regs/transforms/merge_staging_files.py)
-and [native refresh](../src/spicy_regs/native_merge.py). Source-owned definitions
+profile collapse (`src/spicy_regs/transforms/build_lobbying_filings.py`),
+SAM mapping/retirement (`src/spicy_regs/transforms/build_sam_entities.py`),
+FCC preferred document (`src/spicy_regs/transforms/build_fcc_ecfs.py`),
+regulation staging selection (`src/spicy_regs/transforms/merge_staging_files.py`)
+and native refresh (`src/spicy_regs/native_merge.py`). Source-owned definitions
 are `spicy_docs/sources/sam_extract.py` and `spicy_docs/schemas/regulations.py`
 at the stated source pin. Existing bounded SAM conflict/retirement evidence in
 `/Users/mikewolfd/Work/worktrees/crs-summary-revisions-20261105/update-field-audit/validation/`

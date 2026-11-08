@@ -212,12 +212,12 @@ establish these mechanisms without a full-corpus replay.
 
 The decision inspected SpicyRegs `5366faec6f4c5e50463c26235d3a7d30e52010f4`
 and SpicyDocs `3ba96ae3d45ffab832b31e4e4b69befa46091bc0`. Maintained owners:
-[amendment composition](../src/spicy_regs/transforms/build_amendments.py),
-[index pooling/resume](../src/spicy_regs/transforms/build_congress_index.py),
-[bill merging](../src/spicy_regs/transforms/table_merge.py),
-[source/receipt fields](../src/spicy_regs/congress_subjects.py),
-[scorecard indexing](../src/spicy_regs/scorecards/resolution.py) and
-[Explorer navigation](../src/spicy_regs/explorer_navigation.py).
+amendment composition (`src/spicy_regs/transforms/build_amendments.py`),
+index pooling/resume (`src/spicy_regs/transforms/build_congress_index.py`),
+bill merging (`src/spicy_regs/transforms/table_merge.py`),
+source/receipt fields (`src/spicy_regs/congress_subjects.py`),
+scorecard indexing (`src/spicy_regs/scorecards/resolution.py`) and
+Explorer navigation (`src/spicy_regs/explorer_navigation.py`).
 The retained audit at
 `/Users/mikewolfd/Work/worktrees/crs-summary-revisions-20261105/update-field-audit/validation/`
 already proves pooling, parent stamps and coalescing under its stated pins.
