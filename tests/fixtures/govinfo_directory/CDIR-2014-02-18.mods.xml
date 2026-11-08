@@ -1,0 +1,225 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1987bad78">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>Joint Committee on Printing</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CDIR</collectionCode>
+         <category>Directories of Organizations and Officials</category>
+         <waisDatabaseName>113_congressional_directory</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2018-02-16</dateIngested>
+    </extension>
+    <originInfo>
+         <publisher>U.S. Government Printing Office</publisher>
+         <dateIssued encoding="w3cdtf">2014-02-18</dateIssued>
+         <issuance>continuing</issuance>
+         <frequency authority="marcfrequency">Biennial</frequency>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>1262 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 4.P 93/1:1</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CDIR-2014-02-18</identifier>
+    <identifier type="local">P0b002ee1987bad78</identifier>
+    <identifier type="ILS system id">000631754</identifier>
+    <identifier type="former package identifier">cd03ja13pre_txt</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2018-02-16</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2026-07-14</recordChangeDate>
+         <recordIdentifier source="DGPO">CDIR-2014-02-18</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>CDIR</docClass>
+         <accessId>CDIR-2014-02-18</accessId>
+         <isCurrentEdition>false</isCurrentEdition>
+         <editionId>CDIR</editionId>
+         <isInterim>false</isInterim>
+         <congress years="2013-2014">113</congress>
+         <closeDate>2014-02-18</closeDate>
+         <isDigitized>false</isDigitized>
+    </extension>
+    <titleInfo>
+         <title>Congressional Directory for the 113th Congress (2013-2014), February 2014.</title>
+    </titleInfo>
+    <location>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/pdf/CDIR-2014-02-18.pdf</url>
+    </location>
+    <identifier type="preferred citation">Cong. Dir. 113th Congress</identifier>
+    <relatedItem type="constituent" ID="id-CDIR-2014-02-18-MS-H-3" xlink:href="https://www.govinfo.gov/metadata/granule/CDIR-2014-02-18/CDIR-2014-02-18-MS-H-3/mods.xml">
+         <titleInfo>
+              <title>Representative Gregg Harper, Biography</title>
+              <partName>Congressional Biographies</partName>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/html/CDIR-2014-02-18-MS-H-3.htm">
+              <identifier type="FDsys Unique ID">D09002ee1e4f98e8d-CDIR-2014-02-18-MS-H-3.htm</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/pdf/CDIR-2014-02-18-MS-H-3.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1e4f98e8e-CDIR-2014-02-18-MS-H-3.pdf</identifier>
+        </relatedItem>
+         <name type="personal">
+              <namePart>Gregg Harper</namePart>
+              <affiliation>United States House of Representatives</affiliation>
+              <role>
+                   <roleTerm type="text">other</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <subject>
+              <hierarchicalGeographic>
+                   <country>United States of America</country>
+                   <state>Mississippi</state>
+            </hierarchicalGeographic>
+        </subject>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CDIR-2014-02-18/CDIR-2014-02-18-MS-H-3</identifier>
+         <identifier type="former granule identifier">cd03ja13txt_txt-025-005</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CDIR-2014-02-18/CDIR-2014-02-18-MS-H-3</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/pdf/CDIR-2014-02-18-MS-H-3.pdf</url>
+              <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/html/CDIR-2014-02-18-MS-H-3.htm</url>
+        </location>
+         <identifier type="preferred citation">Cong. Dir. 113th Congress</identifier>
+         <extension>
+              <searchTitle>                
+                Cong. Dir. 113th Congress; Congressional Directory for the 113th Congress (2013-2014), February 2014.; Representative Gregg Harper, Biography</searchTitle>
+              <granuleClass>CONGRESSMEMBERSTATE</granuleClass>
+              <subGranuleClass>REPRESENTATIVE</subGranuleClass>
+              <accessId>CDIR-2014-02-18-MS-H-3</accessId>
+              <state population="2967297" type="STATE">MS</state>
+              <zipcodes>39041 39042 39043 39044 39046 39047 39051 39057 39062 39069 39071 39073 39074 39078 39080 39082 39083 39087 39090 39092 39094 39098 39108 39109 39110 39111 39112 39114 39116 39117 39119 39120 39121 39122 39130 39140 39145 39148 39149 39151 39152 39153 39157 39158 39161 39165 39167 39168 39189 39190 39191 39193 39202 39206 39208 39209 39211 39213 39216 39218 39232 39236 39288 39298 39301 39302 39303 39304 39305 39307 39309 39320 39323 39325 39326 39327 39328 39332 39335 39336 39337 39338 39339 39341 39342 39345 39346 39350 39352 39354 39358 39359 39361 39364 39365 39402 39421 39422 39427 39428 39429 39439 39443 39460 39474 39478 39479 39480 39482 39483 39601 39602 39603 39629 39630 39631 39632 39633 39635 39638 39641 39643 39645 39647 39648 39649 39652 39653 39654 39656 39657 39661 39662 39663 39664 39665 39666 39667 39668 39669 39701 39735 39739 39743 39750 39755 39759 39760 39762 39769</zipcodes>
+              <district>3</district>
+              <congMember bioGuideId="H001045" chamber="H" congress="113" party="R" state="MS" type="REPRESENTATIVE">
+                                        
+                   <name type="parsed">GREGG HARPER</name>
+                                        
+                   <name type="authority-fnf">Gregg Harper</name>
+                                        
+                   <name type="authority-lnf">Harper, Gregg</name>
+                                    
+            </congMember>
+              <biography>GREGG HARPER, Republican, of Pearl, MS; born in Jackson, MS, June 1,
+1956; education: graduated from Pearl High School, Pearl, MS, 1974; 
+B.S., Mississippi College, Clinton, MS, 1978; J.D., University of 
+Mississippi, Oxford, MS, 1981; professional: prosecuting attorney; 
+member, Pearl Chamber of Commerce, Rankin County Chamber of Commerce; 
+Republican Steering Committee; religion: Southern Baptist; married: the 
+former Sidney Carol Hancock; children: Livingston and Maggie; 
+committees: chair, Joint Committee on Printing; vice-chair, Joint 
+Committee on the Library; Energy and Commerce; House Administration; 
+elected to the 111th Congress on November 4, 2008; reelected to each 
+succeeding Congress.</biography>
+              <online>
+                                        
+                   <a href="http://www.harper.house.gov">http://www.harper.house.gov</a>
+                                    
+            </online>
+              <constituents year="2010">745254</constituents>
+        </extension>
+    </relatedItem>
+    <relatedItem type="constituent" ID="id-CDIR-2014-02-18-NY-S-1" xlink:href="https://www.govinfo.gov/metadata/granule/CDIR-2014-02-18/CDIR-2014-02-18-NY-S-1/mods.xml">
+         <titleInfo>
+              <title>Senator Charles E. Schumer, Biography</title>
+              <partName>Congressional Biographies</partName>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/html/CDIR-2014-02-18-NY-S-1.htm">
+              <identifier type="FDsys Unique ID">D09002ee1e4f98e8d-CDIR-2014-02-18-NY-S-1.htm</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/pdf/CDIR-2014-02-18-NY-S-1.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1e4f98e8e-CDIR-2014-02-18-NY-S-1.pdf</identifier>
+        </relatedItem>
+         <name type="personal">
+              <namePart>Charles E. Schumer</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">other</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <subject>
+              <hierarchicalGeographic>
+                   <country>United States of America</country>
+                   <state>New York</state>
+            </hierarchicalGeographic>
+        </subject>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CDIR-2014-02-18/CDIR-2014-02-18-NY-S-1</identifier>
+         <identifier type="former granule identifier">cd03ja13txt_txt-033-001</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CDIR-2014-02-18/CDIR-2014-02-18-NY-S-1</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/pdf/CDIR-2014-02-18-NY-S-1.pdf</url>
+              <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CDIR-2014-02-18/html/CDIR-2014-02-18-NY-S-1.htm</url>
+        </location>
+         <identifier type="preferred citation">Cong. Dir. 113th Congress</identifier>
+         <extension>
+              <searchTitle>                
+                Cong. Dir. 113th Congress; Congressional Directory for the 113th Congress (2013-2014), February 2014.; Senator Charles E. Schumer, Biography</searchTitle>
+              <granuleClass>CONGRESSMEMBERSTATE</granuleClass>
+              <subGranuleClass>SENATOR</subGranuleClass>
+              <accessId>CDIR-2014-02-18-NY-S-1</accessId>
+              <state population="19378102" type="STATE">NY</state>
+              <congMember bioGuideId="S000148" chamber="S" congress="113" party="D" state="NY" type="SENATOR">
+                                        
+                   <name type="parsed">CHARLES E. SCHUMER</name>
+                                        
+                   <name type="authority-fnf">Charles E. Schumer</name>
+                                        
+                   <name type="authority-lnf">Schumer, Charles E.</name>
+                                        
+                   <name type="authority-other">Charles Schumer</name>
+                                    
+            </congMember>
+              <biography>CHARLES E. SCHUMER, Democrat, of Brooklyn and Queens, NY; born in
+Brooklyn, 
+November 23, 1950; education: graduated valedictorian, Madison High 
+School; Harvard 
+University, magna cum laude, 1971; J.D. with honors, Harvard Law School, 
+1974; professional: admitted to the New York State Bar in 1975; elected 
+to the New York State Assembly, 1974; served on Judiciary, Health, 
+Education, and Cities committees; chairman, subcommittee on City 
+Management and Governance, 1977; chairman, Committee on Oversight and 
+Investigation, 1979; reelected to each succeeding legislative session 
+until December 1980; married: Iris Weinshall, 1980; children: Jessica 
+Emily and Alison Emma; committees: chair, Rules and 
+Administration; vice chair, Joint Committee on the Library; chair, Joint 
+Committee on Printing; Banking, Housing, and Urban Affairs; Finance; 
+Judiciary; elected to the 97th Congress on 
+November 4, 1980; reelected to each succeeding Congress; elected to the 
+U.S. Senate on 
+November 3, 1998; reelected to each succeeding Senate term.</biography>
+              <online>
+                                        
+                   <a href="http://schumer.senate.gov">http://schumer.senate.gov</a>
+                                    
+            </online>
+        </extension>
+    </relatedItem>
+</mods>

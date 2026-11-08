@@ -744,11 +744,15 @@
      "rank",
      "position",
      "file_date",
-     "observed_at"
+     "observed_at",
+     "source_granule",
+     "source_line",
+     "edition_date",
+     "position_basis"
     ]
    },
    "meanings": {
-    "file_date": "The date the file states for itself: the House publish-date or the Senate lastUpdate date.",
+    "file_date": "The date the file states for itself: the House publish-date or the Senate lastUpdate date; for a directory row, the edition's dateIssued.",
     "observed_at": "When the file was captured; the merge prefers the larger value."
    }
   },

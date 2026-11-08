@@ -58,7 +58,8 @@ def policy(dataset: str) -> DatasetPolicy:
             "congress-subjects/3"
             if dataset == "nominations"
             else "congress-subjects/2"
-            if dataset in {"committee_meetings", "house_communications", "member_vote_terms", "roll_call_votes"}
+            if dataset
+            in {"committee_assignments", "committee_meetings", "house_communications", "member_vote_terms", "roll_call_votes"}
             else "congress-subjects/1"
         ),
         receipt_only=dataset in RECEIPT_ONLY,

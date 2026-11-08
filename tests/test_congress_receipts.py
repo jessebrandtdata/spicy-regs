@@ -355,8 +355,11 @@ def test_returned_columns_are_text_columns_of_the_installed_policy_at_its_first_
     for column in columns:
         assert declared.subject_schema.field(column).type == pa.string()
     assert not set(kept) & set(declared.subject_schema.names)
-    # These tables had not published natively when the columns returned, so no reader holds an earlier schema.
-    assert declared.policy_version == "congress-subjects/1"
+    # These tables had not published natively when the columns returned, so no reader held an earlier schema then.
+    # committee_assignments has since gained its directory columns (ss-ehci): /2, with /1 kept in history.
+    assert declared.policy_version == (
+        "congress-subjects/2" if dataset == "committee_assignments" else "congress-subjects/1"
+    )
     # Publication admits a generation against the installed declaration, not this module's.
     assert installed_policies()[dataset].descriptor() == declared.descriptor()
 

@@ -4,11 +4,11 @@
 
 **Committee assignments**
 
-One row per member per committee or subcommittee seat a chamber roster file lists today, from the House Clerk's MemberData.xml and the Senate's cvc_member_data.xml.
+One row per member per committee or subcommittee seat: today's from the House Clerk's MemberData.xml and the Senate's cvc_member_data.xml, the 113th-117th Congresses' from one Congressional Directory edition each.
 
-**Coverage.** Sampled. Today's seats: the House Clerk's and the Senate's committee files are captured whole each run, for the current Congress only, and each capture replaces its chamber's rows for that Congress; an earlier Congress keeps its last capture. Vacant and placeholder seats appear as the Clerk's file states them. *(measured 2026-09-19)*
+**Coverage.** Sampled. Today's seats: the House Clerk's and the Senate's committee files are captured whole each run, for the current Congress only, and each capture replaces its chamber's rows for that Congress; an earlier Congress keeps its last capture. Vacant and placeholder seats appear as the Clerk's file states them. The 113th-117th Congresses come from one GovInfo Congressional Directory edition each (`congress_basis` = `directory`), read once: CDIR-2014-02-18, -2016-02-12, -2018-10-01, -2020-07-22 and -2022-10-26. The 118th has none readable: its only edition, CDIR-2024-04-25, serves no committee granules or member records. *(measured 2026-11-08)*
 
-**Data quality.** A row is a seat the file listed on its `file_date`: a seat the file no longer lists is gone on the next capture. The House file states its Congress and the reader proves it; the Senate file states none, so its rows carry the caller's Congress with `congress_basis` = `caller`. A House vacancy has no member and no row, and a seated member whose only assignment is the file's `<committee rank=""/>` placeholder has none either (nine placeholders on 2026-09-19). Only a file captured this run replaces its chamber's rows; a chamber whose file was not established keeps its prior rows. House `system_code` derives its prefix from the native committee type and parent context. For full joint committees in the 119th Congress, the verified Clerk codes, names and joint type map `JL00` to `jslc00`, `JP00` to `jspr00` and `IT00` to `jstx00`. Other joint codes keep their legacy spelling. `committee_code` preserves the literal source identifier. Join matching `system_code` values to `committees` and `bioguide_id` to `members`. Rows whose `system_code` matches no committee stay listed. Names alone do not establish a join. `EC00` remains unresolved because the Joint Economic Committee has three Congress.gov codes. The 2026-09-23 comparison predates the verified mappings. Its 28 unmatched rows included 25 House seats on `EC00`, `IT00`, `JL00` and `JP00`, and three Senate seats on `JSIK00`, the 2024 inaugural committee for which the comparison found no Congress.gov code.
+**Data quality.** A row is a seat the file listed on its `file_date`: a seat the file no longer lists is gone on the next capture. The House file states its Congress and the reader proves it; the Senate file states none, so its rows carry the caller's Congress with `congress_basis` = `caller`. A House vacancy has no member and no row, and a seated member whose only assignment is the file's `<committee rank=""/>` placeholder has none either (nine placeholders on 2026-09-19). Only a file captured this run replaces its chamber's rows; a chamber whose file was not established keeps its prior rows. House `system_code` derives its prefix from the native committee type and parent context. For full joint committees in the 119th Congress, the verified Clerk codes, names and joint type map `JL00` to `jslc00`, `JP00` to `jspr00` and `IT00` to `jstx00`. Other joint codes keep their legacy spelling. `committee_code` preserves the literal source identifier. Join matching `system_code` values to `committees` and `bioguide_id` to `members`. Rows whose `system_code` matches no committee stay listed. Names alone do not establish a join. `EC00` remains unresolved because the Joint Economic Committee has three Congress.gov codes. The 2026-09-23 comparison predates the verified mappings. Its 28 unmatched rows included 25 House seats on `EC00`, `IT00`, `JL00` and `JP00`, and three Senate seats on `JSIK00`, the 2024 inaugural committee for which the comparison found no Congress.gov code. A directory row is one printed seat on the edition's `edition_date`: changes during that Congress are invisible, ex officio members appear only where printed, and some printed lists are stale (the 117th Senate Appropriations list names Tom Udall, who had left; he has no row). Its `system_code` comes from the committee's Congress.gov names in force on that date, a few reviewed titles, and the Joint Economic Committee as `jsec00`; its member from the edition's MODS, else member terms. `rank` is print order within the printed column. A `Ranking Member` with `position_basis` = `inferred` is the first minority-column entry of a list that prints no minority leader. Printed entries that publish no row (unmapped titles, unresolved names, party organizations, vacancies) are journaled with the run's source evidence.
 
 - **Parquet file:** `committee_assignments.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
@@ -18,14 +18,14 @@ One row per member per committee or subcommittee seat a chamber roster file list
 | Column | Type | Description |
 | --- | --- | --- |
 | `congress` | `VARCHAR` | The Congress the assignment belongs to. |
-| `congress_basis` | `VARCHAR` | `file` when the file states that Congress itself (the House file does), `caller` when it states none and the caller supplied it (the Senate file states only its update date). |
+| `congress_basis` | `VARCHAR` | `file` when the file states that Congress itself (the House file does), `caller` when it states none and the caller supplied it (the Senate file states only its update date), `directory` when the row is from a Congressional Directory edition, whose package MODS states the Congress. |
 | `session` | `VARCHAR` | The session the House file states; the Senate file states none. |
-| `chamber` | `VARCHAR` | Which file the seat came from: house or senate. |
+| `chamber` | `VARCHAR` | Which file the seat came from: house or senate; for a directory row, the member's chamber. |
 | `system_code` | `VARCHAR` | Derived join code: House native standing/select type selects hs/hl; the Senate code is lowercased. Verified 119th Congress House joint codes use their Congress.gov counterparts; unresolved House joint codes keep their legacy spelling. |
-| `committee_code` | `VARCHAR` | The file's own committee code, verbatim. |
+| `committee_code` | `VARCHAR` | The file's own committee code, verbatim; the directory prints none. |
 | `is_subcommittee` | `BOOLEAN` | true for a House subcommittee seat; the Senate file lists full committees only. |
 | `parent_system_code` | `VARCHAR` | The parent committee's systemCode for a subcommittee seat. |
-| `committee_name` | `VARCHAR` | The committee's name as the file itself states it. |
+| `committee_name` | `VARCHAR` | The committee's name as the file or directory itself states it. |
 | `bioguide_id` | `VARCHAR` | The member's bioguide id, which both files state; the key's target is members.bioguide_id. |
 | `lis_id` | `VARCHAR` | The Senate file's own LIS id for the senator; the crosswalk table stays the LIS crosswalk. |
 | `name_last` | `VARCHAR` | The member's last name as the file spells it. |
@@ -33,5 +33,9 @@ One row per member per committee or subcommittee seat a chamber roster file list
 | `party` | `VARCHAR` | The member's party as the file states it. |
 | `state` | `VARCHAR` | The member's state code as the file states it. |
 | `district` | `VARCHAR` | The House member's district as the file states it. |
-| `rank` | `VARCHAR` | The House file's rank on the committee; the Senate file states none. |
-| `position` | `VARCHAR` | The seat's stated role, verbatim: the House leadership attribute or the Senate position attribute. |
+| `rank` | `VARCHAR` | The House file's rank on the committee; the Senate file states none. A directory row's rank is its print order within its column, the chair first on the majority side; null for another line printed above the columns (a vice chair). |
+| `position` | `VARCHAR` | The seat's stated role, verbatim: the House leadership attribute or the Senate position attribute. A directory row's role is normalized (Chairman becomes Chair); see position_basis. |
+| `source_granule` | `VARCHAR` | The GovInfo directory granule the seat is printed in, which names its edition. |
+| `source_line` | `VARCHAR` | The 1-based line of the granule's text where the seat's entry starts. |
+| `edition_date` | `VARCHAR` | For a directory row, the edition's dateIssued: the date the printed roster describes. |
+| `position_basis` | `VARCHAR` | For a directory row with a position: `printed`, or `inferred` for a Ranking Member taken from print position (the first minority-column entry) where none is printed. |

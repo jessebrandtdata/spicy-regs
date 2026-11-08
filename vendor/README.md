@@ -1,6 +1,10 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.68.4` adds GovInfo modification dates to
+- **Selected provider** `spicy_docs-0.79.0` adds the Congressional Directory roster reader
+  (`sources/govinfo/directory_rosters.py`), CDIR package-metadata acquisition and four
+  `committee_assignments` columns (ss-ehci). It also carries the two provider commits on fork main after 0.78.0.
+  See [the build receipt](spicy_docs-0.79.0.json).
+- **Earlier provider** `spicy_docs-0.68.4` adds GovInfo modification dates to
   the existing budget, report-part and hearing-link identities. The matching
   consumer preserves dated revisions and selects current rows explicitly.
   It retains the qualified reader behavior below. See

@@ -209,7 +209,10 @@ def earlier_policies(policy):
         return (prior, *earlier_policies(prior))
     history = json.loads(files("spicy_regs").joinpath("navigation_policy_history.json").read_text())
     if policy.dataset in history and policy.policy_version in {"congress-subjects/2", "government-sources/2", "navigation-read-outcomes/2"}:
-        if policy.policy_version == "navigation-read-outcomes/2" or policy.dataset == "roll_call_votes":
+        if policy.policy_version == "navigation-read-outcomes/2" or policy.dataset in {
+            "roll_call_votes",
+            "committee_assignments",
+        }:
             expected = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs").joinpath(
                 "etl_policies/" + policy.dataset + ".json").read_text()))
             if policy.descriptor() != expected.descriptor():

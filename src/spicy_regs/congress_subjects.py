@@ -101,7 +101,7 @@ INPUT_COLUMNS = {
     'committee_assignments': tuple(
         'congress congress_basis session chamber system_code committee_code is_subcommittee '
         'parent_system_code committee_name bioguide_id lis_id name_last name_first party state district '
-        'rank position file_date observed_at'
+        'rank position file_date observed_at source_granule source_line edition_date position_basis'
     .split()),
     'committee_meetings': tuple(
         'congress chamber event_id title meeting_type meeting_status meeting_date location_building '

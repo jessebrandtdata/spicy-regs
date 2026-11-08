@@ -1,9 +1,11 @@
 name: Rollup — committee_rosters
 on:
   schedule:
-    # 01:40 UTC — the committee list of every Congress (four pages) with the
+    # 03:50 UTC — the committee list of every Congress (four pages) with the
     # details of new or changed committees, capped, and the two chamber roster files.
-    - cron: '40 1 * * *'
+    # After the 03:00 members refresh: a Congressional Directory edition not yet
+    # read resolves its members against the published members and member_terms.
+    - cron: '50 3 * * *'
   workflow_dispatch:
     inputs:
       skip_upload:

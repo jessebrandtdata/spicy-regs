@@ -1,0 +1,782 @@
+{
+ "members": [
+  {
+   "bioguide_id": "A000367",
+   "name_first": "Justin",
+   "name_last": "Amash",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "B000575",
+   "name_first": "Roy",
+   "name_last": "Blunt",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "B000755",
+   "name_first": "Kevin",
+   "name_last": "Brady",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "B001227",
+   "name_first": "Robert",
+   "name_last": "Brady",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "C000071",
+   "name_first": "Dave",
+   "name_last": "Camp",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "C000286",
+   "name_first": "Saxby",
+   "name_last": "Chambliss",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "C000542",
+   "name_first": "Daniel",
+   "name_last": "Coats",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "C000984",
+   "name_first": "Elijah",
+   "name_last": "Cummings",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "C001064",
+   "name_first": "John",
+   "name_last": "Campbell",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "C001070",
+   "name_first": "Robert",
+   "name_last": "Casey",
+   "name_nickname": "Bob",
+   "other_names": null
+  },
+  {
+   "bioguide_id": "D000563",
+   "name_first": "Richard",
+   "name_last": "Durbin",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "D000614",
+   "name_first": "Sean",
+   "name_last": "Duffy",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "D000620",
+   "name_first": "John",
+   "name_last": "Delaney",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "G000386",
+   "name_first": "Charles",
+   "name_last": "Grassley",
+   "name_nickname": "Chuck",
+   "other_names": null
+  },
+  {
+   "bioguide_id": "H000338",
+   "name_first": "Orrin",
+   "name_last": "Hatch",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "H001045",
+   "name_first": "Gregg",
+   "name_last": "Harper",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "H001046",
+   "name_first": "Martin",
+   "name_last": "Heinrich",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "H001051",
+   "name_first": "Richard",
+   "name_last": "Hanna",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "J000174",
+   "name_first": "Sam",
+   "name_last": "Johnson",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "K000367",
+   "name_first": "Amy",
+   "name_last": "Klobuchar",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "L000174",
+   "name_first": "Patrick",
+   "name_last": "Leahy",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "L000263",
+   "name_first": "Sander",
+   "name_last": "Levin",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "L000397",
+   "name_first": "Zoe",
+   "name_last": "Lofgren",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "L000577",
+   "name_first": "Mike",
+   "name_last": "Lee",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "M000087",
+   "name_first": "Carolyn",
+   "name_last": "Maloney",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "M001150",
+   "name_first": "Candice",
+   "name_last": "Miller",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "M001169",
+   "name_first": "Christopher",
+   "name_last": "Murphy",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "N000185",
+   "name_first": "Richard",
+   "name_last": "Nugent",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "P000590",
+   "name_first": "Mark",
+   "name_last": "Pryor",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "P000594",
+   "name_first": "Erik",
+   "name_last": "Paulsen",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "R000053",
+   "name_first": "Charles",
+   "name_last": "Rangel",
+   "name_nickname": "Charlie",
+   "other_names": null
+  },
+  {
+   "bioguide_id": "R000307",
+   "name_first": "Pat",
+   "name_last": "Roberts",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "R000361",
+   "name_first": "John",
+   "name_last": "Rockefeller",
+   "name_nickname": "Jay",
+   "other_names": null
+  },
+  {
+   "bioguide_id": "S000030",
+   "name_first": "Loretta",
+   "name_last": "Sanchez",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "S000033",
+   "name_first": "Bernard",
+   "name_last": "Sanders",
+   "name_nickname": "Bernie",
+   "other_names": null
+  },
+  {
+   "bioguide_id": "S000148",
+   "name_first": "Charles",
+   "name_last": "Schumer",
+   "name_nickname": "Chuck",
+   "other_names": null
+  },
+  {
+   "bioguide_id": "T000461",
+   "name_first": "Patrick",
+   "name_last": "Toomey",
+   "name_nickname": "Pat",
+   "other_names": null
+  },
+  {
+   "bioguide_id": "U000039",
+   "name_first": "Tom",
+   "name_last": "Udall",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "V000130",
+   "name_first": "Juan",
+   "name_last": "Vargas",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "W000437",
+   "name_first": "Roger",
+   "name_last": "Wicker",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "W000779",
+   "name_first": "Ron",
+   "name_last": "Wyden",
+   "name_nickname": null,
+   "other_names": null
+  },
+  {
+   "bioguide_id": "W000805",
+   "name_first": "Mark",
+   "name_last": "Warner",
+   "name_nickname": null,
+   "other_names": null
+  }
+ ],
+ "terms": [
+  {
+   "bioguide_id": "A000367",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "MI",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "B000575",
+   "term_type": "sen",
+   "term_start": "2011-01-05",
+   "term_end": "2017-01-03",
+   "term_state": "MO",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "B000755",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "TX",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "B001227",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "PA",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "C000071",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "MI",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "C000286",
+   "term_type": "sen",
+   "term_start": "2009-01-06",
+   "term_end": "2015-01-03",
+   "term_state": "GA",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "C000542",
+   "term_type": "sen",
+   "term_start": "2011-01-05",
+   "term_end": "2017-01-03",
+   "term_state": "IN",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "C000984",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "MD",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "C001064",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "CA",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "C001070",
+   "term_type": "sen",
+   "term_start": "2013-01-03",
+   "term_end": "2019-01-03",
+   "term_state": "PA",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "D000563",
+   "term_type": "sen",
+   "term_start": "2009-01-06",
+   "term_end": "2015-01-03",
+   "term_state": "IL",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "D000614",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "WI",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "D000620",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "MD",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "G000386",
+   "term_type": "sen",
+   "term_start": "2011-01-05",
+   "term_end": "2017-01-03",
+   "term_state": "IA",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "H000338",
+   "term_type": "sen",
+   "term_start": "2013-01-03",
+   "term_end": "2019-01-03",
+   "term_state": "UT",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "H001045",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "MS",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "H001046",
+   "term_type": "sen",
+   "term_start": "2013-01-03",
+   "term_end": "2019-01-03",
+   "term_state": "NM",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "H001051",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "NY",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "J000174",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "TX",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "K000367",
+   "term_type": "sen",
+   "term_start": "2013-01-03",
+   "term_end": "2019-01-03",
+   "term_state": "MN",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "L000174",
+   "term_type": "sen",
+   "term_start": "2011-01-05",
+   "term_end": "2017-01-03",
+   "term_state": "VT",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "L000263",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "MI",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "L000397",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "CA",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "L000577",
+   "term_type": "sen",
+   "term_start": "2011-01-05",
+   "term_end": "2017-01-03",
+   "term_state": "UT",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "M000087",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "NY",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "M001150",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "MI",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "M001169",
+   "term_type": "sen",
+   "term_start": "2013-01-03",
+   "term_end": "2019-01-03",
+   "term_state": "CT",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "N000185",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "FL",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "P000590",
+   "term_type": "sen",
+   "term_start": "2009-01-06",
+   "term_end": "2015-01-03",
+   "term_state": "AR",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "P000594",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "MN",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "R000053",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "NY",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "R000307",
+   "term_type": "sen",
+   "term_start": "2009-01-06",
+   "term_end": "2015-01-03",
+   "term_state": "KS",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "R000361",
+   "term_type": "sen",
+   "term_start": "2009-01-06",
+   "term_end": "2015-01-03",
+   "term_state": "WV",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "S000030",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "CA",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "S000033",
+   "term_type": "sen",
+   "term_start": "2013-01-03",
+   "term_end": "2019-01-03",
+   "term_state": "VT",
+   "term_party": "Independent"
+  },
+  {
+   "bioguide_id": "S000148",
+   "term_type": "sen",
+   "term_start": "2011-01-05",
+   "term_end": "2017-01-03",
+   "term_state": "NY",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "T000461",
+   "term_type": "sen",
+   "term_start": "2011-01-05",
+   "term_end": "2017-01-03",
+   "term_state": "PA",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "U000039",
+   "term_type": "sen",
+   "term_start": "2009-01-06",
+   "term_end": "2015-01-03",
+   "term_state": "NM",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "V000130",
+   "term_type": "rep",
+   "term_start": "2013-01-03",
+   "term_end": "2015-01-03",
+   "term_state": "CA",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "W000437",
+   "term_type": "sen",
+   "term_start": "2013-01-03",
+   "term_end": "2019-01-03",
+   "term_state": "MS",
+   "term_party": "Republican"
+  },
+  {
+   "bioguide_id": "W000779",
+   "term_type": "sen",
+   "term_start": "2011-01-05",
+   "term_end": "2017-01-03",
+   "term_state": "OR",
+   "term_party": "Democrat"
+  },
+  {
+   "bioguide_id": "W000805",
+   "term_type": "sen",
+   "term_start": "2009-01-06",
+   "term_end": "2015-01-03",
+   "term_state": "VA",
+   "term_party": "Democrat"
+  }
+ ],
+ "committees": [
+  {
+   "system_code": "jhje00",
+   "chamber": "Joint",
+   "name": "Joint Economic Committee",
+   "parent_system_code": null,
+   "history": [
+    {
+     "committeeTypeCode": null,
+     "establishingAuthority": null,
+     "libraryOfCongressName": "Joint Economic Committee",
+     "locLinkedDataId": null,
+     "naraId": null,
+     "officialName": "Joint Economic Committee",
+     "startDate": "2023-01-03T17:00:00Z",
+     "superintendentDocumentNumber": null,
+     "updateDate": "2025-05-19T15:22:53Z",
+     "endDate": null
+    }
+   ]
+  },
+  {
+   "system_code": "jjec00",
+   "chamber": "Joint",
+   "name": "Joint Economic Committee",
+   "parent_system_code": null,
+   "history": [
+    {
+     "committeeTypeCode": "Joint",
+     "establishingAuthority": null,
+     "libraryOfCongressName": "Joint Economic Committee",
+     "locLinkedDataId": null,
+     "naraId": null,
+     "officialName": "Joint Economic Committee",
+     "startDate": "1946-02-20T05:00:00Z",
+     "superintendentDocumentNumber": null,
+     "updateDate": "2026-04-03T21:26:43Z",
+     "endDate": null
+    }
+   ]
+  },
+  {
+   "system_code": "jsec00",
+   "chamber": "Joint",
+   "name": "Joint Economic Committee",
+   "parent_system_code": null,
+   "history": [
+    {
+     "committeeTypeCode": "Joint",
+     "establishingAuthority": "79 PL 304",
+     "libraryOfCongressName": "Joint Economic Committee",
+     "locLinkedDataId": "n79040066",
+     "naraId": null,
+     "officialName": "Joint Economic Committee",
+     "startDate": "1956-06-18T04:00:00Z",
+     "superintendentDocumentNumber": null,
+     "updateDate": "2025-12-05T21:16:16Z",
+     "endDate": null
+    },
+    {
+     "committeeTypeCode": "Joint",
+     "establishingAuthority": "79 PL 304",
+     "libraryOfCongressName": "Joint Economic",
+     "locLinkedDataId": "n83195864",
+     "naraId": null,
+     "officialName": "Joint Economic Report",
+     "startDate": "1946-02-20T05:00:00Z",
+     "superintendentDocumentNumber": null,
+     "updateDate": "2024-02-23T21:50:31Z",
+     "endDate": "1956-06-17T04:00:00Z"
+    }
+   ]
+  },
+  {
+   "system_code": "jslc00",
+   "chamber": "Joint",
+   "name": "Joint Committee on the Library",
+   "parent_system_code": null,
+   "history": [
+    {
+     "committeeTypeCode": "Joint",
+     "establishingAuthority": "2 Stat. 129",
+     "libraryOfCongressName": "Joint Committee on the Library",
+     "locLinkedDataId": "n81056984",
+     "naraId": null,
+     "officialName": "Joint Committee on the Library",
+     "startDate": "1802-01-26T04:56:02Z",
+     "superintendentDocumentNumber": null,
+     "updateDate": "2025-12-05T21:16:16Z",
+     "endDate": null
+    }
+   ]
+  },
+  {
+   "system_code": "jspr00",
+   "chamber": "Joint",
+   "name": "Joint Committee on Printing",
+   "parent_system_code": null,
+   "history": [
+    {
+     "committeeTypeCode": "Joint",
+     "establishingAuthority": "9 Stat 113",
+     "libraryOfCongressName": "Joint Committee on Printing",
+     "locLinkedDataId": "n79011265",
+     "naraId": null,
+     "officialName": "Joint Committee on Printing",
+     "startDate": "1846-08-03T04:55:02Z",
+     "superintendentDocumentNumber": null,
+     "updateDate": "2025-12-05T21:16:16Z",
+     "endDate": null
+    }
+   ]
+  },
+  {
+   "system_code": "jstx00",
+   "chamber": "Joint",
+   "name": "Joint Committee on Taxation",
+   "parent_system_code": null,
+   "history": [
+    {
+     "committeeTypeCode": "Joint",
+     "establishingAuthority": "94 PL 455",
+     "libraryOfCongressName": "Joint Committee on Taxation",
+     "locLinkedDataId": "n79021613",
+     "naraId": null,
+     "officialName": "Joint Committee on Taxation",
+     "startDate": "1977-01-01T05:00:00Z",
+     "superintendentDocumentNumber": null,
+     "updateDate": "2025-12-05T21:16:16Z",
+     "endDate": null
+    },
+    {
+     "committeeTypeCode": "Joint",
+     "establishingAuthority": "69 PL 20",
+     "libraryOfCongressName": "Joint Committee on Internal Revenue Taxation",
+     "locLinkedDataId": "n79021612",
+     "naraId": null,
+     "officialName": "Joint Committee on Internal Revenue Taxation",
+     "startDate": "1926-02-26T05:00:00Z",
+     "superintendentDocumentNumber": null,
+     "updateDate": "2024-08-13T16:47:22Z",
+     "endDate": "1976-12-31T05:00:00Z"
+    }
+   ]
+  }
+ ]
+}

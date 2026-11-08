@@ -34,10 +34,20 @@ row for its chamber and Congress (:func:`retire_prior_rows`), so a seat the
 file no longer lists is gone on the next capture and an earlier Congress keeps
 its last capture. A chamber whose file was not established this run keeps its
 prior rows; a keyless ``401``/``403`` (``CommitteeRosterRefusedError``) aborts.
+
+**Earlier Congresses come from the Congressional Directory** (ss-ehci): one
+GovInfo edition per Congress, 113-117 (:mod:`spicy_regs.transforms.directory_rosters`),
+read once, when the published table holds no ``congress_basis = directory`` row
+for that Congress, or again when named in ``COMMITTEE_ROSTERS_DIRECTORY_REREAD``
+(comma-separated Congresses), which first retires that Congress's directory
+rows. Every response is retained through the run's ``evidence``; every printed
+entry that publishes no row is logged and journaled as a disposition. An edition
+that cannot be read is retried next run; a ``401``/``403`` aborts.
 """
 
 from __future__ import annotations
 
+import os
 from collections import Counter
 from collections.abc import Callable, Mapping
 from pathlib import Path
@@ -55,12 +65,22 @@ from spicy_docs.sources.congress.committee_rosters import (
     CommitteeRosterRefusedError,
 )
 from spicy_docs.sources.congress.listing import LIST_ROUTES, MAX_LIMIT, CongressListingReader, list_route_url
-from spicy_docs.transport.credentials import scrub_credential
+from spicy_docs.sources.govinfo.body_acquisition import GovInfoBodyBudget
+from spicy_docs.sources.govinfo.directory_rosters import DirectoryRosterError
+from spicy_docs.transport.credentials import CredentialRefusedError, scrub_credential
 
 from spicy_regs.sources import r2
 from spicy_regs.sources.congress_bills import API_KEY_ENV_VARS, _resolve_api_key
 from spicy_regs.transforms.congress_scope import current_congress
 from spicy_regs.transforms.congress_walk import ListingSource, PerRunCap, walk_route
+from spicy_regs.transforms.directory_rosters import (
+    DIRECTORY_EDITIONS,
+    DirectorySource,
+    GovInfoDirectorySource,
+    directory_congresses_pending,
+    interpret_edition,
+    read_rows,
+)
 from spicy_regs.transforms.table_merge import merge_contract_table, published_table, retire_prior_rows
 
 
@@ -95,6 +115,22 @@ MAX_PAGES = 10
 #: at the pacing above), bounding a backfill (the 581 committees the unscoped
 #: route added to the 119th's 236 take two runs).
 MAX_DETAILS_PER_RUN = 300
+
+#: Package metadata (a CDIR package MODS is 2.8-3.0 MB, measured 2026-11-08) and committee granules (7-163 KB).
+DIRECTORY_BUDGET = GovInfoBodyBudget(
+    max_requests=6,
+    max_body_bytes=2 * 1024 * 1024,
+    max_metadata_bytes=8 * 1024 * 1024,
+    timeout_seconds=120.0,
+    min_request_interval_seconds=1.0,
+)
+DIRECTORY_DISCOVERY_BUDGET = PagedJsonBudget(
+    max_requests=10,
+    max_page_bytes=8 * 1024 * 1024,
+    timeout_seconds=60.0,
+    min_request_interval_seconds=1.0,
+)
+DIRECTORY_REREAD_ENV = "COMMITTEE_ROSTERS_DIRECTORY_REREAD"
 
 NAME = "committees"
 ASSIGNMENTS = "committee_assignments"
@@ -285,11 +321,90 @@ def _assignment_rows(rosters: RosterSource, congress: int, prior_file: Path | No
     return rows
 
 
+def _directory_rows(
+    output_dir: Path,
+    directory: DirectorySource,
+    pending: list[int],
+    reread: set[int],
+    committee_rows: list[dict],
+    priors: Mapping[str, Path | None],
+    download_prior: Callable[[str, Path], bool],
+    evidence,
+) -> list[dict]:
+    """Seats for each pending Congress from its directory edition; an edition not read keeps its prior rows."""
+    by_code = {str(row["system_code"]): row for row in read_rows(priors[NAME])}
+    by_code.update({str(row["system_code"]): row for row in committee_rows})
+    members = {str(row["bioguide_id"]): row for row in read_rows(published_table(output_dir, "members", download_prior))}
+    terms = read_rows(published_table(output_dir, "member_terms", download_prior))
+    if not members or not terms:
+        logger.warning("Committee assignments: members or member_terms unavailable; directory editions wait a run")
+        return []
+    rows: list[dict] = []
+    for congress in pending:
+        package_id = DIRECTORY_EDITIONS[congress]
+        try:
+            capture = directory.edition(package_id)
+        except CredentialRefusedError:
+            raise
+        except (DirectoryRosterError, PagedJsonSourceError, httpx.HTTPError, ConnectionError, ValueError) as error:
+            logger.warning("Committee assignments: {} not read: {}", package_id, scrub_credential(str(error), ""))
+            continue
+        if capture.edition.congress != str(congress):
+            raise DirectoryRosterError(f"{package_id} states Congress {capture.edition.congress}, not {congress}")
+        result = interpret_edition(
+            capture.edition, capture.granules, committees=by_code.values(), terms=terms, members=members,
+            observed_at=capture.observed_at,
+        )  # fmt: skip
+        prior_assignments = priors[ASSIGNMENTS]
+        if congress in reread and prior_assignments is not None:
+            retire_prior_rows(prior_assignments, congress=str(congress), congress_basis="directory")
+        kinds = Counter(d.kind for d in result.dispositions)
+        logger.info(
+            "Committee assignments: {} (Congress {}, issued {}) — {:,} seats, dispositions {}",
+            package_id, congress, capture.edition.date_issued, len(result.rows), dict(kinds),
+        )  # fmt: skip
+        for disposition in result.dispositions:
+            if disposition.kind not in ("vacancy", "not_a_committee"):
+                logger.info("  {} {}:{} {} | {}", disposition.kind, disposition.granule_id, disposition.line,
+                            disposition.context, disposition.text)  # fmt: skip
+        if evidence is not None:
+            evidence.event(
+                "directory-dispositions",
+                package_id=package_id,
+                congress=str(congress),
+                seats=len(result.rows),
+                dispositions=[
+                    {"granule": d.granule_id, "line": d.line, "kind": d.kind, "context": d.context, "text": d.text}
+                    for d in result.dispositions
+                ],
+            )
+        rows.extend(result.rows)
+    return rows
+
+
+def _api_key() -> str:
+    api_key = _resolve_api_key()
+    if not api_key:
+        raise RuntimeError(f"Committees need an api.data.gov key (set one of {', '.join(API_KEY_ENV_VARS)})")
+    return api_key
+
+
+def _directory_source(api_key: str, evidence) -> DirectorySource:
+    from spicy_regs.sources.retained import RetainedGovInfoBodyAcquirer, RetainedGovInfoDiscoveryReader
+
+    return GovInfoDirectorySource(
+        RetainedGovInfoBodyAcquirer(evidence=evidence, budget=DIRECTORY_BUDGET, api_key=api_key),
+        RetainedGovInfoDiscoveryReader(evidence=evidence, budget=DIRECTORY_DISCOVERY_BUDGET, api_key=api_key),
+    )
+
+
 def build_committee_rosters(
     output_dir: Path,
     *,
     reader: ListingSource | None = None,
     rosters: RosterSource | None = None,
+    directory: DirectorySource | None = None,
+    evidence=None,
     max_details: int = MAX_DETAILS_PER_RUN,
     download_prior: Callable[[str, Path], bool] = r2.download,
     receipt_build=None,
@@ -300,10 +415,7 @@ def build_committee_rosters(
             key: value for key, value in locals().items() if key not in {"output_dir", "receipt_build"}
         })
     if reader is None:
-        api_key = _resolve_api_key()
-        if not api_key:
-            raise RuntimeError(f"Committees need an api.data.gov key (set one of {', '.join(API_KEY_ENV_VARS)})")
-        reader = CongressListingReader(budget=LIST_BUDGET, api_key=api_key)
+        reader = CongressListingReader(budget=LIST_BUDGET, api_key=_api_key())
     rosters = rosters or CommitteeRosterAcquirer(budget=ROSTER_BUDGET)
 
     priors = {name: published_table(output_dir, name, download_prior) for name in (NAME, ASSIGNMENTS)}
@@ -314,6 +426,17 @@ def build_committee_rosters(
 
     # 2. Today's seats, for the Congress the files describe.
     assignment_rows = _assignment_rows(rosters, current_congress(), priors[ASSIGNMENTS])
+
+    # 3. Earlier Congresses' seats, once each, from their directory editions.
+    reread = {int(c) for c in os.environ.get(DIRECTORY_REREAD_ENV, "").split(",") if c.strip()}
+    pending = directory_congresses_pending(priors[ASSIGNMENTS], reread)
+    if pending and directory is None and evidence is None:
+        logger.info("Committee assignments: no source evidence, so directory editions {} are not read", pending)
+    elif pending:
+        directory = directory or _directory_source(_api_key(), evidence)
+        assignment_rows += _directory_rows(
+            output_dir, directory, pending, reread, committee_rows, priors, download_prior, evidence
+        )
 
     return (
         merge_contract_table(output_dir, NAME, committee_rows, prior_present=priors[NAME] is not None),
