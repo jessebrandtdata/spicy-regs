@@ -748,12 +748,35 @@
      "source_granule",
      "source_line",
      "edition_date",
-     "position_basis"
+     "position_basis",
+     "printed_entry",
+     "entry_label"
     ]
    },
    "meanings": {
     "file_date": "The date the file states for itself: the House publish-date or the Senate lastUpdate date; for a directory row, the edition's dateIssued.",
     "observed_at": "When the file was captured; the merge prefers the larger value."
+   }
+  },
+  "committee_directory_entries": {
+   "containers": {
+    "source_fields": [
+     "congress",
+     "congress_basis",
+     "source_granule",
+     "source_line",
+     "side",
+     "edition_date",
+     "kind",
+     "committee_name",
+     "subcommittee_name",
+     "printed_text",
+     "note",
+     "observed_at"
+    ]
+   },
+   "meanings": {
+    "observed_at": "When the edition was captured; the merge prefers the larger value."
    }
   },
   "committee_meetings": {

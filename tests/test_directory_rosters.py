@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from dataclasses import replace
+
 import pyarrow.parquet as pq
 import pytest
 import yaml
@@ -94,15 +96,17 @@ def _seat(name, state, side, order, role=None, line=None):
 def test_the_first_minority_entry_is_the_inferred_ranking_member_unless_a_minority_leader_is_printed():
     seats = [_seat("Lead", "TX", "chair", 1, "Chair"), _seat("Aide", "TX", "chair", 2, "Vice Chair"),
              _seat("Left", "OH", "majority", 3), _seat("Right", "IL", "minority", 4)]  # fmt: skip
-    same = [(dr._Person("A", "H", "TX", "R", (), "lead"), ""), (dr._Person("B", "H", "TX", "R", (), "aide"), ""),
-            (None, ""), (None, "")]  # fmt: skip
+    lead, aide = dr._Person("A", "H", "TX", "R", (), "lead"), dr._Person("B", "H", "TX", "R", (), "aide")
+    same = [(lead, "", None), (aide, "", None), (None, "", None), (None, "", None)]
     # A vice chair of the chair's party (House style) leaves the minority's lead unprinted.
-    assert dr._inferred_ranking(seats, same) == 3
+    assert dr._inferred_ranking(seats, same, set()) == 3
     # A vice chair of the other party (Senate Ethics style) is the minority's lead.
-    other = [same[0], (dr._Person("B", "S", "TX", "D", (), "aide"), ""), *same[2:]]
-    assert dr._inferred_ranking(seats, other) is None
+    other = [same[0], (dr._Person("B", "S", "TX", "D", (), "aide"), "", None), *same[2:]]
+    assert dr._inferred_ranking(seats, other, set()) is None
     printed = [*seats[:3], _seat("Right", "IL", "minority", 4, "Ranking Member")]
-    assert dr._inferred_ranking(printed, same) is None
+    assert dr._inferred_ranking(printed, same, set()) is None
+    # So is any role printed in the minority column (the 118th Senate Ethics committee's Vice Chairman).
+    assert dr._inferred_ranking([*seats[:3], _seat("Right", "IL", "minority", 4, "Vice Chair")], same, set()) is None
 
 
 def test_an_unmatched_entry_keeps_its_rank_place_and_its_inference_is_not_shifted():
@@ -110,7 +114,7 @@ def test_an_unmatched_entry_keeps_its_rank_place_and_its_inference_is_not_shifte
     assert (taxation["L000263"]["position"], taxation["L000263"]["position_basis"]) == ("Ranking Member", "inferred")
     result = interpret(terms=[t for t in REFERENCES["terms"] if t["bioguide_id"] != "L000263"])  # Sander Levin
     levin = [d for d in result.dispositions if d.kind == "unmatched_member" and "Levin" in d.text]
-    assert len(levin) == 1 and "Ranking Member is not inferred" in levin[0].text
+    assert len(levin) == 1 and "no Ranking Member is inferred" in levin[0].note
     taxation = {row["bioguide_id"]: row for row in result.rows if row["system_code"] == "jstx00"}
     rangel = taxation["R000053"]  # Charles B. Rangel, printed second in the minority column
     assert (rangel["rank"], rangel["position"]) == ("2", None)
@@ -226,8 +230,9 @@ def _build(tmp_path, directory, monkeypatch, reread=""):
 
 def test_an_edition_is_read_once_kept_after_and_re_read_only_when_named(tmp_path, monkeypatch):
     first = StubDirectory()
-    _, assignments = _build(tmp_path, first, monkeypatch)
-    assert first.read == list(dr.DIRECTORY_EDITIONS.values())  # the stub refuses all but the 113th
+    _, assignments, entries = _build(tmp_path, first, monkeypatch)
+    # The stub refuses all but the 113th; the 118th is the manual edition.
+    assert first.read == [*dr.DIRECTORY_EDITIONS.values(), dr.MANUAL_EDITIONS[118].package_id]
     rows = pq.read_table(assignments).to_pylist()
     directory_rows = [r for r in rows if r["congress_basis"] == "directory"]
     assert {r["congress"] for r in directory_rows} == {"113"} and {r["congress"] for r in rows} == {"113", "119"}
@@ -236,11 +241,11 @@ def test_an_edition_is_read_once_kept_after_and_re_read_only_when_named(tmp_path
     seed(tmp_path, "committee_assignments", rows)
     again = StubDirectory()
     _build(tmp_path, again, monkeypatch)
-    assert "CDIR-2014-02-18" not in again.read and len(again.read) == 4
+    assert "CDIR-2014-02-18" not in again.read and len(again.read) == 5
 
     seed(tmp_path, "committee_assignments", rows)
     named = StubDirectory()
-    _, reread = _build(tmp_path, named, monkeypatch, reread="113")
+    _, reread, _ = _build(tmp_path, named, monkeypatch, reread="113")
     assert named.read[0] == "CDIR-2014-02-18"
     assert len([r for r in pq.read_table(reread).to_pylist() if r["congress_basis"] == "directory"]) == len(
         directory_rows
@@ -249,7 +254,106 @@ def test_an_edition_is_read_once_kept_after_and_re_read_only_when_named(tmp_path
 
 def test_without_evidence_or_a_directory_reader_no_edition_is_read(tmp_path, monkeypatch):
     monkeypatch.delenv(bcr.DIRECTORY_REREAD_ENV, raising=False)
-    _, assignments = bcr.build_committee_rosters(
+    _, assignments, _ = bcr.build_committee_rosters(
         tmp_path, reader=StubListingReader(), rosters=StubRosters(), download_prior=no_download
     )
     assert {r["congress_basis"] for r in pq.read_table(assignments).to_pylist()} == {"file", "caller"}
+
+
+# --------------------------------------------------------------------------- corrections and labels
+
+
+def _person(bioguide, chamber, state, party, name):
+    return dr._Person(bioguide, chamber, state, party, (dr.normalize_name(name),), dr.normalize_name(name).split()[-1])
+
+
+def test_a_misprinted_name_or_state_is_corrected_only_when_one_member_fits():
+    index = dr.MemberIndex([
+        _person("T1", "S", "NC", "R", "Thom Tillis"), _person("R1", "H", "OH", "R", "James B. Renacci"),
+        _person("G1", "H", "TX", "R", "Tony Gonzales"), _person("G2", "H", "TX", "D", "Vicente Gonzalez"),
+        _person("B1", "H", "NY", "D", "Jamaal Bowman"),
+    ])  # fmt: skip
+    assert index.resolve_labeled("Thom Tills", "NC", ("S",))[0::2] == (_person("T1", "S", "NC", "R", "Thom Tillis"),
+                                                                       "corrected")  # fmt: skip
+    renacci = index.resolve_labeled("James B. Renacci", "SC", ("H",))[0]
+    assert renacci is not None and renacci.bioguide_id == "R1"
+    assert index.resolve_labeled("Jamaal Bowman, NY", "NY", ("H",))[2] == "corrected"
+    # The printed surname is Tony Gonzales's; the first name is Vicente Gonzalez's.
+    person, _, label = index.resolve_labeled("Vicente Gonzales", "TX", ("H",))
+    assert person is not None and (person.bioguide_id, label) == ("G2", "corrected")
+    assert index.resolve_labeled("Nobody Atall", "TX", ("H",))[0] is None
+
+
+def test_a_member_printed_after_leaving_is_kept_and_labeled():
+    terms = [*REFERENCES["terms"], {"bioguide_id": "Z000001", "term_type": "sen", "term_start": "2007-01-04",
+                                    "term_end": "2013-01-03", "term_state": "NM", "term_party": "Democrat"}]  # fmt: skip
+    members = {row["bioguide_id"]: row for row in REFERENCES["members"]} | {
+        "Z000001": {"bioguide_id": "Z000001", "name_first": "Zed", "name_last": "Former"}
+    }
+    granule = joint_granule()
+    seats = [replace(granule.seats[-1], name="Zed Former", state="NM", member_chamber="S")]
+    result = dr.interpret_edition(EDITION, [replace(granule, seats=seats, dispositions=[])],
+                                  committees=REFERENCES["committees"], terms=terms, members=members,
+                                  observed_at=OBSERVED_AT)  # fmt: skip
+    assert [(r["bioguide_id"], r["entry_label"]) for r in result.rows] == [("Z000001", "after_departure")]
+
+
+def test_an_entry_in_the_other_partys_column_is_labeled_and_nothing_is_inferred():
+    seats = [_seat("Lead", "TX", "chair", 1, "Chair"), _seat("Left", "OH", "majority", 2),
+             _seat("Wrong", "MI", "minority", 3), _seat("Right", "IL", "minority", 4)]  # fmt: skip
+    people = [(dr._Person("A", "S", "TX", "D", (), "lead"), "", None), (dr._Person("B", "S", "OH", "D", (), "l"), "", None),
+              (dr._Person("C", "S", "MI", "D", (), "w"), "", None), (dr._Person("D", "S", "IL", "R", (), "r"), "", None)]  # fmt: skip
+    crossed = dr._crossed_columns(seats, people)
+    assert crossed == {2}
+    assert dr._inferred_ranking(seats, people, crossed) is None
+    assert dr._ranks(seats, crossed) == {0: 1, 1: 2, 2: None, 3: 1}
+
+
+def test_a_body_without_a_congress_gov_code_is_published_under_its_directory_code():
+    names = dr.CommitteeNames([], "2016-02-12")
+    assert names.resolve("house", "hsba00", "Task Force to Investigate Terrorism Financing") == (
+        "hsba00-tf-terrorism-financing", "no Congress.gov code",
+    )  # fmt: skip
+
+
+def test_every_disposition_is_a_labeled_entry_row():
+    result = interpret()
+    granule = joint_granule()
+    assert len(result.entries) == len(result.dispositions)
+    assert len(result.rows) + sum(e["kind"] == "unresolved_seat" for e in result.entries) == len(granule.seats)
+    assert {e["kind"] for e in result.entries} <= {"vacancy", "not_a_committee", "unread_text", "unresolved_seat",
+                                                   "duplicate_seat"}  # fmt: skip
+
+
+# --------------------------------------------------------------------------- the 118th
+
+
+def test_the_manual_edition_is_read_only_as_pinned(monkeypatch):
+    edition, granules = dr.manual_edition(dr.MANUAL_EDITIONS[118])
+    assert (edition.package_id, edition.congress, edition.date_issued) == ("CDIR-2024-04-25", "118", "2024-04-25")
+    assert sum(len(g.seats) for g in granules) == 3722
+    assert sum(len(g.dispositions) for g in granules) == 73  # vacancies
+    first = granules[0].seats[0]
+    assert (first.line, first.committee, first.name, first.role, first.side) == (
+        "612:12", "Agriculture, Nutrition, and Forestry", "Debbie Stabenow", "Chair", "chair",
+    )  # fmt: skip
+    with pytest.raises(dr.DirectoryRosterError, match="does not match its pin"):
+        dr.manual_edition(replace(dr.MANUAL_EDITIONS[118], entries_sha256="0" * 64))
+
+
+def test_reconciliation_keeps_the_chamber_files_row_and_reports_each_difference():
+    def row(code, bioguide, basis, position=None):
+        return {"system_code": code, "bioguide_id": bioguide, "congress_basis": basis, "position": position}
+
+    directory = [row("hsru00", "C1", "directory-manual", "Chair"), row("hsru00", "B1", "directory-manual"),
+                 row("hsru00", "X1", "directory-manual"), row("ssap01", "S1", "directory-manual")]  # fmt: skip
+    files = [row("hsru00", "B1", "file", "Chairman"), row("hsru00", "C1", "file"), row("hsru00", "F1", "file")]
+    result = dr.reconcile(directory, files)
+    assert sorted((r["system_code"], r["bioguide_id"], r["congress_basis"]) for r in result.rows) == [
+        ("hsru00", "B1", "file"), ("hsru00", "C1", "file"), ("hsru00", "F1", "file"), ("hsru00", "X1", "directory-manual"),
+        ("ssap01", "S1", "directory-manual"),
+    ]  # fmt: skip
+    report = result.report
+    assert report["seat_differences"] == {"hsru00": {"directory_only": ["X1"], "chamber_file_only": ["F1"]}}
+    assert report["leader_differences"]["Chair"] == {"hsru00": {"directory": "C1", "chamber_file": "B1"}}
+    assert report["committees_directory_only"] == ["ssap01"]

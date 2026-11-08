@@ -36,17 +36,20 @@ its last capture. A chamber whose file was not established this run keeps its
 prior rows; a keyless ``401``/``403`` (``CommitteeRosterRefusedError``) aborts.
 
 **Earlier Congresses come from the Congressional Directory** (ss-ehci): one
-GovInfo edition per Congress, 113-117 (:mod:`spicy_regs.transforms.directory_rosters`),
+GovInfo edition per Congress, 113-117, and for the 118th a reviewed reading of its
+PDF reconciled with Internet Archive captures of both chamber files
+(:mod:`spicy_regs.transforms.directory_rosters`),
 read once, when the published table holds no ``congress_basis = directory`` row
 for that Congress, or again when named in ``COMMITTEE_ROSTERS_DIRECTORY_REREAD``
 (comma-separated Congresses), which first retires that Congress's directory
 rows. Every response is retained through the run's ``evidence``; every printed
-entry that publishes no row is logged and journaled as a disposition. An edition
+entry that is not a seat is a ``committee_directory_entries`` row. An edition
 that cannot be read is retried next run; a ``401``/``403`` aborts.
 """
 
 from __future__ import annotations
 
+import json
 import os
 from collections import Counter
 from collections.abc import Callable, Mapping
@@ -74,12 +77,15 @@ from spicy_regs.sources.congress_bills import API_KEY_ENV_VARS, _resolve_api_key
 from spicy_regs.transforms.congress_scope import current_congress
 from spicy_regs.transforms.congress_walk import ListingSource, PerRunCap, walk_route
 from spicy_regs.transforms.directory_rosters import (
+    ARCHIVED_CHAMBER_FILES,
     DIRECTORY_EDITIONS,
+    MANUAL_EDITIONS,
     DirectorySource,
-    GovInfoDirectorySource,
+    EditionSources,
     directory_congresses_pending,
     interpret_edition,
     read_rows,
+    reconcile,
 )
 from spicy_regs.transforms.table_merge import merge_contract_table, published_table, retire_prior_rows
 
@@ -87,9 +93,11 @@ from spicy_regs.transforms.table_merge import merge_contract_table, published_ta
 class RosterSource(Protocol):
     """What this transform needs of the chamber-file acquirer."""
 
-    def acquire_house(self, *, congress: int, session: int | None = ..., max_bytes: int | None = ...) -> Any: ...
+    def acquire_house(
+        self, *, congress: int, session: int | None = ..., max_bytes: int | None = ..., archived_at: str | None = ...
+    ) -> Any: ...
 
-    def acquire_senate(self, *, max_bytes: int | None = ...) -> Any: ...
+    def acquire_senate(self, *, max_bytes: int | None = ..., archived_at: str | None = ...) -> Any: ...
 
 
 LIST_BUDGET = PagedJsonBudget(
@@ -116,10 +124,11 @@ MAX_PAGES = 10
 #: route added to the 119th's 236 take two runs).
 MAX_DETAILS_PER_RUN = 300
 
-#: Package metadata (a CDIR package MODS is 2.8-3.0 MB, measured 2026-11-08) and committee granules (7-163 KB).
+#: Package metadata (a CDIR package MODS is 2.8-3.0 MB, measured 2026-11-08), committee granules and one PDF.
 DIRECTORY_BUDGET = GovInfoBodyBudget(
     max_requests=6,
-    max_body_bytes=2 * 1024 * 1024,
+    # Granules are 7-163 KB; the manual edition's PDF, retained beside its reading, is 11.2 MB.
+    max_body_bytes=16 * 1024 * 1024,
     max_metadata_bytes=8 * 1024 * 1024,
     timeout_seconds=120.0,
     min_request_interval_seconds=1.0,
@@ -134,6 +143,7 @@ DIRECTORY_REREAD_ENV = "COMMITTEE_ROSTERS_DIRECTORY_REREAD"
 
 NAME = "committees"
 ASSIGNMENTS = "committee_assignments"
+ENTRIES = "committee_directory_entries"
 TRUE = "true"
 
 
@@ -324,61 +334,104 @@ def _assignment_rows(rosters: RosterSource, congress: int, prior_file: Path | No
 def _directory_rows(
     output_dir: Path,
     directory: DirectorySource,
+    rosters: RosterSource,
     pending: list[int],
     reread: set[int],
     committee_rows: list[dict],
     priors: Mapping[str, Path | None],
     download_prior: Callable[[str, Path], bool],
     evidence,
-) -> list[dict]:
-    """Seats for each pending Congress from its directory edition; an edition not read keeps its prior rows."""
+) -> tuple[list[dict], list[dict]]:
+    """Seats and non-seat entries for each pending Congress; an edition not read keeps its prior rows."""
     by_code = {str(row["system_code"]): row for row in read_rows(priors[NAME])}
     by_code.update({str(row["system_code"]): row for row in committee_rows})
     members = {str(row["bioguide_id"]): row for row in read_rows(published_table(output_dir, "members", download_prior))}
     terms = read_rows(published_table(output_dir, "member_terms", download_prior))
     if not members or not terms:
         logger.warning("Committee assignments: members or member_terms unavailable; directory editions wait a run")
-        return []
+        return [], []
     rows: list[dict] = []
+    entries: list[dict] = []
     for congress in pending:
-        package_id = DIRECTORY_EDITIONS[congress]
+        manual = congress in MANUAL_EDITIONS
+        package_id = MANUAL_EDITIONS[congress].package_id if manual else DIRECTORY_EDITIONS[congress]
         try:
             capture = directory.edition(package_id)
-        except CredentialRefusedError:
+            archived = _archived_chamber_rows(rosters, congress, evidence) if manual else []
+        except (CredentialRefusedError, CommitteeRosterRefusedError):
             raise
-        except (DirectoryRosterError, PagedJsonSourceError, httpx.HTTPError, ConnectionError, ValueError) as error:
+        except (DirectoryRosterError, CommitteeRosterError, PagedJsonSourceError, httpx.HTTPError, ConnectionError,
+                ValueError) as error:  # fmt: skip
             logger.warning("Committee assignments: {} not read: {}", package_id, scrub_credential(str(error), ""))
             continue
         if capture.edition.congress != str(congress):
             raise DirectoryRosterError(f"{package_id} states Congress {capture.edition.congress}, not {congress}")
         result = interpret_edition(
             capture.edition, capture.granules, committees=by_code.values(), terms=terms, members=members,
-            observed_at=capture.observed_at,
+            observed_at=capture.observed_at, congress_basis="directory-manual" if manual else "directory",
         )  # fmt: skip
-        prior_assignments = priors[ASSIGNMENTS]
-        if congress in reread and prior_assignments is not None:
-            retire_prior_rows(prior_assignments, congress=str(congress), congress_basis="directory")
+        seats = result.rows
+        if manual:
+            reconciled = reconcile(result.rows, archived)
+            seats = reconciled.rows
+            path = output_dir / f"directory-reconciliation-{congress}.json"
+            path.write_text(json.dumps(reconciled.report, indent=1) + "\n")
+            logger.info("Committee assignments: Congress {} reconciliation {}", congress,
+                        {k: v for k, v in reconciled.report.items() if k.startswith("seats_")})  # fmt: skip
+            if evidence is not None:
+                evidence.event("directory-reconciliation", package_id=package_id, congress=str(congress),
+                               report=reconciled.report)  # fmt: skip
+        for name in (ASSIGNMENTS, ENTRIES):
+            prior = priors.get(name)
+            if congress in reread and prior is not None:
+                retire_prior_rows(prior, congress=str(congress))
         kinds = Counter(d.kind for d in result.dispositions)
         logger.info(
-            "Committee assignments: {} (Congress {}, issued {}) — {:,} seats, dispositions {}",
-            package_id, congress, capture.edition.date_issued, len(result.rows), dict(kinds),
+            "Committee assignments: {} (Congress {}, issued {}) — {:,} seats, non-seat entries {}, {:,} corrected",
+            package_id, congress, capture.edition.date_issued, len(seats), dict(kinds), len(result.corrections),
         )  # fmt: skip
-        for disposition in result.dispositions:
-            if disposition.kind not in ("vacancy", "not_a_committee"):
-                logger.info("  {} {}:{} {} | {}", disposition.kind, disposition.granule_id, disposition.line,
-                            disposition.context, disposition.text)  # fmt: skip
+        for (granule, line, side), (printed, reason) in result.corrections.items():
+            logger.info("  corrected {}:{} {} {!r}: {}", granule, line, side, printed, reason)
         if evidence is not None:
             evidence.event(
-                "directory-dispositions",
-                package_id=package_id,
-                congress=str(congress),
-                seats=len(result.rows),
-                dispositions=[
-                    {"granule": d.granule_id, "line": d.line, "kind": d.kind, "context": d.context, "text": d.text}
-                    for d in result.dispositions
-                ],
+                "directory-corrections", package_id=package_id, congress=str(congress),
+                corrections=[{"granule": g, "line": line, "side": side, "printed": p, "reason": r}
+                             for (g, line, side), (p, r) in result.corrections.items()],
+                mappings=[{"granule": g, "title": t, "code": c, "how": h} for g, t, c, h in result.mappings],
+            )  # fmt: skip
+        rows.extend(seats)
+        entries.extend(result.entries)
+    return rows, entries
+
+
+#: The House file's joint committees, which the shaper spells with the standing prefix for a Congress other than
+#: the 119th, under the joint codes the directory rows and congressional-tech use (JEC is ``jsec00``, owner decision
+#: 2026-11-08; the others are the shaper's own verified 119th Congress mapping). ``committee_code`` keeps the literal.
+ARCHIVED_JOINT_CODES = {"hsec00": "jsec00", "hsit00": "jstx00", "hsjl00": "jslc00", "hsjp00": "jspr00"}
+
+
+def _archived_chamber_rows(rosters: RosterSource, congress: int, evidence) -> list[dict]:
+    """Both chamber files as the Internet Archive captured them during ``congress``, retained like any source."""
+    stamps = ARCHIVED_CHAMBER_FILES[congress]
+    house = rosters.acquire_house(congress=congress, archived_at=stamps["house"])
+    senate = rosters.acquire_senate(archived_at=stamps["senate"])
+    rows = []
+    for acquisition in (house, senate):
+        if evidence is not None:
+            evidence.capture(acquisition.capture, stage="committee-roster-archive")
+    for member in house.roster.members:
+        if member.vacant:
+            continue
+        for assignment in member.assignments:
+            row = shape_house_assignment(member, assignment, roster=house.roster, observed_at=house.capture.observed_at)
+            code = ARCHIVED_JOINT_CODES.get(str(row["system_code"]), row["system_code"])
+            rows.append(row | {"system_code": code, "source_granule": house.capture.resolved_url})
+    for senator in senate.roster.senators:
+        for assignment in senator.committees:
+            row = shape_senate_assignment(
+                senator, assignment, congress=congress, roster=senate.roster, observed_at=senate.capture.observed_at
             )
-        rows.extend(result.rows)
+            rows.append(row | {"source_granule": senate.capture.resolved_url})
     return rows
 
 
@@ -392,7 +445,7 @@ def _api_key() -> str:
 def _directory_source(api_key: str, evidence) -> DirectorySource:
     from spicy_regs.sources.retained import RetainedGovInfoBodyAcquirer, RetainedGovInfoDiscoveryReader
 
-    return GovInfoDirectorySource(
+    return EditionSources(
         RetainedGovInfoBodyAcquirer(evidence=evidence, budget=DIRECTORY_BUDGET, api_key=api_key),
         RetainedGovInfoDiscoveryReader(evidence=evidence, budget=DIRECTORY_DISCOVERY_BUDGET, api_key=api_key),
     )
@@ -408,8 +461,8 @@ def build_committee_rosters(
     max_details: int = MAX_DETAILS_PER_RUN,
     download_prior: Callable[[str, Path], bool] = r2.download,
     receipt_build=None,
-) -> tuple[Path, Path]:
-    """Build ``committees.parquet`` and ``committee_assignments.parquet``."""
+) -> tuple[Path, Path, Path]:
+    """Build ``committees.parquet``, ``committee_assignments.parquet`` and ``committee_directory_entries.parquet``."""
     if receipt_build is not None:
         return receipt_build.run(build_committee_rosters, output_dir, **{
             key: value for key, value in locals().items() if key not in {"output_dir", "receipt_build"}
@@ -418,7 +471,8 @@ def build_committee_rosters(
         reader = CongressListingReader(budget=LIST_BUDGET, api_key=_api_key())
     rosters = rosters or CommitteeRosterAcquirer(budget=ROSTER_BUDGET)
 
-    priors = {name: published_table(output_dir, name, download_prior) for name in (NAME, ASSIGNMENTS)}
+    priors = {name: published_table(output_dir, name, download_prior) for name in (NAME, ASSIGNMENTS, ENTRIES)}
+    entry_rows: list[dict] = []
 
     # 1. The enumeration, whole, then the detail fold under its cap.
     listed = _list_committees(reader)
@@ -434,11 +488,13 @@ def build_committee_rosters(
         logger.info("Committee assignments: no source evidence, so directory editions {} are not read", pending)
     elif pending:
         directory = directory or _directory_source(_api_key(), evidence)
-        assignment_rows += _directory_rows(
-            output_dir, directory, pending, reread, committee_rows, priors, download_prior, evidence
+        seats, entry_rows = _directory_rows(
+            output_dir, directory, rosters, pending, reread, committee_rows, priors, download_prior, evidence
         )
+        assignment_rows += seats
 
     return (
         merge_contract_table(output_dir, NAME, committee_rows, prior_present=priors[NAME] is not None),
         merge_contract_table(output_dir, ASSIGNMENTS, assignment_rows, prior_present=priors[ASSIGNMENTS] is not None),
+        merge_contract_table(output_dir, ENTRIES, entry_rows, prior_present=priors[ENTRIES] is not None),
     )

@@ -23,7 +23,13 @@ class CommitteeRostersRollup(RollupPipeline):
     retain_source_evidence: ClassVar[bool] = True
     inputs: ClassVar[tuple[str, ...]] = ()
     soft_inputs: ClassVar[tuple[str, ...]] = ("members.parquet", "member_terms.parquet")
-    outputs: ClassVar[tuple[str, ...]] = ("committees.parquet", "committee_assignments.parquet")
+    outputs: ClassVar[tuple[str, ...]] = (
+        "committees.parquet",
+        "committee_assignments.parquet",
+        "committee_directory_entries.parquet",
+    )
+    # The first generation with this table is a migration; publication refuses any other change of membership.
+    added_tables: ClassVar[tuple[str, ...]] = ("committee_directory_entries.parquet",)
 
     def build(self, output_dir: Path) -> tuple[Path, ...]:
         return self.build_receipts(output_dir, build_committee_rosters, evidence=self.source_evidence)

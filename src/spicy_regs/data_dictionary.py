@@ -427,6 +427,7 @@ CONTRACT_TABLES: tuple[str, ...] = (
     "table3_records",
     "committees",
     "committee_assignments",
+    "committee_directory_entries",
     # The Federal Register rollup (spicy-docs 0.42.0).
     "federal_register",
     # The FEC bulk committee master, every cycle (spicy-docs 0.43.0, decision 53).

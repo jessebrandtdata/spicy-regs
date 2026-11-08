@@ -88,14 +88,14 @@ class StubRosters:
         self.senate_error = senate_error
         self.calls: list[str] = []
 
-    def acquire_house(self, *, congress, session=None, max_bytes=None):
+    def acquire_house(self, *, congress, session=None, max_bytes=None, archived_at=None):
         self.calls.append("house")
         if self.house_error is not None:
             raise self.house_error
         roster = parse_house_member_data(HOUSE_XML, congress=congress, session=session)
         return SimpleNamespace(roster=roster, capture=SimpleNamespace(observed_at=OBSERVED_AT))
 
-    def acquire_senate(self, *, max_bytes=None):
+    def acquire_senate(self, *, max_bytes=None, archived_at=None):
         self.calls.append("senate")
         if self.senate_error is not None:
             raise self.senate_error
@@ -131,7 +131,7 @@ def _build(tmp_path, *, reader=None, rosters=None, **kw):
 
 def test_a_cold_start_folds_each_detail_newest_first_and_publishes_what_the_route_served(tmp_path):
     reader = StubListingReader()
-    committees, _ = _build(tmp_path, reader=reader)
+    committees, *_ = _build(tmp_path, reader=reader)
 
     assert reader.detail_codes == NEWEST_FIRST
     rows = _by_code(committees)
@@ -149,7 +149,7 @@ def test_the_list_is_every_congress_in_one_walk_whatever_the_bill_scope(tmp_path
     monkeypatch.setenv("BILL_FAMILY_CONGRESSES", "119")
     older = {**HSJU00, "updateDate": "2020-01-01T00:00:00Z", "name": "an older listing of the same committee"}
     reader = StubListingReader(listed=[*LISTED, older])
-    committees, _ = _build(tmp_path, reader=reader)
+    committees, *_ = _build(tmp_path, reader=reader)
     [url] = reader.list_urls
     assert url.split("?", 1)[0].endswith("/v3/committee"), "no Congress in the list path"
     rows = _by_code(committees)
@@ -161,7 +161,7 @@ def test_a_code_the_detail_route_cannot_spell_is_listed_without_spending_the_cap
     unlisted = {**LIST_PAGE["committees"][1], "systemCode": "nb79043125", "name": "Mines and Mining",
                 "updateDate": "2099-01-01T00:00:00Z"}
     reader = StubListingReader(listed=[unlisted, *LISTED])
-    committees, _ = _build(tmp_path, reader=reader, max_details=1)
+    committees, *_ = _build(tmp_path, reader=reader, max_details=1)
     assert reader.detail_codes == ["hsbu00"], "the one detail of the cap goes to the newest code it can spell"
     row = _by_code(committees)["nb79043125"]
     assert (row["detail_captured"], row["name"]) == ("false", "Mines and Mining")
@@ -175,7 +175,7 @@ def test_a_committee_keyed_on_its_name_authority_id_folds_its_detail(tmp_path):
                   "systemCode": "n79043125", "updateDate": "2025-06-20T19:17:19Z",
                   "url": "https://api.congress.gov/v3/committee/senate/n79043125?format=json"}
     reader = StubListingReader(listed=[historical], details={"n79043125": detail})
-    committees, _ = _build(tmp_path, reader=reader)
+    committees, *_ = _build(tmp_path, reader=reader)
     assert reader.detail_codes == ["n79043125"]
     row = _by_code(committees)["n79043125"]
     assert (row["detail_captured"], row["is_current"], row["history_count"]) == ("true", "false", "1")
@@ -212,7 +212,7 @@ def test_a_folded_committee_is_not_re_read_unless_its_list_row_moved(tmp_path):
         ],
     )
     reader = StubListingReader()
-    committees, _ = _build(tmp_path, reader=reader)
+    committees, *_ = _build(tmp_path, reader=reader)
     assert reader.detail_codes == ["hsbu00", "slet00", "sssb00"]
     rows = _by_code(committees)
     assert rows["hsju00"]["website_url"] == "the prior row"
@@ -236,7 +236,7 @@ def test_the_cap_leaves_held_rows_standing_and_lists_the_rest_without_a_detail(t
         ],
     )
     reader = StubListingReader()
-    committees, _ = _build(tmp_path, reader=reader, max_details=1)
+    committees, *_ = _build(tmp_path, reader=reader, max_details=1)
     assert reader.detail_codes == ["hsbu00"]
     rows = _by_code(committees)
     assert rows["hsju00"]["website_url"] == "held" and rows["hsju00"]["update_date"] == "2020-01-01T00:00:00Z"
@@ -245,7 +245,7 @@ def test_the_cap_leaves_held_rows_standing_and_lists_the_rest_without_a_detail(t
 
 def test_todays_seats_come_from_both_files_and_carry_each_files_own_statement(tmp_path):
     rosters = StubRosters()
-    _, assignments = _build(tmp_path, rosters=rosters)
+    _, assignments, _ = _build(tmp_path, rosters=rosters)
     assert rosters.calls == ["house", "senate"]
     rows = _rows(assignments)
     house = [r for r in rows if r["chamber"] == "house"]
@@ -294,7 +294,7 @@ def test_a_capture_replaces_its_chambers_seats_and_leaves_earlier_congresses(tmp
             },
         ],
     )
-    _, assignments = _build(tmp_path)
+    _, assignments, _ = _build(tmp_path)
     rows = _rows(assignments)
     assert not [r for r in rows if r["bioguide_id"] in ("X000001", "X000002")], (
         "seats the files no longer list are gone"
@@ -325,7 +325,7 @@ def test_a_file_not_established_keeps_its_chambers_prior_seats(tmp_path):
             },
         ],
     )
-    _, assignments = _build(tmp_path, rosters=StubRosters(house_error=CommitteeRosterError("stub: truncated")))
+    _, assignments, _ = _build(tmp_path, rosters=StubRosters(house_error=CommitteeRosterError("stub: truncated")))
     rows = _rows(assignments)
     assert [r["bioguide_id"] for r in rows if r["chamber"] == "house" and r["system_code"] == "hsxx00"] == ["X000001"]
     assert not [r for r in rows if r["bioguide_id"] == "X000002"], "the Senate capture still replaced its seats"
@@ -346,6 +346,7 @@ def test_a_refusal_of_access_aborts_the_run(tmp_path, rosters):
 def test_the_published_shapes_are_the_contracts(tmp_path):
     from spicy_docs.schemas import TABLE_CONTRACTS
 
-    for name, path in zip(("committees", "committee_assignments"), _build(tmp_path), strict=True):
+    names = ("committees", "committee_assignments", "committee_directory_entries")
+    for name, path in zip(names, _build(tmp_path), strict=True):
         assert path.name == f"{name}.parquet"
         assert pq.read_table(path).schema.names == list(TABLE_CONTRACTS[name].columns)

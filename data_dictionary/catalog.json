@@ -864,6 +864,23 @@
         ]
       },
       {
+        "dataset": "committee_directory_entries",
+        "receipt_only": false,
+        "policy_version": "congress-subjects/1",
+        "identity_columns": [
+          "congress",
+          "source_granule",
+          "source_line",
+          "side"
+        ],
+        "processing_fields": [
+          "source_fields",
+          "source_metadata",
+          "source_schema",
+          "entry_kind"
+        ]
+      },
+      {
         "dataset": "committee_meetings",
         "receipt_only": false,
         "policy_version": "congress-subjects/2",
@@ -10123,11 +10140,11 @@
     {
       "table": "committee_assignments",
       "label": "Committee assignments",
-      "summary": "One row per member per committee or subcommittee seat: today's from the House Clerk's MemberData.xml and the Senate's cvc_member_data.xml, the 113th-117th Congresses' from one Congressional Directory edition each.",
-      "coverage": "Sampled. Today's seats: the House Clerk's and the Senate's committee files are captured whole each run, for the current Congress only, and each capture replaces its chamber's rows for that Congress; an earlier Congress keeps its last capture. Vacant and placeholder seats appear as the Clerk's file states them. The 113th-117th Congresses come from one GovInfo Congressional Directory edition each (`congress_basis` = `directory`), read once: CDIR-2014-02-18, -2016-02-12, -2018-10-01, -2020-07-22 and -2022-10-26. The 118th has none readable: its only edition, CDIR-2024-04-25, serves no committee granules or member records.",
+      "summary": "One row per member per committee or subcommittee seat: today's from the House Clerk's MemberData.xml and the Senate's cvc_member_data.xml, the 113th-118th Congresses' from one Congressional Directory edition each (the 118th beside archived chamber files).",
+      "coverage": "Sampled. Today's seats: the House Clerk's and the Senate's committee files are captured whole each run, for the current Congress only, and each capture replaces its chamber's rows for that Congress; an earlier Congress keeps its last capture. Vacant and placeholder seats appear as the Clerk's file states them. The 113th-117th Congresses come from one GovInfo Congressional Directory edition each (`congress_basis` = `directory`), read once: CDIR-2014-02-18, -2016-02-12, -2018-10-01, -2020-07-22 and -2022-10-26. The 118th combines a reviewed reading of CDIR-2024-04-25's PDF (`directory-manual`) with Internet Archive captures of the House file (published 2024-05-01, `file`) and the Senate file (2024-09-11, `caller`): a seat both list is the chamber file's row.",
       "kind": "sampled",
       "measured_on": "2026-11-08",
-      "data_quality": "A row is a seat the file listed on its `file_date`: a seat the file no longer lists is gone on the next capture. The House file states its Congress and the reader proves it; the Senate file states none, so its rows carry the caller's Congress with `congress_basis` = `caller`. A House vacancy has no member and no row, and a seated member whose only assignment is the file's `<committee rank=\"\"/>` placeholder has none either (nine placeholders on 2026-09-19). Only a file captured this run replaces its chamber's rows; a chamber whose file was not established keeps its prior rows. House `system_code` derives its prefix from the native committee type and parent context. For full joint committees in the 119th Congress, the verified Clerk codes, names and joint type map `JL00` to `jslc00`, `JP00` to `jspr00` and `IT00` to `jstx00`. Other joint codes keep their legacy spelling. `committee_code` preserves the literal source identifier. Join matching `system_code` values to `committees` and `bioguide_id` to `members`. Rows whose `system_code` matches no committee stay listed. Names alone do not establish a join. `EC00` remains unresolved because the Joint Economic Committee has three Congress.gov codes. The 2026-09-23 comparison predates the verified mappings. Its 28 unmatched rows included 25 House seats on `EC00`, `IT00`, `JL00` and `JP00`, and three Senate seats on `JSIK00`, the 2024 inaugural committee for which the comparison found no Congress.gov code. A directory row is one printed seat on the edition's `edition_date`: changes during that Congress are invisible, ex officio members appear only where printed, and some printed lists are stale (the 117th Senate Appropriations list names Tom Udall, who had left; he has no row). Its `system_code` comes from the committee's Congress.gov names in force on that date, a few reviewed titles, and the Joint Economic Committee as `jsec00`; its member from the edition's MODS, else member terms. `rank` is print order within the printed column. A `Ranking Member` with `position_basis` = `inferred` is the first minority-column entry of a list that prints no minority leader. Printed entries that publish no row (unmapped titles, unresolved names, party organizations, vacancies) are journaled with the run's source evidence.",
+      "data_quality": "A row is a seat the file listed on its `file_date`: a seat the file no longer lists is gone on the next capture. The House file states its Congress and the reader proves it; the Senate file states none, so its rows carry the caller's Congress with `congress_basis` = `caller`. A House vacancy has no member and no row, and a seated member whose only assignment is the file's `<committee rank=\"\"/>` placeholder has none either (nine placeholders on 2026-09-19). Only a file captured this run replaces its chamber's rows; a chamber whose file was not established keeps its prior rows. House `system_code` derives its prefix from the native committee type and parent context. For full joint committees in the 119th Congress, the verified Clerk codes, names and joint type map `JL00` to `jslc00`, `JP00` to `jspr00` and `IT00` to `jstx00`. Other joint codes keep their legacy spelling. `committee_code` preserves the literal source identifier. Join matching `system_code` values to `committees` and `bioguide_id` to `members`. Rows whose `system_code` matches no committee stay listed. Names alone do not establish a join. `EC00` remains unresolved because the Joint Economic Committee has three Congress.gov codes. The 2026-09-23 comparison predates the verified mappings. Its 28 unmatched rows included 25 House seats on `EC00`, `IT00`, `JL00` and `JP00`, and three Senate seats on `JSIK00`, the 2024 inaugural committee for which the comparison found no Congress.gov code. A directory row is one printed seat on the edition's `edition_date`: changes during that Congress are invisible, ex officio members appear only where printed, and some printed lists are stale (the 117th Senate Appropriations list names Tom Udall, who had left; he has no row). Its `system_code` comes from the committee's Congress.gov names in force on that date, a few reviewed titles, and the Joint Economic Committee as `jsec00`; its member from the edition's MODS, else member terms. `rank` is print order within the printed column. A `Ranking Member` with `position_basis` = `inferred` is the first minority-column entry of a list that prints no minority leader. A printed value corrected against member terms (a misprinted state or name) says `entry_label` = `corrected` and keeps `printed_entry`; a member printed after leaving says `after_departure`; the 114th House Financial Services task force, which has no Congress.gov code, says `no_congress_gov_code` under the directory-defined `hsba00-tf-terrorism-financing`. Printed entries that are not seats are `committee_directory_entries` rows.",
       "columns": [
         "congress",
         "congress_basis",
@@ -10150,7 +10167,31 @@
         "source_granule",
         "source_line",
         "edition_date",
-        "position_basis"
+        "position_basis",
+        "printed_entry",
+        "entry_label"
+      ]
+    },
+    {
+      "table": "committee_directory_entries",
+      "label": "Committee directory non-seat entries",
+      "summary": "Printed Congressional Directory roster entries that are not committee seats, each labeled with why.",
+      "coverage": "Sampled. Every printed roster entry that is not a committee seat, in the Congressional Directory editions committee_assignments reads (113th-118th).",
+      "kind": "sampled",
+      "measured_on": "2026-11-08",
+      "data_quality": "A row is one printed entry with its granule (or PDF page) line and column: a vacancy, a member of a party organization printed among the select committees (`not_a_committee`), printed text the reader could not seat (`unread_text`, mostly staff and party-office lines), a seat whose committee or member could not be resolved (`unresolved_seat`), or a second printing of a published seat (`duplicate_seat`). Together with the directory rows of committee_assignments it accounts for every printed entry.",
+      "columns": [
+        "congress",
+        "congress_basis",
+        "source_granule",
+        "source_line",
+        "side",
+        "edition_date",
+        "kind",
+        "committee_name",
+        "subcommittee_name",
+        "printed_text",
+        "note"
       ]
     },
     {

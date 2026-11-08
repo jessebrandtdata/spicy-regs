@@ -101,7 +101,12 @@ INPUT_COLUMNS = {
     'committee_assignments': tuple(
         'congress congress_basis session chamber system_code committee_code is_subcommittee '
         'parent_system_code committee_name bioguide_id lis_id name_last name_first party state district '
-        'rank position file_date observed_at source_granule source_line edition_date position_basis'
+        'rank position file_date observed_at source_granule source_line edition_date position_basis printed_entry '
+        'entry_label'
+    .split()),
+    'committee_directory_entries': tuple(
+        'congress congress_basis source_granule source_line side edition_date kind committee_name subcommittee_name '
+        'printed_text note observed_at'
     .split()),
     'committee_meetings': tuple(
         'congress chamber event_id title meeting_type meeting_status meeting_date location_building '
@@ -204,6 +209,7 @@ PROCESSING = {
     'bill_subjects': frozenset('carrier enriched_at'.split()),
     'bill_vote_references': frozenset('url observed_at'.split()),
     'committee_assignments': frozenset('file_date observed_at'.split()),
+    'committee_directory_entries': frozenset('observed_at'.split()),
     'committee_meetings': frozenset('url detail_read'.split()),
     'committees': frozenset('url detail_captured'.split()),
     'congress_bills': frozenset(
@@ -299,6 +305,7 @@ IDENTITIES = {
     "bill_subjects": ("bill_id",),
     "bill_vote_references": ("bill_id", "chamber", "congress", "session", "roll_number", "action_index"),
     "committee_assignments": ("congress", "system_code", "bioguide_id"),
+    "committee_directory_entries": ("congress", "source_granule", "source_line", "side"),
     "committee_meetings": ("congress", "chamber", "event_id"), "committees": ("system_code",),
     "congress_bills": ("bill_id",), "house_communications": ("communication_id",),
     "member_party_affiliations": ("bioguide_id", "term_index", "affiliation_index"),

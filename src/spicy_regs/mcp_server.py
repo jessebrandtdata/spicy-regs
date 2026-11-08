@@ -249,6 +249,7 @@ TABLES = (
     "table3_records",
     "committees",
     "committee_assignments",
+    "committee_directory_entries",
     # The Congress.gov index tables (gaps A5, A7, A10).
     "house_communications",
     "committee_meetings",

@@ -381,7 +381,7 @@
   "committee_assignments": {
     "columns": {
       "congress": "The Congress the assignment belongs to.",
-      "congress_basis": "`file` when the file states that Congress itself (the House file does), `caller` when it states none and the caller supplied it (the Senate file states only its update date), `directory` when the row is from a Congressional Directory edition, whose package MODS states the Congress.",
+      "congress_basis": "`file` when the file states that Congress itself (the House file does), `caller` when it states none and the caller supplied it (the Senate file states only its update date), `directory` when the row is from a Congressional Directory edition, whose package MODS states the Congress, `directory-manual` when it is from a reviewed one-off reading of an edition's PDF.",
       "session": "The session the House file states; the Senate file states none.",
       "chamber": "Which file the seat came from: house or senate; for a directory row, the member's chamber.",
       "system_code": "Derived join code: House native standing/select type selects hs/hl; the Senate code is lowercased. Verified 119th Congress House joint codes use their Congress.gov counterparts; unresolved House joint codes keep their legacy spelling.",
@@ -398,10 +398,27 @@
       "district": "The House member's district as the file states it.",
       "rank": "The House file's rank on the committee; the Senate file states none. A directory row's rank is its print order within its column, the chair first on the majority side; null for another line printed above the columns (a vice chair).",
       "position": "The seat's stated role, verbatim: the House leadership attribute or the Senate position attribute. A directory row's role is normalized (Chairman becomes Chair); see position_basis.",
-      "source_granule": "The GovInfo directory granule the seat is printed in, which names its edition.",
-      "source_line": "The 1-based line of the granule's text where the seat's entry starts.",
+      "source_granule": "The GovInfo directory granule the seat is printed in, which names its edition; for a manual reading, the edition's package; for an archived chamber file, its archive URL.",
+      "source_line": "The 1-based line of the granule's text where the seat's entry starts; for a manual reading, PDF page:line of its layout text.",
       "edition_date": "For a directory row, the edition's dateIssued: the date the printed roster describes.",
-      "position_basis": "For a directory row with a position: `printed`, or `inferred` for a Ranking Member taken from print position (the first minority-column entry) where none is printed."
+      "position_basis": "For a directory row with a position: `printed`, or `inferred` for a Ranking Member taken from print position (the first minority-column entry) where none is printed.",
+      "printed_entry": "For a directory row, the entry as printed (name and state), kept when a value was corrected.",
+      "entry_label": "For a directory row: `corrected` when a printed value was corrected (printed_entry keeps it), `after_departure` when the edition prints a member who had left, `no_congress_gov_code` when the printed body has no Congress.gov code (system_code is then directory-defined)."
+    }
+  },
+  "committee_directory_entries": {
+    "columns": {
+      "congress": "The Congress of the edition that prints the entry.",
+      "congress_basis": "`directory`, or `directory-manual` for a reviewed one-off reading of an edition's PDF.",
+      "source_granule": "The GovInfo directory granule (or, for a manual reading, package) that prints it.",
+      "source_line": "The 1-based granule line (or, for a manual reading, PDF page:line) where the entry starts.",
+      "side": "The printed column: chair, majority, minority, single, or line for text read as a whole line.",
+      "edition_date": "The edition's dateIssued.",
+      "kind": "`vacancy`, `not_a_committee` (a party organization such as the NRCC), `unread_text` (printed text the reader could not seat), `unresolved_seat` (a seat whose committee or member could not be resolved) or `duplicate_seat` (a second printing of a seat already published).",
+      "committee_name": "The committee or organization title the entry is printed under.",
+      "subcommittee_name": "The subcommittee title, where the entry is printed under one.",
+      "printed_text": "The entry as printed.",
+      "note": "Why it is not a seat, where the reader or interpreter states a reason."
     }
   },
   "committee_meetings": {
