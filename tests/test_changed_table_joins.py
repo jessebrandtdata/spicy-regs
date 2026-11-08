@@ -1,7 +1,9 @@
 """PR checks read every changed join; scheduled checks still read the whole registry."""
 
 from dataclasses import replace
+import http.server
 import json
+import threading
 
 import duckdb
 import pyarrow as pa
@@ -119,3 +121,31 @@ def test_unreadable_public_input_fails_with_a_receipt(monkeypatch, tmp_path):
     assert checker.main(["--index-url", "https://example.org", "--receipt", str(receipt)]) == 3
     assert json.loads(receipt.read_text())["status"] == "UNREACHABLE"
     assert json.loads(receipt.read_text())["selected"] == [join().name]
+
+
+@pytest.mark.integration
+def test_only_a_declared_empty_child_may_be_unpublished(monkeypatch, tmp_path):
+    """Live httpfs over a local server: a 404 child of a declared-empty join is EMPTY; elsewhere it is unreadable."""
+    pq.write_table(pa.table({"id": pa.array(["one"], type=pa.string())}), tmp_path / "parent.parquet")
+
+    class Files(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=str(tmp_path), **kwargs)
+
+        def log_message(self, format, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Files)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    monkeypatch.setattr(checker, "table_urls", lambda _: lambda name: [f"{base}/{name}.parquet"])
+    receipt = tmp_path / "receipt.json"
+    try:
+        for declared, code, status in ((replace(join(), baseline_keys=0, kind="empty"), 0, "EMPTY"),
+                                       (join(), 3, "UNREACHABLE")):
+            monkeypatch.setattr(table_joins, "JOINS", (declared,))
+            assert checker.main(["--index-url", base, "--receipt", str(receipt)]) == code
+            written = json.loads(receipt.read_text())
+            assert (written["results"][0]["status"] if code == 0 else written["status"]) == status
+    finally:
+        server.shutdown()

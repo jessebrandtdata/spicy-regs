@@ -95,11 +95,31 @@ def _quote(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
 
 
+def _unpublished(con: duckdb.DuckDBPyConnection, urls: list[str]) -> bool:
+    """Whether the publisher serves no file for a table (HTTP 404), as distinct from one it fails to serve."""
+    try:
+        con.execute(f"SELECT 1 FROM {publication.parquet_scan(urls)} LIMIT 0")
+    except duckdb.HTTPException as exc:
+        if exc.status_code == 404:
+            return True
+        raise
+    return False
+
+
 def measure(con: duckdb.DuckDBPyConnection, join: table_joins.Join, url_of: Callable[[str], list[str]]) -> dict:
-    """Measure full selected inputs, preserving parent multiplicity and raw-row amplification."""
+    """Measure full selected inputs, preserving parent multiplicity and raw-row amplification.
+
+    A declared-empty child that no generation publishes yet has no key to read: it
+    reports EMPTY without a parent read. Any other unpublished input stays unreadable.
+    """
     child = [_quote(column) for column in join.child_columns]
     parent = [_quote(column) for column in join.parent_columns]
     child_urls, parent_urls = url_of(join.measured_via or join.child), url_of(join.parent)
+    if join.kind == "empty" and _unpublished(con, child_urls):
+        result = verdict(join, 0, 0)
+        result.update({"scope": "child_not_published", "child_urls": child_urls, "parent_urls": parent_urls,
+                       "expected_cardinality": join.expected_cardinality})
+        return result
     keys_sql = ", ".join(f"c{i}" for i in range(len(child)))
     on = " AND ".join(f"c.c{i} = p.p{i}" for i in range(len(child)))
     sql = f"""
