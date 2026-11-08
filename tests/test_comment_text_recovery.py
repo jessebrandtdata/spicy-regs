@@ -1,5 +1,7 @@
 """Text failures survive raw checkpoints and fresh hosts; retries preserve other fields."""
 
+import hashlib
+import io
 import json
 
 import duckdb
@@ -113,9 +115,13 @@ def test_text_retry_after_manifest_on_fresh_host(tmp_path, monkeypatch, mode, na
             skip_upload=False,
         ).run()
 
+    def blob(content):
+        return native_publication.objects.get("source-evidence/blobs/sha256/" + hashlib.sha256(content).hexdigest())
+
     first = tmp_path / "first"
     run(first)
     assert raw_key in set(pl.read_parquet(first / "manifest.parquet")["key"])
+    assert blob(store[raw_key]) == store[raw_key], "the raw original reached R2"
     pending = restore_checkpoint(first, "pending_comment_text")
     assert pending[0]["comment_id"] == identity
     assert pending[0]["phase"] == "fetch" and pending[0]["attempts"] == 1
@@ -128,10 +134,22 @@ def test_text_retry_after_manifest_on_fresh_host(tmp_path, monkeypatch, mode, na
     del store[raw_key]
     failed = False
     gets.clear()
+    text_key = derived_key(*ACF, "pypdf", "0004", 1)
+    upsert = iceberg.upsert_comment_text
+
+    def upsert_after_retention(*args, **kwargs):
+        assert blob(store[text_key]) == store[text_key], "derived text is kept before its row is written"
+        return upsert(*args, **kwargs)
+
+    monkeypatch.setattr(iceberg, "upsert_comment_text", upsert_after_retention)
     second = tmp_path / "second"
     run(second)
     assert raw_key not in gets
-    assert derived_key(*ACF, "pypdf", "0004", 1) in gets
+    assert text_key in gets
+    indexes = [io.BytesIO(raw) for key, raw in native_publication.objects.items()
+               if key.startswith("source-evidence/indexes/regulations-mirrulations/")]
+    indexed = pl.concat([pl.read_parquet(index) for index in indexes])
+    assert {raw_key, text_key} <= set(indexed["key"])
     assert not restore_checkpoint(second, "pending_comment_text")
     with connect(COMMENT) as con:
         rows = con.execute(f"SELECT * FROM {processing_table(con, COMMENT)}").pl()

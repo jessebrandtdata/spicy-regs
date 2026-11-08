@@ -283,15 +283,23 @@ publications also retain originals through the existing R2 evidence writer.
 malformed input and interrupted publication with local fixtures.
 
 The regulations ETL (`run-pipeline`) retains every Mirrulations object it
-reads, from November 2026, through the same owner
-(`pipelines/mirrulations_originals.py`, family `regulations-mirrulations`).
-Each GET body is kept before the reader parses it, with its key, ETag,
-VersionId, LastModified and fetch time; there is no second GET. A publishing
-pass sends new originals to `source-evidence/blobs/sha256/` before any row
-merges or key is manifested, and refuses that batch if any retention failed or
-any retiring key has no retained original. Its scheduled workflow uses the
-same `raw-source-originals` root. Objects processed before this change were
-not retained; Mirrulations may have replaced them since.
+reads, raw records and derived attachment text alike, from November 2026,
+through the same owner (`pipelines/mirrulations_originals.py`, family
+`regulations-mirrulations`). Each GET body is kept before it is parsed, with
+its key, ETag, VersionId, LastModified and fetch time; there is no second GET.
+Any run that writes durably, including a `--skip-upload` run that merges into
+the catalog, sends the originals to `source-evidence/blobs/sha256/` before
+rows merge, derived text is upserted or keys are manifested. It refuses that
+write if any retention failed or any object it uses has no retained original.
+Scheduled runs pass `--scratch-originals`, which deletes the runner copy once
+R2 admits it. Objects processed before this change were not retained;
+Mirrulations may have replaced them since.
+
+No table artifact cites these originals. To find a key's original, read the
+append-only indexes at `source-evidence/indexes/regulations-mirrulations/*.parquet`
+(key, sha256, bytes, ETag, VersionId, LastModified, fetch time, artifact
+digest). The blob is `source-evidence/blobs/sha256/<sha256>`; its acquisition
+journal is `source-evidence/<artifact digest without sha256:>/journal.jsonl`.
 
 To locate published observations, follow the table artifact's `source-evidence`
 input to `source-evidence/<artifactDigest-without-sha256:>/artifact.json`,

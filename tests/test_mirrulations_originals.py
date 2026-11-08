@@ -6,6 +6,7 @@ evidence publisher run.
 """
 
 import hashlib
+import io
 import json
 from datetime import UTC, datetime
 from json import dumps
@@ -220,7 +221,17 @@ def test_an_incomplete_body_is_not_kept_as_an_original_and_stays_unresolved(tmp_
     assert _manifest_keys(tmp_path) == {_docket_key("EPA-2024-0001")}
 
 
-def test_chunked_comments_retain_each_chunk_before_its_merge(tmp_path, monkeypatch):
+def _blob(store, content: bytes) -> bytes | None:
+    return store.objects.get("source-evidence/blobs/sha256/" + hashlib.sha256(content).hexdigest())
+
+
+def _indexed(store) -> pl.DataFrame:
+    return pl.concat([pl.read_parquet(io.BytesIO(raw)) for key, raw in store.objects.items()
+                      if key.startswith("source-evidence/indexes/regulations-mirrulations/")])
+
+
+def test_a_skip_upload_catalog_run_still_sends_each_chunk_to_r2_before_its_merge(tmp_path, monkeypatch, r2_store):
+    """The catalog is durable whatever --skip-upload says, so its inputs' originals must be too."""
     objects = {
         _comment_key(f"c{i}", "EPA-2026-0001"): dumps(
             _comment_payload(f"c{i}", "EPA-2026-0001", "2026-01-01T00:00:00Z")
@@ -229,17 +240,97 @@ def test_chunked_comments_retain_each_chunk_before_its_merge(tmp_path, monkeypat
     }
     mirror = _Mirror(objects)
     monkeypatch.setattr(mirrulations, "s3_resource", lambda: mirror)
-    merged: list[set[str]] = []
-    monkeypatch.setattr(
-        regulations.iceberg,
-        "merge_comments",
-        lambda *_: merged.append({e["source_record_key"] for e in _retained_events(tmp_path)}),
-    )
+    merged: list[int] = []
+
+    def merge(*_):
+        merged.append(sum(_blob(r2_store, content) == content for content in objects.values()))
+
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", merge)
 
     _run(tmp_path, skip_comments=False, only_comments=True, use_iceberg=True, enrich_text=False, chunk_size=2)
 
-    assert [len(keys) for keys in merged] == [2, 3]
-    assert {e["source_record_key"] for e in _retained_events(tmp_path)} == set(objects) == _manifest_keys(tmp_path)
+    assert merged == [2, 3]
+    assert set(_indexed(r2_store)["key"]) == set(objects) == _manifest_keys(tmp_path)
+
+
+def test_a_fully_local_run_keeps_originals_locally_without_r2(tmp_path, monkeypatch, r2_store):
+    mirror = _Mirror(_dockets("EPA-2024-0001"))
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: mirror)
+
+    _run(tmp_path)
+
+    assert not any(key.startswith("source-evidence/") for key in r2_store.objects)
+    (content,) = mirror.objects.values()
+    assert _archived(content) == content
+
+
+def test_scratch_originals_leave_the_runner_once_r2_admits_them(tmp_path, monkeypatch, r2_store):
+    monkeypatch.setattr(originals_module, "OBJECTS_PER_ARTIFACT", 2)
+    bodies = {f"raw-data/EPA/k{i}.json": f'{{"n": {i}}}'.encode() for i in range(5)}
+    seen: list[int] = []
+    with MirrulationsOriginals(tmp_path, mirrulations.BUCKET, publish=True, scratch=True) as retention:
+        for key, content in bodies.items():
+            retention.retain(key, content, {})
+            seen.append(sum(1 for path in (tmp_path / "mirrulations-originals").rglob("objects/sha256/*/*")))
+        retention.commit(bodies)
+
+    assert max(seen) <= 2, "at most one artifact's originals are on disk"
+    assert not any((tmp_path / "mirrulations-originals").iterdir())
+    assert not any((tmp_path / "source-evidence").iterdir())
+    assert all(_blob(r2_store, content) == content for content in bodies.values())
+    assert _raw_root().exists() is False or not any(_raw_root().rglob("objects/sha256/*/*"))
+    with pytest.raises(ValueError, match="only when R2"):
+        MirrulationsOriginals(tmp_path, mirrulations.BUCKET, publish=False, scratch=True)
+
+
+def test_derived_text_a_fill_cites_must_have_been_retained(tmp_path):
+    from spicy_regs.sources.derived_text import DerivedFill
+
+    fill = DerivedFill("text", json.dumps({"attachments": [{"key": "derived-data/EPA/x.txt"}]}))
+    with pytest.raises(SourceEvidenceError, match="without a retained original"):
+        with MirrulationsOriginals(tmp_path, mirrulations.BUCKET, publish=False) as retention:
+            retention.expect_fill(fill)
+            retention.commit()
+    with MirrulationsOriginals(tmp_path, mirrulations.BUCKET, publish=False) as retention:
+        retention.expect_fill(fill)
+        retention.retain("derived-data/EPA/x.txt", b"text", {})
+        retention.commit()
+
+
+class _StubObject:
+    def __init__(self, response: dict) -> None:
+        self.response, self.options = response, None
+
+    def get(self, **options) -> dict:
+        self.options = options
+        return self.response
+
+
+class _StubResource:
+    def __init__(self, response: dict) -> None:
+        self.object = _StubObject(response)
+
+    def Object(self, _bucket: str, _key: str) -> _StubObject:  # noqa: N802 - boto3 API
+        return self.object
+
+
+def test_the_wrapper_hands_the_reader_a_streaming_body_and_keeps_only_whole_objects(tmp_path, monkeypatch):
+    from botocore.response import StreamingBody
+
+    retention = MirrulationsOriginals(tmp_path, mirrulations.BUCKET, publish=False)
+    whole = retention.resource(_StubResource({"Body": _Body(b"abc"), "ContentLength": 3})).Object("b", "k").get()
+    assert isinstance(whole["Body"], StreamingBody) and list(whole["Body"].iter_chunks()) == [b"abc"]
+    assert retention.retained == {"k"}
+
+    for options, response in [
+        ({"Range": "bytes=0-1"}, {"Body": _Body(b"ab"), "ContentLength": 2}),
+        ({}, {"Body": _Body(b"ab"), "ContentLength": 2, "ContentRange": "bytes 0-1/3"}),
+        ({}, {"Body": _Body(b""), "ContentLength": originals_module.MAX_OBJECT_BYTES + 1}),
+    ]:
+        stub = _StubResource(response)
+        assert retention.resource(stub).Object("b", "partial").get(**options) is response
+    assert retention.retained == {"k"}
+    retention.commit()
 
 
 def test_large_passes_split_into_bounded_evidence_artifacts(tmp_path, monkeypatch, r2_store):
@@ -256,11 +347,14 @@ def test_large_passes_split_into_bounded_evidence_artifacts(tmp_path, monkeypatc
         assert r2_store.objects["source-evidence/blobs/sha256/" + hashlib.sha256(content).hexdigest()] == content
 
 
-def test_the_scheduled_etl_keeps_its_originals_in_the_failure_artifact():
+def test_the_scheduled_etl_passes_scratch_originals_that_the_cli_accepts():
     import yaml
 
     workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/etl-new-pipeline.yml").read_text())
     steps = workflow["jobs"]["etl-new"]["steps"]
     script = next(step["run"] for step in steps if step.get("name") == "Run new pipeline")
-    assert 'export SPICYGOV_RAW_ROOT="$GITHUB_WORKSPACE/output/raw-source-originals"' in script
-    assert next(step for step in steps if step.get("name") == "Upload artifacts (for debugging)")["with"]["path"] == "output/"
+    assert "ARGS+=(--scratch-originals)" in script and "ARGS+=(--use-iceberg --defer-comments-publication)" in script
+    _command, bound, *_ = regulations.app.parse_args(
+        ["--use-iceberg", "--defer-comments-publication", "--skip-upload", "--scratch-originals"]
+    )
+    assert bound.arguments["scratch_originals"] is True and bound.arguments["use_iceberg"] is True

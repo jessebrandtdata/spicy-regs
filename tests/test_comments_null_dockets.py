@@ -8,6 +8,8 @@ import duckdb
 import polars as pl
 import pytest
 
+from tests.regulatory_publication_fakes import install as install_publication
+
 from spicy_regs.comments_health import check_comments
 from spicy_regs.pipelines import regulations
 from spicy_regs.schemas import COMMENT, DOCKET
@@ -38,6 +40,9 @@ def test_reviewed_comments_survive_ingestion_and_public_mirror(tmp_path, monkeyp
     assert all(row["docket_id"] is None for row in expected)
     monkeypatch.setattr(regulations.mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
     monkeypatch.setattr(regulations.r2, "download", lambda *args, **kwargs: False)
+    # A catalog run keeps its originals in R2 even with --skip-upload.
+    install_publication(monkeypatch)
+    monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
 
     def connect(rt):
         con = duckdb.connect()

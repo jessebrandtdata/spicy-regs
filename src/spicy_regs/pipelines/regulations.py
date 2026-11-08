@@ -79,6 +79,7 @@ class RegulationsPipeline(Pipeline):
         use_iceberg: bool = False,
         enrich_text: bool = True,
         chunk_size: int = 0,
+        scratch_originals: bool = False,
         verbose: bool = False,
     ) -> None:
         self.agency = agency
@@ -97,6 +98,7 @@ class RegulationsPipeline(Pipeline):
         self.use_iceberg = use_iceberg
         self.enrich_text = enrich_text
         self.chunk_size = chunk_size
+        self.scratch_originals = scratch_originals
         self.verbose = verbose
         self._sweep_agencies: list[str] | None = None
         self._pending_text: PendingCommentText | None = None
@@ -106,6 +108,7 @@ class RegulationsPipeline(Pipeline):
         self._unresolved: UnresolvedKeys | None = None
         self._publication_index = None
         self._selected_inputs = None
+        self._run_originals: MirrulationsOriginals | None = None
 
     def _refuse_comments_without_catalog(self) -> None:
         """Comments merge only into the catalog (decision 40), so refuse before any manifest is read."""
@@ -136,10 +139,16 @@ class RegulationsPipeline(Pipeline):
             )
         logger.info("ETL manifest ready in {:.1f}s", monotonic() - started)
         with ExitStack() as resources:
+            # Exits last: an uncommitted artifact finishes after the pool has stopped reading.
+            originals = self._run_originals = resources.enter_context(self._retention(output_dir))
             if self.enrich_text and not self.skip_comments:
                 self._pending_text = PendingCommentText(output_dir, index=self._publication_index)
                 self._text_pool = resources.enter_context(
-                    DerivedTextPool(mirrulations.s3_resource, max_workers=self.text_workers)
+                    DerivedTextPool(
+                        lambda: originals.resource(mirrulations.s3_resource()),
+                        max_workers=self.text_workers,
+                        on_fill=originals.expect_fill,
+                    )
                 )
             self._run(manifest)
         logger.info("ETL batch completed in {:.1f}s", monotonic() - started)
@@ -218,25 +227,25 @@ class RegulationsPipeline(Pipeline):
         unresolved = UnresolvedKeys(self.output_dir or Path.cwd() / "output", index=self._publication_index)
         self._unresolved = unresolved
         source_types = {rt.name: source_record_type(rt) for rt in record_types}
-        with self._originals() as originals:
-            read = mirrulations.reader_factory(
-                list(source_types.values()),
-                processed_keys=manifest,
-                unresolved_keys=unresolved.for_reader,
-                since_year=self.since_year,
-                verbose=self.verbose,
-                resource_factory=lambda: originals.resource(mirrulations.s3_resource()),
-            )
-            result = stage_agencies(
-                agencies,
-                record_types,
-                staging_dir,
-                lambda agency, rt: read(agency, source_types[rt.name]),
-                transform_for=self._transform_for,
-                max_workers=self.max_workers,
-            )
-            # Before any merge or manifest can retire a key.
-            originals.commit(result.consumed_keys)
+        originals = self._originals()
+        read = mirrulations.reader_factory(
+            list(source_types.values()),
+            processed_keys=manifest,
+            unresolved_keys=unresolved.for_reader,
+            since_year=self.since_year,
+            verbose=self.verbose,
+            resource_factory=lambda: originals.resource(mirrulations.s3_resource()),
+        )
+        result = stage_agencies(
+            agencies,
+            record_types,
+            staging_dir,
+            lambda agency, rt: read(agency, source_types[rt.name]),
+            transform_for=self._transform_for,
+            max_workers=self.max_workers,
+        )
+        # Before any merge or manifest can use or retire what was read.
+        originals.commit(result.consumed_keys)
         logger.info("ETL source staging completed in {:.1f}s", monotonic() - started)
         started = monotonic()
         # 3. Transform: merge per-agency staging into the deduplicated dataset.
@@ -271,7 +280,9 @@ class RegulationsPipeline(Pipeline):
 
     def _retry_text(self, output_dir: Path, agencies: list[str]) -> None:
         if self._pending_text is not None and self._text_pool is not None:
-            self._pending_text.retry(self._text_pool, output_dir, agencies)
+            self._pending_text.retry(self._text_pool, output_dir, agencies, before_write=self._originals().commit)
+            # Texts fetched but not written are kept too, before checkpoints retire anything.
+            self._originals().commit()
 
     def _publish(
         self,
@@ -343,18 +354,17 @@ class RegulationsPipeline(Pipeline):
         total = len(keys)
         for start in range(0, total, self.chunk_size):
             chunk = keys[start : start + self.chunk_size]
-            with self._originals() as originals:
-                reader = mirrulations.MirrulationsReader(
-                    originals.resource(resource),
-                    mirrulations.BUCKET,
-                    mirrulations.PREFIX,
-                    agency,
-                    source_record_type(comment_rt),
-                    key_lister=lambda: chunk,
-                    unresolved_keys=[item for item in previous if item.key in chunk],
-                )
-                records = list(transform.apply(reader.iter_records()))
-                originals.commit(reader.last_keys)
+            reader = mirrulations.MirrulationsReader(
+                self._originals().resource(resource),
+                mirrulations.BUCKET,
+                mirrulations.PREFIX,
+                agency,
+                source_record_type(comment_rt),
+                key_lister=lambda: chunk,
+                unresolved_keys=[item for item in previous if item.key in chunk],
+            )
+            records = list(transform.apply(reader.iter_records()))
+            self._originals().commit(reader.last_keys)
             if records:
                 write_staging(agency, comment_rt.name, records, staging_dir, comment_rt.schema)
                 iceberg.merge_comments(staging_dir, comment_rt)
@@ -371,9 +381,21 @@ class RegulationsPipeline(Pipeline):
     # -- regulations-specific wiring ---------------------------------------
 
     def _originals(self) -> MirrulationsOriginals:
-        """One commit unit's original retention: local raw archive always, R2 when publishing."""
+        if self._run_originals is None:
+            raise RuntimeError("Mirrulations originals are retained only inside run()")
+        return self._run_originals
+
+    def _retention(self, output_dir: Path) -> MirrulationsOriginals:
+        """This run's original retention: the local raw archive always, and R2 whenever the run writes durably.
+
+        A ``skip_upload`` run with the catalog still merges rows into it, so its
+        originals publish too; only a fully local run keeps them local alone.
+        """
         return MirrulationsOriginals(
-            self.output_dir or Path.cwd() / "output", mirrulations.BUCKET, publish=not self.skip_upload
+            output_dir,
+            mirrulations.BUCKET,
+            publish=not self.skip_upload or self.use_iceberg,
+            scratch=self.scratch_originals,
         )
 
     def _transform_for(self, record_type: RecordType, *, attributes: bool = True) -> Transform:
@@ -575,6 +597,10 @@ def main(
             "Use for agencies too large to buffer in memory; requires --only-comments --use-iceberg."
         ),
     ] = 0,
+    scratch_originals: Annotated[
+        bool,
+        Parameter(help="Delete each batch's local Mirrulations originals once R2 has admitted them (hosted runners)"),
+    ] = False,
     verbose: Annotated[bool, Parameter(name=["--verbose", "-v"], help="Verbose logging")] = False,
 ) -> None:
     """Run the regulations.gov ETL pipeline."""
@@ -596,6 +622,7 @@ def main(
         use_iceberg=use_iceberg,
         enrich_text=enrich_text,
         chunk_size=chunk_size,
+        scratch_originals=scratch_originals,
         verbose=verbose,
     )
     if sweep:

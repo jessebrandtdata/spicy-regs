@@ -1,5 +1,6 @@
 """Retry failed attachment-text reads without replaying raw comment ingestion."""
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -122,12 +123,15 @@ class PendingCommentText:
                 publish=False,
             )
 
-    def retry(self, pool: DerivedTextPool, output_dir: Path, agencies: list[str]) -> None:
+    def retry(
+        self, pool: DerivedTextPool, output_dir: Path, agencies: list[str], *, before_write: Callable[[], None] = lambda: None,
+    ) -> None:
         """Retry prior failures still untouched by ingestion in the catalog; preserve current metadata.
 
         Re-read only the existing row's coordinates and text state. Rows already
         filled by another path are resolved without fetching or overwriting them.
         Missing/moved rows remain pending until their source ingestion resolves.
+        ``before_write`` runs before each catalog upsert (the ETL commits the originals it read).
         """
         rows = [row for row in self._retry.values() if row["agency_code"] in agencies]
         if not rows:
@@ -135,7 +139,7 @@ class PendingCommentText:
         logger.info("Retrying {} prior comment-text failures independently of raw keys", len(rows))
         pending = pl.from_dicts(rows, schema={name: pl.String for name in _COORDINATES})
         with TemporaryDirectory(dir=output_dir, prefix=".text-retry-") as staging:
-            self._retry_catalog(pool, pending, Path(staging) / "updates.parquet")
+            self._retry_catalog(pool, pending, Path(staging) / "updates.parquet", before_write)
 
     def _updates(self, pool: DerivedTextPool, candidates: pl.DataFrame, updates: Path) -> dict[str, int]:
         # No attachment gate: the retained failure proves the original row was
@@ -149,7 +153,9 @@ class PendingCommentText:
             observe=lambda result: self.observe(result, retry=True),
         )
 
-    def _retry_catalog(self, pool: DerivedTextPool, pending: pl.DataFrame, updates: Path) -> None:
+    def _retry_catalog(
+        self, pool: DerivedTextPool, pending: pl.DataFrame, updates: Path, before_write: Callable[[], None],
+    ) -> None:
         record_type = RECORD_TYPES["comments"]
         con = iceberg._connect_for_table(record_type)
         try:
@@ -171,6 +177,7 @@ class PendingCommentText:
                 ).pl()
                 stats = self._updates(pool, candidates, updates)
                 if stats["derived"]:
+                    before_write()
                     iceberg.upsert_comment_text(con, record_type, agency, updates)
         finally:
             con.close()

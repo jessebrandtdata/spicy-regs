@@ -45,7 +45,9 @@ class DerivedTextPool:
 
     def __init__(
         self, resource_factory: Callable[[], Any], *, max_workers: int = 8, progress_seconds: float = 30,
+        on_fill: Callable[[DerivedFill], None] | None = None,
     ) -> None:
+        """``on_fill`` sees each fill before its row can be written (the ETL registers the objects it cites)."""
         if max_workers < 1:
             raise ValueError("text workers must be positive")
         self.max_workers = min(max_workers, MAX_TEXT_WORKERS)
@@ -56,6 +58,7 @@ class DerivedTextPool:
         self._counts: Counter[str] = Counter()
         self._started = monotonic()
         self._progress_seconds = progress_seconds
+        self._on_fill = on_fill
         listings = DocketListings()
         fetchers: SimpleQueue[DerivedCommentText] = SimpleQueue()
         for _ in range(self.max_workers):
@@ -101,6 +104,8 @@ class DerivedTextPool:
                 fill = self._local.fetcher.fill_for(
                     record.get("agency_code"), record.get("docket_id"), record.get("comment_id")
                 )
+                if fill is not None and self._on_fill is not None:
+                    self._on_fill(fill)
                 result = TextResult(record, "derived" if fill else "missing", fill)
             except DerivedTextUnavailable as error:
                 result = TextResult(record, "failed", error=error)
