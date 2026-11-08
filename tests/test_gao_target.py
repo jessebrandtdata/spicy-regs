@@ -122,7 +122,7 @@ def test_complete_generation_candidate_uses_prior_pin_without_publication(tmp_pa
         from spicy_regs.source_evidence import verify_evidence
         evidence_dir = Path(report['evidence_directory'])
         admitted = verify_evidence(evidence_dir)
-        publication._publish_evidence(store, 'test', evidence_dir, admitted)
+        publication.publish_evidence(store, 'test', evidence_dir, admitted)
         events = [json.loads(line) for line in (evidence_dir/'journal.jsonl').read_text().splitlines()]
         page_event = next(event for event in events if event.get('stage') == 'gao-retained-product-page')
         assert page_event['evidence_policy'] == 'hash_only' and page_event['body_retained'] is False

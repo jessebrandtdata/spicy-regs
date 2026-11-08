@@ -1250,7 +1250,7 @@ class _EvidenceMembers:
             yield stream
 
 
-def _publish_evidence(client, bucket: str, path: Path, artifact) -> None:
+def publish_evidence(client, bucket: str, path: Path, artifact) -> None:
     """Upload one locally admitted evidence artifact, sending and reading back only new blob bytes.
 
     Blob members are content-addressed, so each is stored once at
@@ -1588,7 +1588,7 @@ def _stage_verified_generation(
             raise PublicationError("Source evidence belongs to a different family")
         if item.root["inputs"] != [value for value in artifact.root["inputs"] if value["role"] == PRIOR_ROLE]:
             raise PublicationError("Source evidence and generation name different inherited inputs")
-        _publish_evidence(client, bucket, path, item)
+        publish_evidence(client, bucket, path, item)
     # Members whose bytes the prior generation already holds under the same
     # digest are copied server-side instead of re-uploaded. The copy can never
     # publish wrong bytes: ``admit_artifact`` below re-verifies every member of

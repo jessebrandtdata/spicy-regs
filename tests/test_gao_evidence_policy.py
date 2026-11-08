@@ -20,7 +20,7 @@ def _published(evidence):
     artifact = evidence.seal(outcome="build-complete")
     verify_evidence(evidence.artifact_dir, expected_pin=artifact.pin)
     store = Store()
-    publication._publish_evidence(store, "bucket", evidence.artifact_dir, artifact)
+    publication.publish_evidence(store, "bucket", evidence.artifact_dir, artifact)
     assert all(CONTACT not in body for body in store.objects.values())
     assert not any("source-evidence/blobs/sha256/" + hashlib.sha256(CONTACT).hexdigest() in key
                    for key in store.objects)
