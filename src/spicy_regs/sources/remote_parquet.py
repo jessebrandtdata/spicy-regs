@@ -131,6 +131,66 @@ def open_pinned_http(url: str, *, etag: str) -> Iterator[io.BufferedIOBase]:
             tracked.close()
 
 
+class _PublishedRanges(io.RawIOBase):
+    """Exact ``Range: bytes=a-b`` reads of one published object, each held to its ETag and stored size.
+
+    smart_open's HTTP reader asks for open-ended ranges and drops each body on seek; measured on the bill-family
+    receipt member, its row-group read consumed 34 MB while the interface received about 414 MB (86 MB with exact ranges). A Parquet reader states every length.
+    """
+
+    def __init__(self, client: Any, url: str, *, byte_size: int):
+        self.client, self.url, self.size, self.position = client, url, byte_size, 0
+        head = client.head(url, headers={"Accept-Encoding": "identity"})
+        head.raise_for_status()
+        self.etag = head.headers.get("ETag")
+        if not self.etag or int(head.headers.get("Content-Length", -1)) != byte_size:
+            raise ValueError(f"Published member differs from its pinned byte size or has no ETag: {url}")
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return True
+
+    def tell(self) -> int:
+        return self.position
+
+    def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
+        self.position = {io.SEEK_SET: 0, io.SEEK_CUR: self.position, io.SEEK_END: self.size}[whence] + offset
+        return self.position
+
+    def readinto(self, buffer: Any) -> int:
+        view = memoryview(buffer).cast("B")
+        end = min(self.position + len(view), self.size)
+        if end <= self.position:
+            return 0
+        response = self.client.get(self.url, headers={
+            "Range": f"bytes={self.position}-{end - 1}", "If-Match": self.etag, "Accept-Encoding": "identity"})
+        response.raise_for_status()
+        data = response.content
+        if (response.status_code != 206 or response.headers.get("ETag") != self.etag
+                or response.headers.get("Content-Range") != f"bytes {self.position}-{end - 1}/{self.size}"
+                or len(data) != end - self.position):
+            raise ValueError(f"Published member changed or answered a different range: {self.url}")
+        view[: len(data)] = data
+        self.position = end
+        return len(data)
+
+
+@contextmanager
+def open_published_http(url: str, *, byte_size: int) -> Iterator[io.BufferedIOBase]:
+    """A seekable reader over a published member that issues only the ranges it is asked for.
+
+    The index pins size and SHA-256, not an ETag: one HEAD supplies the ETag that then holds every range to that
+    object. A partial read cannot check the whole-file SHA-256; the caller admits what it reads.
+    """
+    import httpx
+
+    with httpx.Client(timeout=120, follow_redirects=True, trust_env=False) as client:
+        # Unbuffered: a read-ahead buffer would fetch bytes past every stated length.
+        yield cast(io.BufferedIOBase, _PublishedRanges(client, url, byte_size=byte_size))
+
+
 class _HashingSink(io.RawIOBase):
     """Count and hash each accepted write without buffering a whole output file."""
 

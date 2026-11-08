@@ -83,11 +83,11 @@ class SelectedPriors:
     def get(self, dataset):
         if dataset in self.restored:
             if self.restored[dataset] is not None:
-                self.selected.select(dataset)
+                self.selected.select(dataset, scoped=dataset in CONGRESS)
                 self._check_processing(dataset)
             return self.restored[dataset]
         selected_policy = dataset_policy(dataset)
-        selection = self.selected.select(dataset)
+        selection = self.selected.select(dataset, scoped=dataset in CONGRESS)
         if selection is None:
             self.restored[dataset] = None
             return None
@@ -204,7 +204,7 @@ class SelectedPriors:
                                     for path in self.processing_members[dataset]]}
                       if source.is_dir() else pin(source))
         binding = {"dataset": dataset, "generationId": generation,
-                   "subjects": [pin(path) for path in subjects], "receipts": pin(receipts),
+                   "subjects": [pin(path) for path in subjects], "receipts": self.selected.receipts_pin(dataset, receipts),
                    "processing": processing}
         index = self.selected.index
         key = dataset + ".parquet"
@@ -272,7 +272,7 @@ class NativeReceiptLifecycle(RollupPipeline):
             dataset = key.removesuffix(".parquet")
             if prior.get(dataset) is None:
                 raise ValueError(f"Required selected processing input unavailable: {key}")
-            selection = prior.selected.select(dataset)
+            selection = prior.selected.select(dataset, scoped=dataset in CONGRESS)
             index = prior.selected.index
             owner = publication.table_owner(index, key) if index is not None else None
             if self._own(key, owner[0] if owner else None):
@@ -282,7 +282,7 @@ class NativeReceiptLifecycle(RollupPipeline):
             else:
                 for ordinal, path in enumerate(selection.subjects):
                     parents[f"{dataset}/subjects/{ordinal}.parquet"] = prior.selected.member_pin(path)
-            parents[f"{dataset}/etl_receipts.parquet"] = prior.selected.member_pin(selection.receipts)
+            parents[f"{dataset}/etl_receipts.parquet"] = prior.selected.receipts_pin(dataset, selection.receipts)
         self._primed_receipt_work = output_dir, private, prior
         return parents
 

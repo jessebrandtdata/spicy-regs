@@ -899,12 +899,12 @@ def _read_with_receipts_rows(subject_paths, receipt_paths, policy, *, generation
             yield subject | processing
 
 
-def _select_receipt_batches(parquet, destinations: Mapping[str, Path]) -> None:
+def _select_receipt_batches(parquet, destinations: Mapping[str, Path], row_groups: Sequence[int] | None = None) -> None:
     """Decode every source cell once and preserve each dataset's complete ordered outcomes."""
     with ExitStack() as stack:
         writers = {dataset: stack.enter_context(pq.ParquetWriter(path, RECEIPT_SCHEMA, compression="zstd"))
                    for dataset, path in destinations.items()}
-        for batch in parquet.iter_batches(batch_size=2000):
+        for batch in parquet.iter_batches(batch_size=2000, row_groups=row_groups):
             checkpoint()
             batch.validate(full=True)
             for dataset, writer in writers.items():
@@ -930,6 +930,35 @@ def select_receipt_family(path: ParquetInput, directory: Path, *, datasets: Sequ
 
         publish_directory_no_replace(staging, directory)
     return {dataset: directory / target.name for dataset, target in destinations.items()}
+
+
+def dataset_row_groups(parquet, dataset: str) -> list[int]:
+    """The row groups whose ``dataset`` statistics can hold ``dataset``'s receipts; a group without them is kept.
+
+    A writer's string bounds may be truncated, but stay bounds, so no group holding the dataset is skipped.
+    """
+    column = parquet.schema_arrow.get_field_index("dataset")
+    groups = []
+    for group in range(parquet.metadata.num_row_groups):
+        stats = parquet.metadata.row_group(group).column(column).statistics
+        if stats is None or not stats.has_min_max or stats.min <= dataset <= stats.max:
+            groups.append(group)
+    return groups
+
+
+def select_member_receipts(parquet, destination: Path, *, dataset: str) -> Path:
+    """Select ``dataset``'s receipts from an open shared-schema member, reading only the row groups that can hold them.
+
+    For a remote member this reads the footer and those groups instead of the whole file; the rows, their order and
+    the cell checks are :func:`select_receipts`' own. Admission remains a separate check.
+    """
+    if not parquet.schema_arrow.equals(RECEIPT_SCHEMA):
+        raise ValueError("Receipt member is not the shared receipt schema")
+    with TemporaryDirectory(dir=destination.parent) as scratch:
+        temporary = Path(scratch) / "rows.parquet"
+        _select_receipt_batches(parquet, {dataset: temporary}, dataset_row_groups(parquet, dataset))
+        temporary.replace(destination)
+    return destination
 
 
 def select_receipts(path: ParquetInput, destination: Path, *, dataset: str) -> Path:

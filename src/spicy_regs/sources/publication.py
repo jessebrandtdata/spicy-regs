@@ -722,6 +722,17 @@ def fetch_member(base_url: str, member: Member, local_path: Path, label: str | N
     return result
 
 
+@contextmanager
+def open_member(base_url: str, member: Member):
+    """A seekable ranged reader over one pinned member, held to its pinned size and one ETag (no whole-file hash)."""
+    from spicy_regs.sources.remote_parquet import open_published_http
+
+    if member.byte_size is None:
+        raise ValueError(f"A ranged read needs a pinned member: {member.path}")
+    with open_published_http(f"{base_url.rstrip('/')}/{member.path}", byte_size=member.byte_size) as stream:
+        yield stream
+
+
 def verify_member(base_url: str, member: Member, label: str | None = None) -> int:
     """Stream one pinned member as an anonymous consumer receives it and hold it to its pin; nothing is written.
 
