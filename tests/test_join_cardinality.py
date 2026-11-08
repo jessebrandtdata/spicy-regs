@@ -49,7 +49,8 @@ def test_full_selected_receipts_cover_new_keys_and_populated_attributes():
                                          "document_attributes","docket_attributes"}
     for join in measured:
         assert join.measurement is not None
-        assert join.expected_cardinality=="one"
+        # A native join keeps its declared current cardinality beside a one-parent measurement.
+        assert join.expected_cardinality in {"one", "many"}
         assert join.measurement["scope"]=="full_selected_inputs"
         assert (join.baseline_keys, join.baseline_missing) == (
             join.measurement["keys"], join.measurement["missing"])
@@ -74,8 +75,7 @@ def test_full_selected_receipts_cover_new_keys_and_populated_attributes():
 def test_dated_report_keys_keep_the_undated_measurement_as_historical_evidence():
     join = next(j for j in JOINS if j.child == "report_sections" and j.parent == "committee_reports")
     assert join.child_columns == join.parent_columns == ("package_id", "part_id", "last_modified")
-    assert join.kind == "unmeasured" and join.measurement is None
-    assert (join.baseline_keys, join.baseline_missing, join.floor_pct) == (0, 0, None)
+    assert join.measurement is not None and join.measurement["join"] == join.name
     path = Path(__file__).parents[1] / "src/spicy_regs/join_measurements.json"
     historical = next(row for row in json.loads(path.read_text())["results"]
                       if row["join"] == "report_sections.package_id+part_id -> committee_reports.package_id+part_id")
@@ -95,9 +95,9 @@ def test_changed_printing_keys_do_not_inherit_old_measurements():
 @pytest.mark.parametrize("parent", ["budget_volumes", "house_activity_reports"])
 def test_dated_metadata_body_can_match_multiple_parent_revisions(tmp_path, parent):
     join = next(j for j in JOINS if j.child == "document_citations" and j.parent == parent)
-    assert join.kind == "unmeasured" and join.measurement is None
+    assert join.kind == "scope" and join.measurement is not None and join.measurement["join"] == join.name
     assert join.expected_cardinality == "many"
-    assert (join.baseline_keys, join.baseline_missing, join.floor_pct) == (0, 0, None)
+    assert (join.baseline_keys, join.baseline_missing) == (join.measurement["keys"], join.measurement["missing"])
     child, parents = tmp_path / "citations.parquet", tmp_path / "parents.parquet"
     pq.write_table(pa.table({"document_key": ["pkg"], "body_version_id": ["same-body"]}), child)
     pq.write_table(pa.table({"package_id": ["pkg", "pkg"], "body_version_id": ["same-body", "same-body"],
@@ -112,8 +112,10 @@ def test_dated_metadata_body_can_match_multiple_parent_revisions(tmp_path, paren
         assert wrong["status"] == "MULTIPLICITY"
 
 
-def test_dated_report_section_key_has_no_undated_measurement():
+def test_dated_report_section_key_is_held_to_its_own_dated_measurement():
     join, = [j for j in JOINS if j.child == "report_sections" and j.parent == "committee_reports"]
     assert join.child_columns == join.parent_columns == ("package_id", "part_id", "last_modified")
-    assert join.kind == "unmeasured" and join.measurement is None
-    assert (join.baseline_keys, join.baseline_missing) == (0, 0)
+    measurement = join.measurement
+    assert join.kind == "complete" and measurement is not None and measurement["join"] == join.name
+    assert (join.baseline_keys, join.baseline_missing) == (measurement["keys"], measurement["missing"])
+    assert measurement["receipt"].startswith("docs/evidence/")

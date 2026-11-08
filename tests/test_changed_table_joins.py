@@ -123,6 +123,34 @@ def test_unreadable_public_input_fails_with_a_receipt(monkeypatch, tmp_path):
     assert json.loads(receipt.read_text())["selected"] == [join().name]
 
 
+def test_record_writes_measured_baselines_that_the_registry_then_enforces(monkeypatch, tmp_path):
+    for name, values in (("child", ["a", "b", "b"]), ("parent", ["a"])):
+        pq.write_table(pa.table({"id": pa.array(values, type=pa.string())}), tmp_path / f"{name}.parquet")
+    unmeasured = replace(join(), baseline_keys=0, kind="unmeasured")
+    empty = replace(join(), child="other_child", baseline_keys=0, kind="empty")
+    pq.write_table(pa.table({"id": pa.array([], type=pa.string())}), tmp_path / "other_child.parquet")
+    measurements = tmp_path / "join_measurements.json"
+    previous = {"join": "earlier", "keys": 1, "missing": 0}
+    measurements.write_text(json.dumps({"measured_on": "2026-09-27", "results": [previous]}))
+    monkeypatch.setattr(checker, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(checker, "MEASUREMENTS", measurements)
+    monkeypatch.setattr(table_joins, "JOINS", (unmeasured, empty))
+    monkeypatch.setattr(checker, "connect", duckdb.connect)
+    monkeypatch.setattr(checker, "table_urls", lambda _: lambda name: [str(tmp_path / f"{name}.parquet")])
+    receipt = tmp_path / "evidence.json"
+    args = ["--index-url", "https://example.org", "--receipt", str(receipt), "--record", unmeasured.name]
+    assert checker.main(args) == 0
+    earlier, recorded = json.loads(measurements.read_text())["results"]
+    assert earlier == previous
+    assert (recorded["join"], recorded["keys"], recorded["missing"], recorded["kind"]) == (unmeasured.name, 2, 1, "scope")
+    assert recorded["receipt"] == "evidence.json" and "status" not in recorded
+    with pytest.raises(SystemExit):
+        checker.main([*args[:-1], "not a declared join"])
+    # A join with no key has nothing to baseline, and the file stays as it was.
+    before = measurements.read_text()
+    assert checker.main([*args[:-1], empty.name]) == 1
+    assert measurements.read_text() == before
+
 @pytest.mark.integration
 def test_only_a_declared_empty_child_may_be_unpublished(monkeypatch, tmp_path):
     """Live httpfs over a local server: a 404 child of a declared-empty join is EMPTY; elsewhere it is unreadable."""

@@ -78,9 +78,8 @@ def test_native_citation_navigation_preserves_dated_parent_revisions(tmp_path, p
     assert historical.measurement["measured_expected_cardinality"] == "one"
     join = next(join for join in table_joins.JOINS
                 if join.child == "document_citations" and join.parent == parent)
-    assert join.kind == "unmeasured" and join.expected_cardinality == "many"
-    assert join.measurement is None
-    assert (join.baseline_keys, join.baseline_missing) == (0, 0)
+    assert join.kind == "scope" and join.expected_cardinality == "many"
+    assert join.measurement is not None and join.measurement["join"] == join.name
     child_file, parent_file = tmp_path / "citations.parquet", tmp_path / "revisions.parquet"
     pq.write_table(pa.table({"document_key": ["package"], "body_version_id": ["body"]}), child_file)
     pq.write_table(pa.table({"package_id": ["package", "package"], "body_version_id": ["body", "body"],
@@ -88,7 +87,7 @@ def test_native_citation_navigation_preserves_dated_parent_revisions(tmp_path, p
     urls = {join.child: [str(child_file)], join.parent: [str(parent_file)]}
     with duckdb.connect() as con:
         result = measure(con, join, urls.__getitem__)
-    assert result["status"] == "UNBASELINED"
+    assert result["status"] == "OK"
     assert result["inner_join_rows"] == 2 and result["max_parent_multiplicity"] == 2
     assert result["missing"] == 0
 

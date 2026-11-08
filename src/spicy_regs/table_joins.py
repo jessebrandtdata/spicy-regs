@@ -1038,16 +1038,31 @@ _MEASURED_BY_NAME = {item["join"]: item for item in _MEASUREMENTS["results"]}
 # Explicit current rules survive a historical measurement when native keys change.
 _DECLARED_CARDINALITIES = {join.name: join.expected_cardinality for join in JOINS
                            if join.expected_cardinality != "unspecified"}
-JOINS = tuple(
-    replace(join, baseline_keys=measurement["keys"], baseline_missing=measurement["missing"],
-            kind=measurement.get("kind", join.kind) if measurement.get("receipt") else "complete",
-            expected_cardinality="one", measurement=measurement,
-            reason=join.reason if measurement.get("receipt") else f"Full selected-input measurement on {measurement.get('measured_on', _MEASUREMENTS['measured_on'])}; "
-                   "immutable URLs, SQL and cardinality in join_measurements.json. "
-                   + measurement.get("reason", "Full-key hardening does not assert prior production amplification."))
-    if (measurement := _MEASURED_BY_NAME.get(join.name)) is not None else join
-    for join in JOINS
-)
+
+
+def _measured(join, *, declared_cardinality=False):
+    """Hold a join to the full selected-input measurement recorded under its current name.
+
+    A measurement expects one parent per key. A native join keeps its declared
+    current cardinality instead (a dated parent can hold several revisions), while
+    the historical source measurement it replaced keeps its own.
+    """
+    measurement = _MEASURED_BY_NAME.get(join.name)
+    if measurement is None:
+        return join
+    receipt = measurement.get("receipt")
+    return replace(
+        join, baseline_keys=measurement["keys"], baseline_missing=measurement["missing"],
+        kind=measurement.get("kind", join.kind) if receipt else "complete",
+        expected_cardinality=(join.expected_cardinality if declared_cardinality and join.expected_cardinality != "unspecified"
+                              else "one"),
+        measurement=measurement,
+        reason=join.reason if receipt else f"Full selected-input measurement on {measurement.get('measured_on', _MEASUREMENTS['measured_on'])}; "
+               "immutable URLs, SQL and cardinality in join_measurements.json. "
+               + measurement.get("reason", "Full-key hardening does not assert prior production amplification."))
+
+
+JOINS = tuple(_measured(join) for join in JOINS)
 
 
 # Source joins retain their measured keys, including processing observations.
@@ -1125,7 +1140,9 @@ def _native_join(join):
                            "remains in processing_joins; this subject-key relationship has no measured baseline yet."))
 
 
-JOINS = tuple(_native_join(join) for join in SOURCE_JOINS if not _processing_join(join))
+# A native key change drops the source measurement; one recorded under the native name applies.
+JOINS = tuple(_measured(_native_join(join), declared_cardinality=True)
+              for join in SOURCE_JOINS if not _processing_join(join))
 RETIRED_PROCESSING_JOINS = tuple(join for join in SOURCE_JOINS
                                if _processing_join(join) or _native_join(join) != join)
 

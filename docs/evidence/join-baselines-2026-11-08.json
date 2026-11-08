@@ -1,0 +1,110 @@
+{
+ "base": "https://data.spicygov.ai",
+ "changed_since": null,
+ "selected": [
+  "report_sections.package_id+part_id+last_modified -> committee_reports.package_id+part_id+last_modified",
+  "document_citations.document_key+body_version_id -> budget_volumes.package_id+body_version_id",
+  "document_citations.document_key+body_version_id -> house_activity_reports.package_id+body_version_id"
+ ],
+ "removed": [],
+ "results": [
+  {
+   "join": "report_sections.package_id+part_id+last_modified -> committee_reports.package_id+part_id+last_modified",
+   "kind": "unmeasured",
+   "status": "UNBASELINED",
+   "keys": 201,
+   "missing": 0,
+   "resolved_pct": 100.0,
+   "floor_pct": null,
+   "baseline_keys": 0,
+   "baseline_missing": 0,
+   "examples": [],
+   "child_input_rows": 2884,
+   "child_nonnull_rows": 2884,
+   "parent_input_rows": 201,
+   "parent_distinct_keys": 201,
+   "parent_duplicate_keys": 0,
+   "max_parent_multiplicity": 1,
+   "max_matched_parent_multiplicity": 1,
+   "inner_join_rows": 2884,
+   "left_join_nonnull_rows": 2884,
+   "scope": "full_selected_inputs",
+   "child_urls": [
+    "https://data.spicygov.ai/generations/committee-reports/640381dc2ee07d4dab33ed21b161f83cef3700ca6c3550f6df21253db66e9844/report_sections.parquet"
+   ],
+   "parent_urls": [
+    "https://data.spicygov.ai/generations/committee-reports/640381dc2ee07d4dab33ed21b161f83cef3700ca6c3550f6df21253db66e9844/committee_reports.parquet"
+   ],
+   "sql": "\n        WITH child_input AS (SELECT \"package_id\", \"part_id\", \"last_modified\" FROM read_parquet(['https://data.spicygov.ai/generations/committee-reports/640381dc2ee07d4dab33ed21b161f83cef3700ca6c3550f6df21253db66e9844/report_sections.parquet'], hive_partitioning = false)),\n             parent_input AS (SELECT \"package_id\", \"part_id\", \"last_modified\" FROM read_parquet(['https://data.spicygov.ai/generations/committee-reports/640381dc2ee07d4dab33ed21b161f83cef3700ca6c3550f6df21253db66e9844/committee_reports.parquet'], hive_partitioning = false)),\n             c AS (SELECT \"package_id\" AS c0, \"part_id\" AS c1, \"last_modified\" AS c2, count(*) AS child_rows\n                   FROM child_input WHERE \"package_id\" IS NOT NULL AND \"part_id\" IS NOT NULL AND \"last_modified\" IS NOT NULL\n                   GROUP BY ALL),\n             p AS (SELECT \"package_id\" AS p0, \"part_id\" AS p1, \"last_modified\" AS p2, count(*) AS parent_rows\n                   FROM parent_input WHERE \"package_id\" IS NOT NULL AND \"part_id\" IS NOT NULL AND \"last_modified\" IS NOT NULL\n                   GROUP BY ALL),\n             j AS (SELECT c0, c1, c2, child_rows, coalesce(parent_rows, 0) AS parent_rows\n                   FROM c LEFT JOIN p ON c.c0 = p.p0 AND c.c1 = p.p1 AND c.c2 = p.p2)\n        SELECT count(*) AS keys, count(*) FILTER (WHERE parent_rows=0) AS missing,\n               (list(concat_ws('|', c0, c1, c2) ORDER BY c0, c1, c2) FILTER (WHERE parent_rows=0))[1:3] AS examples,\n               (SELECT count(*) FROM child_input) AS child_input_rows,\n               coalesce(sum(child_rows),0) AS child_nonnull_rows,\n               (SELECT count(*) FROM parent_input) AS parent_input_rows,\n               (SELECT count(*) FROM p) AS parent_distinct_keys,\n               (SELECT count(*) FROM p WHERE parent_rows>1) AS parent_duplicate_keys,\n               coalesce((SELECT max(parent_rows) FROM p),0) AS max_parent_multiplicity,\n               coalesce(max(parent_rows),0) AS max_matched_parent_multiplicity,\n               coalesce(sum(child_rows*parent_rows),0) AS inner_join_rows,\n               coalesce(sum(child_rows*greatest(parent_rows,1)),0) AS left_join_nonnull_rows\n        FROM j",
+   "expected_cardinality": "one"
+  },
+  {
+   "join": "document_citations.document_key+body_version_id -> budget_volumes.package_id+body_version_id",
+   "kind": "unmeasured",
+   "status": "UNBASELINED",
+   "keys": 80,
+   "missing": 54,
+   "resolved_pct": 32.5,
+   "floor_pct": null,
+   "baseline_keys": 0,
+   "baseline_missing": 0,
+   "examples": [
+    "CRPT-117hrpt700|body:sha256:b1c700229629f312acc01f1ae1bfc85a8035e2e2ad9bf12987ae875b973cbe25",
+    "CRPT-117hrpt701|body:sha256:7e6f0fdbd6317a6d747b386e76c4de1e978cfcb11c71ce24d508441e4f01f515",
+    "CRPT-117hrpt702|body:sha256:b5acdf764d27d52cd2ee996318985cf42802c832f726542e5ae8f1c7eb3c3fff"
+   ],
+   "child_input_rows": 52977,
+   "child_nonnull_rows": 52977,
+   "parent_input_rows": 29,
+   "parent_distinct_keys": 29,
+   "parent_duplicate_keys": 0,
+   "max_parent_multiplicity": 1,
+   "max_matched_parent_multiplicity": 1,
+   "inner_join_rows": 17033,
+   "left_join_nonnull_rows": 52977,
+   "scope": "full_selected_inputs",
+   "child_urls": [
+    "https://data.spicygov.ai/generations/print-citations/efa0e8597653f1889c3cba48806cc63f5c16a27ef70d012908bc55dfdbaa8399/document_citations.parquet"
+   ],
+   "parent_urls": [
+    "https://data.spicygov.ai/generations/print-citations/efa0e8597653f1889c3cba48806cc63f5c16a27ef70d012908bc55dfdbaa8399/budget_volumes.parquet"
+   ],
+   "sql": "\n        WITH child_input AS (SELECT \"document_key\", \"body_version_id\" FROM read_parquet(['https://data.spicygov.ai/generations/print-citations/efa0e8597653f1889c3cba48806cc63f5c16a27ef70d012908bc55dfdbaa8399/document_citations.parquet'], hive_partitioning = false)),\n             parent_input AS (SELECT \"package_id\", \"body_version_id\" FROM read_parquet(['https://data.spicygov.ai/generations/print-citations/efa0e8597653f1889c3cba48806cc63f5c16a27ef70d012908bc55dfdbaa8399/budget_volumes.parquet'], hive_partitioning = false)),\n             c AS (SELECT \"document_key\" AS c0, \"body_version_id\" AS c1, count(*) AS child_rows\n                   FROM child_input WHERE \"document_key\" IS NOT NULL AND \"body_version_id\" IS NOT NULL\n                   GROUP BY ALL),\n             p AS (SELECT \"package_id\" AS p0, \"body_version_id\" AS p1, count(*) AS parent_rows\n                   FROM parent_input WHERE \"package_id\" IS NOT NULL AND \"body_version_id\" IS NOT NULL\n                   GROUP BY ALL),\n             j AS (SELECT c0, c1, child_rows, coalesce(parent_rows, 0) AS parent_rows\n                   FROM c LEFT JOIN p ON c.c0 = p.p0 AND c.c1 = p.p1)\n        SELECT count(*) AS keys, count(*) FILTER (WHERE parent_rows=0) AS missing,\n               (list(concat_ws('|', c0, c1) ORDER BY c0, c1) FILTER (WHERE parent_rows=0))[1:3] AS examples,\n               (SELECT count(*) FROM child_input) AS child_input_rows,\n               coalesce(sum(child_rows),0) AS child_nonnull_rows,\n               (SELECT count(*) FROM parent_input) AS parent_input_rows,\n               (SELECT count(*) FROM p) AS parent_distinct_keys,\n               (SELECT count(*) FROM p WHERE parent_rows>1) AS parent_duplicate_keys,\n               coalesce((SELECT max(parent_rows) FROM p),0) AS max_parent_multiplicity,\n               coalesce(max(parent_rows),0) AS max_matched_parent_multiplicity,\n               coalesce(sum(child_rows*parent_rows),0) AS inner_join_rows,\n               coalesce(sum(child_rows*greatest(parent_rows,1)),0) AS left_join_nonnull_rows\n        FROM j",
+   "expected_cardinality": "many"
+  },
+  {
+   "join": "document_citations.document_key+body_version_id -> house_activity_reports.package_id+body_version_id",
+   "kind": "unmeasured",
+   "status": "UNBASELINED",
+   "keys": 80,
+   "missing": 38,
+   "resolved_pct": 52.5,
+   "floor_pct": null,
+   "baseline_keys": 0,
+   "baseline_missing": 0,
+   "examples": [
+    "BUDGET-2024-APP|body:sha256:3176922505d0f479ddc852f460f6b0e55017d14f2d5df825211410dc2ae61f1a",
+    "BUDGET-2024-BALANCES|body:sha256:0571c0298ea7043fde1853119b85eb48153ed5be08253d89a1401fcfb69b2323",
+    "BUDGET-2024-BUD|body:sha256:c344335685063f2281b802fb92395fd3c205499435f31334b8c0b07eaf311a07"
+   ],
+   "child_input_rows": 52977,
+   "child_nonnull_rows": 52977,
+   "parent_input_rows": 42,
+   "parent_distinct_keys": 42,
+   "parent_duplicate_keys": 0,
+   "max_parent_multiplicity": 1,
+   "max_matched_parent_multiplicity": 1,
+   "inner_join_rows": 35872,
+   "left_join_nonnull_rows": 52977,
+   "scope": "full_selected_inputs",
+   "child_urls": [
+    "https://data.spicygov.ai/generations/print-citations/efa0e8597653f1889c3cba48806cc63f5c16a27ef70d012908bc55dfdbaa8399/document_citations.parquet"
+   ],
+   "parent_urls": [
+    "https://data.spicygov.ai/generations/print-citations/efa0e8597653f1889c3cba48806cc63f5c16a27ef70d012908bc55dfdbaa8399/house_activity_reports.parquet"
+   ],
+   "sql": "\n        WITH child_input AS (SELECT \"document_key\", \"body_version_id\" FROM read_parquet(['https://data.spicygov.ai/generations/print-citations/efa0e8597653f1889c3cba48806cc63f5c16a27ef70d012908bc55dfdbaa8399/document_citations.parquet'], hive_partitioning = false)),\n             parent_input AS (SELECT \"package_id\", \"body_version_id\" FROM read_parquet(['https://data.spicygov.ai/generations/print-citations/efa0e8597653f1889c3cba48806cc63f5c16a27ef70d012908bc55dfdbaa8399/house_activity_reports.parquet'], hive_partitioning = false)),\n             c AS (SELECT \"document_key\" AS c0, \"body_version_id\" AS c1, count(*) AS child_rows\n                   FROM child_input WHERE \"document_key\" IS NOT NULL AND \"body_version_id\" IS NOT NULL\n                   GROUP BY ALL),\n             p AS (SELECT \"package_id\" AS p0, \"body_version_id\" AS p1, count(*) AS parent_rows\n                   FROM parent_input WHERE \"package_id\" IS NOT NULL AND \"body_version_id\" IS NOT NULL\n                   GROUP BY ALL),\n             j AS (SELECT c0, c1, child_rows, coalesce(parent_rows, 0) AS parent_rows\n                   FROM c LEFT JOIN p ON c.c0 = p.p0 AND c.c1 = p.p1)\n        SELECT count(*) AS keys, count(*) FILTER (WHERE parent_rows=0) AS missing,\n               (list(concat_ws('|', c0, c1) ORDER BY c0, c1) FILTER (WHERE parent_rows=0))[1:3] AS examples,\n               (SELECT count(*) FROM child_input) AS child_input_rows,\n               coalesce(sum(child_rows),0) AS child_nonnull_rows,\n               (SELECT count(*) FROM parent_input) AS parent_input_rows,\n               (SELECT count(*) FROM p) AS parent_distinct_keys,\n               (SELECT count(*) FROM p WHERE parent_rows>1) AS parent_duplicate_keys,\n               coalesce((SELECT max(parent_rows) FROM p),0) AS max_parent_multiplicity,\n               coalesce(max(parent_rows),0) AS max_matched_parent_multiplicity,\n               coalesce(sum(child_rows*parent_rows),0) AS inner_join_rows,\n               coalesce(sum(child_rows*greatest(parent_rows,1)),0) AS left_join_nonnull_rows\n        FROM j",
+   "expected_cardinality": "many"
+  }
+ ]
+}

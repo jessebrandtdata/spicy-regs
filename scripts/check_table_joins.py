@@ -8,8 +8,9 @@ join reports a few orphans beyond those its floor admits as LAG
 (``Join.lag_allowance``) rather than failing, since a growing child can name a
 key its parent publishes a run later. A declared-empty child that now publishes keys fails too, until its
 baseline is recorded. Reads the publisher the output ledger names, or an explicit
-``--index-url``, never a default. Read-only: it downloads column pages and
-writes nothing but an optional receipt.
+``--index-url``, never a default. It downloads column pages and writes nothing
+but an optional receipt, except that ``--record`` also records each named join's
+measurement as its baseline in ``join_measurements.json``.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Callable, Iterable, Sequence
+from datetime import date
 from pathlib import Path
 
 import duckdb
@@ -32,6 +34,9 @@ from spicy_regs.sources import publication
 EXIT_UNREACHABLE = 3
 FAILING = ("BELOW", "UNBASELINED", "EMPTIED", "MULTIPLICITY")
 REPO_ROOT = Path(__file__).resolve().parents[1]
+MEASUREMENTS = REPO_ROOT / "src/spicy_regs/join_measurements.json"
+#: Fields describing the declaration before this measurement, not the measurement itself.
+_DECLARATION_FIELDS = ("status", "floor_pct", "baseline_keys", "baseline_missing")
 
 
 def previous_record(commit: str) -> dict:
@@ -181,6 +186,29 @@ def check(con: duckdb.DuckDBPyConnection, joins: Iterable[table_joins.Join],
     return [measure(con, join, url_of) for join in joins]
 
 
+def record_baselines(joins: Sequence[table_joins.Join], results: Sequence[dict], receipt: Path,
+                     measured_on: str, path: Path) -> None:
+    """Record each measurement as its join's baseline, replacing one recorded under the same name.
+
+    An ``unmeasured`` join becomes ``complete`` when every key resolves and ``scope``
+    otherwise; other kinds keep their declaration. A join with no key, or with more
+    parent rows than its declared cardinality admits, has no baseline to record.
+    """
+    record = json.loads(path.read_text())
+    entries = {entry["join"]: entry for entry in record["results"]}
+    for join, result in zip(joins, results, strict=True):
+        if result["status"] in ("EMPTY", "EMPTIED", "MULTIPLICITY"):
+            raise ValueError(f"{join.name}: {result['status']} has no baseline to record")
+        kind = join.kind if join.kind != "unmeasured" else ("scope" if result["missing"] else "complete")
+        entries[join.name] = {
+            **{key: value for key, value in result.items() if key not in _DECLARATION_FIELDS},
+            "kind": kind, "measured_on": measured_on, "receipt": receipt.resolve().relative_to(REPO_ROOT).as_posix(),
+            "measured_expected_cardinality": "one" if result["max_parent_multiplicity"] <= 1 else "many",
+        }
+    record["results"] = list(entries.values())
+    path.write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
+
+
 def _line(result: dict) -> str:
     pct = "n/a" if result["resolved_pct"] is None else f"{result['resolved_pct']:.4f}%"
     floor = "none" if result["floor_pct"] is None else f"{result['floor_pct']:.4f}%"
@@ -197,10 +225,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--changed-since", help="Check only declarations added or changed since this full Git commit SHA")
     parser.add_argument("--aggregate", action="append", help="Run this named aggregate check instead of join checks; repeatable")
     parser.add_argument("--timeout-seconds", type=float, default=90, help="Aggregate query timeout, at most 90 seconds")
+    parser.add_argument("--record", action="append", metavar="JOIN",
+                        help="Measure this declared join (its full name) and record the result as its baseline in "
+                             "join_measurements.json, citing --receipt; repeatable")
     args = parser.parse_args(argv)
     if args.changed_since and args.aggregate:
         parser.error("--changed-since selects joins and cannot be used with --aggregate")
+    if args.record and (args.changed_since or args.aggregate or not args.receipt
+                        or not args.receipt.resolve().is_relative_to(REPO_ROOT)):
+        parser.error("--record needs a --receipt inside the repository it cites and cannot be combined with "
+                     "--changed-since or --aggregate")
     joins, removed = list(table_joins.JOINS), []
+    if args.record:
+        declared = {join.name: join for join in joins}
+        if unknown := [name for name in args.record if name not in declared]:
+            parser.error(f"Not a declared join: {unknown[0]}")
+        joins = [declared[name] for name in dict.fromkeys(args.record)]
     if args.changed_since:
         try:
             joins, removed = changed_joins(joins, previous_record(args.changed_since))
@@ -257,6 +297,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.receipt.write_text(json.dumps({"base": base, "changed_since": args.changed_since,
                                           "selected": [join.name for join in joins], "removed": removed,
                                           "results": results}, indent=1) + "\n")
+    if args.record:
+        try:
+            record_baselines(joins, results, args.receipt, date.today().isoformat(), MEASUREMENTS)
+        except ValueError as exc:
+            print(f"Baselines NOT recorded: {exc}", file=sys.stderr)
+            return 1
+        print(f"Recorded {len(joins)} baselines in {MEASUREMENTS.relative_to(REPO_ROOT)}; "
+              "run `spicy-regs-dict generate` to refresh table_joins.json")
+        return 0
     failed = [result for result in results if result["status"] in FAILING]
     counts = {status: sum(r["status"] == status for r in results) for status in dict.fromkeys(r["status"] for r in results)}
     print(" ".join(f"{status}={count}" for status, count in counts.items()))
