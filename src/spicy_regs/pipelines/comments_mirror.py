@@ -203,6 +203,44 @@ def check_receipt_rows(output_dir: Path, files: dict[str, dict], exported_rows: 
         raise RuntimeError("Refusing the comments receipt: " + "; ".join(errors))
 
 
+def receipt_files(receipt: dict | None) -> dict[str, dict] | None:
+    """The receipt's file descriptors when they meet the published-receipt rules, else ``None``.
+
+    Each names a fixed mirror key with a stored version and the digest the publisher read back; the agency files
+    hold the monolith's rows. A receipt failing these rules binds nothing.
+    """
+    files = receipt.get("files") if isinstance(receipt, dict) else None
+    if not isinstance(files, dict) or not {"comments.parquet", "comments_index.parquet"} < files.keys():
+        return None
+    for key, item in files.items():
+        if key not in {"comments.parquet", "comments_index.parquet"} and not _AGENCY_KEY.fullmatch(key):
+            return None
+        if (not isinstance(item, dict) or not isinstance(item.get("etag"), str) or not item["etag"]
+                or not isinstance(item.get("bytes"), int) or item["bytes"] <= 0
+                or not isinstance(item.get("rows"), int) or item["rows"] < 0
+                or not isinstance(item.get("sha256"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])):
+            return None
+    if files["comments.parquet"]["rows"] < MIN_EXPECTED_ROWS or files["comments_index.parquet"]["rows"] < 1:
+        return None
+    if sum(item["rows"] for key, item in files.items() if _AGENCY_KEY.fullmatch(key)) != files["comments.parquet"]["rows"]:
+        return None
+    return files
+
+
+def receipt_source(receipt: dict | None) -> iceberg.CatalogPairSnapshot | None:
+    """The catalog pair a receipt was exported from; ``None`` for a receipt that predates pair snapshots."""
+    source = receipt.get("source") if isinstance(receipt, dict) else None
+    if not isinstance(source, dict):
+        return None
+    try:
+        receipts = iceberg.CatalogSnapshot(**source["receipts"])
+        return iceberg.CatalogPairSnapshot(source["table_uuid"], int(source["snapshot_id"]), int(source["schema_id"]),
+                                           receipts)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def _receipt_matches(receipt: dict | None, snapshot: iceberg.CatalogPairSnapshot, base_url: str) -> bool:
     """A successful receipt plus unchanged public/storage versions permits a no-op."""
     if not isinstance(receipt, dict) or receipt.get("format_version") != FORMAT_VERSION:
@@ -214,21 +252,8 @@ def _receipt_matches(receipt: dict | None, snapshot: iceberg.CatalogPairSnapshot
         return False
     if publication.current_index(base_url)["families"].get("comments") != generation:
         return False
-    files = receipt.get("files")
-    if not isinstance(files, dict) or not {"comments.parquet", "comments_index.parquet"} < files.keys():
-        return False
-    for key, item in files.items():
-        if key not in {"comments.parquet", "comments_index.parquet"} and not _AGENCY_KEY.fullmatch(key):
-            return False
-        if (not isinstance(item, dict) or not isinstance(item.get("etag"), str) or not item["etag"]
-                or not isinstance(item.get("bytes"), int) or item["bytes"] <= 0
-                or not isinstance(item.get("rows"), int) or item["rows"] < 0
-                or not isinstance(item.get("sha256"), str)
-                or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])):
-            return False
-    if files["comments.parquet"]["rows"] < MIN_EXPECTED_ROWS or files["comments_index.parquet"]["rows"] < 1:
-        return False
-    if sum(item["rows"] for key, item in files.items() if _AGENCY_KEY.fullmatch(key)) != files["comments.parquet"]["rows"]:
+    files = receipt_files(receipt)
+    if files is None:
         return False
 
     def unchanged(entry: tuple[str, dict]) -> bool:

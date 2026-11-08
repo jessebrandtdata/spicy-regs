@@ -1,15 +1,14 @@
 name: Check comments freshness
 
-# Guards against the comments read surface drifting behind the comments_index.
-# The counts (comments_index / feed_summary / agency_stats) and the row-level
-# `comments` table are produced by different steps, so they can diverge — the
-# index advertising comments for a month the row data doesn't actually contain.
-# That exact gap (OMB-2026-0034: ~39k June-2026 comments in the index, zero rows
-# in `comments`) is what drove the Iceberg cutover; this check makes a recurrence
-# visible instead of silent.
-#
-# Checks raw catalog uniqueness, public monolith and agency partitions, and
-# exact agency/docket/month agreement with the index. The shared writer queue
+# Guards against the comments read surface drifting from what was verified. The
+# publisher checks unique IDs, monolith and agency-file coverage of the index and
+# retention of every prior ID before upload, then reads back each public file's
+# SHA-256 into comments-publication.json. This job binds the current state to that
+# receipt: every public file must keep its receipted ETag and size, and the catalog
+# must be reachable from the receipt's source snapshot through compaction alone.
+# Only a broken catalog binding reads rows: raw catalog IDs and agency/docket/month
+# counts must then equal the public index (OMB-2026-0034: ~39k June-2026 comments in
+# the index, zero rows in `comments`, drove this check). The shared writer queue
 # prevents a scheduled check from reading a catalog during replacement.
 on:
   schedule:
@@ -17,10 +16,15 @@ on:
   workflow_dispatch:
     inputs:
       agency:
-        description: 'Restrict the check to a single agency_code'
+        description: 'Also verify this agency_code catalog rows against the public index'
         required: false
         default: ''
         type: string
+      verify_content:
+        description: 'Verify all catalog rows against the public index even when the snapshot is bound'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: comments-catalog-write
@@ -55,16 +59,19 @@ jobs:
       - name: Check comments freshness
         env:
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL || format('https://data.{0}', vars.SPICYREGS_DOMAIN || 'spicy-regs.dev') }}
-          # Verify both the anonymous mirror and physical catalog rows.
           AGENCY: ${{ inputs.agency }}
+          VERIFY_CONTENT: ${{ inputs.verify_content }}
           R2_CATALOG_URI: ${{ secrets.R2_CATALOG_URI }}
           R2_CATALOG_WAREHOUSE: ${{ secrets.R2_CATALOG_WAREHOUSE }}
           R2_CATALOG_TOKEN: ${{ secrets.R2_CATALOG_TOKEN }}
           R2_CATALOG_NAMESPACE: ${{ secrets.R2_CATALOG_NAMESPACE }}
         run: |
           : "${R2_PUBLIC_URL:?Set R2_PUBLIC_URL to the public data URL for this repository}"
-          ARGS=(--surface both)
+          ARGS=()
           if [ -n "$AGENCY" ]; then
             ARGS+=(--agency "$AGENCY")
+          fi
+          if [ "$VERIFY_CONTENT" = "true" ]; then
+            ARGS+=(--verify-content)
           fi
           uv run --frozen python scripts/check_comments_freshness.py "${ARGS[@]}"

@@ -167,7 +167,7 @@ jobs:
         run: |
           : "${R2_PUBLIC_URL:?Set the fork public data URL}"
           uv run --frozen python scripts/check_refresh_inputs.py verify
-      - name: Read back public comments and verify raw catalog integrity
+      - name: Bind public comments and the catalog to the publication receipt
         env:
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL || format('https://data.{0}', vars.SPICYREGS_DOMAIN || 'spicy-regs.dev') }}
           R2_CATALOG_URI: ${{ secrets.R2_CATALOG_URI }}
@@ -184,5 +184,5 @@ jobs:
             PYTHONPATH="$COMMENTS_V1_CHECKOUT/src" uv run --frozen python \
               "$COMMENTS_V1_CHECKOUT/scripts/check_comments_freshness.py" --surface catalog
           else
-            uv run --frozen python scripts/check_comments_freshness.py --surface both
+            uv run --frozen python scripts/check_comments_freshness.py
           fi

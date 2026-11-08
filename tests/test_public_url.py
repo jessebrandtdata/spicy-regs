@@ -104,7 +104,7 @@ def test_freshness_uses_publisher_url_and_explicit_argument(tmp_path, monkeypatc
         ("_comments-mirror.yml", "Publish comments mirror from the catalog"),
         ("_comments-mirror.yml", "Capture published base versions for dependent jobs"),
         ("_regulations-refresh.yml", "Confirm dependent jobs used unchanged base versions"),
-        ("_regulations-refresh.yml", "Read back public comments and verify raw catalog integrity"),
+        ("_regulations-refresh.yml", "Bind public comments and the catalog to the publication receipt"),
     ],
 )
 def test_workflow_refuses_missing_public_url_before_any_reader(tmp_path, workflow, step_name):
