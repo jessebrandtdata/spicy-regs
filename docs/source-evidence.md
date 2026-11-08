@@ -282,6 +282,17 @@ publications also retain originals through the existing R2 evidence writer.
 `tests/test_federal_register_retention.py` exercises recovery after runner loss,
 malformed input and interrupted publication with local fixtures.
 
+The regulations ETL (`run-pipeline`) retains every Mirrulations object it
+reads, from November 2026, through the same owner
+(`pipelines/mirrulations_originals.py`, family `regulations-mirrulations`).
+Each GET body is kept before the reader parses it, with its key, ETag,
+VersionId, LastModified and fetch time; there is no second GET. A publishing
+pass sends new originals to `source-evidence/blobs/sha256/` before any row
+merges or key is manifested, and refuses that batch if any retention failed or
+any retiring key has no retained original. Its scheduled workflow uses the
+same `raw-source-originals` root. Objects processed before this change were
+not retained; Mirrulations may have replaced them since.
+
 To locate published observations, follow the table artifact's `source-evidence`
 input to `source-evidence/<artifactDigest-without-sha256:>/artifact.json`,
 `members.json` and `journal.jsonl`. Each `retained-file` event identifies its URL,

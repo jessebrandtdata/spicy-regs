@@ -3,8 +3,9 @@
 This is also the run file: invoke it via the ``run-pipeline`` console script,
 e.g. ``uv run run-pipeline --skip-upload --since-year 2025``. ``run()`` reads
 top-to-bottom as the data flow: prime the incremental Manifest and existing
-output, extract every agency's record streams in parallel into staging Parquet,
-merge and deduplicate the staging, then save the Manifest and publish to R2
+output, extract every agency's record streams in parallel into staging Parquet while
+keeping each fetched original (``mirrulations_originals``), merge and
+deduplicate the staging, then save the Manifest and publish to R2
 (``_publish``, which advances the manifest strictly last). Publishing stays off
 until this path is vetted; pass ``--no-skip-upload`` to turn it on. The
 reusable pieces live elsewhere — connection details and the reader factory in
@@ -30,6 +31,7 @@ from spicy_docs.sources import mirrulations
 from spicy_regs.manifest import Manifest
 from spicy_regs.pipelines.regulations_state import UnresolvedKeys, source_record_type
 from spicy_regs.pipelines.base import Pipeline
+from spicy_regs.pipelines.mirrulations_originals import MirrulationsOriginals
 from spicy_regs.pipelines.staging import stage_agencies
 from spicy_regs.schemas import RECORD_TYPES, RecordType
 from spicy_regs.sources import iceberg, r2
@@ -216,21 +218,25 @@ class RegulationsPipeline(Pipeline):
         unresolved = UnresolvedKeys(self.output_dir or Path.cwd() / "output", index=self._publication_index)
         self._unresolved = unresolved
         source_types = {rt.name: source_record_type(rt) for rt in record_types}
-        read = mirrulations.reader_factory(
-            list(source_types.values()),
-            processed_keys=manifest,
-            unresolved_keys=unresolved.for_reader,
-            since_year=self.since_year,
-            verbose=self.verbose,
-        )
-        result = stage_agencies(
-            agencies,
-            record_types,
-            staging_dir,
-            lambda agency, rt: read(agency, source_types[rt.name]),
-            transform_for=self._transform_for,
-            max_workers=self.max_workers,
-        )
+        with self._originals() as originals:
+            read = mirrulations.reader_factory(
+                list(source_types.values()),
+                processed_keys=manifest,
+                unresolved_keys=unresolved.for_reader,
+                since_year=self.since_year,
+                verbose=self.verbose,
+                resource_factory=lambda: originals.resource(mirrulations.s3_resource()),
+            )
+            result = stage_agencies(
+                agencies,
+                record_types,
+                staging_dir,
+                lambda agency, rt: read(agency, source_types[rt.name]),
+                transform_for=self._transform_for,
+                max_workers=self.max_workers,
+            )
+            # Before any merge or manifest can retire a key.
+            originals.commit(result.consumed_keys)
         logger.info("ETL source staging completed in {:.1f}s", monotonic() - started)
         started = monotonic()
         # 3. Transform: merge per-agency staging into the deduplicated dataset.
@@ -337,16 +343,18 @@ class RegulationsPipeline(Pipeline):
         total = len(keys)
         for start in range(0, total, self.chunk_size):
             chunk = keys[start : start + self.chunk_size]
-            reader = mirrulations.MirrulationsReader(
-                resource,
-                mirrulations.BUCKET,
-                mirrulations.PREFIX,
-                agency,
-                source_record_type(comment_rt),
-                key_lister=lambda: chunk,
-                unresolved_keys=[item for item in previous if item.key in chunk],
-            )
-            records = list(transform.apply(reader.iter_records()))
+            with self._originals() as originals:
+                reader = mirrulations.MirrulationsReader(
+                    originals.resource(resource),
+                    mirrulations.BUCKET,
+                    mirrulations.PREFIX,
+                    agency,
+                    source_record_type(comment_rt),
+                    key_lister=lambda: chunk,
+                    unresolved_keys=[item for item in previous if item.key in chunk],
+                )
+                records = list(transform.apply(reader.iter_records()))
+                originals.commit(reader.last_keys)
             if records:
                 write_staging(agency, comment_rt.name, records, staging_dir, comment_rt.schema)
                 iceberg.merge_comments(staging_dir, comment_rt)
@@ -361,6 +369,12 @@ class RegulationsPipeline(Pipeline):
             logger.info("[{}] comments: committed {}/{}", agency, start + len(chunk), total)
 
     # -- regulations-specific wiring ---------------------------------------
+
+    def _originals(self) -> MirrulationsOriginals:
+        """One commit unit's original retention: local raw archive always, R2 when publishing."""
+        return MirrulationsOriginals(
+            self.output_dir or Path.cwd() / "output", mirrulations.BUCKET, publish=not self.skip_upload
+        )
 
     def _transform_for(self, record_type: RecordType, *, attributes: bool = True) -> Transform:
         """Build the staging transform for one record type.

@@ -228,11 +228,8 @@ def test_selected_failed_coverage_is_retried_before_new_work(tmp_path, monkeypat
     }
     resource = Recording(store)
     original = mirrulations.reader_factory
-    monkeypatch.setattr(
-        mirrulations,
-        "reader_factory",
-        lambda *a, **kw: original(*a, **kw, download_workers=1, resource_factory=lambda: resource),
-    )
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: resource)
+    monkeypatch.setattr(mirrulations, "reader_factory", lambda *a, **kw: original(*a, **kw, download_workers=1))
     RegulationsPipeline(allow_fresh_start=True, agency="EPA", output_dir=tmp_path, skip_comments=True).run()
     assert asked == [old, new]
     assert pq.read_table(tmp_path / "dockets.parquet").num_rows == 2

@@ -190,6 +190,10 @@ jobs:
           if [ "$FULL_REFRESH" = "true" ]; then ARGS+=(--full-refresh); fi
           if [ "$ALLOW_FRESH_START" = "true" ]; then ARGS+=(--allow-fresh-start); else ARGS+=(--no-allow-fresh-start); fi
           if [ "$SKIP_UPLOAD" = "true" ]; then ARGS+=(--skip-upload); else ARGS+=(--no-skip-upload); fi
+          # Every Mirrulations object read is retained here before it is parsed; a successful
+          # pass also publishes it to R2 source-evidence/ before its rows merge or its key is
+          # manifested. The failure artifact below keeps a failed pass's originals.
+          export SPICYGOV_RAW_ROOT="$GITHUB_WORKSPACE/output/raw-source-originals"
           echo "Running: uv run run-pipeline ${ARGS[*]}"
           uv run run-pipeline "${ARGS[@]}"
 
