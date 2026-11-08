@@ -690,7 +690,7 @@ def test_merge_refuses_unclassified_or_lossy_source_before_casting(tmp_path, loc
 def test_paired_export_checks_receipt_history_even_when_subject_snapshot_is_unchanged(monkeypatch, operation, unchanged):
     snapshot = iceberg.CatalogPairSnapshot('subjects', 1, 0, iceberg.CatalogSnapshot('receipts', 2, 0))
     monkeypatch.setattr(iceberg, '_connect', duckdb.connect)
-    monkeypatch.setattr(iceberg, '_table_metadata', lambda *_: _metadata((1, None, 'append'), uuid='subjects'))
-    monkeypatch.setattr(iceberg, '_receipt_metadata', lambda *_: _metadata(
+    monkeypatch.setattr(iceberg, '_table_metadata', lambda *_, **__: _metadata((1, None, 'append'), uuid='subjects'))
+    monkeypatch.setattr(iceberg, '_receipt_metadata', lambda *_, **__: _metadata(
         (2, None, 'append'), (3, 2, operation), uuid='receipts'))
     assert iceberg.rows_unchanged_since(COMMENT, snapshot) is unchanged

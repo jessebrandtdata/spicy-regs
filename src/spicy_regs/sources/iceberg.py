@@ -588,12 +588,18 @@ def _compacted_only(metadata: dict, snapshot: CatalogSnapshot) -> bool:
 
 
 def rows_unchanged_since(record_type: RecordType, snapshot: CatalogPairSnapshot) -> bool:
-    """Require unchanged subject and receipt rows, allowing compaction of either table."""
+    """Require unchanged subject and receipt rows, allowing compaction of either table.
+
+    Reads table metadata only. ``snapshot`` was pinned under the initialization check, and a pair reached through
+    ``replace`` commits alone keeps that table, schema and initialization receipt, so the check's scan of every
+    receipt row (78 s on the 26.5M-row table, 2026-11-08) proves nothing more here.
+    """
+    namespace = _catalog_namespace(record_type)
     con = _connect()
     try:
         with _transaction(con):
-            return (_compacted_only(_table_metadata(con, record_type), snapshot)
-                    and _compacted_only(_receipt_metadata(con, record_type), snapshot.receipts))
+            return (_compacted_only(_table_metadata(con, record_type, namespace=namespace), snapshot)
+                    and _compacted_only(_receipt_metadata(con, record_type, namespace=namespace), snapshot.receipts))
     finally:
         con.close()
 
