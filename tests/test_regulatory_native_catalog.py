@@ -588,3 +588,60 @@ def test_a_catalog_in_an_earlier_shape_is_refused_naming_its_columns(con):
     con.execute(f'ALTER TABLE {native.qualified(COMMENT)} DROP COLUMN pdf_extraction_results_json')
     with pytest.raises(ValueError, match=r"differs from declared policy: missing \['pdf_extraction_results_json'\]"):
         native.require_initialized(con, COMMENT)
+
+
+def _rewrite_accepted_receipts(con, processor):
+    """Make every accepted comments receipt input-less, as the 2026-11-08 rebuild copied them."""
+    import pyarrow as pa
+    from spicy_regs.etl_receipts import RECEIPT_SCHEMA, exact_json, _digest
+    rows = con.execute(f"SELECT * FROM {native.receipts_table()} WHERE outcome='accepted'").to_arrow_table().to_pylist()
+    for row in rows:
+        old_id = row['receipt_id']
+        row.update(processor=processor, processing_json=exact_json({}))
+        row['receipt_id'] = _digest({k: v for k, v in row.items() if k != 'receipt_id'})
+        con.register('_promoted', pa.Table.from_pylist([row], schema=RECEIPT_SCHEMA))
+        con.execute(f'DELETE FROM {native.receipts_table()} WHERE receipt_id=?', [old_id])
+        con.execute(f'INSERT INTO {native.receipts_table()} SELECT * FROM _promoted')
+        con.unregister('_promoted')
+
+
+_RESTRICTED = '[{"title":"t","formats":[{"url":"u","format":"pdf","size":4}],"restrictReason":"r"}]'
+_CANONICAL = ('[{"title":"t","formats":[{"url":"u","format":"pdf","size":4}],"attachment_id":null,'
+              '"restrict_reason":"r","restrict_reason_type":null}]')
+
+
+@pytest.mark.parametrize('route', ['batch', 'row'])
+def test_promotion_receipts_restore_from_subjects_and_allow_replacement(con, monkeypatch, route):
+    from spicy_regs import comments_bulk
+    from spicy_regs.transforms.regulations_receipts import COMMENTS_PROMOTION_PROCESSOR
+    expected = source(con, attachments=_RESTRICTED)
+    con.execute("INSERT INTO source SELECT * REPLACE ('c2' AS comment_id, NULL AS attachments_json) FROM source")
+    iceberg.replace_rows(con, COMMENT, 'source')
+    _rewrite_accepted_receipts(con, COMMENTS_PROMOTION_PROCESSOR)
+    if route == 'batch':
+        monkeypatch.setattr(native, 'read_with_receipts', lambda *a, **k: pytest.fail('row fallback'))
+    else:
+        def unproven(*args, **kwargs):
+            raise etl_bulk.NotBulkEligible('forced row reader')
+        monkeypatch.setattr(comments_bulk, 'restore_catalog', unproven)
+    restored = native.processing_table(con, COMMENT)
+    actual = {row['comment_id']: row for row in con.execute(f'SELECT * FROM {restored}').to_arrow_table().to_pylist()}
+    assert actual['c1'] == expected | {'attachments_json': _CANONICAL}
+    assert actual['c2'] == expected | {'comment_id': 'c2', 'attachments_json': None}
+    # A nightly replacement restores the prior rows, commits, and reads its own rows back.
+    prior = native.processing_table(con, COMMENT, where="comment_id='c1'")
+    source(con, text='second', attachments=_RESTRICTED)
+    iceberg.replace_rows(con, COMMENT, 'source', expected_prior=prior)
+    assert con.execute(f'SELECT comment_id, text_content FROM {iceberg._qualified(COMMENT)} ORDER BY 1').fetchall() == [
+        ('c1', 'second'), ('c2', 'first')]
+    # The rewritten row now holds a normal receipt with its input; the untouched one keeps its promotion receipt.
+    assert con.execute(f"SELECT processor FROM {native.receipts_table()} WHERE outcome='accepted' "
+                       'ORDER BY 1').fetchall() == [(COMMENTS_PROMOTION_PROCESSOR,), ('regulatory-catalog-native-v1',)]
+
+
+def test_input_less_receipt_from_another_processor_still_refuses(con):
+    source(con)
+    iceberg.replace_rows(con, COMMENT, 'source')
+    _rewrite_accepted_receipts(con, 'regulatory-catalog-native-v1')
+    with pytest.raises(ValueError, match='exact retained processor input is required'):
+        native.processing_table(con, COMMENT)

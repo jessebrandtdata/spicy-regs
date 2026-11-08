@@ -918,3 +918,42 @@ def test_scheduled_rulemaking_refuses_unselected_agenda_before_stages(tmp_path, 
     with pytest.raises(ValueError, match='requires selected native input'):
         RulemakingDatasetPipeline(output_dir=tmp_path).run()
     assert not (tmp_path / 'proceedings.parquet').exists()
+
+
+@pytest.mark.parametrize("attachments_json", [
+    None, "[]", "null", "[null]",
+    '[{"title":"t","formats":null,"attachment_id":"a"}]',
+    '[{"title":"t","formats":[],"restrictReason":"r","restrictReasonType":"x"}]',
+    '[{"formats":[{"url":"u","format":"pdf","size":4},null]},{"title":"é😀\\n"}]',
+])
+@pytest.mark.parametrize("duplicate_comments", [None, 0, 7])
+def test_comments_promotion_input_round_trips_its_subject(attachments_json, duplicate_comments):
+    from spicy_regs.transforms.regulations_receipts import (
+        COMMENTS_PROMOTION_PROCESSOR, _processor_input, comments_promotion_input)
+    from spicy_regs.transforms.regulations_shape import shape_record
+    source = {"comment_id": "c1", "comment": "<p>one&amp;two</p>", "attachments_json": attachments_json,
+              "duplicate_comments": duplicate_comments}
+    subject = pa.Table.from_pylist([shape_record("comments", source)], schema=subject_schema("comments")).to_pylist()[0]
+    derived = _processor_input("comments", subject, processor=COMMENTS_PROMOTION_PROCESSOR)
+    assert list(derived) == [name for name, _ in SOURCE_COLUMNS["comments"]]
+    assert derived["duplicate_comments"] == duplicate_comments
+    # Canonical, not the original spelling: shaping it again reproduces the same subject and input.
+    again = pa.Table.from_pylist([shape_record("comments", derived)], schema=subject_schema("comments")).to_pylist()[0]
+    assert again == subject
+    assert comments_promotion_input(again, COMMENTS_PROMOTION_PROCESSOR) == derived
+
+
+def test_comments_missing_input_refuses_unless_its_receipt_is_a_promotion_receipt():
+    from spicy_regs.transforms.regulations_receipts import (
+        COMMENTS_PROMOTION_PROCESSOR, _retained_processor_input, comments_promotion_input)
+    from spicy_regs.transforms.regulations_shape import shape_record
+    subject = pa.Table.from_pylist([shape_record("comments", {"comment_id": "c1"})],
+                                   schema=subject_schema("comments")).to_pylist()[0]
+    for processor in (None, "regulatory-catalog-native-v1", "comments-selected-policy-promotion/2"):
+        assert comments_promotion_input(subject, processor) is None
+        with pytest.raises(ValueError, match="exact retained processor input is required"):
+            _retained_processor_input("comments", subject, processor=processor)
+    # A promotion receipt carrying any processing field is not the input-less receipt this rule covers.
+    assert comments_promotion_input(subject | {"input_metadata": {}}, COMMENTS_PROMOTION_PROCESSOR) is None
+    with pytest.raises(ValueError, match="exact retained processor input is required"):
+        _retained_processor_input("documents", {"document_id": "d"}, processor=COMMENTS_PROMOTION_PROCESSOR)

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from functools import cache
 from contextlib import ExitStack
 from hashlib import file_digest, sha256
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -141,18 +142,52 @@ def _comments_processor_input(original):
     return normalize_source_record("comments", original)
 
 
-def _retained_processor_input(dataset, row):
-    """Historical normalized input, or Comments' one retained original row."""
+#: Processor of the comments receipts that ``scripts/prepare_comments_selected_export.py`` wrote and the
+#: 2026-11-08 catalog rebuild (``scripts/rebuild_native_catalog.py``, ticket ss-zyr1) copied into the live catalog.
+COMMENTS_PROMOTION_PROCESSOR = "comments-selected-policy-promotion/3"
+
+
+def comments_promotion_input(row: Mapping, processor: str | None) -> dict | None:
+    """The processor input of a carried-over comments promotion receipt, or None for any other receipt.
+
+    Why: promotion receipts carry ``processing_json={}``; their originals stay in the pinned v1 pair, not in the
+    receipt. Without this rule every catalog read that replays such a row (nightly merges, ``replace_native``
+    and its readback, the rebuild's processing smoke) refuses, and published comments stay frozen at 2026-10-10.
+    The rule: for that one processor, the input is the selected native subject converted back to
+    ``SOURCE_COLUMNS`` (``attachments`` re-encoded as ``attachments_json``; ``comment_text`` is derived).
+    What proves it: before replacing, the rebuild proved every one of its 26,418,078 rows equal, on all 21 shared
+    columns, to the prior catalog, whose receipts held the per-row input; callers still require ``shape_record``
+    of this input to reproduce the subject exactly. It is canonical, not the original bytes: JSON spelling and
+    absent-versus-null attachment keys stay only in the v1 pair. When it stops mattering: each nightly
+    replacement rewrites the row with a normal ``regulatory-catalog-native-v1`` receipt holding its input.
+    ``row`` is the subject plus that receipt's processing fields. Any other processor, or a receipt with any
+    processing field, returns None, so other missing input still refuses.
+    """
+    if processor != COMMENTS_PROMOTION_PROCESSOR or any(name in row for name in policy("comments").receipt_fields):
+        return None
+    attachments = row["attachments"]
+    encoded = None if attachments is None else json.dumps(attachments, ensure_ascii=False, separators=(",", ":"))
+    return {name: encoded if name == "attachments_json" else row[name] for name, _ in SOURCE_COLUMNS["comments"]}
+
+
+def _retained_processor_input(dataset, row, *, processor=None):
+    """Historical normalized input, Comments' one retained original row, or its promotion-receipt input.
+
+    ``processor`` is the receipt's processor when the caller has it; without it a promotion receipt refuses.
+    """
     value = row.get("raw_conversion_inputs")
-    if dataset == "comments" and not isinstance(value, Mapping) and isinstance(row.get("raw_source_record"), Mapping):
-        value = _comments_processor_input(row["raw_source_record"])
+    if dataset == "comments" and not isinstance(value, Mapping):
+        if isinstance(row.get("raw_source_record"), Mapping):
+            value = _comments_processor_input(row["raw_source_record"])
+        else:
+            value = comments_promotion_input(row, processor)
     if not isinstance(value, Mapping):
         raise ValueError(f"{dataset}: exact retained processor input is required")
     return dict(value)
 
 
-def _processor_input(dataset, row):
-    value = _retained_processor_input(dataset, row)
+def _processor_input(dataset, row, *, processor=None):
+    value = _retained_processor_input(dataset, row, processor=processor)
     shaped = shape_record(dataset, value)
     schema = subject_schema(dataset)
     reproduced = pa.Table.from_pylist([shaped], schema=schema).to_pylist()[0]
@@ -618,7 +653,6 @@ def build_from_receipts(
 @cache
 def _source_record_projection(dataset: str):
     """The same Regulations.gov mapper for source writing and input replay."""
-    import json
     from spicy_regs.schemas.regulations import RECORD_TYPES
     from spicy_regs.transforms.regulations_attributes import _projection_and_digest
 

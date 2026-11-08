@@ -150,11 +150,34 @@ def write_bundle(source: Path, subjects: Path, receipts: Path, *, policy: Datase
             refusals_last=True, segments=_segments, isolate='_large')
 
 
+def _accepted_join(subjects: Path, receipts: Path, columns: str) -> str:
+    """Admitted subjects joined to their accepted receipts, in subject file order.
+
+    Admission already checked the exact canonical identity and accepted joins.
+    Decode its sole comment_id value to join; SQL spelling of control escapes
+    never becomes a second identity calculation here.
+    """
+    identity = "json_extract_string(r.identity_json, '$[1][0][1][1][1]')"
+    return f"""SELECT {columns}
+        FROM read_parquet({_text(subjects)}, file_row_number=true) n
+        JOIN read_parquet({_text(receipts)}) r ON n.comment_id={identity}
+        WHERE r.dataset='comments' AND r.outcome='accepted' ORDER BY n.file_row_number"""
+
+
+def receipt_processors(subjects: Path, receipts: Path):
+    """``(comment_id, processor)`` per admitted subject in file order, for the row reader's promotion rule."""
+    with etl_bulk.bulk_connection() as (con, _):
+        for batch in con.execute(_accepted_join(subjects, receipts, 'n.comment_id, r.processor')).to_arrow_reader(_BATCH):
+            yield from zip(batch.column(0).to_pylist(), batch.column(1).to_pylist())
+
+
 def restore_catalog(subjects: Path, receipts: Path, destination: Path, *, generation_id: str) -> int:
     """Restore catalog comments after complete admission and shared mapper proof.
 
     The catalog retains one original row; readers normalize it when needed.
-    Earlier receipts with explicit normalized inputs remain readable.
+    Earlier receipts with explicit normalized inputs remain readable, and
+    carried-over promotion receipts take theirs from the subject row
+    (``comments_promotion_input``) without a row-reader fallback.
     Batch shaping uses the same mapper as _processor_input, followed by one Arrow
     conversion per batch. Any unproven value returns the whole pair to that row
     reader so it decides the exact first error. A DuckDB or Arrow failure does
@@ -165,21 +188,15 @@ def restore_catalog(subjects: Path, receipts: Path, destination: Path, *, genera
     from tempfile import TemporaryDirectory
     from spicy_regs.etl_receipts import decode_exact_json, exact_json
     from spicy_regs.transforms.regulations_shape import RECEIPT_COLUMNS, shape_record
-    from spicy_regs.transforms.regulations_receipts import policy as selected_policy, _retained_processor_input
+    from spicy_regs.transforms.regulations_receipts import (
+        COMMENTS_PROMOTION_PROCESSOR, comments_promotion_input, policy as selected_policy, _retained_processor_input)
 
     selected = selected_policy('comments')
     etl_bulk.validate_bundle({'comments': [subjects]}, [receipts], [selected], generation_id=generation_id)
     schema = pa.schema([(name, TYPES[kind]) for name, kind in SOURCE_COLUMNS['comments']])
     expected = pq.ParquetFile(subjects).metadata.num_rows
-    # Admission already checked the exact canonical identity and accepted joins.
-    # Decode its sole comment_id value to join; SQL spelling of control escapes
-    # never becomes a second identity calculation here.
-    identity = "json_extract_string(r.identity_json, '$[1][0][1][1][1]')"
-    query = f"""SELECT n.* EXCLUDE(file_row_number), n.file_row_number AS _ordinal,
-                       r.processing_json AS _processing
-        FROM read_parquet({_text(subjects)}, file_row_number=true) n
-        JOIN read_parquet({_text(receipts)}) r ON n.comment_id={identity}
-        WHERE r.dataset='comments' AND r.outcome='accepted' ORDER BY n.file_row_number"""
+    query = _accepted_join(subjects, receipts, 'n.* EXCLUDE(file_row_number), n.file_row_number AS _ordinal, '
+                                               'r.processing_json AS _processing, r.processor AS _processor')
     destination.parent.mkdir(parents=True, exist_ok=True)
     seen = 0
     try:
@@ -192,9 +209,17 @@ def restore_catalog(subjects: Path, receipts: Path, destination: Path, *, genera
                     if table['_ordinal'].to_pylist() != list(range(seen, seen+batch.num_rows)):
                         raise RuntimeError('comments: restored subject order or membership changed')
                     held = [decode_exact_json(value) for value in table['_processing'].to_pylist()]
-                    if any(values.get('input_metadata') != {} for values in held):
-                        raise etl_bulk.NotBulkEligible('Comments catalog restore requires empty processor metadata')
-                    raw = [_retained_processor_input('comments', values) for values in held]
+                    processors = table['_processor'].to_pylist()
+                    # Promotion receipts hold no input; their subject rows supply it (see comments_promotion_input).
+                    subject_rows = (table.select(selected.subject_schema.names).to_pylist()
+                                    if COMMENTS_PROMOTION_PROCESSOR in processors else None)
+                    raw = []
+                    for index, values in enumerate(held):
+                        promoted = (None if subject_rows is None else
+                                    comments_promotion_input(subject_rows[index] | values, processors[index]))
+                        if promoted is None and values.get('input_metadata') != {}:
+                            raise etl_bulk.NotBulkEligible('Comments catalog restore requires empty processor metadata')
+                        raw.append(promoted if promoted is not None else _retained_processor_input('comments', values))
                     if any(not isinstance(value, Mapping) for value in raw):
                         raise etl_bulk.NotBulkEligible('Comments exact retained processor input is required')
                     shaped = [shape_record('comments', value) for value in raw]

@@ -402,9 +402,19 @@ def processing_table(con, record_type, *, where: str | None = None, in_transacti
                        receipts, RECEIPT_SCHEMA)
             restored = work / 'processing.parquet'
             def source_rows():
+                from spicy_regs.transforms.regulations_receipts import _processor_input
+                # Comments' promotion receipts need their processor (comments_promotion_input).
+                processors = None
+                if dataset == 'comments':
+                    from spicy_regs.comments_bulk import receipt_processors
+                    processors = receipt_processors(subject, receipts)
                 for row in read_with_receipts([subject], [receipts], policy(dataset), generation_id=generation):
-                    from spicy_regs.transforms.regulations_receipts import _processor_input
-                    yield _processor_input(dataset, row)
+                    processor = None
+                    if processors is not None:
+                        comment_id, processor = next(processors, (None, None))
+                        if comment_id != row['comment_id']:
+                            raise ValueError('comments: receipt processors differ from the admitted subject order')
+                    yield _processor_input(dataset, row, processor=processor)
             batch_restored = False
             if dataset == 'comments':
                 from spicy_regs import comments_bulk, etl_bulk
