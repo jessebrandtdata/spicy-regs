@@ -28,7 +28,7 @@ from spicy_regs.etl_receipts import (
     ReceiptContext, _digest, _rows, comments_receipt_diagnostics, exact_json,
     selected_subject_policy, write_dataset,
 )
-from spicy_regs.transforms.regulations_receipts import policy
+from spicy_regs.transforms.regulations_receipts import COMMENTS_PROMOTION_PROCESSOR, policy
 
 
 FIELDS = (
@@ -186,7 +186,7 @@ from pathlib import Path
 import json, sys
 from spicy_regs.sources import iceberg
 from spicy_regs.schemas.regulations import RECORD_TYPES
-from spicy_regs.transforms.regulations_receipts import policy
+from spicy_regs.transforms.regulations_receipts import COMMENTS_PROMOTION_PROCESSOR, policy
 assert policy('comments').policy_version == 'regulations-native-v1'
 rt = RECORD_TYPES['comments']
 if len(sys.argv) == 2:
@@ -301,7 +301,7 @@ def prepare(pair: Path, destination: Path, *, captured_input=None, captured_inpu
                 row.setdefault(name, None)
             if set(row) != current.input_fields:
                 raise ValueError("Retained comments fields differ from current policy")
-            context = context_for(prior, str(count), "comments-selected-policy-promotion/3")
+            context = context_for(prior, str(count), COMMENTS_PROMOTION_PROCESSOR)
             yield {name: row[name] for name in current.subject_schema.names}, context
             count += 1
 
@@ -615,7 +615,7 @@ import sys
 import pyarrow.parquet as pq
 from spicy_regs.sources import iceberg, regulatory_catalog
 from spicy_regs.schemas.regulations import RECORD_TYPES
-from spicy_regs.transforms.regulations_receipts import policy
+from spicy_regs.transforms.regulations_receipts import COMMENTS_PROMOTION_PROCESSOR, policy
 assert policy('comments').policy_version == 'regulations-native-v1'
 rt = RECORD_TYPES['comments']
 snapshot = iceberg.catalog_snapshot(rt)

@@ -402,12 +402,15 @@ def processing_table(con, record_type, *, where: str | None = None, in_transacti
                        receipts, RECEIPT_SCHEMA)
             restored = work / 'processing.parquet'
             def source_rows():
-                from spicy_regs.transforms.regulations_receipts import _processor_input
-                # Comments' promotion receipts need their processor (comments_promotion_input).
+                from spicy_regs.transforms.regulations_receipts import COMMENTS_PROMOTION_PROCESSOR, _processor_input
+                # Comments' promotion receipts need their processor (comments_promotion_input). Pair processors
+                # with subjects only when a promotion receipt is present.
                 processors = None
-                if dataset == 'comments':
+                if dataset == 'comments' and con.execute(
+                        'SELECT 1 FROM read_parquet(?) WHERE processor=? LIMIT 1',
+                        [str(receipts), COMMENTS_PROMOTION_PROCESSOR]).fetchone():
                     from spicy_regs.comments_bulk import receipt_processors
-                    processors = receipt_processors(subject, receipts)
+                    processors = receipt_processors(subject, receipts, directory=work)
                 for row in read_with_receipts([subject], [receipts], policy(dataset), generation_id=generation):
                     processor = None
                     if processors is not None:
@@ -415,6 +418,8 @@ def processing_table(con, record_type, *, where: str | None = None, in_transacti
                         if comment_id != row['comment_id']:
                             raise ValueError('comments: receipt processors differ from the admitted subject order')
                     yield _processor_input(dataset, row, processor=processor)
+                if processors is not None and next(processors, None) is not None:
+                    raise ValueError('comments: receipt processors differ from the admitted subject order')
             batch_restored = False
             if dataset == 'comments':
                 from spicy_regs import comments_bulk, etl_bulk

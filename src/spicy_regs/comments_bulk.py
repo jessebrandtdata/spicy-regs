@@ -164,9 +164,13 @@ def _accepted_join(subjects: Path, receipts: Path, columns: str) -> str:
         WHERE r.dataset='comments' AND r.outcome='accepted' ORDER BY n.file_row_number"""
 
 
-def receipt_processors(subjects: Path, receipts: Path):
-    """``(comment_id, processor)`` per admitted subject in file order, for the row reader's promotion rule."""
-    with etl_bulk.bulk_connection() as (con, _):
+def receipt_processors(subjects: Path, receipts: Path, *, directory: Path | None = None):
+    """``(comment_id, processor)`` per admitted subject in file order, for the row reader's promotion rule.
+
+    It runs beside the row reader's own validator, so it takes one thread and a small memory target and
+    spills under the caller's ``directory``.
+    """
+    with etl_bulk.bulk_connection(directory, threads=1, memory_limit='1GB') as (con, _):
         for batch in con.execute(_accepted_join(subjects, receipts, 'n.comment_id, r.processor')).to_arrow_reader(_BATCH):
             yield from zip(batch.column(0).to_pylist(), batch.column(1).to_pylist())
 

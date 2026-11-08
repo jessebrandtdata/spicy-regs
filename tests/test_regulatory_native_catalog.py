@@ -645,3 +645,40 @@ def test_input_less_receipt_from_another_processor_still_refuses(con):
     _rewrite_accepted_receipts(con, 'regulatory-catalog-native-v1')
     with pytest.raises(ValueError, match='exact retained processor input is required'):
         native.processing_table(con, COMMENT)
+
+
+@pytest.mark.parametrize('route', ['batch', 'row'])
+def test_mixed_promotion_and_normal_receipts_restore_in_one_batch(con, monkeypatch, route):
+    from spicy_regs import comments_bulk
+    from spicy_regs.transforms.regulations_receipts import COMMENTS_PROMOTION_PROCESSOR
+    expected = source(con)
+    assert expected['comment'] is None  # A promotion row with a null comment.
+    con.execute("INSERT INTO source SELECT * REPLACE ('c2' AS comment_id, '<p>one&amp;two</p>' AS comment) FROM source")
+    iceberg.replace_rows(con, COMMENT, 'source')
+    _rewrite_accepted_receipts(con, COMMENTS_PROMOTION_PROCESSOR)
+    source(con, text='second')  # c1 gets a normal receipt; c2 keeps its promotion receipt.
+    iceberg.replace_rows(con, COMMENT, 'source')
+    assert sorted(con.execute(f"SELECT processor FROM {native.receipts_table()} WHERE outcome='accepted'").fetchall()) == [
+        (COMMENTS_PROMOTION_PROCESSOR,), ('regulatory-catalog-native-v1',)]
+    if route == 'batch':
+        monkeypatch.setattr(native, 'read_with_receipts', lambda *a, **k: pytest.fail('row fallback'))
+    else:
+        def unproven(*args, **kwargs):
+            raise etl_bulk.NotBulkEligible('forced row reader')
+        monkeypatch.setattr(comments_bulk, 'restore_catalog', unproven)
+    restored = native.processing_table(con, COMMENT)
+    actual = {row['comment_id']: row for row in con.execute(f'SELECT * FROM {restored}').to_arrow_table().to_pylist()}
+    assert actual == {'c1': expected | {'text_content': 'second'},
+                      'c2': expected | {'comment_id': 'c2', 'comment': '<p>one&amp;two</p>'}}
+
+
+def test_row_reader_skips_processor_pairing_without_promotion_receipts(con, monkeypatch):
+    from spicy_regs import comments_bulk
+    expected = source(con)
+    iceberg.replace_rows(con, COMMENT, 'source')
+    def unproven(*args, **kwargs):
+        raise etl_bulk.NotBulkEligible('forced row reader')
+    monkeypatch.setattr(comments_bulk, 'restore_catalog', unproven)
+    monkeypatch.setattr(comments_bulk, 'receipt_processors', lambda *a, **k: pytest.fail('unneeded processor join'))
+    restored = native.processing_table(con, COMMENT)
+    assert con.execute(f'SELECT * FROM {restored}').to_arrow_table().to_pylist() == [expected]

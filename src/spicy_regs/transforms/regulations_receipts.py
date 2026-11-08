@@ -158,8 +158,17 @@ def comments_promotion_input(row: Mapping, processor: str | None) -> dict | None
     What proves it: before replacing, the rebuild proved every one of its 26,418,078 rows equal, on all 21 shared
     columns, to the prior catalog, whose receipts held the per-row input; callers still require ``shape_record``
     of this input to reproduce the subject exactly. It is canonical, not the original bytes: JSON spelling and
-    absent-versus-null attachment keys stay only in the v1 pair. When it stops mattering: each nightly
-    replacement rewrites the row with a normal ``regulatory-catalog-native-v1`` receipt holding its input.
+    absent-versus-null attachment keys stay only in the v1 pair.
+    Lifetime: a permanent read rule for every row nothing rewrites. Nightly merges replace only keys whose
+    ``modify_date`` is newer, so most rows keep this receipt indefinitely; only a one-time rewrite giving every
+    promotion row a normal receipt would retire the rule.
+    Maintenance rewrites (comment fields, comment text, prior repairs, PDF/text backfills) build their source from
+    ``processing_table``. For a promotion row that source is this derived row, and ``replace_native`` stores it as
+    the new ``regulatory-catalog-native-v1`` receipt's ``raw_source_record`` without saying it was derived. Only the
+    receipt history (``prior_receipts`` names this processor) shows it; ``_stage`` cannot mark it, because a
+    nightly merge over the same prior receipt stages genuinely fresh source rows.
+    Readers without the receipt's processor (``read_internal``, ``materialize_internal``, ``_processor_inputs``
+    over a published pair) still refuse these rows.
     ``row`` is the subject plus that receipt's processing fields. Any other processor, or a receipt with any
     processing field, returns None, so other missing input still refuses.
     """
