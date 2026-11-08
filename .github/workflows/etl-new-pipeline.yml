@@ -30,7 +30,7 @@ on:
         default: ''
         type: string
       full_refresh:
-        description: 'Ignore manifest + existing output (reprocess everything)'
+        description: 'Ignore manifest + existing output (reprocess everything). Refused without an agency or year: the whole mirror is the bundled back-fill (ss-te3x)'
         required: false
         default: false
         type: boolean
@@ -40,7 +40,7 @@ on:
         default: true
         type: boolean
       allow_fresh_start:
-        description: 'Start from an empty manifest when none is published (re-downloads every agency''s full history). Scheduled runs never do.'
+        description: 'Start from an empty manifest when none is published (re-downloads every agency''s full history). Scheduled runs never do. Refused without an agency or year (ss-te3x back-fill).'
         required: false
         default: false
         type: boolean

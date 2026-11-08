@@ -25,8 +25,9 @@ what was read: the catalog merge, the manifest that retires keys, and each
 derived-text upsert. It refuses when any retention failed or any key about to
 be used has no retained original (for example, if SpicyDocs stopped reading
 through the supplied resource), so nothing is written without its original
-kept. The keys stay unretired and the next run reads them again. It refuses
-rather than retrying: botocore already retries each R2 request, and the
+kept. The first retention failure halts the run at once (:class:`RetentionHalted`),
+so no further object is downloaded. The keys stay unretired and the next run
+reads them again. It refuses rather than retrying: botocore already retries each R2 request, and the
 scheduled retry sweep reruns an unfinished batch from its manifest.
 
 Retention is serialized because the evidence journal is not thread-safe. It
@@ -66,6 +67,15 @@ MAX_OBJECT_BYTES = 64 * 1024 * 1024
 INDEX_NAME = "originals-index.parquet"
 
 
+class RetentionHalted(BaseException):
+    """Stops the run at the first retention failure, before another object is downloaded.
+
+    A ``BaseException`` because SpicyDocs' reader turns any ``Exception`` from a GET into
+    an unresolved key and moves on (a credential refusal is the one it re-raises), so
+    an ordinary error would let a whole night download, then refuse only at commit.
+    """
+
+
 class _RetainingObject:
     def __init__(self, inner: Any, key: str, owner: MirrulationsOriginals) -> None:
         self._inner, self._key, self._owner = inner, key, owner
@@ -76,6 +86,8 @@ class _RetainingObject:
 
         from botocore.response import StreamingBody
 
+        if self._owner.failure is not None:
+            raise RetentionHalted(f"Mirrulations original retention failed: {self._owner.failure}")
         response = self._inner.get(**options)
         declared = response.get("ContentLength")
         if "Range" in options or response.get("ContentRange") or (declared or 0) > MAX_OBJECT_BYTES:
@@ -122,8 +134,8 @@ class MirrulationsOriginals:
         #: Keys retained, and keys a durable write will use, since the last commit.
         self.retained: set[str] = set()
         self._expected: set[str] = set()
-        #: The first retention failure. The reader turns an exception raised in its GET into an
-        #: unresolved key, so this, not the exception, is what makes the commit refuse.
+        #: The first retention failure. It halts the run (:class:`RetentionHalted`), and the
+        #: commit refuses on it too, in case a caller caught the halt.
         self.failure: str | None = None
 
     def resource(self, inner: Any) -> _RetainingResource:
@@ -153,7 +165,9 @@ class MirrulationsOriginals:
                 )
             except BaseException as error:
                 self.failure = self.failure or f"{type(error).__name__} retaining {key}"
-                raise
+                if isinstance(error, RetentionHalted):
+                    raise
+                raise RetentionHalted(f"Mirrulations original retention failed: {self.failure}") from error
             self._rows.append({"key": key, "sha256": receipt["sha256"], "bytes": len(content), **source})
             self.retained.add(key)
 

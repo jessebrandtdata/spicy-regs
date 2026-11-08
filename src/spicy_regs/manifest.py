@@ -179,6 +179,11 @@ class Manifest:
         logger.info("Loaded manifest: {:,} keys (~{:.0f} MB)", key_count, bloom.size_bytes / 1_048_576)
         return cls(bloom)
 
+    @property
+    def inherits_nothing(self) -> bool:
+        """True for a full refresh or fresh start: no prior run's keys are skipped."""
+        return isinstance(self._processed, (set, frozenset)) and not self._processed
+
     def __contains__(self, key: str) -> bool:
         return key in self._new_keys or key in self._committed_keys or key in self._processed
 

@@ -292,8 +292,13 @@ the catalog, sends the originals to `source-evidence/blobs/sha256/` before
 rows merge, derived text is upserted or keys are manifested. It refuses that
 write if any retention failed or any object it uses has no retained original.
 Scheduled runs pass `--scratch-originals`, which deletes the runner copy once
-R2 admits it. Objects processed before this change were not retained;
-Mirrulations may have replaced them since.
+R2 admits it. The first retention failure halts the run before another GET.
+Retention costs about 4 ms an object, so a full refresh or fresh start over
+every agency (about 30 hours) is refused unless scoped with `--agency` or
+`--since-year`, or allowed with `--allow-unbounded-originals`; the older
+history belongs to the bundled back-fill planned in ticket `ss-te3x`. Objects
+processed before this change were not retained; Mirrulations may have replaced
+them since.
 
 No table artifact cites these originals. To find a key's original, read the
 append-only indexes at `source-evidence/indexes/regulations-mirrulations/*.parquet`

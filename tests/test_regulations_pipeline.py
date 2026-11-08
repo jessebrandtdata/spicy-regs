@@ -882,7 +882,7 @@ def test_skip_upload_keeps_configured_remote_input_authority(tmp_output, monkeyp
     inputs = SelectedInputs(remote_root, remote_root / 'selected')
     finish_checkpoints(remote_root, {'failed_keys': [], 'pending_comment_text': []}, publish=True, inputs=inputs)
     before = native_publication.objects[publication.INDEX_V2_KEY]
-    pipeline = RegulationsPipeline(output_dir=tmp_output, skip_upload=True, skip_comments=True, enrich_text=False, allow_fresh_start=True)
+    pipeline = RegulationsPipeline(output_dir=tmp_output, agency=AGENCY, skip_upload=True, skip_comments=True, enrich_text=False, allow_fresh_start=True)
     observed = []
     monkeypatch.setattr(pipeline, '_run', lambda manifest: observed.append(pipeline._selected_inputs.index))
     pipeline.run()

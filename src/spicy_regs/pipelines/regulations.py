@@ -80,6 +80,7 @@ class RegulationsPipeline(Pipeline):
         enrich_text: bool = True,
         chunk_size: int = 0,
         scratch_originals: bool = False,
+        allow_unbounded_originals: bool = False,
         verbose: bool = False,
     ) -> None:
         self.agency = agency
@@ -99,6 +100,7 @@ class RegulationsPipeline(Pipeline):
         self.enrich_text = enrich_text
         self.chunk_size = chunk_size
         self.scratch_originals = scratch_originals
+        self.allow_unbounded_originals = allow_unbounded_originals
         self.verbose = verbose
         self._sweep_agencies: list[str] | None = None
         self._pending_text: PendingCommentText | None = None
@@ -138,6 +140,7 @@ class RegulationsPipeline(Pipeline):
                 )
             )
         logger.info("ETL manifest ready in {:.1f}s", monotonic() - started)
+        self._refuse_unbounded_retention(manifest)
         with ExitStack() as resources:
             # Exits last: an uncommitted artifact finishes after the pool has stopped reading.
             originals = self._run_originals = resources.enter_context(self._retention(output_dir))
@@ -152,6 +155,22 @@ class RegulationsPipeline(Pipeline):
                 )
             self._run(manifest)
         logger.info("ETL batch completed in {:.1f}s", monotonic() - started)
+
+    def _refuse_unbounded_retention(self, manifest: Manifest) -> None:
+        """Refuse a whole-mirror re-read through per-object retention unless explicitly allowed.
+
+        A full refresh or fresh start without an agency or year scope re-reads every
+        Mirrulations key (26.6M comments on 2026-09-28). Retention is serialized at about
+        4 ms an object, about 30 hours, past any hosted runner's limit. Retaining that
+        history belongs to the bundled back-fill planned in ticket ss-te3x.
+        """
+        scoped = self.agency is not None or getenv("AGENCIES") is not None or self.since_year is not None
+        if manifest.inherits_nothing and not scoped and not self.allow_unbounded_originals:
+            raise ValueError(
+                "A full refresh or fresh start over every agency would retain each Mirrulations object one at a "
+                "time (about 30 hours for the whole mirror). Scope it with --agency or --since-year, use the "
+                "bundled back-fill planned in ticket ss-te3x, or pass --allow-unbounded-originals."
+            )
 
     def run_sweep(self) -> None:
         """Reuse membership and agency discovery; commit every batch before the next.
@@ -601,6 +620,11 @@ def main(
         bool,
         Parameter(help="Delete each batch's local Mirrulations originals once R2 has admitted them (hosted runners)"),
     ] = False,
+    allow_unbounded_originals: Annotated[
+        bool,
+        Parameter(help="Allow a full refresh or fresh start over every agency to retain originals one object at a "
+                       "time (about 30 hours for the whole mirror); prefer the bundled back-fill (ss-te3x)"),
+    ] = False,
     verbose: Annotated[bool, Parameter(name=["--verbose", "-v"], help="Verbose logging")] = False,
 ) -> None:
     """Run the regulations.gov ETL pipeline."""
@@ -623,6 +647,7 @@ def main(
         enrich_text=enrich_text,
         chunk_size=chunk_size,
         scratch_originals=scratch_originals,
+        allow_unbounded_originals=allow_unbounded_originals,
         verbose=verbose,
     )
     if sweep:

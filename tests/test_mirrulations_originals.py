@@ -19,7 +19,7 @@ import spicy_docs.sources.mirrulations as mirrulations
 import spicy_regs.pipelines.mirrulations_originals as originals_module
 import spicy_regs.pipelines.regulations as regulations
 from spicy_regs.pipelines import RegulationsPipeline
-from spicy_regs.pipelines.mirrulations_originals import MirrulationsOriginals
+from spicy_regs.pipelines.mirrulations_originals import MirrulationsOriginals, RetentionHalted
 from spicy_regs.source_evidence import SourceEvidenceError
 from tests.regulatory_publication_fakes import install as install_publication
 from tests.test_regulations_pipeline import (
@@ -193,9 +193,89 @@ def test_a_retention_failure_refuses_before_any_merge_or_manifest(tmp_path, monk
     monkeypatch.setattr(CentralRawArchiveStore, "put_blob", broken)
     monkeypatch.setattr(regulations, "merge_staging_files", lambda *a, **k: pytest.fail("merged unretained rows"))
 
-    with pytest.raises(SourceEvidenceError, match="retention failed"):
+    with pytest.raises(RetentionHalted, match="retention failed"):
         _run(tmp_path)
     assert _manifest_keys(tmp_path) == set()
+    assert len(mirror.gets) == len(set(mirror.gets)), "a failed retention is never downloaded again"
+
+
+def test_a_rollover_publish_failure_halts_before_another_download(tmp_path, monkeypatch, r2_store):
+    """The halt reaches the run: SpicyDocs neither retries the key nor reads the rest of the night."""
+    monkeypatch.setattr(originals_module, "OBJECTS_PER_ARTIFACT", 1)
+    mirror = _Mirror(_dockets(*(f"EPA-2024-{i:04d}" for i in range(6))))
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: mirror)
+    monkeypatch.setattr(mirrulations, "DEFAULT_DOWNLOAD_WORKERS", 1)
+    original = mirrulations.reader_factory
+    monkeypatch.setattr(mirrulations, "reader_factory", lambda *a, **k: original(*a, **k, download_workers=1))
+    from spicy_regs.sources import publication
+
+    def unavailable(*_args, **_kwargs):
+        raise OSError("R2 unavailable")
+
+    monkeypatch.setattr(publication, "publish_evidence", unavailable)
+    monkeypatch.setattr(regulations, "merge_staging_files", lambda *a, **k: pytest.fail("merged unretained rows"))
+
+    with pytest.raises(RetentionHalted):
+        _run(tmp_path, use_iceberg=True)
+    # The first object retains; the second's rollover publication fails; nothing after it is read.
+    assert mirror.gets == sorted(mirror.objects)[:2]
+    assert _manifest_keys(tmp_path) == set()
+    failed = MirrulationsOriginals(tmp_path, mirrulations.BUCKET, publish=False)
+    failed.failure = "earlier"
+    with pytest.raises(RetentionHalted):
+        failed.resource(mirror).Object("b", next(iter(mirror.objects))).get()
+    assert len(mirror.gets) == 2, "a GET after a failure is refused before it reaches the mirror"
+
+
+@pytest.mark.parametrize("option", ["full_refresh", "allow_fresh_start"])
+def test_an_unscoped_whole_mirror_reread_is_refused_before_any_read(tmp_path, monkeypatch, option):
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: pytest.fail("the mirror was read"))
+    monkeypatch.setattr(mirrulations, "discover_agencies", lambda: ["EPA"])
+    settings = {"output_dir": tmp_path, "skip_comments": True, "allow_fresh_start": True, option: True}
+    with pytest.raises(ValueError, match="ss-te3x"):
+        RegulationsPipeline(**settings).run()
+    monkeypatch.setenv("AGENCIES", "EPA")
+    mirror = _Mirror(_dockets("EPA-2024-0001"))
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: mirror)
+    RegulationsPipeline(**settings).run()  # an agency scope is an operator's bounded choice
+    monkeypatch.delenv("AGENCIES")
+    RegulationsPipeline(**settings, allow_unbounded_originals=True).run()
+
+
+def test_the_real_derived_text_fetch_is_kept_through_the_wrapper(tmp_path):
+    """DerivedTextPool -> SpicyDocs fetch_derived_text -> pinned Object(...).get(IfMatch=...) is retained."""
+    from tests.test_derived_text import ACF, _FakeS3Resource, _store, derived_key
+    from spicy_regs.transforms.derived_text_pool import DerivedTextPool
+
+    store, pinned = _store(), []
+
+    class Recording(_FakeS3Resource):
+        def Object(self, name, key):  # noqa: N802 - boto3 API
+            inner = super().Object(name, key)
+
+            class Pinned:
+                def get(self, **options):
+                    pinned.append((key, options.get("IfMatch")))
+                    return inner.get(**options)
+
+            return Pinned()
+
+    comment = {"agency_code": ACF[0], "docket_id": ACF[1], "comment_id": f"{ACF[1]}-0015"}
+    with MirrulationsOriginals(tmp_path, mirrulations.BUCKET, publish=False) as retention:
+        with DerivedTextPool(lambda: retention.resource(Recording(store)), max_workers=1,
+                             on_fill=retention.expect_fill) as pool:
+            (result,) = list(pool.map([comment]))
+        assert result.fill is not None
+        cited = {item["key"] for item in json.loads(result.fill.provenance)["attachments"]}
+        assert cited == {derived_key(*ACF, "pypdf", "0015", 1), derived_key(*ACF, "pypdf", "0015", 2)}
+        assert retention.retained == cited
+        retention.commit()
+
+    assert {key for key, if_match in pinned if if_match} == cited, "the pinned GET went through the wrapper"
+    for key in cited:
+        assert _archived(store[key]) == store[key]
+    (index,) = (tmp_path / "source-evidence").glob("*/originals-index.parquet")
+    assert set(pl.read_parquet(index)["key"]) == cited
 
 
 def test_keys_the_resource_never_saw_are_not_retired(tmp_path, monkeypatch):
