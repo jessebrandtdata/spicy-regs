@@ -204,6 +204,9 @@ class _Person:
     names: tuple[str, ...]
     last_name: str
     first_name: str | None = None
+    #: The member record's surname as written ("Van Hollen"), or the earlier one it was matched by: the row's
+    #: ``name_last``, not the printed name's last word (ss-d2ma).
+    record_last: str | None = None
 
 
 class MemberIndex:
@@ -300,9 +303,21 @@ def _edits(a: str, b: str) -> int:
     return previous[-1]
 
 
-def mods_people(members: Iterable[DirectoryMember]) -> list[_Person]:
+def mods_people(
+    members: Iterable[DirectoryMember], records: Mapping[str, Mapping[str, Any]] | None = None
+) -> list[_Person]:
+    """The edition's own members; ``records`` (the members table) supplies each one's surname as written."""
+    records = records or {}
     return [
-        _Person(m.bioguide_id, m.chamber, m.state, m.party or None, m.names, m.last_name)
+        _Person(
+            m.bioguide_id,
+            m.chamber,
+            m.state,
+            m.party or None,
+            m.names,
+            m.last_name,
+            record_last=records.get(m.bioguide_id, {}).get("name_last") or None,
+        )
         for m in members
         if m.chamber in ("H", "S")
     ]
@@ -331,14 +346,14 @@ def term_people(
         forms = {normalize_name(f"{first} {last}")}
         if nick:
             forms.add(normalize_name(f"{nick} {last}"))
-        lasts = {normalize_name(last)}
+        lasts = {normalize_name(last): last}
         for other in _other_names(member):
             if other.get("last"):
-                lasts.add(normalize_name(other["last"]))
+                lasts.setdefault(normalize_name(other["last"]), other["last"])
                 forms.add(normalize_name(f"{other.get('first') or first} {other['last']}"))
         chamber = "S" if term.get("term_type") == "sen" else "H"
         party = _PARTY.get(str(term.get("term_party") or ""), term.get("term_party") or None)
-        for surname in lasts:
+        for surname, written in lasts.items():
             people[(bioguide, surname)] = _Person(
                 bioguide,
                 chamber,
@@ -347,6 +362,7 @@ def term_people(
                 tuple(sorted(forms)),
                 surname,
                 first or None,
+                written or None,
             )
     return list(people.values())
 
@@ -398,13 +414,25 @@ def _member_chamber(seat: PrintedSeat, granule_chamber: str) -> tuple[str, ...]:
 
 
 #: Printed entries the reader could not seat because the print itself is broken, corrected by hand:
-#: ``(granule, line) -> (name, state, reason)``. The row says ``entry_label = corrected``; ``printed_entry`` keeps
-#: what was printed.
-REVIEWED_ENTRIES: Mapping[tuple[str, int], tuple[str, str, str]] = {
+#: ``(granule, line) -> (name, state, reason, printed text)``. Applied only when the reader left exactly that text
+#: unread on that line, so a shifted line cannot seat another entry. The row says ``entry_label = corrected``;
+#: ``printed_entry`` keeps what was printed.
+REVIEWED_ENTRIES: Mapping[tuple[str, int], tuple[str, str, str, str]] = {
     ("CDIR-2018-10-29-HOUSECOMMITTEES", 3235): (
         "Jenniffer Gonzalez-Colon",
         "PR",
         'printed "nniffer Gonzalez-Colon, of Puerto" with "Rico." lost at the page break',
+        "nniffer Gonzalez-Colon, of Puerto",
+    ),
+    # Agriculture's Rural Development and Energy subcommittee, majority column, between Daines and Hyde-Smith. The
+    # htm (sha256 1ff00c09270918a02b0be80f7c07412a340646261d7fdd1ca4be2b39822ee4ca) prints it at line 100; the granule
+    # PDF (sha256 158d749196866fb5c11d0329b73a15ae852b6b8edb7fa365fb3a6db8025949d5) prints it on PDF page 2 (printed
+    # page 346).
+    ("CDIR-2018-10-29-SENATECOMMITTEES", 100): (
+        "Deb Fischer",
+        "NE",
+        'printed "Deb Fischer, of Nebraksa." with the state misspelled',
+        "Deb Fischer, of Nebraksa.",
     ),
 }
 
@@ -422,7 +450,7 @@ def interpret_edition(
     """Rows and dispositions for one edition's printed seats: every printed entry ends as one or the other."""
     date, congress = edition.date_issued, edition.congress
     names = CommitteeNames(committees, date)
-    by_mods = MemberIndex(mods_people(edition.members))
+    by_mods = MemberIndex(mods_people(edition.members, members))
     by_terms = MemberIndex(term_people(terms, members, date))
     departed = MemberIndex(term_people(terms, members, date, departed=True))
     result = EditionResult()
@@ -430,21 +458,31 @@ def interpret_edition(
         seats = list(granule.seats)
         for printed in granule.dispositions:
             reviewed = REVIEWED_ENTRIES.get((printed.granule_id, printed.line))
-            if reviewed and printed.kind == "unread_text":
+            if reviewed and printed.kind == "unread_text" and printed.text == reviewed[3]:
                 committee, _, sub = printed.context.partition("/")
+                listed = [s for s in granule.seats if s.committee == committee and (s.subcommittee or "") == sub]
+                # Its print position: the order of the next entry printed below it in its column (ties break by line).
+                below = [s.order for s in listed if s.side == printed.side and s.line > printed.line]
                 seats.append(replace(
-                    next(s for s in granule.seats if s.committee == committee and (s.subcommittee or "") == sub),
-                    line=printed.line, name=reviewed[0], state=reviewed[1], printed_role=None, role=None,
-                    side=printed.side, order=10_000 + printed.line,
+                    listed[0], line=printed.line, name=reviewed[0], state=reviewed[1], printed_role=None, role=None,
+                    side=printed.side, order=min(below, default=10_000 + printed.line),
                 ))  # fmt: skip
                 result.corrections[(printed.granule_id, str(printed.line), printed.side)] = (printed.text, reviewed[2])
+                continue
+            committee = printed.context.partition("/")[0]
+            if printed.kind == "unread_text" and _is_party_body(committee):
+                # A party officer line left unread ("Recruitment.--Susan W. Brooks, of Indiana."): as its seats would be.
+                result.dispositions.append(
+                    Disposition(congress, printed.granule_id, printed.line, printed.context, "not_a_committee",
+                                printed.text, printed.side, "a party organization, not a committee")
+                )  # fmt: skip
                 continue
             result.dispositions.append(
                 Disposition(congress, printed.granule_id, printed.line, printed.context, printed.kind, printed.text,
                             printed.side)
             )  # fmt: skip
         lists: dict[tuple[str, str | None], list[PrintedSeat]] = {}
-        for seat in sorted(seats, key=lambda s: (s.committee, s.subcommittee or "", s.order)):
+        for seat in sorted(seats, key=lambda s: (s.committee, s.subcommittee or "", s.order, s.line)):
             lists.setdefault((seat.committee, seat.subcommittee), []).append(seat)
         for (title, sub_title), listed in lists.items():
             _interpret_list(result, names, (by_mods, by_terms, departed), edition, granule.chamber, title, sub_title,
@@ -516,7 +554,7 @@ def _interpret_list(result, names, indexes, edition, chamber, title, sub_title, 
     congress = edition.congress
     context = f"{title}/{sub_title}" if sub_title else title
     granule_id = seats[0].granule_id
-    if _PARTY_BODY.search(title) and not re.search(r"(?i)\bethics\b", title):
+    if _is_party_body(title):
         result.mappings.append((granule_id, context, None, "not a committee of record"))
         for seat in seats:
             result.dispositions.append(
@@ -565,8 +603,8 @@ def _interpret_list(result, names, indexes, edition, chamber, title, sub_title, 
                 seat, congress=congress, date_issued=edition.date_issued,
                 chamber="senate" if person.chamber == "S" else "house", system_code=system_code,
                 parent_system_code=parent,
-                member={"bioguide_id": person.bioguide_id, "name_last": _surname(seat.name), "name_first": None,
-                        "party": person.party},
+                member={"bioguide_id": person.bioguide_id, "name_last": person.record_last or _surname(seat.name),
+                        "name_first": None, "party": person.party, "state": person.state or None},
                 rank=ranks[index], position=position, position_basis=position_basis, observed_at=observed_at,
                 congress_basis=basis, entry_label=label,
             )
@@ -574,6 +612,11 @@ def _interpret_list(result, names, indexes, edition, chamber, title, sub_title, 
         reviewed = REVIEWED_ENTRIES.get((seat.granule_id, seat.line))
         if reviewed and label == "corrected":
             result.rows[-1]["printed_entry"] = result.corrections[(seat.granule_id, str(seat.line), seat.side)][0]
+
+
+def _is_party_body(title: str) -> bool:
+    """A party organization's list (campaign, steering and policy committees, conferences), not a committee."""
+    return bool(_PARTY_BODY.search(title)) and not re.search(r"(?i)\bethics\b", title)
 
 
 def _crossed_columns(seats: Sequence[PrintedSeat], people: Sequence[tuple]) -> set[int]:

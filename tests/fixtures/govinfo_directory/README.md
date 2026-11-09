@@ -3,6 +3,8 @@
 - `CDIR-2014-02-18-HOUSECOMMITTEES-4.htm` and `CDIR-2014-02-18.mods.xml`: byte-identical copies of the spicy-docs
   fixtures of the same names; their originals, digests and reductions are in
   `spicy-docs/tests/fixtures/govinfo_directory/README.md`.
+- `CDIR-2018-10-29-SENATECOMMITTEES-agriculture.htm`: a byte-identical copy of the spicy-docs fixture of that name
+  (Agriculture, with "Deb Fischer, of Nebraksa." at the head of its last list; ss-d2ma).
 - `legislators-113-joint.yaml`: the `JSEC`, `JSLC`, `JSPR` and `JSTX` entries of `unitedstates/congress-legislators`
   `committee-membership-current.yaml` at commit 53547039 (2014-02-13; original SHA-256
   `5961838ee03467b834d0e58db5ab6dc077401d4ddf51203ff9c55b7bb3f3e1a2`), re-serialized with `yaml.safe_dump`. It is

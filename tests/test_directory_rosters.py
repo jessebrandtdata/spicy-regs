@@ -357,3 +357,73 @@ def test_reconciliation_keeps_the_chamber_files_row_and_reports_each_difference(
     assert report["seat_differences"] == {"hsru00": {"directory_only": ["X1"], "chamber_file_only": ["F1"]}}
     assert report["leader_differences"]["Chair"] == {"hsru00": {"directory": "C1", "chamber_file": "B1"}}
     assert report["committees_directory_only"] == ["ssap01"]
+
+
+# --------------------------------------------------------------------------- ss-d2ma: the member's own values
+
+
+def _with(members, terms):
+    return ({row["bioguide_id"]: row for row in REFERENCES["members"]} | {m["bioguide_id"]: m for m in members},
+            [*REFERENCES["terms"], *terms])  # fmt: skip
+
+
+def _rep(bioguide, state, start="2013-01-03", end="2015-01-03", kind="rep"):
+    return {"bioguide_id": bioguide, "term_type": kind, "term_start": start, "term_end": end, "term_state": state,
+            "term_party": "Republican"}  # fmt: skip
+
+
+def test_a_corrected_row_carries_the_members_state_and_a_compound_surname_whole():
+    # CDIR-2016-02-12 printed "James B. Renacci, of South Carolina." (he served Ohio); "Van Hollen" lost "Van".
+    members, terms = _with(
+        [{"bioguide_id": "Z000002", "name_first": "James B.", "name_last": "Renacci"},
+         {"bioguide_id": "Z000003", "name_first": "Pat", "name_last": "Van Tester"}],
+        [_rep("Z000002", "OH"), _rep("Z000003", "MD")],
+    )  # fmt: skip
+    granule = joint_granule()
+    house = next(s for s in granule.seats if s.member_chamber == "H" and s.side == "majority")
+    seats = [replace(house, name="James B. Renacci", state="SC", line=900, order=50),
+             replace(house, name="Pat Van Tester", state="MD", line=901, order=51)]  # fmt: skip
+    result = dr.interpret_edition(EDITION, [replace(granule, seats=seats, dispositions=[])],
+                                  committees=REFERENCES["committees"], terms=terms, members=members,
+                                  observed_at=OBSERVED_AT)  # fmt: skip
+    rows = {r["bioguide_id"]: r for r in result.rows}
+    renacci, tester = rows["Z000002"], rows["Z000003"]
+    assert (renacci["state"], renacci["name_last"], renacci["entry_label"]) == ("OH", "Renacci", "corrected")
+    assert renacci["printed_entry"] == "James B. Renacci (SC)"  # the misprint stays, in the printed entry only
+    assert (tester["state"], tester["name_last"], tester["entry_label"]) == ("MD", "Van Tester", None)
+
+
+def test_a_reviewed_line_the_reader_left_unread_is_seated_in_its_print_position():
+    # CDIR-2018-10-29 prints Daines, "Deb Fischer, of Nebraksa.", Hyde-Smith (lines 99-101) in Rural Development and
+    # Energy's majority column. The reader leaves Fischer's line unread; REVIEWED_ENTRIES seats it where it was printed.
+    granule_id = "CDIR-2018-10-29-SENATECOMMITTEES"
+    printed = parse_directory_granule((FIXTURES / f"{granule_id}-agriculture.htm").read_bytes(), granule_id, "senate")
+    members, terms = _with(
+        [{"bioguide_id": "F000463", "name_first": "Deb", "name_last": "Fischer"},
+         {"bioguide_id": "H001079", "name_first": "Cindy", "name_last": "Hyde-Smith"}],
+        [_rep("F000463", "NE", "2013-01-03", "2019-01-03", "sen"), _rep("H001079", "MS", "2013-01-03", "2019-01-03", "sen")],
+    )  # fmt: skip
+    edition = replace(EDITION, package_id="CDIR-2018-10-01", congress="115", date_issued="2018-10-29")
+    committees = [*REFERENCES["committees"],
+                  _committee("ssaf00", "Agriculture, Nutrition, and Forestry Committee", chamber="Senate"),
+                  _committee("ssaf15", "Rural Development and Energy Subcommittee", parent="ssaf00")]  # fmt: skip
+    result = dr.interpret_edition(edition, [printed], committees=committees, terms=terms, members=members,
+                                  observed_at=OBSERVED_AT)  # fmt: skip
+    rural = {r["bioguide_id"]: r for r in result.rows if r["system_code"] == "ssaf15"}
+    fischer, hyde_smith = rural["F000463"], rural["H001079"]
+    assert (fischer["rank"], hyde_smith["rank"]) == ("6", "7")  # Boozman, Hoeven, Thune, Daines precede them
+    assert (fischer["state"], fischer["entry_label"], fischer["source_line"]) == ("NE", "corrected", "100")
+    assert fischer["printed_entry"] == "Deb Fischer, of Nebraksa."
+    assert not [e for e in result.entries if (e["source_line"], e["side"]) == ("100", "majority")]  # seated once
+
+
+def test_a_reviewed_line_is_not_applied_to_other_text_on_that_line():
+    granule_id = "CDIR-2018-10-29-SENATECOMMITTEES"
+    raw = (FIXTURES / f"{granule_id}-agriculture.htm").read_bytes()
+    printed = parse_directory_granule(raw.replace(b"Nebraksa.", b"Nebrask.."), granule_id, "senate")
+    edition = replace(EDITION, package_id="CDIR-2018-10-01", congress="115", date_issued="2018-10-29")
+    result = dr.interpret_edition(edition, [printed], committees=REFERENCES["committees"], terms=REFERENCES["terms"],
+                                  members={}, observed_at=OBSERVED_AT)  # fmt: skip
+    assert "F000463" not in {r["bioguide_id"] for r in result.rows}
+    line_100 = [e["printed_text"] for e in result.entries if (e["source_line"], e["side"]) == ("100", "majority")]
+    assert line_100 == ["Deb Fischer, of Nebrask.."]

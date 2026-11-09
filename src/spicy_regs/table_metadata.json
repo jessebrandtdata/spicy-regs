@@ -31623,7 +31623,7 @@
       {
         "column_name": "name_last",
         "column_type": "VARCHAR",
-        "description": "The member's last name as the file spells it."
+        "description": "The member's last name as the file spells it. A directory row's is the member record's, the surname matched as written (\"Van Hollen\"); the printed form stays in printed_entry."
       },
       {
         "column_name": "name_first",
@@ -31638,7 +31638,7 @@
       {
         "column_name": "state",
         "column_type": "VARCHAR",
-        "description": "The member's state code as the file states it."
+        "description": "The member's state code as the file states it. A directory row's is the member's own (the term in force or the edition's member record); a misprinted state stays in printed_entry."
       },
       {
         "column_name": "district",

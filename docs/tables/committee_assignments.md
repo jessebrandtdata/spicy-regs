@@ -28,10 +28,10 @@ One row per member per committee or subcommittee seat: today's from the House Cl
 | `committee_name` | `VARCHAR` | The committee's name as the file or directory itself states it. |
 | `bioguide_id` | `VARCHAR` | The member's bioguide id, which both files state; the key's target is members.bioguide_id. |
 | `lis_id` | `VARCHAR` | The Senate file's own LIS id for the senator; the crosswalk table stays the LIS crosswalk. |
-| `name_last` | `VARCHAR` | The member's last name as the file spells it. |
+| `name_last` | `VARCHAR` | The member's last name as the file spells it. A directory row's is the member record's, the surname matched as written ("Van Hollen"); the printed form stays in printed_entry. |
 | `name_first` | `VARCHAR` | The member's first name as the file spells it. |
 | `party` | `VARCHAR` | The member's party as the file states it. |
-| `state` | `VARCHAR` | The member's state code as the file states it. |
+| `state` | `VARCHAR` | The member's state code as the file states it. A directory row's is the member's own (the term in force or the edition's member record); a misprinted state stays in printed_entry. |
 | `district` | `VARCHAR` | The House member's district as the file states it. |
 | `rank` | `VARCHAR` | The House file's rank on the committee; the Senate file states none. A directory row's rank is its print order within its column, the chair first on the majority side; null for another line printed above the columns (a vice chair). |
 | `position` | `VARCHAR` | The seat's stated role, verbatim: the House leadership attribute or the Senate position attribute. A directory row's role is normalized (Chairman becomes Chair); see position_basis. |
