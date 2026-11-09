@@ -1,6 +1,14 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.81.0` adds an opt-in browser-session rung to the shared
+- **Selected provider** `spicy_docs-0.83.0` reads a GovInfo HTML body whose literal, never-closed
+  `<bullet>` tags outnumber the generic depth of 256 (CRPT-112hrpt747, CRPT-118hrpt963): the HTML
+  reader matches end tags in linear time and the body reader bounds depth by its event bound. A
+  package MODS that states its parts in a shape the reader refuses raises `GovInfoPartsRefusedError`,
+  which the committee-reports rollup records as `refused_final` (CRPT-119hrpt853). Built on 0.82.0
+  (owner decision 2026-11-09). See [the build receipt](spicy_docs-0.83.0.json).
+- **Earlier provider** `spicy_docs-0.82.0` fixes the Congressional Directory reader (ss-d2ma); see
+  [its build receipt](spicy_docs-0.82.0.json).
+- **Earlier provider** `spicy_docs-0.81.0` adds an opt-in browser-session rung to the shared
   walled-fetch ladder (owner decision 2026-11-08): Zyte's browser opens a page on the target's
   origin, fetches the target same-origin, and the rung returns the network-captured raw response,
   never the rendered page. `capture_walled(..., session_rung=True)` enables it; on 2026-11-09 it
