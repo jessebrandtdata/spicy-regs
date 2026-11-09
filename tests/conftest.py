@@ -64,6 +64,31 @@ def no_bulk_bill_text(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("spicy_regs.transforms.build_bill_family.BulkBillsAcquirer", _NoBulkBillText, raising=False)
 
 
+class _NoBillSum:
+    """The bill family's default BILLSUM acquirer, off the network: every folder reads as refused.
+
+    So a run keeps its published BILLSUM rows and retained entries, as it does when GovInfo refuses; a test of
+    the supplement passes its own ``summary_acquirer``.
+    """
+
+    def __init__(self, **_arguments) -> None:
+        pass
+
+    def list_folder(self, congress: int, bill_type: str):
+        from spicy_docs.sources.congress.bill_status import BillSourceError
+
+        raise BillSourceError(f"no BILLSUM folder in a hermetic test ({congress} {bill_type})")
+
+    def acquire(self, listing):
+        raise AssertionError("a refused listing names nothing to download")
+
+
+@pytest.fixture(autouse=True)
+def no_billsum(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the bill family's default BILLSUM acquirer off the network (see ``_NoBillSum``)."""
+    monkeypatch.setattr("spicy_regs.transforms.build_bill_family.BillSumAcquirer", _NoBillSum, raising=False)
+
+
 class _NoCboFeed:
     """The bill family's default CBO feed acquirer, off the network: every feed reads as unavailable.
 

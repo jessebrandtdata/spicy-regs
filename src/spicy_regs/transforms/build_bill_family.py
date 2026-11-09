@@ -81,11 +81,25 @@ from spicy_regs.legislative_documents import printing_id
 from spicy_regs.policy_migrations import PriorReplayRequired
 from spicy_regs.source_evidence import SourceEvidenceError
 from spicy_regs.sources import r2
+from spicy_regs.sources.billsum import BILLSUM_SCHEMA_CONTEXT, BillSumAcquirer
 from spicy_regs.sources.congress_bills import (
     API_KEY_ENV_VARS,
     _resolve_api_key,
     bill_detail,
     listing_reader,
+)
+from spicy_regs.transforms.bill_family_billsum import (
+    BILLSUM_ARCHIVES_KEY,
+    BillSumOutcome,
+    BillSumSource,
+    billsum_congresses,
+    billsum_metadata,
+    held_billsum_archives,
+    known_bills,
+    log_outcome,
+    max_zips,
+    prior_summary_pairs,
+    run_billsum_supplement,
 )
 from spicy_regs.transforms.bill_family_cbo import (
     cost_estimate_publication,
@@ -2008,6 +2022,7 @@ def build_bill_family(
     bills_acquirer: BulkBillsSource | None = None,
     list_source: ListBackfillSource | None = None,
     cbo_acquirer: Any = None,
+    summary_acquirer: BillSumSource | None = None,
     max_version_fetches: int = MAX_VERSION_FETCHES,
     download_prior: Callable[[str, Path], bool] = r2.download,
     download_members: Callable[[str, Path], Sequence[Path]] = download_prior_members,
@@ -2358,6 +2373,49 @@ def build_bill_family(
                 ", ".join(API_KEY_ENV_VARS),
             )
 
+    # 2c'. The BILLSUM supplement: the CRS summaries GovInfo's BILLSUM collection states and no BILLSTATUS row
+    # does, for an ended Congress whose BILLSTATUS files are not regenerated (``bill_family_billsum``). Keyless.
+    held_billsum = held_billsum_archives(prior_paths.get(ARCHIVES_TABLE))
+    billsum_scope = billsum_congresses(bulk_congresses, replay=replay is not None)
+    billsum = BillSumOutcome(held=dict(held_billsum))
+    if billsum_scope:
+        summary_source = summary_acquirer or BillSumAcquirer(
+            budget=bulk_budget,
+            transport=None
+            if evidence is None
+            else evidence.transport(stage="bill-summary-bulk", max_bytes=bulk_budget.max_bytes),
+        )
+        prior_status, prior_billsum = prior_summary_pairs(prior_paths.get(REPLAYED_FROM_STATUS), billsum_scope)
+        fresh_status = {
+            (row["bill_id"], row["summary_version_code"])
+            for tables in families
+            for row in tables.bill_publisher_summaries
+            if row.get("source_schema_version") != BILLSUM_SCHEMA_CONTEXT
+        }
+        billsum = run_billsum_supplement(
+            summary_source,
+            billsum_scope,
+            bill_types,
+            held=held_billsum,
+            status_pairs=prior_status | fresh_status,
+            prior_billsum=prior_billsum,
+            bills=known_bills(bills_prior, [row for tables in families for row in tables.bills], billsum_scope),
+            zip_cap=max_zips(),
+            replay=replay is not None,
+        )
+        families.append(BillFamilyTables(bill_publisher_summaries=tuple(billsum.rows)))
+        log_outcome(billsum, billsum_scope)
+        if evidence is not None:
+            evidence.event(
+                "billsum-supplement",
+                congresses=list(billsum_scope),
+                listings=billsum.listings,
+                zips=billsum.zips,
+                rows=len(billsum.rows),
+                retired=len(billsum.superseded),
+                refused_folders=billsum.refused_folders,
+            )
+
     # 2d. CBO's own feed for each scoped Congress, once, for the estimates BILLSTATUS does not state.
     feed = read_cbo_feeds(
         bulk_congresses,
@@ -2512,6 +2570,12 @@ def build_bill_family(
         "financial_changes": (pair_identity, retired_pairs),
         "diff_summaries": (pair_identity, retired_pairs),
     }
+    if billsum.superseded:
+        # A pair BILLSTATUS now states retires its BILLSUM rows; BILLSTATUS rows are never in this scope.
+        replaced["bill_publisher_summaries"] = (
+            ("bill_id", "summary_version_code", "source_schema_version"),
+            billsum.superseded,
+        )
 
     def publish(contract: str, rows: Any) -> Path:
         if contract in PARTITIONED:
@@ -2571,6 +2635,7 @@ def build_bill_family(
                 TEXT_REFUSALS_KEY: refusal_metadata(body.refusals),
                 PACKAGE_REFUSALS_KEY: refusal_metadata(body.package_refusals),
                 STATUS_REFUSALS_KEY: refusal_metadata(status_refusals),
+                BILLSUM_ARCHIVES_KEY: billsum_metadata(billsum.held),
             },
         )
     )

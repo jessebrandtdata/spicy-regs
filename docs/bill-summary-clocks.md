@@ -29,10 +29,12 @@ WITH clocks AS (
            CASE source_schema_version
                WHEN '1.0.0' THEN last_summary_update_date
                WHEN '3.0.0' THEN update_date
+               WHEN 'BILLSUM' THEN update_date
            END AS summary_update_literal,
            CASE source_schema_version
                WHEN '1.0.0' THEN 'lastSummaryUpdateDate'
                WHEN '3.0.0' THEN 'updateDate'
+               WHEN 'BILLSUM' THEN 'update-date'
            END AS summary_update_field
     FROM bill_publisher_summaries
 )
@@ -41,6 +43,8 @@ SELECT *,
            WHEN summary_update_field IS NULL THEN 'unknown_schema'
            WHEN summary_update_literal IS NULL THEN 'absent'
            WHEN summary_update_literal = '' THEN 'empty'
+           WHEN source_schema_version = 'BILLSUM'
+                AND regexp_full_match(summary_update_literal, '\d{4}-\d{2}-\d{2}') THEN 'valid_day'
            WHEN NOT regexp_full_match(summary_update_literal,
                '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})')
                OR try_cast(summary_update_literal AS TIMESTAMPTZ) IS NULL THEN 'malformed'
@@ -80,6 +84,27 @@ rebuild no longer holds (`replay-dropped-rows`) and refuses above the bound
 and all eight bill types refuses and names the one dispatch to run:
 `gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs -f congresses=108-119`.
 Raw originals and earlier generations stay unchanged.
+
+## Rows from GovInfo BILLSUM
+
+GovInfo does not regenerate an ended Congress's BILLSTATUS file when CRS later
+publishes a summary for one of its bills; the BILLSUM bulk collection carries
+the summary. The bill family therefore reads the BILLSUM folder zips of the
+current Congress and the two before it (`BILL_FAMILY_BILLSUM_CONGRESSES`
+overrides the scope) and adds a row for each bill and summary version no
+BILLSTATUS row states. On 2026-11-09 that was 82 summaries of the 118th Congress
+and 2 of the 117th; the two sources agreed on every other pair of the 117th-119th.
+
+A BILLSUM row has `source_schema_version = 'BILLSUM'`. Its `update_date` is
+BILLSUM's `update-date`, a calendar day with no time, so the query above reports
+it as `valid_day` with no `summary_update_instant`: no time is supplied for the
+day. `last_summary_update_date` is NULL because BILLSUM states no such field.
+`summary_html` is BILLSUM's own rendition of the text, which can differ in markup
+from BILLSTATUS's for the same summary. BILLSTATUS stays authoritative: once a
+BILLSTATUS read states the same bill and summary version, the run retires that
+pair's BILLSUM rows. A replay of the summary prior re-reads every BILLSUM zip
+from the 113th Congress on, where BILLSUM begins, so the rebuilt table restates
+these rows.
 
 The [final-text-to-first-summary feasibility investigation](final-text-summary-delay-feasibility.md)
 qualifies the remaining publication and stage-matching gaps in a bounded cohort.
