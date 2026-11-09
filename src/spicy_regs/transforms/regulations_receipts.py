@@ -642,7 +642,7 @@ def build_from_receipts(
                 witnesses.append(
                     {
                         "source_id": f"{selected.dataset}:{source.name}",
-                        "source_uri": str(source),
+                        "source_uri": None,
                         "sha256": digest,
                         "locator": None,
                         "body_version": selected.generation_id,
@@ -838,7 +838,7 @@ def merge_native_staging(
                 pins.append(
                     {
                         "source_id": f"{dataset}:{source.name}",
-                        "source_uri": str(source),
+                        "source_uri": None,
                         "sha256": digest,
                         "locator": None,
                         "body_version": selected.generation_id,

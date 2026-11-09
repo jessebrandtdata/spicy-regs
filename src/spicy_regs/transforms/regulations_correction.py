@@ -90,7 +90,7 @@ def correct_receipted_dataset(prior, fresh, destination, *, generation_id: str):
             witnesses.append(
                 {
                     "source_id": f"{dataset}:{path.name}",
-                    "source_uri": str(path),
+                    "source_uri": None,
                     "sha256": digest,
                     "locator": None,
                     "body_version": selected.generation_id,

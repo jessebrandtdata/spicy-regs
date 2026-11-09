@@ -133,7 +133,7 @@ def build_fec_identity_rollup(
         # The mapped input must remain available for receipt witnesses after staging ends.
         retained = evidence_dir / built.name
         shutil.copyfile(built, retained)
-        witness = dict(source_id=table, source_uri=str(retained), sha256=digest, locator=None, body_version=None)
+        witness = dict(source_id=table, source_uri=None, sha256=digest, locator=None, body_version=None)
         with (
             ReceiptLineage(
                 () if prior_bundle is None else (Path(prior_bundle) / "etl_receipts.parquet",), dataset=table

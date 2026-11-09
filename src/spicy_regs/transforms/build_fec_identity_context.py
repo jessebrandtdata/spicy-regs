@@ -119,7 +119,7 @@ def build_fec_identity_context(manifest, output_dir):
             mode = item["mode"]
             witness = dict(
                 source_id=item["table"],
-                source_uri=str(item["path"]),
+                source_uri=None,
                 sha256=item["sha256"],
                 locator=None,
                 body_version=None,

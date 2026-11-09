@@ -600,7 +600,7 @@ def test_native_nightly_receipts_only_the_window_and_equals_the_full_row_merge(t
     for path in first:
         retained = first_dir / ".government-inputs/g0" / path.name
         gr._write_by_row(retained, tmp_path / "row-subject.parquet", tmp_path / "row-receipt.parquet", path.stem,
-                         generation_id="g0", source_uri=str(retained), digest=gr._digest(retained))
+                         generation_id="g0", digest=gr._digest(retained))
         assert pq.read_table(path).equals(pq.read_table(tmp_path / "row-subject.parquet"))
         actual = pq.read_table(first_dir / "etl_receipts.parquet", filters=[("dataset", "=", path.stem)])
         assert actual.equals(pq.read_table(tmp_path / "row-receipt.parquet"))
@@ -655,7 +655,7 @@ def test_native_nightly_receipts_only_the_window_and_equals_the_full_row_merge(t
             merge_local_prior(con, columns=gr._legacy_schema(dataset).names, identity=gr.POLICIES[dataset].identity_fields,
                               order_by=orders[dataset], prior_file=prior, new_file=fetched, out_file=oracle)
         gr._write_by_row(oracle, tmp_path / "expected.parquet", tmp_path / "expected-r.parquet", dataset,
-                         generation_id="oracle", source_uri=str(oracle), digest=gr._digest(oracle))
+                         generation_id="oracle", digest=gr._digest(oracle))
         assert pq.read_table(path).equals(pq.read_table(tmp_path / "expected.parquet"))
         assert pq.read_table(first_dir / path.name).equals(before[dataset])
     receipts = pq.read_table(night_dir / "etl_receipts.parquet").to_pylist()

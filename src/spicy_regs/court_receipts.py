@@ -34,7 +34,7 @@ def file_witness(path: Path, *, source_id: str | None = None) -> dict:
     """Pin retained bytes, not a mutable filename or inferred edition."""
     with path.open('rb') as stream:
         digest = 'sha256:' + hashlib.file_digest(stream, 'sha256').hexdigest()
-    return {'source_id': source_id or path.name, 'source_uri': str(path.resolve()),
+    return {'source_id': source_id or path.name, 'source_uri': None,
             'sha256': digest, 'locator': None, 'body_version': None}
 
 

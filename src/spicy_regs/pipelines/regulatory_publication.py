@@ -239,7 +239,7 @@ def finish_checkpoints(root: Path, checkpoints: dict[str, list[dict]], *, publis
         evidence.write_text(json.dumps(checkpoints, sort_keys=True, separators=(",", ":")))
         witness = {
             "source_id": "regulatory-retry-state",
-            "source_uri": str(evidence.resolve()),
+            "source_uri": None,
             "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest(),
             "locator": None,
             "body_version": generation,

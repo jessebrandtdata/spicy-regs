@@ -29,7 +29,7 @@ class GovernmentReceiptRollup(RollupPipeline):
                         [
                             {
                                 "source_id": pin.logical_id,
-                                "source_uri": str(evidence.artifact_dir / "artifact.json"),
+                                "source_uri": None,
                                 "sha256": file_identity(evidence.artifact_dir / "artifact.json")["sha256"],
                                 "locator": "journal.jsonl",
                                 "body_version": pin.artifact_digest,

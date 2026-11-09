@@ -161,7 +161,7 @@ class CrsReportDetailReader:
                 raise CrsReportsError("Retained CRS detail differs from its pinned original")
             self.evidence.retain_bytes(body, stage="crs-detail-retained", raw_source=True,
                                        original_location=str(path), source_sha256=digest)
-            witnesses = [{"source_id": "congress.gov:crs-detail", "source_uri": str(path),
+            witnesses = [{"source_id": "congress.gov:crs-detail", "source_uri": None,
                           "sha256": digest, "locator": "/CRSReport", "body_version": None}]
             try:
                 report = read_report(body, selected["report_id"], update_date=selected["update_date"],

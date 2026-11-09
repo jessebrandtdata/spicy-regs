@@ -121,7 +121,7 @@ class DocumentsFamily(_BaseTableFamily):
         with outcomes.open("rb") as source:
             digest = "sha256:" + hashlib.file_digest(source, "sha256").hexdigest()
         r2.note_read(OUTCOMES, sha256=digest, byte_size=outcomes.stat().st_size)
-        return ({"source_id": "regulations-gov-reconciliation", "source_uri": outcomes.resolve().as_uri(),
+        return ({"source_id": "regulations-gov-reconciliation", "source_uri": None,
                  "sha256": digest, "locator": None, "body_version": None},)
 
 

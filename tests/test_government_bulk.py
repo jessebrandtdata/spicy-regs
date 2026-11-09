@@ -94,8 +94,8 @@ def _source(tmp_path: Path, dataset: str, rows: list[dict]) -> Path:
     return path
 
 
-def _write_both(tmp_path: Path, dataset: str, source: Path):
-    context = {"generation_id": GENERATION, "source_uri": str(source), "digest": gr._digest(source)}
+def _write_both(tmp_path: Path, dataset: str, source: Path, generation: str = GENERATION):
+    context = {"generation_id": generation, "digest": gr._digest(source)}
     row = tmp_path / "row"
     bulk = tmp_path / "bulk"
     row.mkdir()
@@ -103,7 +103,7 @@ def _write_both(tmp_path: Path, dataset: str, source: Path):
     gr._write_by_row(source, row / "s.parquet", row / "r.parquet", dataset, **context)
     routed = government_bulk.write_dataset(
         source, bulk / "s.parquet", bulk / "r.parquet", dataset=dataset, policy=gr.POLICIES[dataset],
-        generation_id=GENERATION, source_uri=str(source), digest=context["digest"],
+        generation_id=generation, digest=context["digest"],
         row_attempt=lambda raw, ordinal: gr.attempt(dataset, raw, ordinal, **context))
     return row, bulk, routed
 
@@ -142,10 +142,8 @@ def test_a_bulk_bundle_is_admitted_without_any_row_route(tmp_path):
 def test_the_row_context_with_a_control_character_routes_every_row(tmp_path):
     dataset = "lobbying_activities"
     rows = _tables(10)[dataset]
-    path = tmp_path / "odd\x1bname"
-    path.mkdir()
-    source = _source(path, dataset, rows)
-    row, bulk, routed = _write_both(tmp_path, dataset, source)
+    source = _source(tmp_path, dataset, rows)
+    row, bulk, routed = _write_both(tmp_path, dataset, source, generation="odd\x1bgeneration")
     assert routed == len(rows)
     assert pq.read_table(bulk / "r.parquet").to_pylist() == pq.read_table(row / "r.parquet").to_pylist()
 

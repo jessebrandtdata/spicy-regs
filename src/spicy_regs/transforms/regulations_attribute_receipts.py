@@ -73,7 +73,7 @@ def build_attribute_generation(
                 pins.append(
                     {
                         "source_id": f"{dataset}:{path.name}",
-                        "source_uri": str(path),
+                        "source_uri": None,
                         "sha256": sha256,
                         "locator": None,
                         "body_version": prior.generation_id,

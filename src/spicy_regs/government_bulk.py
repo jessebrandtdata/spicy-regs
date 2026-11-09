@@ -128,7 +128,6 @@ def write_dataset(
     dataset: str,
     policy: DatasetPolicy,
     generation_id: str,
-    source_uri: str,
     digest: str,
     first_receipts: Sequence[dict] = (),
     last_receipts: Sequence[dict] = (),
@@ -164,7 +163,7 @@ def write_dataset(
     )
     subject_select = ", ".join(f"{value} AS {_q(field.name)}" for (value, _), field in zip(columns, policy.subject_schema, strict=True))
     record_id, version, identity = etl_bulk.identity_sql(policy)
-    witness = ("[{'source_id': " + _text("spicy-regs:producer-output:" + dataset) + ", 'source_uri': " + _text(source_uri)
+    witness = ("[{'source_id': " + _text("spicy-regs:producer-output:" + dataset) + ", 'source_uri': CAST(NULL AS VARCHAR)"
                + ", 'sha256': " + _text(digest) + ", 'locator': 'row:' || _ordinal, 'body_version': CAST(NULL AS VARCHAR)}]")
     diagnostics = exact_json({"source_qualification": "producer-output; original capture coverage unchanged"})
     query = f"""

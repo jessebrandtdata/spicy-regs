@@ -203,7 +203,7 @@ def write_legislative_outputs(
                 retained_member = destination / member.relative_to(stage) if member.is_relative_to(stage) else member
                 witness = {
                     "source_id": dataset,
-                    "source_uri": retained_member.resolve().as_uri(),
+                    "source_uri": None,
                     "sha256": digest,
                     "locator": None,
                     "body_version": None,

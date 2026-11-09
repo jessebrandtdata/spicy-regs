@@ -736,7 +736,7 @@ def enrich_receipted_dataset(
         witnesses.append(
             {
                 "source_id": f"{selected.dataset}:{path.name}",
-                "source_uri": str(path),
+                "source_uri": None,
                 "sha256": digest,
                 "locator": None,
                 "body_version": selected.generation_id,

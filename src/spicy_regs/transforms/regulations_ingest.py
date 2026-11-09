@@ -29,7 +29,7 @@ def _build(dataset, destination, *, generation_id, witnesses, prior, prior_filen
                 pins.append(
                     {
                         "source_id": f"{dataset}:{path.name}",
-                        "source_uri": str(path),
+                        "source_uri": None,
                         "sha256": digest,
                         "locator": None,
                         "body_version": prior.generation_id,

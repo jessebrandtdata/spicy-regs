@@ -270,7 +270,12 @@ def test_organization_links_state_their_match_grade_and_sponsor_comparison_in_th
     }
 
     # The pair restores every column of the builder's file its receipts witness, the returned ones included.
-    built = pq.read_table(receipts[0]["witnesses"][0]["source_uri"]).to_pylist()
+    import hashlib
+    witness = receipts[0]["witnesses"][0]
+    assert witness["source_uri"] is None  # the retained builder file is found by content, not by a machine path
+    [retained] = [path for path in (tmp_path / "links.inputs").glob("*.parquet")
+                  if "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest() == witness["sha256"]]
+    built = pq.read_table(retained).to_pylist()
     restored = [
         {name: row["conversion_inputs"][name] if name in row["conversion_inputs"] else row[name] for name, _ in COLUMNS}
         for row in read_identity_rows(output, table, generation_id="g1")

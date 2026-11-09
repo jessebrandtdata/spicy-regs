@@ -85,7 +85,7 @@ def write_congress_dataset(
         receipts = stage / "etl_receipts.parquet"
         base_witness = {
             "source_id": "shaped-observation:" + dataset,
-            "source_uri": str(source.resolve()),
+            "source_uri": None,
             "sha256": digest,
             "body_version": None,
         }

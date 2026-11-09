@@ -185,8 +185,11 @@ def test_downloaded_and_preexisting_exports_remain_retained(tmp_path, monkeypatc
 
     receipts = {local_receipt_selection(path)[0] for path in built}
     assert len(receipts) == 1
+    import hashlib
+    # Witnesses name content, not this machine's paths; the bytes they name stay retained here.
+    retained = {'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest() for path in tmp_path.rglob('*') if path.is_file()}
     for receipt in parquet_rows(receipts.pop()):
-        assert all(Path(witness['source_uri']).is_file() for witness in receipt['witnesses'])
+        assert all(witness['source_uri'] is None and witness['sha256'] in retained for witness in receipt['witnesses'])
     assert all(not (tmp_path / 'out' / path.name).exists() for path in built)
 
 

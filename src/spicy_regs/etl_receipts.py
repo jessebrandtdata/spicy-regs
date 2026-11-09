@@ -220,6 +220,36 @@ class ReceiptContext:
                 raise ValueError("Invalid witness SHA-256")
 
 
+_URI_SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]+:")  # two or more letters, so a Windows drive is a path
+_BARE_DIGEST = re.compile(r"(?:sha256:)?[0-9a-f]{64}")
+
+
+def local_witness_uri(uri: str | None) -> bool:
+    """Whether a witness address names a file on the machine that wrote the receipt.
+
+    Receipts are public. A build path names a runner's temporary directory or an
+    owner's home folder, and the file is not kept; the witness ``sha256`` is what
+    identifies the input. Public URLs, content digests and other schemes
+    (``receipt-processing:``) are addresses; a bare or ``file:`` path is not.
+    """
+    if uri is None or _BARE_DIGEST.fullmatch(uri):
+        return False
+    scheme = _URI_SCHEME.match(uri)
+    return scheme is None or scheme.group().lower() == "file:"
+
+
+def refuse_local_witnesses(witnesses: Iterable[Mapping[str, Any]]) -> None:
+    """Refuse a new receipt whose witness address is a local filesystem path."""
+    if any(local_witness_uri(witness.get("source_uri")) for witness in witnesses):
+        raise ValueError("Receipt witness source_uri is a local filesystem path; record source_id and sha256 instead")
+
+
+def public_witnesses(witnesses: Iterable[Mapping[str, Any]]) -> list[dict]:
+    """Copy earlier witnesses into a new receipt without their local paths (docs/uscode-editions.md)."""
+    return [{**witness, "source_uri": None} if local_witness_uri(witness.get("source_uri")) else dict(witness)
+            for witness in witnesses]
+
+
 def _native(value: Any, dtype: pa.DataType, label: str) -> None:
     """Check before Arrow can drop extra struct keys or coerce money/integers."""
     if value is None:
@@ -290,6 +320,7 @@ def subject_identity(policy: DatasetPolicy, subject: Mapping) -> tuple[str, str,
 def _receipt(policy, context, *, subject, processing, outcome, identity=None):
     if outcome not in OUTCOMES or (subject is not None) != (outcome == "accepted"):
         raise ValueError("Receipt outcome and subject presence disagree")
+    refuse_local_witnesses(context.witnesses)
     record_id, version, identity_json = subject_identity(policy, subject) if subject is not None else (None, None, None)
     if identity is not None:
         if set(identity) != set(policy.identity_fields):
@@ -1175,7 +1206,8 @@ def inherit_receipt(context: ReceiptContext, prior: Mapping | None) -> ReceiptCo
         "locator": "/",
         "body_version": prior["receipt_id"],
     }
-    return replace(context, witnesses=[*prior["witnesses"], reference, *context.witnesses], diagnostics=retained)
+    return replace(context, witnesses=[*public_witnesses(prior["witnesses"]), reference, *context.witnesses],
+                   diagnostics=retained)
 
 
 def resolve_receipt_witness(receipt: Mapping, witness: Mapping) -> bytes:
@@ -1257,7 +1289,7 @@ def retire_receipt(receipt: Mapping, *, generation_id: str, reason: str) -> dict
             generation_id,
             receipt["attempt_id"] + ":retired",
             receipt["processor"],
-            receipt["witnesses"],
+            public_witnesses(receipt["witnesses"]),
             {"retired_reason": reason},
         ),
         receipt,

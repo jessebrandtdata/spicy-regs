@@ -156,7 +156,7 @@ def _build_events(directory: Path, generation_id: str, builder: str, evidence, e
                         [
                             {
                                 "source_id": field_name,
-                                "source_uri": str(path.resolve()),
+                                "source_uri": None,
                                 "sha256": digest,
                                 "locator": f"line:{line + 1}",
                                 "body_version": None,
@@ -216,7 +216,7 @@ def write_congress_dataset(
         receipts = stage / "etl_receipts.parquet"
         base_witness = {
             "source_id": "shaped-observation:" + dataset,
-            "source_uri": str(source.resolve()),
+            "source_uri": None,
             "sha256": digest,
             "body_version": None,
         }

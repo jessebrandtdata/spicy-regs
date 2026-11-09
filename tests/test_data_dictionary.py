@@ -521,7 +521,7 @@ def test_the_receipts_page_states_what_the_writer_does():
 
     guide = dd.RECEIPT_GUIDE.read_text(encoding="utf-8")
     context = ReceiptContext("build-1", "attempt-1", "test/1", [
-        {"source_id": "s", "source_uri": "u", "sha256": "0" * 64, "locator": None, "body_version": None}])
+        {"source_id": "s", "source_uri": "https://example.test/u", "sha256": "0" * 64, "locator": None, "body_version": None}])
 
     def written(table: str, rows: list[dict]) -> tuple[pa.Table, list[dict]]:
         policy = dd.subject_policies()[table]

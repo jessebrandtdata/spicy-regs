@@ -44,7 +44,7 @@ from spicy_regs.congress_subjects import (
     subject_schema,
     target_name,
 )
-from spicy_regs.etl_receipts import WITNESS_TYPE, DatasetPolicy
+from spicy_regs.etl_receipts import WITNESS_TYPE, DatasetPolicy, refuse_local_witnesses
 
 #: ``congress_subjects.integer`` reads an ASCII digit string; 18 digits always fit the subject's int64.
 _DIGITS = "'[0-9]{1,18}'"
@@ -84,6 +84,7 @@ def _text(value: Any) -> str:
 
 def _witnesses_sql(first: Mapping[str, Any], rest: Sequence[Mapping[str, Any]]) -> str:
     """A list of witness structs: the row's own, whose locator is its ordinal, then the caller's."""
+    refuse_local_witnesses([first, *rest])
     stored = pa.array([list(rest)], type=pa.list_(WITNESS_TYPE)).to_pylist()[0]
     own = ", ".join(f"'{name}': " + ("CAST(_ordinal AS VARCHAR)" if name == "locator" else _text(first.get(name))) for name in WITNESS_TYPE.names)
     others = ["{" + ", ".join(f"'{name}': {_text(witness[name])}" for name in WITNESS_TYPE.names) + "}" for witness in stored]
@@ -179,7 +180,7 @@ def write_bundle(
         for field in subject
     )
     record_id, version, identity = etl_bulk.identity_sql(policy)
-    own_witness = {"source_id": "shaped-observation:" + dataset, "source_uri": str(source), "sha256": digest, "body_version": None}
+    own_witness = {"source_id": "shaped-observation:" + dataset, "source_uri": None, "sha256": digest, "body_version": None}
     reference = _context_reference(source, dataset, policy, generation_id, processor, witnesses)
     query = f"""
     WITH read AS ({_source_sql(source, file_schema, dataset, policy, reference, etl_bulk.SOURCE_BATCH)}),

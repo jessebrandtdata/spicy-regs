@@ -246,7 +246,7 @@ def test_correction_keeps_text_status_and_diagnostics_together(tmp_path):
         for path in (*selected.subjects, selected.receipts):
             with path.open("rb") as body:
                 digest = file_digest(body, "sha256").hexdigest()
-            assert {"source_id": f"documents:{path.name}", "source_uri": str(path), "sha256": digest,
+            assert {"source_id": f"documents:{path.name}", "source_uri": None, "sha256": digest,
                     "locator": None, "body_version": selected.generation_id} in receipt["witnesses"]
 
 
@@ -445,7 +445,9 @@ def test_native_volume_rollup_keeps_counts_and_omission_metadata_in_receipts(tmp
     assert pq.read_table(target / "agency_monthly_volume.parquet")["document_count"].to_pylist() == [1]
     [receipt] = [r for r in pq.read_table(target / "etl_receipts.parquet").to_pylist() if r["outcome"] == "accepted"]
     assert "omitted_rows" in receipt["processing_json"]
-    assert all(Path(w["source_uri"]).exists() for w in receipt["witnesses"])
+    import hashlib
+    retained = {hashlib.sha256(path.read_bytes()).hexdigest() for path in tmp_path.rglob("*") if path.is_file()}
+    assert all(w["source_uri"] is None and w["sha256"] in retained for w in receipt["witnesses"])
 
 
 def test_native_navigation_preserves_occurrences_without_cartesian_products(tmp_path):

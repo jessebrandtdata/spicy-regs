@@ -13,7 +13,7 @@ from spicy_regs.court_receipts import (
 )
 from spicy_regs.etl_receipts import validate_receipt_bundle
 
-WITNESSES = [{'source_id': 'export.csv.bz2', 'source_uri': '/data/export.csv.bz2', 'sha256': 'sha256:' + 'a' * 64,
+WITNESSES = [{'source_id': 'export.csv.bz2', 'source_uri': 'https://example.test/export.csv.bz2', 'sha256': 'sha256:' + 'a' * 64,
               'locator': None, 'body_version': None},
              {'source_id': 'staged.parquet', 'source_uri': None, 'sha256': 'b' * 64, 'locator': None,
               'body_version': None}]
@@ -214,7 +214,7 @@ def test_attorneys_as_a_native_list_and_missing_columns(tmp_path):
 def test_context_text_the_sql_spells_differently_routes_every_row(tmp_path):
     columns, rows = citation_map(random.Random(1), 40)
     expected, actual, routed = both(tmp_path, 'court_citation_map', _table(columns, rows),
-                                    diagnostics={'note': 'esc\x1b'}, witnesses=[{**WITNESSES[0], 'source_uri': '/x\x1b'}])
+                                    diagnostics={'note': 'esc\x1b'}, witnesses=[{**WITNESSES[0], 'source_uri': 'https://example.test/x\x1b'}])
     assert routed == len(rows)
     assert pq.read_table(local_receipt_selection(actual)[0]).equals(pq.read_table(local_receipt_selection(expected)[0]))
 

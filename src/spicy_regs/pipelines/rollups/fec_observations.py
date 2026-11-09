@@ -52,7 +52,7 @@ class FecObservationsRollup(RollupPipeline):
             for path in outputs:
                 with path.open("rb") as stream:
                     digest = "sha256:" + hashlib.file_digest(stream, "sha256").hexdigest()
-                witness = dict(source_id=path.stem, source_uri=str(path), sha256=digest,
+                witness = dict(source_id=path.stem, source_uri=None, sha256=digest,
                                locator=None, body_version=None)
                 with pq.ParquetFile(path) as source:
                     for batch in source.iter_batches(batch_size=512):

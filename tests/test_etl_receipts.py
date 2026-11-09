@@ -952,3 +952,37 @@ def test_combine_keeps_receipt_groups_bounded_across_shards(tmp_path):
         sizes = [parquet.metadata.row_group(i).num_rows for i in range(parquet.metadata.num_row_groups)]
     assert sum(sizes) == 4003 and max(sizes) <= RECEIPT_ROW_GROUP
     assert pq.read_table(combined).equals(pa.concat_tables([pq.read_table(path) for path in shards]))
+
+
+@pytest.mark.parametrize("uri", ["/home/runner/work/x/.builds/a/input.parquet", "/Users/someone/Work/input.parquet",
+                                 "relative/input.parquet", "file:///tmp/input.parquet", r"C:\private\input.parquet"])
+def test_a_new_receipt_refuses_a_local_witness_path(policy, row, context, uri):
+    from spicy_regs.etl_receipts import local_witness_uri
+
+    assert local_witness_uri(uri)
+    local = replace(context, witnesses=[{**context.witnesses[0], "source_uri": uri}])
+    with pytest.raises(ValueError, match="local filesystem path"):
+        split_record(policy, row, local)
+    with pytest.raises(ValueError, match="local filesystem path"):
+        failure_receipt(policy, local, outcome="error", raw_fields={})
+
+
+@pytest.mark.parametrize("uri", [None, "https://example.test/a", "receipt-processing:" + "b" * 64, "sha256:" + "c" * 64])
+def test_addresses_and_digests_are_not_local_paths(uri):
+    from spicy_regs.etl_receipts import local_witness_uri
+
+    assert not local_witness_uri(uri)
+
+
+def test_inheriting_or_retiring_a_path_bearing_receipt_drops_only_the_path(policy, row, context):
+    """Already published receipts keep their bytes; a new receipt never re-publishes their machine paths."""
+    from spicy_regs.etl_receipts import _digest, inherit_receipt, retire_receipt
+
+    _, legacy = split_record(policy, row, context)
+    legacy = dict(legacy, witnesses=[{**w, "source_uri": "/home/runner/work/old.parquet"} for w in legacy["witnesses"]])
+    legacy["receipt_id"] = _digest({k: v for k, v in legacy.items() if k != "receipt_id"})
+    _, current = split_record(policy, row, inherit_receipt(replace(context, generation_id="build-2"), legacy))
+    retired = retire_receipt(legacy, generation_id="build-3", reason="explicit deletion")
+    for receipt in (current, retired):
+        assert all(w["source_uri"] is None or not w["source_uri"].startswith("/") for w in receipt["witnesses"])
+        assert {w["sha256"] for w in legacy["witnesses"]} <= {w["sha256"] for w in receipt["witnesses"]}

@@ -303,7 +303,7 @@ def test_partial_source_uses_the_same_missing_columns(tmp_path, dataset):
 
 @pytest.mark.parametrize("field", ["locator", "source_uri", "source_id", "body_version"])
 def test_control_character_in_receipt_context_routes_to_reference(tmp_path, monkeypatch, field):
-    witness = {**WITNESS, field: "context\x1b"}
+    witness = {**WITNESS, field: ("https://example.test/" if field == "source_uri" else "") + "context\x1b"}
     _, row, bulk = _both(tmp_path, monkeypatch, "member_votes", _member_votes(5), witnesses=[witness])
     for reference, actual in zip(row, bulk):
         assert pq.read_table(reference).equals(pq.read_table(actual))

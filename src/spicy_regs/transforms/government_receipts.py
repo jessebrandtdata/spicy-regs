@@ -294,7 +294,7 @@ def has_native_prior(dataset: str) -> bool:
 
 
 def attempt(
-    dataset: str, raw: dict, ordinal: int, *, generation_id: str, source_uri: str, digest: str
+    dataset: str, raw: dict, ordinal: int, *, generation_id: str, digest: str
 ) -> tuple[dict | None, dict]:
     """One retained producer row's conversion: its subject (None when refused) and its receipt.
 
@@ -306,7 +306,7 @@ def attempt(
     witnesses = [
         {
             "source_id": "spicy-regs:producer-output:" + dataset,
-            "source_uri": source_uri,
+            "source_uri": None,
             "sha256": digest,
             "locator": f"row:{ordinal}",
             "body_version": None,
@@ -392,7 +392,7 @@ def _write_by_row(retained: Path, subject_path: Path, receipt_path: Path, datase
             if len(receipts) + len(refused) >= 2000:
                 flush()
         if attempted == 0:
-            receipts.append(_empty_observation(dataset, context["source_uri"], context["digest"], context["generation_id"]))
+            receipts.append(_empty_observation(dataset, context["digest"], context["generation_id"]))
         flush()
         refused_writer.close()
         with pq.ParquetFile(Path(scratch) / "refused.parquet") as late:
@@ -400,7 +400,7 @@ def _write_by_row(retained: Path, subject_path: Path, receipt_path: Path, datase
                 receipt_writer.write_batch(batch)
 
 
-def _empty_observation(dataset: str, source_uri: str, digest: str, generation_id: str) -> dict:
+def _empty_observation(dataset: str, digest: str, generation_id: str) -> dict:
     policy = POLICIES[dataset]
     return observation_receipt(
         policy,
@@ -411,7 +411,7 @@ def _empty_observation(dataset: str, source_uri: str, digest: str, generation_id
             [
                 {
                     "source_id": "spicy-regs:producer-output:" + dataset,
-                    "source_uri": source_uri,
+                    "source_uri": None,
                     "sha256": digest,
                     "locator": None,
                     "body_version": None,
@@ -462,13 +462,13 @@ def migrate_outputs(
         shard = work / dataset
         shard.mkdir()
         subject_path, receipt_path = shard / f"{dataset}.parquet", shard / RECEIPT_KEY
-        context = {"generation_id": generation_id, "source_uri": str(retained), "digest": digest}
+        context = {"generation_id": generation_id, "digest": digest}
         rows = pq.ParquetFile(retained).metadata.num_rows
         try:
             government_bulk.write_dataset(
                 retained, subject_path, receipt_path, dataset=dataset, policy=policy, generation_id=generation_id,
-                source_uri=str(retained), digest=digest,
-                last_receipts=[] if rows else [_empty_observation(dataset, str(retained), digest, generation_id)],
+                digest=digest,
+                last_receipts=[] if rows else [_empty_observation(dataset, digest, generation_id)],
                 row_attempt=lambda raw, ordinal, dataset=dataset: attempt(dataset, raw, ordinal, **context),
             )
         except etl_bulk.NotBulkEligible as error:
