@@ -26,8 +26,8 @@ MAX_KEYS = 100
 #: The most receipts a lookup reads to find its keys, and the most subject rows it searches for a key no receipt
 #: holds (owner decision 2026-10-05). Counted after pruning: only row groups whose footer bounds admit the table and
 #: one of the keys' ``identity_json`` are read (receipts carry those bounds since the standard layout, 2026-11-09),
-#: so a table of any size is served while its keys fall in a few 64k-row groups; a member without identity bounds
-#: counts every receipt of the table, as before.
+#: so a table of any size is served while its keys fall in a few 64k-row groups; a group whose footer gives no
+#: identity bounds admits every key. Row groups that mix policy versions count against it too (:func:`_stated_identities`).
 #: Measured 2026-10-05 on the public bucket: sam_entities' 797,525 receipts cost one lookup 28.6 MiB in 800 range
 #: requests; 2026-11-09 on a bill-family slice in the standard layout, DuckDB read ~1.5 MB per cold lookup.
 SCAN_ROW_BOUND = 2_000_000
@@ -244,7 +244,8 @@ def _stated_identities(cursor: Any, member: Member, groups: Sequence[_Group], ca
     Admission accepts the current policy and registered earlier policies (``etl_receipts.receipt_policies``),
     and a carried receipt keeps its version (``rebind_receipt``). A dataset can therefore state several versions;
     every version present is read. A group whose footer states one version holds no other; a group stating a
-    range is read for the versions this dataset's rows hold.
+    range is read for the versions this dataset's rows hold, refused past :data:`SCAN_ROW_BOUND` rows before any
+    is read: this read is what refuses a lookup whose versions identify a row differently, so it is never skipped.
     """
     from spicy_regs.etl_receipts import _unpack
 
@@ -252,6 +253,12 @@ def _stated_identities(cursor: Any, member: Member, groups: Sequence[_Group], ca
         versions = {groups[i].versions[0] for i in candidates
                     if groups[i].versions[0] is not None and groups[i].versions[0] == groups[i].versions[1]}
         mixed = [i for i in candidates if groups[i].versions[0] is None or groups[i].versions[0] != groups[i].versions[1]]
+        if (rows := sum(groups[i].rows for i in mixed)) > SCAN_ROW_BOUND:
+            raise ValueError(
+                f"{TOOL} cannot answer keys for {dataset}: its receipts' row groups mix policy versions across "
+                f"{rows:,} receipts, over the {SCAN_ROW_BOUND:,}-receipt bound, and every version must be read to "
+                "check it identifies a row as this server does. Ask again once this generation's receipts are "
+                "rewritten, or see describe_table's notes for which receipt values a row's own columns give.")
         for start, end in _runs(groups, mixed):
             versions.update(version for (version,) in cursor.execute(
                 f"SELECT DISTINCT policy_version FROM {_ROWS} WHERE file_row_number >= ? AND file_row_number < ? "

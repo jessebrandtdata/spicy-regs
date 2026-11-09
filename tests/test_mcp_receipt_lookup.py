@@ -410,6 +410,33 @@ def test_a_table_past_the_bound_is_refused_from_its_footer_alone(tmp_path, monke
             if "read_parquet" in sql or "parquet_metadata" in sql] == ["parquet_metadata"]
 
 
+def test_row_groups_mixing_policy_versions_count_against_the_bound_before_any_row_is_read(tmp_path, monkeypatch):
+    """Finding every version a dataset states reads the groups whose footer spans versions: past the bound that
+    read is refused from the footer, however few receipts the keys' own groups hold."""
+    installed = POLICIES["fcc_filings"]
+    earlier = replace(installed, policy_version="government-sources/0")
+    subjects, receipts = [], []
+    for number, (policy, ids) in enumerate([(installed, range(100, 112, 2)), (earlier, range(101, 112, 2))]):
+        subject, receipt = written(tmp_path / f"work-{number}", "fcc_filings", [fcc(str(i)) for i in ids], policy=policy)
+        subjects.append(pq.read_table(subject))
+        receipts.append(pq.read_table(receipt))
+    held = tmp_path / "subject.parquet"
+    pq.write_table(pa.concat_tables(subjects), held)
+    root = tmp_path / "bucket"
+    interleaved = pa.concat_tables(receipts).sort_by("identity_json")  # every 2-row group holds both versions
+    con = serving(monkeypatch, root, index_of({"fcc-filings": published(
+        root, "fcc-filings", {"fcc_filings": held}, interleaved, row_group=2)}))
+    recording = _Recording(con)
+    monkeypatch.setattr(server, "_get_connection", lambda: recording)
+    monkeypatch.setattr(lookup, "SCAN_ROW_BOUND", 4)  # the key's own group (2 receipts) is within it; 12 mixed are not
+    message = refused("fcc_filings", [{"id_submission": "100"}], ["filing_url"])
+    assert "row groups mix policy versions across 12 receipts, over the 4-receipt bound" in message
+    assert not [sql for sql, _ in recording.statements if "read_parquet" in sql]
+    monkeypatch.setattr(lookup, "SCAN_ROW_BOUND", 12)
+    reply = call("fcc_filings", [{"id_submission": "100"}, {"id_submission": "101"}], ["filing_url"])
+    assert [entry["receipt"] for entry in reply["keys"]] == ["found", "found"]
+
+
 def test_lookup_retains_identity_version_refusal(tmp_path, monkeypatch):
     installed = POLICIES["fcc_filings"]
     other = replace(installed, identity_fields=("id_submission", "total_page_count"),
