@@ -777,3 +777,20 @@ def test_malformed_declared_record_identity_cannot_enable_detail_navigation(iden
     options['descriptions']['parent']['identity_columns'] = identity
     with pytest.raises(ValueError, match='Invalid declared record identity: parent'):
         build_bundle(index(), **options)
+
+
+def test_the_published_inputs_are_every_mutable_object_the_publisher_read(measurement_refresh, monkeypatch):
+    """The scheduled early exit rereads exactly the bundle's inputs, so an unrecorded read would go unwatched."""
+    from spicy_regs import explorer_publications
+    from spicy_regs.explorer_inputs import unchanged
+
+    script, store, _, _, output, _, reads, _, _, _ = measurement_refresh
+    monkeypatch.setattr(script, "other_tables", explorer_publications.other_tables)
+    script.main()
+    bundle = json.loads(output.read_bytes())
+    # The publisher's own output is its cache and readback, never an input.
+    assert set(reads) - {script.KEY} == set(bundle["inputs"])
+    asked = []
+    same, _ = unchanged(store.objects[script.KEY], revision=bundle["sourceRevision"],
+                        read=lambda key: asked.append(key) or store.objects.get(key))
+    assert same and sorted(asked) == sorted(bundle["inputs"])

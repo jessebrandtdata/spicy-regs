@@ -53,21 +53,6 @@ def test_any_change_absence_or_doubt_runs_the_full_refresh(store, previous, revi
     assert not same and why in reason
 
 
-def test_the_publisher_records_what_the_check_rereads():
-    """The bundle's inputs come from the publisher's own reads; the check reads exactly those keys."""
-    from spicy_regs.explorer_metadata import build_bundle
-
-    index = {"format": "spicy-regs-publication", "version": 2, "families": {}}
-    inputs = {key: input_digest(body) for key, body in STORE.items()}
-    bundle = build_bundle(index, input_digests=inputs, source_revision=REVISION, generated_at="2026-11-09T00:00:00Z",
-                          descriptions={}, registry={"sources": {}}, join_record={"joins": []}, audit={})
-    assert bundle["inputs"] == inputs
-    asked = []
-    same, _ = unchanged(json.dumps(bundle).encode(), revision=REVISION,
-                        read=lambda key: asked.append(key) or STORE[key])
-    assert same and sorted(asked) == sorted(STORE)
-
-
 def test_the_workflow_runs_the_check_before_any_install_and_gates_everything_after_it():
     steps = yaml.safe_load((ROOT / ".github/workflows/publish-explorer-metadata.yml").read_text())["jobs"]["publish"]["steps"]
     names = [step.get("name") or step.get("uses") for step in steps]
