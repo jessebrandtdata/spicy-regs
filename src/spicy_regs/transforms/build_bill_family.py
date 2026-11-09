@@ -646,7 +646,7 @@ def _require_replay_scope(
     types = sorted(set(DEFAULT_BILL_TYPES) - set(bill_types))
     if missing or types:
         raise ValueError(
-            f"{replay}. This run covers Congresses {list(congresses)} and bill types {list(bill_types)}; a replay "
+            f"{str(replay).rstrip(".")}. This run covers Congresses {list(congresses)} and bill types {list(bill_types)}; a replay "
             f"must re-read every bulk folder ({wanted[0]}-{wanted[-1]}, all eight bill types) or it would drop "
             f"the rows it cannot restate. Run once: {replay_dispatch(wanted[0], wanted[-1])}"
         )

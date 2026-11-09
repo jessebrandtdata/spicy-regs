@@ -326,9 +326,11 @@ def test_describe_omits_only_measurements_and_ledger_statements_by_default_and_s
             assert observed.get("parent_columns", compact["joins"].get("incoming_parent_columns")) == canonical["parent_columns"]
     assert "ledger_statements" not in compact["qualification"]
     assert {"status", "generation", "live_pin", "ledger_pin", "ledger_disposition", "ledger_tasks"} <= set(compact["qualification"])
-    # bill_versions has receipts: its receipt fields' meanings are a third key only the detailed reply carries.
+    # bill_versions has receipts: its receipt fields' meanings are a third key only the detailed reply carries,
+    # and since its /1 history (ss-aj7t) the columns /2 added are a fourth.
     assert compact["detail"] == {"full": False, "omitted": ["joins[].measurement", "qualification.ledger_statements",
-                                                            "receipt_field_meanings"]}
+                                                            "receipt_field_meanings", "metadata.later_policy_columns"]}
+    assert full["metadata"]["later_policy_columns"] == ["publication_dates", "publication_evidence_status"]
     assert "receipt_field_meanings" not in compact and set(full["receipt_field_meanings"]) <= set(
         compact["receipt_fields"]["fields"])
     assert full["detail"] == {"full": True, "omitted": []}
@@ -347,6 +349,8 @@ def test_describe_omits_only_measurements_and_ledger_statements_by_default_and_s
                     assert cut == {k: v for k, v in whole.items() if k != "measurement"}
         elif key == "qualification":
             assert value == {k: v for k, v in full["qualification"].items() if k != "ledger_statements"}
+        elif key == "metadata":
+            assert value == {k: v for k, v in full["metadata"].items() if k != "later_policy_columns"}
         else:
             assert value == full[key]
     compact_bytes = len(json.dumps(compact, separators=(",", ":")).encode())

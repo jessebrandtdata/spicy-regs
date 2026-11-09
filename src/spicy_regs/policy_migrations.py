@@ -41,9 +41,10 @@ class Replay:
 REPLAYS: Mapping[str, Replay] = {
     "bill_publisher_summaries": Replay(
         "spicy_regs.transforms.build_bill_family:REPLAYED_FROM_STATUS",
-        max_dropped_rows=100,
-        bound_basis="PROVISIONAL: the 108th Congress replay restated all 14,833 live rows (0 dropped); "
-                    "set from the full 108-119 measurement",
+        max_dropped_rows=25,
+        bound_basis="the full 108-119 replay of 2026-11-09 restated 190,155 of the 190,156 live rows; the one it "
+                    "left out (119-hr-1455 00, 2025-03-21) is an older revision the XML no longer lists, and one "
+                    "new revision appeared the same day. 25 allows a few weeks of such drift and no more",
     ),
 }
 
