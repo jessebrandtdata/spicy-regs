@@ -119,6 +119,38 @@ def test_mixed_family_restores_both_owners_and_receipt_only_archive(tmp_path, mo
     ]
 
 
+def test_own_priors_read_only_each_datasets_row_groups(tmp_path, monkeypatch):
+    monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
+    first_dir = tmp_path / "first"
+    first_dir.mkdir()
+    first = MixedRollup()
+    outputs = first.build_receipts(first_dir, mixed_builder)
+    # The same receipts in one-row groups, so each dataset's rows sit in groups of their own.
+    receipts = first_dir / "etl_receipts.parquet"
+    pq.write_table(pq.read_table(receipts), receipts, row_group_size=1)
+    footer = pq.read_metadata(receipts)
+    select_bundle(monkeypatch, first_dir, first)
+    reads, real = [], pq.ParquetFile.iter_batches
+
+    def iter_batches(self, *args, row_groups=None, **kwargs):
+        if self.metadata.equals(footer):
+            reads.append(row_groups)
+        return real(self, *args, row_groups=row_groups, **kwargs)
+
+    monkeypatch.setattr(pq.ParquetFile, "iter_batches", iter_batches)
+    second_dir = tmp_path / "second"
+    second_dir.mkdir()
+    again = MixedRollup().build_receipts(second_dir, mixed_builder)
+    assert {p.name for p in again} == {p.name for p in outputs}
+    for path in outputs:
+        assert pq.read_table(path).equals(pq.read_table(second_dir / path.name))
+    # One selection per restored dataset plus the laws' file states, each of its own groups; the Congress writer
+    # reuses its restored selection. The one whole read is the legislative carry, once for the whole family.
+    whole = [run for run in reads if run is None]
+    assert len(whole) == 1 and len(reads) == 5
+    assert all(len(run) < footer.num_row_groups for run in reads if run is not None)
+
+
 def test_missing_receipts_refuse_before_processing_read(tmp_path, monkeypatch):
     monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
     directory = tmp_path / "first"

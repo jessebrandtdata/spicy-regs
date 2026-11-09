@@ -85,6 +85,7 @@ class SelectedPriors:
         self.ranged = frozenset(ranged) & set(CONGRESS)
         self.restored = {}
         self.selections = {}
+        self.scoped = {}
         self.processing_members = {}
 
     def get(self, dataset):
@@ -122,6 +123,7 @@ class SelectedPriors:
             with phase_log("prior-admit", dataset=dataset):
                 validate_receipt_bundle({dataset: subjects}, [scoped], [selected_policy], generation_id=generation)
         self.selections[dataset] = (subjects, receipt_path, generation)
+        self.scoped[dataset] = scoped
         output = directory / "processing" / (dataset + ".parquet")
         if dataset in CONGRESS:
             output.parent.mkdir(parents=True, exist_ok=True)
@@ -391,7 +393,9 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
             destination = private / "datasets" / dataset
             if dataset in CONGRESS:
                 selection = prior.selections.get(dataset)
-                held = None if selection is None else CongressInput(tuple(selection[0]), selection[1], selection[2])
+                # The prior's receipts as scoped when selected, so the writer never rescans the family's member.
+                held = None if selection is None else CongressInput(tuple(selection[0]), prior.scoped[dataset],
+                                                                    selection[2])
                 with phase_log("write-dataset", dataset=dataset, writer="congress"):
                     subject, receipt = write_congress_dataset(
                         path, destination, dataset=dataset, generation_id=self.receipt_generation_id, prior=held,
