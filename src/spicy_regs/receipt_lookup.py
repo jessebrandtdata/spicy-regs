@@ -10,7 +10,6 @@ pyarrow, which describing a table does not.
 
 from __future__ import annotations
 
-import bisect
 import json
 import re
 from datetime import datetime, timezone
@@ -24,11 +23,13 @@ from spicy_regs.subject_catalog import descriptors
 
 TOOL = "read_receipt_fields"
 MAX_KEYS = 100
-#: The most receipts whose record ids a lookup scans to find its keys, and the most subject rows it searches for a
-#: key no receipt holds (owner decision 2026-10-05). A declared, admitted receipt key index avoids the receipt
-#: scan; subject searches for missing keys retain this bound. Measured the same day on the public bucket:
-#: sam_entities' 797,525 receipts cost one lookup
-#: 28.6 MiB in 800 range requests.
+#: The most receipts a lookup reads to find its keys, and the most subject rows it searches for a key no receipt
+#: holds (owner decision 2026-10-05). Counted after pruning: only row groups whose footer bounds admit the table and
+#: one of the keys' ``identity_json`` are read (receipts carry those bounds since the standard layout, 2026-11-09),
+#: so a table of any size is served while its keys fall in a few 64k-row groups; a member without identity bounds
+#: counts every receipt of the table, as before. A declared, admitted receipt key index avoids the receipt scan.
+#: Measured 2026-10-05 on the public bucket: sam_entities' 797,525 receipts cost one lookup 28.6 MiB in 800 range
+#: requests; 2026-11-09 on a bill-family slice in the standard layout, DuckDB read ~1.5 MB per cold lookup.
 SCAN_ROW_BOUND = 2_000_000
 
 #: A found field's states. The first four are the field-state views' own (``DETAIL_STATES``), so a row and field
@@ -203,12 +204,13 @@ def _selected_index(index: Mapping, local: Mapping | None, base_url: str, table:
 
 
 class _Group(NamedTuple):
-    """One row group of a receipt member: its rows' position and the footer's bounds on two columns."""
+    """One row group of a receipt member: its rows' position and the footer's bounds on three columns."""
 
     start: int
     rows: int
     datasets: tuple[str | None, str | None]
     versions: tuple[str | None, str | None]
+    identities: tuple[str | None, str | None] = (None, None)
 
     @property
     def end(self) -> int:
@@ -241,14 +243,14 @@ def _footer(cursor: Any, member: Member) -> tuple[_Group, ...]:
     def read() -> tuple[_Group, ...]:
         bounds = ", ".join(
             f"any_value(stats_{bound}_value) FILTER (path_in_schema = '{column}')"
-            for column in ("dataset", "policy_version") for bound in ("min", "max"))
+            for column in ("dataset", "policy_version", "identity_json") for bound in ("min", "max"))
         groups, start = [], 0
         for _, rows, *stats in cursor.execute(
             f"SELECT row_group_id, any_value(row_group_num_rows), {bounds} FROM parquet_metadata(?) "
-            "WHERE path_in_schema IN ('dataset', 'policy_version') "
+            "WHERE path_in_schema IN ('dataset', 'policy_version', 'identity_json') "
             "GROUP BY row_group_id ORDER BY row_group_id", [member.location],
         ).fetchall():
-            groups.append(_Group(start, rows, (stats[0], stats[1]), (stats[2], stats[3])))
+            groups.append(_Group(start, rows, (stats[0], stats[1]), (stats[2], stats[3]), (stats[4], stats[5])))
             start += rows
         return tuple(groups)
 
@@ -424,42 +426,34 @@ def _typed_keys(policy: Any, keys: Sequence[Any]) -> list[dict[str, Any]]:
 
 
 def _accepted(cursor: Any, member: Member, groups: Sequence[_Group], candidates: Sequence[int],
-              dataset: str, record_ids: Sequence[str]) -> dict[str, list[str]]:
-    """Each record id's accepted receipts, as their ``processing_json``.
+              dataset: str, keys: Sequence[tuple[str, str]]) -> dict[str, list[str]]:
+    """Each ``(record_id, identity_json)`` key's accepted receipts, as their ``processing_json``.
 
-    The record ids of the dataset's rows are scanned once to find the rows, by row range when its groups are
-    consecutive (no column is read to tell datasets apart) and by dataset otherwise. Then only the groups that
-    hold a match are read, for three columns: a record id digests its dataset and identity, so neither is read
-    back to confirm a match (each column read is a request per row group on a shared host). O(dataset receipts)
-    for the scan, O(groups holding a key) for the read.
+    ``candidates`` are the groups whose footer bounds admit the dataset and a key's identity (:func:`_key_groups`).
+    One scan of those groups' row ranges, filtered on dataset, identity and record id: DuckDB reads the filter
+    columns and then ``processing_json`` only where a row matches. A record id digests its dataset and identity,
+    and the identity filter is what the footer and page bounds prune on. O(candidate receipts), not O(dataset).
     """
-    wanted: dict[int, set[str]] = {}
-    if candidates:
-        first, last = groups[candidates[0]], groups[candidates[-1]]
-        consecutive = candidates[-1] - candidates[0] + 1 == len(candidates)
-        starts = [group.start for group in groups]
-        for record_id, row in cursor.execute(
-            f"SELECT record_id, file_row_number FROM {_ROWS} WHERE file_row_number >= ? AND file_row_number < ? "
-            + ("" if consecutive else "AND dataset = ? ")
-            + f"AND record_id IN ({', '.join('?' * len(record_ids))})",
-            [member.location, first.start, last.end, *(() if consecutive else (dataset,)), *record_ids],
-        ).fetchall():
-            wanted.setdefault(bisect.bisect_right(starts, row) - 1, set()).add(record_id)
     found: dict[str, list[str]] = {}
-    if not wanted:
+    if not candidates or not keys:
         return found
-    # One scan: DuckDB prunes row groups by the row ranges (measured on 1.5.5: 100 ranges read 100 groups), where
-    # one scan per group cost a HEAD and a footer read each to bind (11 s for 73 groups, 2026-10-05).
-    runs = _runs(groups, list(wanted))
-    ids = sorted({record_id for held in wanted.values() for record_id in held})
+    runs = _runs(groups, candidates)
+    ids = sorted({record_id for record_id, _ in keys})
+    identities = sorted({identity for _, identity in keys})
     for record_id, processing_json in cursor.execute(
         f"SELECT record_id, processing_json FROM {_ROWS} WHERE ("
         + " OR ".join("(file_row_number >= ? AND file_row_number < ?)" for _ in runs)
-        + f") AND outcome = 'accepted' AND record_id IN ({', '.join('?' * len(ids))})",
-        [member.location, *(bound for run in runs for bound in run), *ids],
+        + f") AND dataset = ? AND outcome = 'accepted' AND identity_json IN ({', '.join('?' * len(identities))})"
+        + f" AND record_id IN ({', '.join('?' * len(ids))})",
+        [member.location, *(bound for run in runs for bound in run), dataset, *identities, *ids],
     ).fetchall():
         found.setdefault(record_id, []).append(processing_json)
     return found
+
+
+def _key_groups(groups: Sequence[_Group], candidates: Sequence[int], identities: Sequence[str]) -> list[int]:
+    """The dataset's groups whose footer bounds admit one of ``identities``; a group stating none admits all."""
+    return [i for i in candidates if any(_within(groups[i].identities, identity) for identity in identities)]
 
 
 def _held_keys(cursor: Any, policy: Any, keys: Sequence[Mapping[str, Any]]) -> set[tuple]:
@@ -567,13 +561,16 @@ def read_fields(cursor: Any, *, table: str, keys: Sequence[Any], fields: Sequenc
     typed = _typed_keys(policy, keys)
     groups = _footer(cursor, member)
     candidates = [i for i, group in enumerate(groups) if _within(group.datasets, table)]
-    receipts = sum(groups[i].rows for i in candidates)
+    identities = [subject_identity(policy, key) for key in typed]
+    key_groups = _key_groups(groups, candidates, [identity for _, _, identity in identities])
+    receipts = sum(groups[i].rows for i in key_groups)
     selected_index = _selected_index(index, local, base_url, table, member, sum(group.rows for group in groups))
-    # Decided from the footer alone, before any row is read: the member this refuses is the largest there is.
+    # Decided from the footer alone, before any row is read.
     if selected_index is None and receipts > SCAN_ROW_BOUND:
         raise ValueError(
-            f"{TOOL} is not available for {table}: a lookup reads the record id of every receipt of the table, "
-            f"and it has {receipts:,}, over the {SCAN_ROW_BOUND:,}-receipt bound. describe_table's notes say "
+            f"{TOOL} cannot answer these keys for {table}: the row groups whose bounds admit them hold "
+            f"{receipts:,} receipts, over the {SCAN_ROW_BOUND:,}-receipt bound (this generation's receipts "
+            "do not order or bound the table by identity). Ask for fewer keys, or see describe_table's notes for "
             "which of its receipt values a row's own columns give.")
     if selected_index is None:
         stated = _stated_identities(cursor, member, groups, candidates, table)
@@ -594,10 +591,11 @@ def read_fields(cursor: Any, *, table: str, keys: Sequence[Any], fields: Sequenc
                          member.sha256 is not None and location.startswith(("https://", "http://")),
                          indexed_identities)
     _refuse_other_identity(policy, stated)
-    record_ids = [subject_identity(policy, key)[0] for key in typed]
+    record_ids = [record_id for record_id, _, _ in identities]
     unique_ids = list(dict.fromkeys(record_ids))
     if selected_index is None:
-        found = _accepted(cursor, member, groups, candidates, table, unique_ids)
+        found = _accepted(cursor, member, groups, key_groups, table,
+                          list(dict.fromkeys((record_id, identity) for record_id, _, identity in identities)))
     else:
         from spicy_regs.receipt_key_index import lookup_receipts
 

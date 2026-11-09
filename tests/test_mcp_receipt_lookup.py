@@ -399,13 +399,13 @@ def test_keys_are_found_wherever_their_receipts_lie_in_the_member(tmp_path, monk
 
 def test_a_table_past_the_bound_is_refused_from_its_footer_alone(tmp_path, monkeypatch):
     rows = [fcc(str(number)) for number in range(100, 109)]
-    monkeypatch.setattr(lookup, "SCAN_ROW_BOUND", 8)
+    monkeypatch.setattr(lookup, "SCAN_ROW_BOUND", 1)
     con = one_family(tmp_path, monkeypatch, {"fcc_filings": rows}, row_group=2, edit=_descending)
     recording = _Recording(con)
     monkeypatch.setattr(server, "_get_connection", lambda: recording)
-    message = refused("fcc_filings", [{"id_submission": "100"}], ["filing_url"])
-    assert "read_receipt_fields is not available for fcc_filings: a lookup reads the record id of every receipt" in message
-    assert "it has 9, over the 8-receipt bound" in message
+    message = refused("fcc_filings", [{"id_submission": "101"}], ["filing_url"])  # a 2-receipt group admits it
+    assert "read_receipt_fields cannot answer these keys for fcc_filings: the row groups whose bounds admit them" in message
+    assert "over the 1-receipt bound" in message
     # The refusal is decided from the member's footer: no row of a member too large to scan is read to refuse it.
     assert [sql.split(" FROM ")[1].split("(")[0] for sql, _ in recording.statements
             if "read_parquet" in sql or "parquet_metadata" in sql] == ["parquet_metadata"]
@@ -549,28 +549,28 @@ def test_crs_receipt_lookup_distinguishes_revisions_and_normalizes_timestamp_off
         assert "use an ISO timestamp with an offset" in message
 
 
-def test_one_scan_of_record_ids_then_only_the_row_groups_holding_a_key_are_read(tmp_path, monkeypatch):
-    """What the tool asks DuckDB for: a single scan of record ids, never of receipts, to find its keys' rows, then
-    one statement over the row ranges of the groups they are in."""
+def test_one_scan_reads_only_the_row_groups_whose_identity_bounds_admit_a_key(tmp_path, monkeypatch):
+    """What the tool asks DuckDB for: one statement over the row ranges of the groups whose footer bounds admit a
+    key's identity, filtered on dataset, identity and record id; no scan of the dataset's record ids."""
     rows = [fcc(str(number)) for number in range(100, 120)]
-    con = one_family(tmp_path, monkeypatch, {"fcc_filings": rows}, row_group=2, edit=_descending)
+    con = one_family(tmp_path, monkeypatch, {"fcc_filings": rows}, row_group=2)
     recording = _Recording(con)
     monkeypatch.setattr(server, "_get_connection", lambda: recording)
     asked = ["104", "117"]
     reply = call("fcc_filings", [{"id_submission": identifier} for identifier in asked], ["filing_url"])
     assert [entry["receipt"] for entry in reply["keys"]] == ["found", "found"]
-    held = pq.read_table(member(con, "fcc_filings").location, columns=["record_id"])["record_id"].to_pylist()
-    wanted = sorted(held.index(subject_identity(POLICIES["fcc_filings"], {"id_submission": identifier})[0]) // 2
-                    for identifier in asked)
-    locates = [parameters for sql, parameters in recording.statements if "SELECT record_id, file_row_number" in sql]
+    identities = {subject_identity(POLICIES["fcc_filings"], {"id_submission": identifier})[2] for identifier in asked}
+    metadata = pq.ParquetFile(member(con, "fcc_filings").location).metadata
+    column = [metadata.schema.column(i).path for i in range(metadata.num_columns)].index("identity_json")
+    admitted = [group for group in range(metadata.num_row_groups)
+                if any(metadata.row_group(group).column(column).statistics.min <= identity
+                       <= metadata.row_group(group).column(column).statistics.max for identity in identities)]
+    assert not [sql for sql, _ in recording.statements if "SELECT record_id, file_row_number" in sql]
     [(fetch, parameters)] = [(sql, parameters) for sql, parameters in recording.statements if "processing_json" in sql]
-    assert len(locates) == 1
     ranges = [tuple(parameters[1 + 2 * n:3 + 2 * n]) for n in range(fetch.count("file_row_number >= ?"))]
-    assert ranges == [(2 * group, 2 * group + 2) for group in wanted] and len(set(wanted)) == 2
-    # The scan reads the record ids of the dataset's rows and nothing else.
-    for located in locates:
-        assert located[1:3] == [0, 20] and "processing_json" not in [sql for sql, _ in recording.statements
-                                                                      if "SELECT record_id, file_row_number" in sql][0]
+    covered = {start // 2 + offset for start, end in ranges for offset in range((end - start) // 2)}
+    assert covered == set(admitted) and len(admitted) < metadata.num_row_groups
+    assert "identity_json IN" in fetch and "record_id IN" in fetch
 
 
 # Refusal 7: a reply past the budget says how many keys fit.

@@ -176,6 +176,8 @@ def many_receipts(tmp_path, monkeypatch):
     witness = {"source_id": "test", "source_uri": None, "sha256": "a" * 64, "locator": "/"}
     rows = [({"id": str(i) + "\x00\x1bΩ", "nullable": None if i % 2 else "null", "raw": str(i)},
              ReceiptContext("old", str(i), "test", [witness])) for i in range(205)]
+    from spicy_regs import etl_receipts
+    monkeypatch.setattr(etl_receipts, "RECEIPT_ROW_GROUP", 10)  # several groups from a small fixture
     _, receipts = write_dataset(rows, tmp_path / "many", policy, batch_size=10)
     monkeypatch.setattr(subject_catalog, "policies", lambda: {policy.dataset: policy})
     return receipts
