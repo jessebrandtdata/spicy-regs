@@ -66,6 +66,22 @@ def earlier_policies(policy):
                 or not earlier.subject_schema.equals(previous_schema, check_metadata=True)):
             raise ValueError("CRS report revision policy changes fields beyond the dated identity")
         return (earlier,)
+    if policy.dataset == "bill_publisher_summaries" and policy.policy_version == "legislative-documents/3":
+        # /3 (2853bad1) appends the summary's own clock and its BILLSTATUS schema context. /2 rows never read them,
+        # so a /2 selection is identified here but is replay-required (policy_migrations.json): never carried.
+        current = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs").joinpath(
+            "etl_policies/bill_publisher_summaries.json").read_text()))
+        if policy.descriptor() != current.descriptor():
+            raise ValueError("Current CRS summary policy differs from its exact declaration")
+        history = json.loads(files("spicy_regs").joinpath("legislative_policy_history.json").read_text())
+        earlier = DatasetPolicy.from_descriptor(history["bill_publisher_summaries_v2"])
+        previous_schema = policy.subject_schema
+        for name in ("last_summary_update_date", "source_schema_version"):
+            previous_schema = previous_schema.remove(previous_schema.get_field_index(name))
+        expected = replace(policy, subject_schema=previous_schema, policy_version="legislative-documents/2")
+        if earlier.descriptor() != expected.descriptor():
+            raise ValueError("CRS summary clock policy changes fields beyond the two appended columns")
+        return (earlier, *earlier_policies(earlier))
     if policy.dataset == "bill_publisher_summaries" and policy.policy_version == "legislative-documents/2":
         history = json.loads(files("spicy_regs").joinpath("legislative_policy_history.json").read_text())
         earlier = DatasetPolicy.from_descriptor(history[policy.dataset])

@@ -60,5 +60,21 @@
     ],
     "receipt_only": false,
     "nullable_identity_fields": []
+  },
+  "bill_publisher_summaries_v2": {
+    "dataset": "bill_publisher_summaries",
+    "policy_version": "legislative-documents/2",
+    "subject_schema": "/////8gBAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAcAAABoAQAAHAEAAOwAAAC8AAAAjAAAAEgAAAAEAAAAxP7//wAAAQIQAAAAKAAAAAQAAAAAAAAADQAAAHN1bW1hcnlfY2hhcnMAAAAIAAwACAAHAAgAAAAAAAABQAAAAAT///8AAAEFEAAAACAAAAAEAAAAAAAAAAwAAABzdW1tYXJ5X2h0bWwAAAAA/P7//xAAFAAIAAAABwAMAAAAEAAQAAAAAAAABRAAAAAcAAAABAAAAAAAAAALAAAAdXBkYXRlX2RhdGUAOP///3D///8AAAEFEAAAABwAAAAEAAAAAAAAAAsAAABhY3Rpb25fZGVzYwBk////nP///wAAAQUQAAAAHAAAAAQAAAAAAAAACwAAAGFjdGlvbl9kYXRlAJD////I////AAABBRAAAAAoAAAABAAAAAAAAAAUAAAAc3VtbWFyeV92ZXJzaW9uX2NvZGUAAAAAyP///xAAFAAIAAYABwAMAAAAEAAQAAAAAAABBRAAAAAcAAAABAAAAAAAAAAHAAAAYmlsbF9pZAAEAAQABAAAAAAAAAA=",
+    "identity_fields": [
+      "bill_id",
+      "summary_version_code",
+      "action_date",
+      "update_date"
+    ],
+    "receipt_fields": [
+      "raw_source_row"
+    ],
+    "receipt_only": false,
+    "nullable_identity_fields": []
   }
 }

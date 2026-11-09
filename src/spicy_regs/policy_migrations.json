@@ -1,0 +1,669 @@
+{
+ "replay_required": {
+  "bill_publisher_summaries": {
+   "sha256:b0c7edd5e9e6d8b2d8dac735cf087fcd2b99394cc6cd9ab8c63e45ec701e14ac": {
+    "policy_version": "legislative-documents/2",
+    "reason": "legislative-documents/3 (2853bad1) adds last_summary_update_date and NOT NULL source_schema_version. /2 readers never read lastSummaryUpdateDate, so a NULL would claim the clock is absent at the source. The bill family rebuilds every summary from the BILLSTATUS zips of every bulk Congress (docs/bill-summary-clocks.md); the replaced /2 rows are retained in that run's source evidence.",
+    "replay": "gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs -f congresses=108-119"
+   }
+  },
+  "committee_assignments": {
+   "sha256:59d89d7e39a0ac9621e4a6f005dc4c69e7b5915819b6c818f19ea751ea9afff2": {
+    "policy_version": "congress-subjects/2",
+    "reason": "82def55b (ss-ehci) added edition_date, entry_label, position_basis, printed_entry, source_granule and source_line under the unchanged congress-subjects/2 version. They come from the Congressional Directory reader; earlier rows never read them, so NULL would claim them absent at the source. The rosters migration must rebuild the seats from retained directory originals and should also give the new shape its own policy version (ss-aj7t follow-up).",
+    "replay": "not automated: see the committee-rosters migration ticket"
+   }
+  }
+ },
+ "shipped": {
+  "administration_policy_bill_links": [
+   "sha256:a71fd5bd59ae88478d30b44173627923dd5ec022002d0afb0828db199721f542"
+  ],
+  "administration_policy_statements": [
+   "sha256:2e2e74a0d2f8636cdd4d06bdec553667a7f66257990d4309d328255f3a5ac525"
+  ],
+  "agency_lifecycle_stats": [
+   "sha256:792a5c9b9fd3f06d081a7135c001275b1f08291fff1d8b35d14d67a402584d7c"
+  ],
+  "agency_monthly_volume": [
+   "sha256:055cead8fb64b88cfb67457ef2d311fdf73902e870fd61da0c464eb779245b49"
+  ],
+  "agency_stats": [
+   "sha256:c12ae0b716b190c701be0734b32389c8056d7b602e6f0b94dd0a40646a752b6b"
+  ],
+  "agenda_item_proceedings": [
+   "sha256:33d6e9ea98813ce50883742ee3d8605fa11f4244ffe888a176e2b14fbd6a26f5"
+  ],
+  "amendments": [
+   "sha256:19bdae368f01cc1c06eb927619107671c268b456ff671b323dac8b7f23b40476"
+  ],
+  "bill_actions": [
+   "sha256:6803fafbfd14da6e02b3d79c504621a96f8fcc496a5bfceefb838c5ccd760cc2"
+  ],
+  "bill_committee_actions": [
+   "sha256:55de976fa705382cc4b82abaef7b6b7611e6fa943ab185326b50bcdbf438737e"
+  ],
+  "bill_committee_activities": [
+   "sha256:2af52430a4bc8372f903f09cd85c376f2a22c6302a85fb2c2f7378cce03df048"
+  ],
+  "bill_committees": [
+   "sha256:37a973a869f9e2a88798af51746b23d8c7d9ec94c2a39ffbf30153541bc9c144"
+  ],
+  "bill_cosponsors": [
+   "sha256:b22e17099851f6ada800ab4c7ec52e3dd880db88671b5a63a55f150519569095"
+  ],
+  "bill_family_archives": [
+   "sha256:5594e7a151846f3b23eb12964c8ab20cfbb4b8a3b9745d5ab84bb16bb95f8ddf"
+  ],
+  "bill_family_backfill_walks": [
+   "sha256:34162163a39190b3f47ef8b0b11565cb3fa9c7bb6abd57b3be197f3920479f78"
+  ],
+  "bill_family_backfills": [
+   "sha256:322884a5cd327027b4551910b7ccf6483908f85dfa2e4b433a7fdb1f66aed69b"
+  ],
+  "bill_family_document_file_outcomes": [
+   "sha256:92668442fc6b327163a41ba53f14953c758025d35f30372acf778916913d1e21"
+  ],
+  "bill_publisher_summaries": [
+   "sha256:f4a242487fc7b982811c8c85c20144f2dbceeb5d0a0616f4f7d0a107593f482f",
+   "sha256:b0c7edd5e9e6d8b2d8dac735cf087fcd2b99394cc6cd9ab8c63e45ec701e14ac",
+   "sha256:8f2e8238bc924e1dfd46a08dbc62be6bf59b324ab60b8c7b586f637bd524b293"
+  ],
+  "bill_sections": [
+   "sha256:9c1f15071eda161c69e7532a3e1f08cf7bedf655aaf4425cad7c21c223d6897e"
+  ],
+  "bill_subjects": [
+   "sha256:9db6b4661f87bad4a5b5e60570166dd6e0e63cd3193721fe111bb99cd7ce05cc"
+  ],
+  "bill_summaries": [
+   "sha256:95d6f8f0e1167c593784c80a6e93656ab21c2bf76748a3e09fd991da27408fd9"
+  ],
+  "bill_versions": [
+   "sha256:661d49273286ec01196298001093bf5500ee48863e145c32f813be5998b42dde",
+   "sha256:697ea33002b738ae1cae8aaebd40fc924b826a835ac809fa19327da5cf66a119"
+  ],
+  "bill_vote_references": [
+   "sha256:192b7fd7b5b30df38ecda022423044a3f101e5d837c2c748930013e87f264f14"
+  ],
+  "budget_volumes": [
+   "sha256:40a90000c219a51e3291b71971c0f69d6ed6954241c0ae141d832661a467b5dd"
+  ],
+  "cbo_cost_estimates": [
+   "sha256:cf413e38bf03a6b9eab61638850e3e0aa1632b2e49edc8e66674a407bef0997f"
+  ],
+  "cbo_feed_items": [
+   "sha256:0cf1d0576dfdb98d049aeb31887180395da14204206bbf4272d37dbb9e6a11a6"
+  ],
+  "cfr_sections": [
+   "sha256:7c14eaec43eb181444f67081471adc3c1c327c16a1a9d0ae2fa394c3f17a9bba"
+  ],
+  "cftc_comment_files": [
+   "sha256:abb1fc0d9542786cfb64b9b4ed42e1861942ff395752adf2f328a4c7c433ffe8"
+  ],
+  "cftc_comments": [
+   "sha256:e99650d66c57633d6bf2867e94ae817d1572db0e3f7578b894a78e62a86889e9"
+  ],
+  "cftc_rule_observations": [
+   "sha256:0861c8643cdd9cc22fcd5f09204eadf4dc7e54be4ee0103fb12e8321d6aef919"
+  ],
+  "comment_attributes": [
+   "sha256:ee40edeea51f00ba24d53f1f256b903002868ea6260cd255afcc9eb091c5bed3"
+  ],
+  "comment_periods": [
+   "sha256:aee968469e3f202d20b58d7367b6e59a5ffeb03d6b566499c7f7b8f7478b084f"
+  ],
+  "comments": [
+   "sha256:1fe9c8420d1cd2d94fd0d79047cc33d2a0405da0c58d6d3e6aea9f282896454d"
+  ],
+  "comments_index": [
+   "sha256:0286139f818701ab1c478d2ce2c64a60345b59b8476823c30caa0710031c770b"
+  ],
+  "committee_assignments": [
+   "sha256:59d89d7e39a0ac9621e4a6f005dc4c69e7b5915819b6c818f19ea751ea9afff2",
+   "sha256:332b644685a6a019d34d5620bf8451ff674545554a2d4ab37fa7d1b6fa59e690"
+  ],
+  "committee_directory_entries": [
+   "sha256:ff7086e9157e17112d903969c94a2122e3a5b9016b1e70b4c86e5c213e7a71d2"
+  ],
+  "committee_meetings": [
+   "sha256:b5d65c20212dfc1c07fbde3d0801b2bf42e898ed1a5ce1a69d1c9d6b480f3498"
+  ],
+  "committee_meetings_detail_reads": [
+   "sha256:5fce780536272c69954aa5795508b930cbe74129d1a7ae5c559ea76fc33b9840"
+  ],
+  "committee_report_cbo_letters": [
+   "sha256:965a50462193e4a610e605f47e84d2de31b350643e5b2cb215ceb1cda2678a63"
+  ],
+  "committee_report_read_outcomes": [
+   "sha256:14e64bbeee1b7078832f48f116d3d9c21c4de4ec1fd15ac334ca378553eebc43"
+  ],
+  "committee_report_reads": [
+   "sha256:45376e567fec15960c1f2148432e84b906f5327e3d9549a64f7bd4c89cb863f6"
+  ],
+  "committee_reports": [
+   "sha256:7267f1aca5061e6c2ed6eab3f30e01bd32b4097b58c259c9ff081adc4d6803f4"
+  ],
+  "committee_reports_document_file_outcomes": [
+   "sha256:4c25b5a3d5e91b8702775ecb74373c8cfd6b61fb6834a4f3baf93724d3ec916b"
+  ],
+  "committees": [
+   "sha256:80c6ad26a352a7b7c4424094f868d75f5602aea626085b1d6905e9cd3d36b121"
+  ],
+  "congress_acquisition": [
+   "sha256:a1119432506d74792d6f8b4b7723872bb0fcb1293491da8ce65725d90c299973"
+  ],
+  "congress_bills": [
+   "sha256:ec6af49c7bed9a9392045a605b2b0e15740216b45d1eff5b7665db98c1a9f0ab"
+  ],
+  "court_citation_map": [
+   "sha256:dfca49a74acc9b74578b59792ceb76536ec041397903687835c01bcb5e8714ae"
+  ],
+  "court_citations": [
+   "sha256:5c090c94ca89441bb94bafd4eb4205f6b85cde4878f5893cc6dcbe822b5b0135"
+  ],
+  "court_docket_groups": [
+   "sha256:e66cd3388f5e8c30e8e085e798c16cdb19a5ecccca3167c348968e120a5bc5c4"
+  ],
+  "court_dockets": [
+   "sha256:39f197887b207e4174933b00477400153a893f2f9a6077ee4a242a88fad0a65d"
+  ],
+  "court_opinion_clusters": [
+   "sha256:75a8fd8a0b29af20c432357a087f606bffd059941f5c428968482fe42ba65fa1"
+  ],
+  "court_opinion_pdf_extractions": [
+   "sha256:f28dfd8bd43bc7273369c7417dadab19d16635c3d2feab1a03add6b75fd5e3e8"
+  ],
+  "court_opinion_texts": [
+   "sha256:6ad4e81f582f68618e9fe676d8f59fbe890c169ba94cef0d425bc4fc58f34408"
+  ],
+  "court_opinions": [
+   "sha256:2fbdfd205936d2d44e0ea8850d3f660d5d59dba0fee6bf6c827ca10724eee3ac"
+  ],
+  "court_parentheticals": [
+   "sha256:3213e32c8a8f2bfb60f2679aa50295d4c518996a2df6ee6d2101c677f949bf16"
+  ],
+  "crs_report_files": [
+   "sha256:1f05444aaf39f2f53dee41ad38d6d0380ded5bfa23b63958f8da213555861ff9"
+  ],
+  "crs_reports": [
+   "sha256:a56be093d55e9c4a52c35155a98d695e7702a4cc0357fd8050bbd7fc7bf3be17"
+  ],
+  "diff_summaries": [
+   "sha256:1fa6e831d66156d3aaf7dc92c89e2033b06fcd236d3db61a14eabcccc4df7e15"
+  ],
+  "discovery_signals": [
+   "sha256:a8e3de6ad51a30527a3969842ea61d80d3056ee22b68dc553690a052ff901bae"
+  ],
+  "docket_attributes": [
+   "sha256:382ff79910596299649fdf6fa88ecfde5f537fa97214d9933a87985f747e6576"
+  ],
+  "dockets": [
+   "sha256:9e8091be2ac422e818fc5da7192fcf11e5b7177e0bd4007bdefbdbfef9c8d496"
+  ],
+  "document_attributes": [
+   "sha256:667fa4377c9d98fe4b9397b8895588362d2dc6b3e2d9c653e59810da6b467100"
+  ],
+  "document_citation_read_outcomes": [
+   "sha256:a04ae0006735075b7782568eab2514f8353da24eec9773b54db50ec6efbf1ffb"
+  ],
+  "document_citation_reads": [
+   "sha256:498e7ef54da013d0638c717970d81b3bba80b1db5c43da6476fb8eb00f9ce1d3"
+  ],
+  "document_citations": [
+   "sha256:5ecc3f80f761aa41eac08cd91ce5880ab506caa6f3c8bc631068cd5d6e308e5a"
+  ],
+  "documents": [
+   "sha256:9b70b07d2e517a0507fad42cf9ae3745664315bb315131fd0b153984f3ecd077"
+  ],
+  "ecfr_snapshot_sections": [
+   "sha256:fcaa0be00a2d0357a8f89e788a2117c0108047df2e0c8d1a4feb10321a9d204e"
+  ],
+  "ecfr_snapshots": [
+   "sha256:f5285ede918dedbfda4f1357e33e13bd8db51df5f6f3f86754e9b5e011deb22b"
+  ],
+  "edis_attachment_files": [
+   "sha256:51524c6ac808de1844e0ec5e8dfd1d0e8668201156bd2f9da1d4acc764b25958"
+  ],
+  "edis_attachments": [
+   "sha256:3b006af38cabb42026e2250dbb10174dfc4ebeb526d4e69e0ea1bd660aa1491d"
+  ],
+  "edis_documents": [
+   "sha256:26d3c1de81e4dca7476e0e71ef3f06fe019b9d65cfcd9eaa4b79b5641ca138b1"
+  ],
+  "fcc_filings": [
+   "sha256:f661c5a510354935a99739f420d52860c52c1652cae592a143b622d9289c6b4c"
+  ],
+  "fcc_proceedings": [
+   "sha256:56da0b53e786023b2523c5fea2ad8402b7349bd5cdf1cce60d7a00832d1144b5"
+  ],
+  "fec_account_transfers": [
+   "sha256:1554f9a3a22461cf933d8209980b292477071b40f3c9f922deb819a4cafe3a00"
+  ],
+  "fec_agency_mapping_dispositions": [
+   "sha256:79acb3b7fb791f9a525da821757596f95f201316766f3d681099cb64462af261"
+  ],
+  "fec_agency_report_documents": [
+   "sha256:32b421fbbdd0c8ab06c4600ccf3c5f98fec468cc71a075ed9c6b295da0bbf895"
+  ],
+  "fec_agency_report_text": [
+   "sha256:2117e38936b0b0dc7cb24889e4daa941794ef791dee721775fd93e9dd5f2d980"
+  ],
+  "fec_agency_reports": [
+   "sha256:ee20842e38d1771c78c243f787e81a35c70fda71c4646c37897a118a57b182e3"
+  ],
+  "fec_allocated_disbursements": [
+   "sha256:993f4a93ba8c8bc3ef3666771cf79d8f18d931ca0ba4398909a5aead7280ee54"
+  ],
+  "fec_allocation_bases": [
+   "sha256:97b119fd2883aed2256ef69b2a0acef37882b745f1db0089f43c92ea2462f21e"
+  ],
+  "fec_api_response_controls": [
+   "sha256:f411b39c6e4aca470de0a1b6bca94b89f338b93cb6c1c7fae58ad45d909c7f63"
+  ],
+  "fec_audit_findings": [
+   "sha256:10010ba1cd5d37d4d4cbb267ee9da7e907701470ecebdc67d98825df17ba748d"
+  ],
+  "fec_bundled_contributions": [
+   "sha256:1c651ea57a43877c65b9083be91b2ff29b450079ad49c7e67b8c88cccf232218"
+  ],
+  "fec_candidate_api_observations": [
+   "sha256:0506d0db0df7f2e7884cc1eef400ba33ef2ad079b3351799ec2e74c39b504d10"
+  ],
+  "fec_candidate_history": [
+   "sha256:0c6b24cde8cae6dccb2a34bfae53a25c4ec5fd2e227756826ea5b866eca72019"
+  ],
+  "fec_collection_selection": [
+   "sha256:5df4255bc42681ea64eda21ebe5376c3ad3d204f43fa2c4bf273b1a1ecc84cce"
+  ],
+  "fec_collections": [
+   "sha256:ab1d4b62a87ac393d44532f82df5964b2d27bb3c49d0b5df9d48ccd0d6f77b8b"
+  ],
+  "fec_committee_history": [
+   "sha256:bc77c18ba377715858571674885b7fd93154d00e48123a123cec72179b0db997"
+  ],
+  "fec_committee_master_observations": [
+   "sha256:cc95e5d5de6c2b485b999e5b2a3d07661c51c247dfee3fa5b59bf88939d48809"
+  ],
+  "fec_committee_observations": [
+   "sha256:23dd35d5dd4c78ab065409c0b1574999b27e6e3fb2125d186cd26e841c5eb6de"
+  ],
+  "fec_committees": [
+   "sha256:8d4bab754f295ac5f36ace0b2a4379faa05cd9588530a364563270dee9b4383f"
+  ],
+  "fec_communication_costs": [
+   "sha256:ef9766c9780916d8c386636ddc0649b97532daa26cd61043884f533ef17ae4d3"
+  ],
+  "fec_contribution_aggregates": [
+   "sha256:06c2cb66a80619472c954aff098e0733c8919bebd67b61a368f1a4d8001d30f8"
+  ],
+  "fec_coordinated_party_expenditures": [
+   "sha256:ea540e88f1355ab8a2813d92c95bf565ec4440af0c106a13e036b7606dfb38a3"
+  ],
+  "fec_debts": [
+   "sha256:b8f102a56ad9280a247ab49d2d58673a767094db54884b92bf91d22524d8638f"
+  ],
+  "fec_disbursements": [
+   "sha256:19b96a2ce51a32365bd7ca26a0c1b0f47bd4441116f1d57cf47e33f3bb8806dd"
+  ],
+  "fec_electioneering_communications": [
+   "sha256:4054e36cfb24ef76d7fba59d1eb44421a8a58ad19c4988d38daf05c9c1aab993"
+  ],
+  "fec_filing_definition_evidence": [
+   "sha256:5c2600a30af1d19626668cc4d928bf140beb45e2d8a2d41611db0d02ea0973a5"
+  ],
+  "fec_filing_definitions": [
+   "sha256:10d0ea3fdb320f25fb5a9d689d1a490364767f8ef2ee3bcdbafbeebf3f6d6cad"
+  ],
+  "fec_filing_header_associations": [
+   "sha256:3517bb372de798ca320d963fa207eb5e64a933ec511d80b6c50c31624de8b0f2"
+  ],
+  "fec_filing_links": [
+   "sha256:156a4547d3352178c710bcd9459c57fdbf2394b28f98ca578ecaaa3555170f3e"
+  ],
+  "fec_filing_report_observations": [
+   "sha256:e5a1bd996b9733fe632aa9ff06f26124c59f60fe3c1669f4edd120b03f4ade31"
+  ],
+  "fec_filing_text_observations": [
+   "sha256:a7a3360754b2746ecd4776796cc80afd8e78a4b01cc3ccd7209b86e0d9a14bc5"
+  ],
+  "fec_filings": [
+   "sha256:4bda935238fd6cfbc32a500648c6c99ae90b90a5f7b53a21fd8569cdd550e89e"
+  ],
+  "fec_historical_ie_statistics": [
+   "sha256:8cdff4432bff2cfdaa8b64308a3325ad4e1d0b4cec634588fb4c73c4a7ce5f23"
+  ],
+  "fec_inaugural_donations": [
+   "sha256:653520baaa270371ae3aa5d850077376cf6e7645a98b69963a4db4253f62bd8a"
+  ],
+  "fec_independent_expenditures": [
+   "sha256:15af4831caf28eda859a33d8e42e9cfc3da16cf123aaeab65ce21fbc099f454d"
+  ],
+  "fec_intercommittee_transactions": [
+   "sha256:5a7b7b90fed9c0c594b49ea346e3068d23748608b542ba98c1d2245839e04d93"
+  ],
+  "fec_legal_documents": [
+   "sha256:980b3ad8dab96588eb05bbdf033458cec9ae9a68601be5a8471f824c3cfbffff"
+  ],
+  "fec_legal_events": [
+   "sha256:9d5591e65190572523551c4bd6d0437a57737ddff5bc706a5c12c6887f4a62b2"
+  ],
+  "fec_legal_matters": [
+   "sha256:140ba88ad206b77dd598c46a239a130788c68b4a19b0e6d9bb58591c5eb07366"
+  ],
+  "fec_legal_parties": [
+   "sha256:c56a58ba27221670fe2f0137297d1f028bb7e55dc83f7c661c9388d723b67d3b"
+  ],
+  "fec_loan_guarantors": [
+   "sha256:041f7f2cef9e2bc7ce213fe7494e2e7a107787033314dd9d10b71aff906adeea"
+  ],
+  "fec_loan_terms": [
+   "sha256:0e6e3ab223b587a794cc868e18f6e429a1fa4b4fff6d4c34d71a1295f86a0398"
+  ],
+  "fec_loans": [
+   "sha256:0fa9aa8842c4dffd595bc9ce9d3dc16c2a6584a684bc52ffef309a87b2041e4a"
+  ],
+  "fec_lobbyist_registrations": [
+   "sha256:0400645e72f8b3c6ff9a6bf3358e1610956d0efc825c0c1468d7c97f731c6172"
+  ],
+  "fec_oversight_recommendations": [
+   "sha256:14048051c0bec138b988e2dc80593dae59935cf81e21a64f0246b180ff633e47"
+  ],
+  "fec_postgres_committee_history_observations": [
+   "sha256:6b496469bce79e287b9c58e9b66fa457e38e4b73f6a666b5874ba066eacd0a5e"
+  ],
+  "fec_quality_notices": [
+   "sha256:073276c70f297cfa70f06fca444e90f0bdeb9a628f31ba80da404147d4dfc8cb"
+  ],
+  "fec_receipts": [
+   "sha256:0d4eae758be0e07fed0e8219861cf9efbc9997858af05a9b081bba501bfe219c"
+  ],
+  "fec_record_evidence": [
+   "sha256:320132a2b98e668331e9d30156a92650ef5ef86c86ec13a10231acbee81d8b98"
+  ],
+  "fec_reference_filing_feed_items": [
+   "sha256:12e2d01385ec44782c0161598b6c61df52715cf28210c164b1a4d69e1c64ccfb"
+  ],
+  "fec_reference_source_pages": [
+   "sha256:cbfb2acc4b47b4547d7ca8f53292c4bcc4802682f7a4a613af1c03fc142d7bfa"
+  ],
+  "fec_registration_statements": [
+   "sha256:42785ff70c2b557e4472a6d47dd280895b78b186edc59e9264eff90cc7d0811d"
+  ],
+  "fec_relationships": [
+   "sha256:0b71944728089ce4c327751ad66ef53360a8027c12ca7a87f5bd22595a26d94d"
+  ],
+  "fec_report_metrics": [
+   "sha256:b1f5fea5a604635daac99c77fc5b0da52d16ef3b074b44c8c1f4841b49b923c0"
+  ],
+  "fec_reported_financial_summaries": [
+   "sha256:95fc5021b6ae858ade66b8c53378c97af5b3696c1e86103afed2ea9ec7c07148"
+  ],
+  "fec_research_meeting_observations": [
+   "sha256:400e92395f4b544cf5fe43e19d4a2839ea79ede0d04eef91247e513e1daecae6"
+  ],
+  "fec_source_catalog": [
+   "sha256:543a8627e99d6e73d58d24b8446c7c5ea3a2febb69bb2386a3f7dc838538face"
+  ],
+  "fec_source_records": [
+   "sha256:576c7507f636050a22f540c9742db44f15b04d6eb39da6bcec835bfbf55dfec7"
+  ],
+  "federal_register": [
+   "sha256:74ccb94652213d3876c36a9f6595431c0368e3b13775c9de1196582188d774fb"
+  ],
+  "federal_register_issues": [
+   "sha256:bd328eb0e7d6ec49cb8e2ed0d259fc50fee2508c541ea5d17250df72b0621460"
+  ],
+  "feed_summary": [
+   "sha256:90589c5969351d5a95975a7b9999490a4c5a85efcd46f9152b0719d4e0e39490"
+  ],
+  "ferc_accession_files": [
+   "sha256:7c1a21bd3ccb1b6b34afedeecf0f2eeb3f25892902dd821397dc671a0c9950b4"
+  ],
+  "ferc_original_files": [
+   "sha256:455a4b10b4baa7ff9414d5e9894dbbc5142f962218233dc94970a5ba59e4efa3"
+  ],
+  "ferc_search_documents": [
+   "sha256:960d72faa22688dfb19348bc61393a22433d2c09b2f205460c3e1417bfff1a7f"
+  ],
+  "financial_changes": [
+   "sha256:f5331e198069daf8d742351481bdcc797b0056f084f4835be2af3dc950ec6ee0"
+  ],
+  "fr_docket_links": [
+   "sha256:19682a46d51b8834881720750c297ad32d9656116ea75dc7d459d36afef799ea"
+  ],
+  "gao_decisions": [
+   "sha256:1d39980a1ee24d6f80e86e85f9e38abd40ea9148030059e3c7a13fb7688ed907"
+  ],
+  "gao_recommendations": [
+   "sha256:94ef3f1c819725f3640a52ac48de47df6fae45beaa0d788553f07defd251b43e"
+  ],
+  "gao_reports": [
+   "sha256:784aaaad1219fcdef47c2f047218423609c861f1a907814fbddc250a194d7922"
+  ],
+  "hearing_bill_links": [
+   "sha256:ab59a26aa0166ed5ce3398ac37ebc5efb124e73cb80258016c5e7d4c3ed49d3d"
+  ],
+  "hearing_transcripts": [
+   "sha256:75b91e29a85dc0e1382ea0979ca81e6d4175bf5aa424c04716be180733f6d286"
+  ],
+  "house_activity_reports": [
+   "sha256:96219d8f612070cb117039e6cbe5012bfb1ac0f02c2ee276c0f2f79720268043"
+  ],
+  "house_communications": [
+   "sha256:f7f002e26b1929a766c3c831639a6234b140c2ac41fd9094755138f79bca7878"
+  ],
+  "house_communications_detail_reads": [
+   "sha256:d19940e95b6ca9f8b2c1d09a03a2ff029b1b0f13281cf7b8f9ee93b2349ecf61"
+  ],
+  "house_record_enrichment_results": [
+   "sha256:9fdf3bc52c0b081c9c337ad3d2dfd556cf2f4a5ea41759be8ec775b146179330"
+  ],
+  "inspectors_general_report_metadata": [
+   "sha256:71b45c7a30523e2a94afd8de58c1b6a96e1895a24610ab9febfb5d5cc38b9553"
+  ],
+  "law_code_sections": [
+   "sha256:94e3242f4ed65a6b5858642ffe7c6a39d267a097c8978a0b26e09889dae0cd41"
+  ],
+  "law_sections": [
+   "sha256:5c224cf5cd11068a32d1cdd59eae9833393894dda1996dfa0d6e8d2ab31b4031"
+  ],
+  "laws": [
+   "sha256:22753e24e58c15f78f7c44bbcade69ee3a0f4efbb40def1a22f44da0f7895630"
+  ],
+  "laws_document_file_outcomes": [
+   "sha256:62f70d04db04474119052fc86940314d4f88b0734c5689acd2ebf40bb4ed2827"
+  ],
+  "legislative_document_file_states": [
+   "sha256:3dd44180a20593266d19efc3decb1249f235857a1a993cd55e8d095dcc9c7813"
+  ],
+  "lifecycle_events": [
+   "sha256:a88aade7952c582839cae8141c0b30163b1c795fb02682c5d71614deda44e3fc"
+  ],
+  "lobbying_activities": [
+   "sha256:6dc272195a9d565994a47733c0b6cab237696153427cf125cba86c9dc177ab8e"
+  ],
+  "lobbying_activity_lobbyists": [
+   "sha256:abebb842b69743558f5106cb66678bb0ac9dffad417052d493f142a8271705ea"
+  ],
+  "lobbying_affiliated_organizations": [
+   "sha256:595a5b48880c6c2bd41096175ef924ff7f741f5e3202986eb589fc20ba67c7ef"
+  ],
+  "lobbying_clients": [
+   "sha256:75fe0bf4d96eee3486e029fed10d709271c853f316ffe2636ddd30f813e66c34"
+  ],
+  "lobbying_conviction_disclosures": [
+   "sha256:59da47e72ddb5fac55437bb272f76bda7e8257a704396b21af169d71397bd840"
+  ],
+  "lobbying_filings": [
+   "sha256:008689fba36a505ef3e104ae51eee9c50149cc48e8959eac56b6c8fc028735f0"
+  ],
+  "lobbying_foreign_entities": [
+   "sha256:51e85c6836a0b8f50a7676201a33b84d2462457794d356de8420358d8389d2a4"
+  ],
+  "lobbying_registrants": [
+   "sha256:7599feade24749b46b61ea530aae173b080cabdc2bed20a30ac4706e9b3158f8"
+  ],
+  "member_party_affiliations": [
+   "sha256:21b1bac7ab53641b755cad94668b1ed69682b38ec5c05428d785317df87db550"
+  ],
+  "member_terms": [
+   "sha256:5d28f56db8615673307b5f45dafe41a3f6431d8cd2268379e95ef24470299d28"
+  ],
+  "member_vote_terms": [
+   "sha256:b327925622456f0df7ca5a19138df163a1e48b5aae667f13efe535c7fb15eed4"
+  ],
+  "member_votes": [
+   "sha256:dc6e8ca90603875cc3605129ad1c65ea1979d45220536e59b01e38b8fb84a766"
+  ],
+  "members": [
+   "sha256:3242ce2b1c156cad113bd7a869b1eb3c871de6419d8b4faeec0affd628dd14ee"
+  ],
+  "native_legal_reference_reads": [
+   "sha256:001ac0cde7a3c2ee4ab57a4ab6889c9c5b29f352b2e027f6a9c4769a5da7900f"
+  ],
+  "native_legal_references": [
+   "sha256:7ea49d1c5522944051685e229142a814d6416c5d324860fb92a0e9e1c9833aa3"
+  ],
+  "native_legal_references_document_file_outcomes": [
+   "sha256:1a382c9528e5c1e44137fda61fabe62ddf429b4b1dd8a01d89da7db6b6b13a8d"
+  ],
+  "nominations": [
+   "sha256:ebf416a77ce78bd43b8f5da9427bb390e26fc89a914cf1875061ecbf1b336a95"
+  ],
+  "nominations_detail_reads": [
+   "sha256:edc60370390cacbdc948795ef0d8c0dae13ed95cd1fb753acfa2b0fd9d9984b3"
+  ],
+  "org_committee_links": [
+   "sha256:d227c32717fe71e80fe727f048f54a3544505cec9aba0c2a366944d462a39a91"
+  ],
+  "press_releases": [
+   "sha256:10742e313b3671700bc3a741863066c0500f7ddc0144e96ccc48df50b1e34bf3"
+  ],
+  "print_citations_document_file_outcomes": [
+   "sha256:add3c571265e62cc0e8860ed4300542cb4a47e9f3f31d37b4ea6293cd0281350"
+  ],
+  "proceedings": [
+   "sha256:301f556928453b50ff47d963c36c10b7422665638bd368a305b01147863339c1"
+  ],
+  "public_activity_events": [
+   "sha256:6d8e8888832a7e9c887216fd20731b158a261579eaf2e4acbf1b5a7fc746d26b"
+  ],
+  "record_issues": [
+   "sha256:c9d117018f346e0bd39438f72148f70476336ee2a255e114e2fa47ca42f6f379"
+  ],
+  "regulatory_agenda_items": [
+   "sha256:d7ce377b373b567c7cc29f7caff5271ab8b8895038438058673625fc1c57fcae"
+  ],
+  "report_sections": [
+   "sha256:8caf5eb0dd7e29a54363001b0e1518405b7182149ec90f909cd28b9d5335ae8f"
+  ],
+  "roll_call_votes": [
+   "sha256:e97f8ce9218308d349a58191f82d82e4f07e6e772f32af041e6c29ea566e93d2"
+  ],
+  "rule_targets": [
+   "sha256:84949e39fa03ba8fe0a8eb5443f0ad65f5ed27168257112e9e3f14911b7bcf16"
+  ],
+  "rulemaking_lifecycles": [
+   "sha256:f141e7ddde7a0d9e9de33ea661fe267356638a83e33e4c32a140adf7eebe43bd"
+  ],
+  "sam_entities": [
+   "sha256:9d135c565bf0858cfbe6755bdbbc5c0d4c9ea67c8fbddd1e52b248929852d153"
+  ],
+  "scorecard_action_comparisons": [
+   "sha256:a78a9dfaeba3660c8b188889c7416255d71c221b63ec94a9a1bc871f09350bb3"
+  ],
+  "scorecard_item_links": [
+   "sha256:9d4e43e296526447564cedac38d71de572dd369ca4ec8c2b038d44ba3e540e58"
+  ],
+  "scorecard_items": [
+   "sha256:bd8b6cb87f1f9828c69acbf44afc0256609706276810421e52f5b42615dc576b"
+  ],
+  "scorecard_member_item_results": [
+   "sha256:0494daa1300fab02d593982cc656201f274c23a2002d6074704c658f7409c75a"
+  ],
+  "scorecard_member_links": [
+   "sha256:f0d0d2ea93cf3cc64db635d6597e4a319214de06f4a450f943ef6503a53fcf59"
+  ],
+  "scorecard_member_ratings": [
+   "sha256:ee05d34ab41209ea0a756e5d8d9c4d3884d1757bfcfadb31956515ae2305e0fe"
+  ],
+  "scorecard_members": [
+   "sha256:e904ff664eec7a9dbec7982e00472394643766097634c03a42df52a0f5499694"
+  ],
+  "scorecard_methodologies": [
+   "sha256:15549bee5691044b3cf3fe0311f69b7c089579d4dd1ea9c62ea85e48f00e2e1c"
+  ],
+  "scorecard_metric_components": [
+   "sha256:48dac00203e265334d3680cae07c34068b9de32ecf4e6d5481c2a0bbdcb21988"
+  ],
+  "scorecard_metric_items": [
+   "sha256:60cca5e39e34d4207edc2a220f5502f1aa7c129a3e81a32af9a223b2a99f1a20"
+  ],
+  "scorecard_metrics": [
+   "sha256:4eb8616771e959b90a0985f6e7bdce8288bb8649288c8a767033d0c074a1301e"
+  ],
+  "scorecard_publishers": [
+   "sha256:5f4b3c6c625c88e2b8097c2cdbdea18d9942e4b81b40f90952062861696de9da"
+  ],
+  "scorecard_snapshots": [
+   "sha256:20c17abbe20a2b68765debf22a18a1e539ee3fe4dbff4b09a5bd378289dbb8a4"
+  ],
+  "scorecards": [
+   "sha256:2afd7066c58398a59bfdddabcde168ab34cbcbc534b3f1ce538405fab433b58d"
+  ],
+  "sec_comment_files": [
+   "sha256:c33af9fe8526f0277ffd5330b6e7b633ba031b32fed046a46913d0f508c31f12"
+  ],
+  "sec_rulemakings": [
+   "sha256:dc036a2451cc290d19e339e2228cbb514bbf093c66e4cbad0f441bf00b478e42"
+  ],
+  "section_classifications": [
+   "sha256:25d66693b7c63c596878a792fd266c78dddb5ab798f9835633a4f413791b9edb"
+  ],
+  "section_diff_items": [
+   "sha256:7a96b44a742540797338b147e1823892452cdf4e92d5bf86b1f5842b4f89c081"
+  ],
+  "section_diffs": [
+   "sha256:102195f96038280d982a5d3f969da97fcbd5aaee271c59f8c7dc01cf98b79b87"
+  ],
+  "senate_expenditures": [
+   "sha256:faf8c724d217cae86dd9586d3007e0cb768b9a7b1e9d9c5cb3ff07302e77fbae"
+  ],
+  "senate_expenditures_document_file_outcomes": [
+   "sha256:c10aadf651aacb6a7e21b46e702429371dd1abc1e7eaf56edbbd368cd8ea5d08"
+  ],
+  "supreme_court_index_observations": [
+   "sha256:d5551abdba7b451950088a8dfe1d2651f2849241291e72b2511e98d2a9bd0208"
+  ],
+  "supreme_court_opinion_observations": [
+   "sha256:5536ee763e51a3b9d77d4afbecc5192992b702838a8da300230d1d0ef2459cec"
+  ],
+  "supreme_court_pdf_observations": [
+   "sha256:b75057a5f0f00ac75088f5b650fb5877bc39922f280ab436e7c03f3593fd48bb"
+  ],
+  "table3_historical_records": [
+   "sha256:6244472987e823bc822bbd4ca8934c0c8972a82e26f72d3d792d5fbb6193d400"
+  ],
+  "table3_records": [
+   "sha256:2ba6e42fef1f9acfb2ea20ff2edcf34389e7d51be30021d527a0c9aab05332e0"
+  ],
+  "treaties": [
+   "sha256:b5a84a31b8996b1ed4be30952fc4bfe1939144ee7edb584bd53876a032370643"
+  ],
+  "unified_agenda": [
+   "sha256:d155151e0fe74620c90592af97ae39c688e6b828b6eeb881012d61580d97629c"
+  ],
+  "usaspending_recipients": [
+   "sha256:a3b0459a855c45f5732320557a227e3ecead6d806204c2d52592bae3259f9676"
+  ],
+  "uscode_edition_sections": [
+   "sha256:abb18b1217c756b2c135fbdf28decd02c7110b6cbdf4472c7a34c5b7d1301b45"
+  ],
+  "uscode_edition_structure": [
+   "sha256:2447d89de65833125b983f6a8a0f1bb1a78820fe6b2fbb303441c2a55fc0d43c"
+  ],
+  "uscode_editions": [
+   "sha256:f1206ba23b27db641df436c7dd4073d2d8a9f3bca42618a66ba035b470a4030f"
+  ]
+ }
+}
