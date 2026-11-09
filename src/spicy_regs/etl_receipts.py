@@ -126,6 +126,12 @@ class _ReceiptWriter(pq.ParquetWriter):
         super().close()
 
 
+def end_receipt_row_group(writer: Any) -> None:
+    """End the held row group of a writer from :func:`open_receipt_writer`; any other writer cuts on each write."""
+    if isinstance(writer, _ReceiptWriter):
+        writer.end_row_group()
+
+
 def open_receipt_writer(sink: Any) -> pq.ParquetWriter:
     """The one receipt Parquet writer: shared schema, zstd, whole :data:`RECEIPT_ROW_GROUP`-row groups, a page
     index, statistics only on :data:`RECEIPT_STATISTICS` and dictionaries only on :data:`RECEIPT_DICTIONARY`."""

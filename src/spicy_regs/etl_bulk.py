@@ -34,7 +34,7 @@ import pyarrow.parquet as pq
 from spicy_regs.runtime_bounds import bounded_connection, checkpoint
 from spicy_regs.etl_receipts import (
     RECEIPT_ROW_GROUP,
-    RECEIPT_SCHEMA, open_receipt_writer,
+    RECEIPT_SCHEMA, end_receipt_row_group, open_receipt_writer,
     DatasetPolicy,
     ParquetInput,
     _bundle_policies,
@@ -384,8 +384,8 @@ def write_split(
             if whole:
                 receipts.write_table(pending.slice(0, whole), row_group_size=_GROUP)
                 pending = pending.slice(whole)
-            if final and hasattr(receipts, "end_row_group"):
-                receipts.end_row_group()  # the shared receipt writer holds rows until a whole group
+            if final:
+                end_receipt_row_group(receipts)  # the shared receipt writer holds rows until a whole group
 
         def part(table: pa.Table) -> int:
             names = table.column_names
@@ -452,8 +452,7 @@ def write_split(
                     emit(RECEIPT_SCHEMA.empty_table(), final=True)
                     for batch in late.iter_batches(batch_size=1):
                         receipts.write_batch(batch)
-                        if hasattr(receipts, "end_row_group"):
-                            receipts.end_row_group()
+                        end_receipt_row_group(receipts)
                 else:
                     for batch in late.iter_batches(batch_size=_GROUP):
                         emit(pa.Table.from_batches([batch]))
