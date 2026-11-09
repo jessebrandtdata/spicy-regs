@@ -123,7 +123,8 @@ def test_pending_packages_survive_an_advanced_window_and_the_cap(tmp_path):
     bodies.requested.clear()
     build_committee_reports(tmp_path, reader=discovery, acquirer=bodies,
                             hearings=StubHearings(), max_packages=2, download_prior=_no_prior)
-    assert bodies.requested == [CRPT_ID, "CRPT-119hrpt2"]
+    # The package the cap deferred was never attempted, so it goes before the refusal it waited behind.
+    assert bodies.requested == ["CRPT-119hrpt2", CRPT_ID]
 
 
 @pytest.mark.parametrize("status", [401, 403])

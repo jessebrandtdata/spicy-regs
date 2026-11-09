@@ -17,7 +17,7 @@ import os
 from collections import Counter
 from collections.abc import Callable, Collection, Iterator
 from dataclasses import asdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from functools import cache
 from importlib.metadata import version
 from pathlib import Path
@@ -63,7 +63,7 @@ from spicy_docs.transport.credentials import CredentialRefusedError, scrub_crede
 from spicy_regs.govinfo_revisions import latest_read, revision_instant
 from spicy_regs.sources import r2
 from spicy_regs.sources.congress_bills import API_KEY_ENV_VARS, _resolve_api_key, listing_reader
-from spicy_regs.transforms.congress_scope import current_congress
+from spicy_regs.phase_log import annotate
 from spicy_regs.transforms.table_merge import (
     merge_contract_table,
     merge_table,
@@ -72,6 +72,8 @@ from spicy_regs.transforms.table_merge import (
     write_in_place,
 )
 from spicy_regs.transforms.committee_report_reads import (
+    DETAIL_AWAITED,
+    DETAIL_GRACE_DAYS,
     DETAIL_REFUSED,
     DETAIL_UNAVAILABLE,
     READ_COLUMNS,
@@ -79,6 +81,7 @@ from spicy_regs.transforms.committee_report_reads import (
     REFUSED_FINAL,
     RULE_VERSIONS,
     SIZE_BASIS,
+    awaited,
     prior_reads,
     refusal_rule,
     settled,
@@ -390,28 +393,42 @@ def _bill_key(package_id: str, bill: ModsBill) -> str | None:
 _HEARING_REFUSALS = (PagedJsonSourceError, httpx.HTTPError, ConnectionError, ValueError, TypeError, KeyError)
 
 
+#: The chambers a hearing-detail request tries, in order, by GovInfo document
+#: type. Congress.gov files some joint hearings under a chamber: GovInfo's
+#: CHRG-119jhrg61392 (Joint Economic Committee) answers 404 under ``joint`` and
+#: 200 under ``senate`` (probed 2026-11-09), while CHRG-119jhrg60491 answers
+#: under ``joint``. Any other type asks its own chamber only.
+_DETAIL_CHAMBERS = {"jhrg": ("joint", "senate", "house")}
+
+
 def _event_id(hearings: HearingDetailSource, package: Any,
               evidence: CaptureEvidence | None = None) -> tuple[str | None, str]:
     """``(event_id, outcome)`` for one CHRG package from its Congress.gov hearing detail.
 
     ``outcome`` is ``meeting``, ``no_meeting``, ``unavailable`` or ``refused``,
     so the run log can count them apart. ``unavailable`` is Congress.gov's
-    404/410 for the exact jacket of an ended Congress, which every later run
-    would meet again (:data:`DETAIL_UNAVAILABLE`). The current Congress's
-    404 is ``refused``, like anything else that may change: Congress.gov may
-    still add that hearing (owner decision 2026-11-09).
-    The detail must name the jacket and Congress the package id spells, or it
-    is refused rather than read.
+    404/410 for the exact jacket on every chamber route the document type
+    names (:data:`_DETAIL_CHAMBERS`); the caller decides from the package's age
+    whether that is final (:func:`_unavailable_rule`). ``refused`` is anything
+    else. The detail must name the jacket and Congress the package id spells,
+    or it is refused rather than read.
     """
     identity = package.identity
     # The hearing detail route wants the chamber's word; spicy-docs maps each document type to it.
     chamber = CHAMBER_BY_DOCUMENT_TYPE.get(str(identity.document_type))
     route = LIST_ROUTES["hearing-detail"]
+    chambers = _DETAIL_CHAMBERS.get(str(identity.document_type), (chamber,))
     try:
         if chamber is None:
             raise ValueError(f"document type {identity.document_type!r} names no chamber")
-        url = list_route_url(route, congress=identity.congress, chamber=chamber, number=int(identity.number), limit=1)
-        page = next(iter(hearings.records(route, url, max_pages=1)))
+        for index, each in enumerate(chambers):
+            url = list_route_url(route, congress=identity.congress, chamber=each, number=int(identity.number), limit=1)
+            try:
+                page = next(iter(hearings.records(route, url, max_pages=1)))
+                break
+            except PagedJsonUnavailableError:
+                if index == len(chambers) - 1:
+                    raise
         if evidence:
             evidence.capture(page.capture, stage=identity.package_id + ":hearing-detail")
         # spicy-docs reads the answer as the hearing asked for (one record, its jacket and Congress) (X5).
@@ -421,12 +438,53 @@ def _event_id(hearings: HearingDetailSource, package: Any,
     except _HEARING_REFUSALS as error:
         if evidence:
             evidence.refusal(error, stage=identity.package_id + ":hearing-detail")
-        ended = int(identity.congress) < current_congress()
-        outcome = "unavailable" if isinstance(error, PagedJsonUnavailableError) and ended else "refused"
+        outcome = "unavailable" if isinstance(error, PagedJsonUnavailableError) else "refused"
         logger.warning("CHRG: {} hearing detail {}: {}", identity.package_id, outcome,
                        scrub_credential(str(error), evidence.credential if evidence else ""))
         return None, outcome
     return event_id, "meeting" if event_id is not None else "no_meeting"
+
+
+#: Which detail answer a checkpoint keeps when a package's bodies disagree (higher wins).
+_DETAIL_RANK = {
+    refusal_rule("CHRG", DETAIL_UNAVAILABLE): 0,
+    refusal_rule("CHRG", DETAIL_AWAITED): 1,
+    RULE_VERSIONS["CHRG"]: 2,
+}
+
+
+def _today() -> date:
+    """The run's UTC date; the one clock the hearing-detail grace window reads."""
+    return datetime.now(UTC).date()
+
+
+def _unavailable_rule(package: Any, collection: str) -> str:
+    """The checkpoint rule for a hearing whose detail Congress.gov does not have: awaited, then settled.
+
+    Age runs from the package's GovInfo ``dateIssued`` (the summary's), else
+    the date of its ``last_modified``. Within :data:`DETAIL_GRACE_DAYS` it is
+    asked again every run but is not pending; past it, it is settled.
+    """
+    stamp = package.summary.date_issued or package.summary.last_modified or ""
+    try:
+        issued = date.fromisoformat(stamp[:10])
+    except ValueError:
+        issued = None
+    within = issued is not None and (_today() - issued).days <= DETAIL_GRACE_DAYS
+    return refusal_rule(collection, DETAIL_AWAITED if within else DETAIL_UNAVAILABLE)
+
+
+def _retry_order(row: dict, modified: str | None) -> tuple[bool, str]:
+    """Where a package goes in the cap: never attempted at this stamp first, then retries, oldest attempt first.
+
+    A fixed order let the same first 200 unsettled hearings take the cap every
+    night (run 42558022791). A package new to the listing, changed since its
+    checkpoint, or deferred by the cap last run (its checkpoint still
+    ``pending``) has not been attempted at this stamp; a refusal has, at its
+    ``observed_at``, and goes behind every older one. Ties keep their order.
+    """
+    retry = row.get("outcome") not in (None, "pending") and row.get("last_modified") == modified
+    return retry, (row.get("observed_at") or "") if retry else ""
 
 
 def _refuse_unsafe_reread(reread: Collection[str], checkpointed: set[str], reads: dict[str, dict]) -> None:
@@ -552,6 +610,7 @@ def build_committee_reports(
                        if key.startswith(collection + "-") and not _settled(row, collection)}
             pending.update({key: modified for key, modified in listed.items()
                             if not _settled(reads.get(key, {}), collection, modified)})
+            pending = dict(sorted(pending.items(), key=lambda item: _retry_order(reads.get(item[0], {}), item[1])))
         listed_count += len(listed)
         deferred += max(0, len(pending) - max_packages)
         unchanged += len(listed) - sum(key in pending for key in listed)
@@ -607,11 +666,13 @@ def build_committee_reports(
                 if collection == "CHRG":
                     event_id, outcome = _event_id(hearings, body, evidence)
                     meetings[outcome] += 1
-                    if outcome == "unavailable":
-                        # Settled until the rule or the package's stamp moves (``settled``).
-                        state.update(outcome=DETAIL_REFUSED, rule_version=refusal_rule(collection, DETAIL_UNAVAILABLE))
-                    elif outcome == "refused":
-                        state["outcome"] = DETAIL_REFUSED
+                    # A package's bodies may answer differently: a retried refusal
+                    # outranks a detail still awaited, which outranks a settled one.
+                    rule = (RULE_VERSIONS[collection] if outcome == "refused"
+                            else _unavailable_rule(body, collection) if outcome == "unavailable" else None)
+                    held = _DETAIL_RANK[state["rule_version"]] if state["outcome"] == DETAIL_REFUSED else -1
+                    if rule is not None and _DETAIL_RANK[rule] > held:
+                        state.update(outcome=DETAIL_REFUSED, rule_version=rule)
                     hearing_rows.append(shape_hearing_transcript(body, event_id=event_id, **common))
                     link_rows.extend(shape_hearing_bill_link(link, last_modified=modified)
                                      for link in cover_links(body.mods, event_id=event_id))
@@ -681,9 +742,16 @@ def build_committee_reports(
                                          identity=("package_id",), version_column="observed_at", rows=reads.values(),
                                          remote_key=f"{READS_TABLE}.parquet", download_prior=download_prior,
                                          prior_present=checkpoint is not None)
+    waiting = sorted(key for key, row in reads.items() if awaited(row, key.split("-", 1)[0]))
+    if waiting:
+        annotate("warning", "Committee reports: hearing details awaited",
+                 f"{len(waiting)} hearing(s) not yet on Congress.gov, asked again until {DETAIL_GRACE_DAYS} days "
+                 f"after GovInfo issued them: {', '.join(waiting[:20])}{' ...' if len(waiting) > 20 else ''}")
     status = {"discovery": "not_requested" if reread else "complete", "since": None if reread else since,
               "until": until, "listed": listed_count, "unchanged": unchanged, "refused": refused, "deferred": deferred,
-              "pending": sum(not _settled(row, key.split("-", 1)[0]) for key, row in reads.items()),
+              "pending": sum(not _settled(row, key.split("-", 1)[0]) and not awaited(row, key.split("-", 1)[0])
+                             for key, row in reads.items()),
+              "awaiting_detail": len(waiting),
               "table_generation": "prepared", "atomic_snapshot": False, "whole_history_complete": False}
     if coverage is not None:
         coverage.update(status)

@@ -90,15 +90,23 @@ SIZE_BASIS = "size="
 
 #: A hearing whose body was read and published, but whose Congress.gov hearing
 #: detail answered 404/410 for the exact jacket (``PagedJsonUnavailableError``)
-#: and whose Congress has ended. Congress.gov states no hearing for any jacket of
-#: the 87th-90th Congresses, so retrying every run re-read the same 200 bodies
-#: nightly and starved the rest of the cap (run 42558022791). Its
-#: ``detail_refused`` checkpoint carries ``refusal_rule(..., DETAIL_UNAVAILABLE)``
-#: and is settled until the rule or the package's ``last_modified`` moves. A
-#: current-Congress 404 (Congress.gov may add the hearing later) and any other
-#: detail refusal are retried every run.
+#: on every chamber route. Congress.gov states no hearing for any jacket of the
+#: 87th-90th Congresses, so retrying every run re-read the same 200 bodies nightly
+#: and starved the rest of the cap (run 42558022791). Congress.gov also adds a
+#: hearing some time after GovInfo publishes it, so the answer is final only with
+#: age (owner decision 2026-11-09): within :data:`DETAIL_GRACE_DAYS` of the
+#: package's GovInfo ``dateIssued`` the checkpoint carries
+#: ``refusal_rule(..., DETAIL_AWAITED)``, is read again every run and is not
+#: pending (:func:`awaited`); past it, ``refusal_rule(..., DETAIL_UNAVAILABLE)``,
+#: settled until the rule or the package's ``last_modified`` moves. Any other
+#: detail refusal is retried every run and is pending.
 DETAIL_UNAVAILABLE = "hearing-detail-unavailable"
+DETAIL_AWAITED = "hearing-detail-awaited"
 DETAIL_REFUSED = "detail_refused"
+#: Days after a hearing's GovInfo ``dateIssued`` that a Congress.gov 404 is still
+#: asked again; age, not the Congress, covers both old Congresses and the lag
+#: after a Congress ends.
+DETAIL_GRACE_DAYS = 90
 
 
 def refusal_rule(collection: str, basis: str) -> str:
@@ -120,7 +128,7 @@ def settled(row: dict, collection: str, modified: str | None = None, *, bounds: 
     unchanged. Either way a new ``last_modified`` reads it again: GovInfo moves a
     package's stamp with its content, and a stated size is known only by asking.
     A ``detail_refused`` hearing is settled only when its detail was unavailable
-    (:data:`DETAIL_UNAVAILABLE`) under the current rule.
+    past the grace window (:data:`DETAIL_UNAVAILABLE`) under the current rule.
     """
     if row.get("outcome") == DETAIL_REFUSED:
         return (row.get("rule_version") == refusal_rule(collection, DETAIL_UNAVAILABLE)
@@ -138,3 +146,8 @@ def settled(row: dict, collection: str, modified: str | None = None, *, bounds: 
     else:
         still_refused = basis == bounds
     return still_refused and (modified is None or modified == row.get("last_modified"))
+
+
+def awaited(row: dict, collection: str) -> bool:
+    """A hearing whose Congress.gov detail is still absent within the grace window: asked again, never pending."""
+    return row.get("outcome") == DETAIL_REFUSED and row.get("rule_version") == refusal_rule(collection, DETAIL_AWAITED)

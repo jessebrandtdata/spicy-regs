@@ -547,13 +547,27 @@ def test_a_credential_refusal_on_the_hearing_detail_aborts_the_run(tmp_path, mon
         )
 
 
-@pytest.mark.parametrize("ended", [True, False], ids=["ended-congress", "current-congress"])
-def test_an_unavailable_hearing_detail_settles_only_for_an_ended_congress(tmp_path, monkeypatch, ended):
-    """Congress.gov answers 404 for every 87th-90th Congress jacket (run 42558022791): such a hearing's body is
-    published with a NULL event_id and not read again under the same rule and stamp, so it neither holds the cap
-    nor keeps the run pending. The current Congress's 404 is retried every run, since Congress.gov may still add
-    that hearing (owner decision 2026-11-09), as is any other detail refusal (a 500, a wrong record)."""
+@pytest.mark.parametrize(
+    ("issued", "today", "settles"),
+    [
+        ("2026-01-05", "2026-02-01", False),  # 27 days after GovInfo issued it: asked again, quietly
+        ("2026-01-05", "2026-04-05", False),  # 90 days: still inside the window
+        ("2026-01-05", "2026-04-06", True),  # 91 days: settled
+        # Issued in December, run after the 120th Congress convenes: the 119th has ended, but age decides.
+        ("2026-12-20", "2027-01-10", False),
+    ],
+    ids=["27-days", "90-days", "91-days", "after-the-congress-ends"],
+)
+def test_an_unavailable_hearing_detail_is_awaited_for_90_days_then_settled(
+    tmp_path, monkeypatch, capsys, issued, today, settles
+):
+    """Congress.gov answers 404 for every 87th-90th Congress jacket (run 42558022791), and adds a new hearing some
+    time after GovInfo publishes it (owner decision 2026-11-09). Within 90 days of the package's GovInfo dateIssued
+    such a hearing is asked again every run but is not pending, and a warning names it; past them it is settled and
+    published with a NULL event_id. Any other detail refusal (a 500, a wrong record) is retried and pending."""
+    import dataclasses
     import shutil
+    from datetime import date
     from types import SimpleNamespace
     from typing import Any, cast
 
@@ -563,8 +577,12 @@ def test_an_unavailable_hearing_detail_settles_only_for_an_ended_congress(tmp_pa
     from spicy_regs.transforms.committee_report_reads import READS_TABLE
 
     monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
-    # Both fixtures are 119th Congress hearings: the 120th makes theirs an ended Congress.
-    monkeypatch.setattr(module, "current_congress", lambda: 120 if ended else 119)
+    monkeypatch.setattr(module, "_today", lambda: date.fromisoformat(today))
+
+    class Issued(HearingBodyAcquirer):
+        def acquire(self, package_id: str, *, max_bytes=None, prefer=()):
+            body = super().acquire(package_id, max_bytes=max_bytes, prefer=prefer)
+            return dataclasses.replace(body, summary=dataclasses.replace(body.summary, date_issued=issued))
 
     class Mixed(StubHearings):
         """63127 is absent from Congress.gov; 64431 fails transiently."""
@@ -579,27 +597,81 @@ def test_an_unavailable_hearing_detail_settles_only_for_an_ended_congress(tmp_pa
     first, second = tmp_path / "first", tmp_path / "second"
     first.mkdir(), second.mkdir()
     coverage: dict = {}
-    tables = _tables(build_committee_reports(first, reader=TwoHearingsDiscovery(), acquirer=HearingBodyAcquirer(),
+    tables = _tables(build_committee_reports(first, reader=TwoHearingsDiscovery(), acquirer=Issued(),
                                              hearings=Mixed(), download_prior=_no_prior, coverage=coverage))
     assert {row["package_id"]: row["event_id"] for row in tables["hearing_transcripts"]} == {
         CHRG_ID: None, JACKET_64431: None}, "both bodies publish"
     reads = {row["package_id"]: row for row in tables[READS_TABLE]}
     assert {key: row["outcome"] for key, row in reads.items()} == {CHRG_ID: "detail_refused",
                                                                   JACKET_64431: "detail_refused"}
-    assert reads[CHRG_ID]["rule_version"].endswith(";refused-under=hearing-detail-unavailable") is ended
-    assert coverage["pending"] == (1 if ended else 2), "only an ended Congress's 404 settles"
+    basis = "hearing-detail-unavailable" if settles else "hearing-detail-awaited"
+    assert reads[CHRG_ID]["rule_version"].endswith(f";refused-under={basis}")
+    assert not reads[JACKET_64431]["rule_version"].count("refused-under"), "a transient refusal keeps the plain rule"
+    assert coverage["pending"] == 1, "only the transient refusal is pending"
+    assert coverage["awaiting_detail"] == (0 if settles else 1)
+    warning = [line for line in capsys.readouterr().out.splitlines() if line.startswith("::warning")]
+    assert bool(warning) is not settles and all(CHRG_ID in line for line in warning)
 
     def from_first(remote_key: str, local_path: Path) -> bool:
         source = first / remote_key
         return source.exists() and bool(shutil.copy(source, local_path))
 
-    acquirer, hearings = HearingBodyAcquirer(), Mixed()
+    acquirer, hearings = Issued(), Mixed()
     build_committee_reports(second, reader=TwoHearingsDiscovery(), acquirer=acquirer, hearings=hearings,
                             download_prior=from_first)
-    retried = [JACKET_64431] if ended else sorted([CHRG_ID, JACKET_64431])
-    assert sorted(acquirer.requested) == retried, "an ended Congress's unavailable detail is not asked for again"
+    retried = [JACKET_64431] if settles else sorted([CHRG_ID, JACKET_64431])
+    assert sorted(acquirer.requested) == retried, "only a settled detail is not asked for again"
     assert sorted(url.split("?", 1)[0].rsplit("/", 1)[-1] for url in hearings.requested) == sorted(
         key.removeprefix("CHRG-119hhrg") for key in retried)
+
+
+@pytest.mark.parametrize(("served", "expected"), [("senate", "meeting"), (None, "unavailable")])
+def test_a_joint_hearing_detail_is_asked_under_each_chamber_before_it_is_unavailable(served, expected):
+    """Congress.gov files some joint hearings under a chamber: GovInfo's CHRG-119jhrg61392 answers 404 under
+    ``joint`` and 200 under ``senate`` (probed 2026-11-09). Settling after ``joint`` alone would hide that route; a
+    detail is unavailable only when every chamber answers 404."""
+    from types import SimpleNamespace
+    from typing import Any, cast
+
+    from spicy_docs.reading.paged_json import PagedJsonUnavailableError
+
+    from spicy_regs.transforms.build_committee_reports import _event_id
+
+    class ByChamber:
+        def __init__(self):
+            self.chambers: list[str] = []
+
+        def records(self, route, url, *, max_pages=1):
+            chamber = url.split("/hearing/119/", 1)[1].split("/", 1)[0]
+            self.chambers.append(chamber)
+            if chamber != served:
+                raise PagedJsonUnavailableError(cast(Any, SimpleNamespace(status_code=404)))
+            yield _Page(({"jacketNumber": 61392, "congress": 119, "associatedMeeting": {"eventId": "118000"}},))
+
+    package = SimpleNamespace(identity=SimpleNamespace(package_id="CHRG-119jhrg61392", document_type="jhrg",
+                                                       congress=119, number="61392"))
+    hearings = ByChamber()
+    event_id, outcome = _event_id(cast(Any, hearings), package)
+    assert outcome == expected and event_id == ("118000" if served else None)
+    assert hearings.chambers == (["joint", "senate"] if served else ["joint", "senate", "house"])
+
+
+def test_retries_queue_behind_packages_never_attempted_oldest_attempt_first():
+    """A fixed order let the same first 200 unsettled hearings take the cap every night (run 42558022791): a package
+    not yet attempted at its stamp goes first, then each retry by its last attempt, oldest first."""
+    from spicy_regs.transforms.build_committee_reports import _retry_order
+
+    stamp = "2026-09-18T12:00:00Z"
+    reads = {
+        "CHRG-87a": {"outcome": "detail_refused", "last_modified": stamp, "observed_at": "2026-11-09T03:00:00Z"},
+        "CHRG-88b": {"outcome": "refused", "last_modified": stamp, "observed_at": "2026-11-07T03:00:00Z"},
+        "CHRG-89c": {"outcome": "pending", "last_modified": stamp, "observed_at": "2026-11-09T03:00:00Z"},  # deferred
+        "CHRG-90d": {"outcome": "detail_refused", "last_modified": "2026-01-01T00:00:00Z",
+                     "observed_at": "2026-11-01T03:00:00Z"},  # changed since its attempt
+    }
+    pending = {"CHRG-87a": stamp, "CHRG-88b": stamp, "CHRG-89c": stamp, "CHRG-90d": stamp, "CHRG-91new": stamp}
+    order = [key for key, _ in sorted(pending.items(), key=lambda item: _retry_order(reads.get(item[0], {}), item[1]))]
+    assert order == ["CHRG-89c", "CHRG-90d", "CHRG-91new", "CHRG-88b", "CHRG-87a"]
 
 
 def test_a_hearing_read_before_the_mods_columns_is_read_once_more():
