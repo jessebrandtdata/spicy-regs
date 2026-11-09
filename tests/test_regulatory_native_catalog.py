@@ -53,6 +53,35 @@ def test_comments_copy_layout_preserves_values_and_caller_ordering(con, tmp_path
     assert con.execute("SELECT current_setting('preserve_insertion_order')").fetchone()[0] is ordered
 
 
+@pytest.mark.parametrize('published', [True, False])
+def test_remote_comments_catalog_refuses_to_start_empty_when_comments_are_published(con, monkeypatch, published):
+    """A missing comments table must not be recreated empty while a generation publishes comments.
+
+    The unseeded native dockets table did this from 2026-10-03: every merge exported only the
+    day's rows (run 42574758742). First initialization with nothing published still works.
+    """
+    from spicy_regs.sources import publication
+
+    index = publication.empty_index()
+    if published:
+        index['families']['comments'] = {'artifactDigest': 'sha256:' + '0' * 64,
+                                         'tables': {'comments.parquet': {}, 'comments_index.parquet': {}}}
+    monkeypatch.setattr(native, '_remote_catalog', lambda _: True)
+    monkeypatch.setattr(publication, 'current_index', lambda base_url: index)
+    monkeypatch.setenv('R2_PUBLIC_URL', 'https://test.invalid')
+    if not published:
+        native.ensure_native(con, COMMENT)
+        assert native.initialized(con, 'comments')
+        return
+    source(con)
+    with pytest.raises(ValueError, match='family comments publishes it'):
+        native.ensure_native(con, COMMENT)
+    with pytest.raises(ValueError, match='family comments publishes it'):
+        iceberg.replace_rows(con, COMMENT, 'source')
+    assert not native._exists(con, native.qualified(COMMENT))
+    assert not native._exists(con, native.receipts_table())
+
+
 def test_native_pair_and_processing_read(con):
     expected = source(con)
     iceberg.replace_rows(con, COMMENT, 'source')

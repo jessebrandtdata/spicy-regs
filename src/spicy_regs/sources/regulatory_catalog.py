@@ -308,12 +308,35 @@ def require_initialized(con, record_type):
         raise ValueError('Native catalog schema differs from declared policy: ' + difference)
 
 
+def _remote_catalog(con):
+    """True when ``con`` holds the R2 Data Catalog (type ``iceberg``), not a local DuckDB test or scratch catalog."""
+    from . import iceberg
+    kind = con.execute('SELECT type FROM duckdb_databases() WHERE database_name=?',
+                       [iceberg._CATALOG_ALIAS]).fetchone()
+    return kind is not None and kind[0] != 'duckdb'
+
+
+def _published_generation(con, dataset):
+    """The live family and digest publishing ``dataset`` when ``con`` holds the remote catalog, else ``None``."""
+    from . import publication
+    from spicy_regs.public_url import resolve_r2_base_url
+    if not _remote_catalog(con):
+        return None
+    owner = publication.table_owner(publication.current_index(resolve_r2_base_url()), dataset + '.parquet')
+    return None if owner is None else (owner[0], owner[1].get('artifactDigest'))
+
+
 def ensure_native(con, record_type):
     """Initialize an empty native dataset; never read or migrate another namespace.
 
     Storage preparation and initialization are separate transactions because the
     Iceberg engine does not retain manifests from a multi-table CREATE+data commit.
     Readers require the checked initialization receipt, including after interruption.
+
+    An empty dataset is initialized only when nothing publishes it. Otherwise writers would
+    merge the day's rows into an empty table whose export loses the published population:
+    the unseeded dockets table did exactly that from 2026-10-03 (run 42574758742). A
+    published dataset is seeded from its generation (``scripts/rebuild_native_catalog.py``).
     """
     from . import iceberg
     if not supports(record_type):
@@ -321,10 +344,13 @@ def ensure_native(con, record_type):
     dataset = record_type.name
     declared = policy(dataset)
     target = qualified(record_type)
-    con.execute(f'CREATE SCHEMA IF NOT EXISTS {iceberg._CATALOG_ALIAS}."{namespace()}"')
     if _exists(con, target) and initialized(con, dataset):
         require_initialized(con, record_type)
         return
+    if published := _published_generation(con, dataset):
+        raise ValueError(f'Native catalog has no initialized {dataset} table, but family {published[0]} publishes it '
+                         f'({published[1]}); seed the catalog from that generation instead of starting empty')
+    con.execute(f'CREATE SCHEMA IF NOT EXISTS {iceberg._CATALOG_ALIAS}."{namespace()}"')
     with _transaction(con):
         con.execute(f'CREATE TABLE IF NOT EXISTS {receipts_table()} ({_ddl(RECEIPT_SCHEMA)})')
         con.execute(f'CREATE TABLE IF NOT EXISTS {target} ({_ddl(declared.subject_schema)})')
