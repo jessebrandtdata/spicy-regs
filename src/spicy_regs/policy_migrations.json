@@ -10,8 +10,8 @@
   "committee_assignments": {
    "sha256:59d89d7e39a0ac9621e4a6f005dc4c69e7b5915819b6c818f19ea751ea9afff2": {
     "policy_version": "congress-subjects/2",
-    "reason": "82def55b (ss-ehci) added edition_date, entry_label, position_basis, printed_entry, source_granule and source_line under the unchanged congress-subjects/2 version. They come from the Congressional Directory reader; earlier rows never read them, so NULL would claim them absent at the source. The rosters migration must rebuild the seats from retained directory originals and should also give the new shape its own policy version (ss-aj7t follow-up).",
-    "replay": "not automated: see the committee-rosters migration ticket"
+    "reason": "82def55b (ss-ehci) added edition_date, entry_label, position_basis, printed_entry, source_granule and source_line under the unchanged congress-subjects/2 version. They come from the Congressional Directory reader; earlier rows never read them, so NULL would claim them absent at the source. The rosters migration must rebuild the seats from retained directory originals and should also give the new shape its own policy version (ss-uctm).",
+    "replay": "not automated yet: ss-uctm"
    }
   }
  },
