@@ -188,7 +188,8 @@ def _processing_key(column: str) -> str:
 
 #: Each open prior file's most recently decoded row group, by file handle. Callers gather 2,000-row batches in
 #: ordinal order from 64k-row receipt groups (``RECEIPT_ROW_GROUP``); without it each group was decoded once per
-#: batch, ~33 times. One decoded group per open file is held, released with the handle.
+#: batch, ~33 times. One decoded group per open file is held, released with the handle; the writer's
+#: ``RECEIPT_ROW_GROUP_BYTES`` bounds it for receipts it wrote.
 _LAST_GROUP: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
 
 

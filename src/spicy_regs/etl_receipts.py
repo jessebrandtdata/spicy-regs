@@ -65,6 +65,13 @@ RECEIPT_SCHEMA = pa.schema(
 #: on a live bill-family slice (2026-11-09, ss-e4nx), 64k-row groups cut its footer from 641 KB to 30 KB
 #: (~0.5 MB for the whole family, from 10.9 MB) while a cold browser lookup by identity read ~1.4-2.9 MB.
 RECEIPT_ROW_GROUP = 65_536
+#: Arrow bytes a receipt row group holds at most, whatever its row count: the writer holds a group's rows until it
+#: ends, and :func:`spicy_regs.receipt_history._take_prior_rows` decodes whole prior groups, so this bounds both.
+#: Narrow receipts (bill family, ~0.3-1 KB/row) still fill :data:`RECEIPT_ROW_GROUP` rows under it; wide FEC
+#: receipts (~16.8 KB/row of diagnostics) end near 4,000 rows. 64 MiB, the low end of the usual 64-128 MiB Parquet
+#: group size, keeps a wide writer's peak near what one-group-per-batch writing used (measured 2026-11-09, ss-e4nx:
+#: 70k FEC-shaped rows peaked at 128 MB per batch, 1,083 MB with row-count groups only, ~200 MB with this budget).
+RECEIPT_ROW_GROUP_BYTES = 64 << 20
 #: Rows per data page: the unit a page-indexed lookup reads from each column.
 RECEIPT_PAGE_ROWS = 1000
 #: Receipt columns given footer and page-index bounds: the keys readers filter on (``dataset`` for a dataset's row
@@ -80,9 +87,10 @@ RECEIPT_DICTIONARY = ["dataset", "policy_version", "generation_id", "processor",
 
 
 class _ReceiptWriter(pq.ParquetWriter):
-    """Cut receipt rows into whole :data:`RECEIPT_ROW_GROUP`-row groups whatever sizes callers write in.
+    """Cut receipt rows into row groups of :data:`RECEIPT_ROW_GROUP` rows or :data:`RECEIPT_ROW_GROUP_BYTES` Arrow
+    bytes, whichever comes first, whatever sizes callers write in.
 
-    A ``ParquetWriter`` closes a row group on every ``write_table``; callers write 2,000-50,000-row batches. Held rows
+    A ``ParquetWriter`` closes a row group on every ``write_table``; callers write 512-50,000-row batches. Held rows
     are Arrow references to the callers' batches, at most one group's worth.
     """
 
@@ -92,6 +100,13 @@ class _ReceiptWriter(pq.ParquetWriter):
                          max_rows_per_page=RECEIPT_PAGE_ROWS)
         self._pending: list[pa.Table] = []
         self._held = 0
+        self._held_bytes = 0
+
+    def _group_rows(self) -> int:
+        """Rows of the next group: the row cap, or fewer when the held rows' average width would pass the byte cap."""
+        if self._held_bytes <= RECEIPT_ROW_GROUP_BYTES:
+            return RECEIPT_ROW_GROUP
+        return max(1, min(RECEIPT_ROW_GROUP, self._held * RECEIPT_ROW_GROUP_BYTES // self._held_bytes))
 
     def write_table(self, table: pa.Table, row_group_size: int | None = None) -> None:
         if not table.schema.equals(self.schema, check_metadata=False):
@@ -99,17 +114,19 @@ class _ReceiptWriter(pq.ParquetWriter):
         if table.num_rows:
             self._pending.append(table)
             self._held += table.num_rows
-        while self._held >= RECEIPT_ROW_GROUP:
+            self._held_bytes += table.nbytes
+        while self._held and self._held >= (rows := self._group_rows()):
             held = pa.concat_tables(self._pending)
-            super().write_table(held.slice(0, RECEIPT_ROW_GROUP), row_group_size=RECEIPT_ROW_GROUP)
-            rest = held.slice(RECEIPT_ROW_GROUP)
+            super().write_table(held.slice(0, rows), row_group_size=rows)
+            rest = held.slice(rows)
             self._pending, self._held = ([rest] if rest.num_rows else []), rest.num_rows
+            self._held_bytes = rest.nbytes if rest.num_rows else 0
 
     def end_row_group(self) -> None:
         """Write the held rows as a row group now: a caller isolating a large receipt cuts groups around it."""
         if self._pending:
             super().write_table(pa.concat_tables(self._pending), row_group_size=RECEIPT_ROW_GROUP)
-            self._pending, self._held = [], 0
+            self._pending, self._held, self._held_bytes = [], 0, 0
 
     def write_batch(self, batch: pa.RecordBatch, row_group_size: int | None = None) -> None:
         self.write_table(pa.Table.from_batches([batch]))
@@ -133,8 +150,8 @@ def end_receipt_row_group(writer: Any) -> None:
 
 
 def open_receipt_writer(sink: Any) -> pq.ParquetWriter:
-    """The one receipt Parquet writer: shared schema, zstd, whole :data:`RECEIPT_ROW_GROUP`-row groups, a page
-    index, statistics only on :data:`RECEIPT_STATISTICS` and dictionaries only on :data:`RECEIPT_DICTIONARY`."""
+    """The one receipt Parquet writer: shared schema, zstd, row groups bounded by :data:`RECEIPT_ROW_GROUP` rows and
+    :data:`RECEIPT_ROW_GROUP_BYTES` bytes, a page index, statistics only on :data:`RECEIPT_STATISTICS` and dictionaries only on :data:`RECEIPT_DICTIONARY`."""
     return _ReceiptWriter(sink)
 
 

@@ -954,6 +954,31 @@ def test_combine_keeps_receipt_groups_bounded_across_shards(tmp_path):
     assert pq.read_table(combined).equals(pa.concat_tables([pq.read_table(path) for path in shards]))
 
 
+def test_receipt_groups_end_at_the_byte_budget_before_the_row_cap(tmp_path, monkeypatch):
+    from spicy_regs import etl_receipts
+
+    def rows(start, width):
+        return pa.Table.from_pylist([{"attempt_id": str(i), "diagnostic_json": "x" * width}
+                                     for i in range(start, start + 100)], schema=RECEIPT_SCHEMA)
+
+    monkeypatch.setattr(etl_receipts, "RECEIPT_ROW_GROUP", 300)
+    monkeypatch.setattr(etl_receipts, "RECEIPT_ROW_GROUP_BYTES", 200_000)
+    path = tmp_path / "receipts.parquet"
+    written = []
+    with etl_receipts.open_receipt_writer(path) as writer:
+        for start in range(0, 1000, 100):  # wide rows: ~5 KB each, so ~40 rows reach the budget
+            written.append(rows(start, 5000))
+            writer.write_table(written[-1])
+        for start in range(1000, 1700, 100):  # narrow rows: the row cap ends the group first
+            written.append(rows(start, 10))
+            writer.write_table(written[-1])
+    with pq.ParquetFile(path) as parquet:
+        groups = [parquet.read_row_group(i) for i in range(parquet.metadata.num_row_groups)]
+    assert all(group.nbytes <= 200_000 and group.num_rows <= 300 for group in groups)
+    assert max(group.num_rows for group in groups) == 300  # narrow rows still fill whole row-cap groups
+    assert pa.concat_tables(groups).equals(pa.concat_tables(written))
+
+
 @pytest.mark.parametrize("uri", ["/home/runner/work/x/.builds/a/input.parquet", "/Users/someone/Work/input.parquet",
                                  "./relative/input.parquet", "~/input.parquet", "file:///tmp/input.parquet",
                                  r"C:\private\input.parquet", "FILE:///x"])
