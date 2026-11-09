@@ -453,8 +453,9 @@ def test_regulatory_restore_admits_and_scopes_the_pair_once_under_the_selected_p
         for module in (subject_receipts, regulations_bulk)
     ]
     scopings = [
-        patch.object(module, "select_receipts", wraps=module.select_receipts)
-        for module in (subject_receipts, regulations_bulk, regulations_receipts)
+        patch.object(module, name, wraps=getattr(module, name))
+        for module, name in ((subject_receipts, "select_pinned_receipts"), (regulations_bulk, "select_receipts"),
+                             (regulations_receipts, "select_receipts"))
     ]
     with ExitStack() as stack:
         admitted = [stack.enter_context(call) for call in admissions]

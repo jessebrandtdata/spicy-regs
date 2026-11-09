@@ -26,7 +26,9 @@ from spicy_regs.congress_receipts import (
     write_congress_dataset,
     has_unmatched_failures,
 )
-from spicy_regs.etl_receipts import combine_receipts, read_with_receipts, select_receipts, validate_receipt_bundle, selected_subject_policy
+from spicy_regs.etl_receipts import (
+    combine_receipts, read_with_receipts, select_pinned_receipts, validate_receipt_bundle, selected_subject_policy,
+)
 from spicy_regs.legislative_documents import field_registry
 from spicy_regs.legislative_receipts import (
     FILE_POLICY,
@@ -72,7 +74,7 @@ class SelectedPriors:
     def __init__(self, directory, *, index=None, public_url=None, root=None, ranged=frozenset()):
         """``ranged`` names the Congress datasets whose receipts may be read by row group (``SelectedInputs.select``):
         another family's soft inputs, each read for its own rows. A family's own priors read many datasets of one
-        member, so they fetch it whole once."""
+        member, so they fetch it whole once, verify its SHA-256, and then read each dataset's row groups alone."""
         from spicy_regs.selected_generations import SelectedInputs
 
         self.directory = Path(directory)
@@ -109,9 +111,10 @@ class SelectedPriors:
         directory = self.directory / dataset
         directory.mkdir()
         # A ranged read already wrote exactly this dataset's receipts, in source order, through the same selector.
+        # A whole member is pinned, so each dataset reads its own row groups, not all of a family's receipts.
         with phase_log("prior-scope", dataset=dataset, ranged=dataset in self.selected.ranged):
             scoped = (receipt_path if dataset in self.selected.ranged
-                      else select_receipts(receipt_path, directory / "scoped.parquet", dataset=dataset))
+                      else select_pinned_receipts(receipt_path, directory / "scoped.parquet", dataset=dataset))
         selected_policy = selected_subject_policy(selected_policy, subjects)
         # The regulatory restore below admits the pair itself: complete admission in
         # regulations_bulk._materialize_selected, or the full read_with_receipts pass in _qualified_rows.
@@ -129,7 +132,7 @@ class SelectedPriors:
                 )
         elif dataset in field_registry():
             with phase_log("prior-scope", dataset=FILE_STATES, owner=dataset):
-                files = select_receipts(receipt_path, directory / "file-receipts.parquet", dataset=FILE_STATES)
+                files = select_pinned_receipts(receipt_path, directory / "file-receipts.parquet", dataset=FILE_STATES)
             bundle = directory / "legislative"
             bundle.mkdir()
             combine_receipts([scoped, files], bundle / "etl_receipts.parquet")

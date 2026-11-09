@@ -953,12 +953,13 @@ def row_group_bytes(metadata, group: int) -> int:
 
 
 def select_member_receipts(parquet, destination: Path, *, dataset: str, row_groups: Sequence[int],
-                           chunk_bytes: int) -> Path:
+                           chunk_bytes: int | None = None) -> Path:
     """Select ``dataset``'s receipts from ``row_groups`` of an open shared-schema member, in source order.
 
     For a remote member this reads only those groups instead of the whole file; the rows, their order and the cell
     checks are :func:`select_receipts`' own. Groups are read in runs of at most ``chunk_bytes`` stored bytes (one
-    group may exceed it), so a pre-buffering reader holds one run at a time. Admission remains a separate check.
+    group may exceed it), so a pre-buffering reader holds one run at a time; ``None`` reads them in one run.
+    Admission remains a separate check.
     """
     if not parquet.schema_arrow.equals(RECEIPT_SCHEMA):
         raise ValueError("Receipt member is not the shared receipt schema")
@@ -967,7 +968,7 @@ def select_member_receipts(parquet, destination: Path, *, dataset: str, row_grou
         run, size = [], 0
         for group in [*row_groups, None]:
             stored = 0 if group is None else row_group_bytes(parquet.metadata, group)
-            if run and (group is None or size + stored > chunk_bytes):
+            if run and (group is None or (chunk_bytes is not None and size + stored > chunk_bytes)):
                 yield from parquet.iter_batches(batch_size=2000, row_groups=run)
                 run, size = [], 0
             if group is not None:
@@ -979,6 +980,25 @@ def select_member_receipts(parquet, destination: Path, *, dataset: str, row_grou
         _select_receipt_batches(batches(), {dataset: temporary})
         temporary.replace(destination)
     return destination
+
+
+def select_pinned_receipts(path: Path, destination: Path, *, dataset: str) -> Path:
+    """:func:`select_receipts` for a local member whose whole bytes the caller already holds to a pin.
+
+    Reads only the row groups whose ``dataset`` statistics can hold the dataset (:func:`dataset_row_groups`), so one
+    dataset of a family's member costs its own groups, not a decode of every receipt. Rows, order and cell checks are
+    :func:`select_receipts`' own; a group without statistics is read. Rows in skipped groups are not decoded: the pin
+    covers their bytes, and admission checks each selected receipt. Another schema, or any decode error, goes to
+    :func:`select_receipts` over the whole member, which keeps the row selector's authority.
+    """
+    try:
+        with pq.ParquetFile(path) as parquet:
+            if parquet.schema_arrow.equals(RECEIPT_SCHEMA):
+                return select_member_receipts(parquet, destination, dataset=dataset,
+                                              row_groups=dataset_row_groups(parquet, dataset))
+    except (ValueError, TypeError, pa.ArrowException):
+        pass
+    return select_receipts(path, destination, dataset=dataset)
 
 
 def select_receipts(path: ParquetInput, destination: Path, *, dataset: str) -> Path:
