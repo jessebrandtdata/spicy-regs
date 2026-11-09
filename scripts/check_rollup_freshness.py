@@ -44,6 +44,8 @@ class DateCheck:
     column: str
     budget_days: int
     label: str | None = None
+    #: A SQL predicate narrowing the watermark (never the row count) to one slice, e.g. one chamber.
+    where: str | None = None
 
 
 # Base tables published by the daily ETL (etl-new-pipeline.yml). They are not
@@ -78,6 +80,14 @@ EXTERNAL_DATE_CHECKS = (
     DateCheck("crs_reports", "published_date", 14),
     DateCheck("fcc_proceedings", "date_created", 14),
     DateCheck("fcc_filings", "date_received", 7),
+    # Per chamber: one chamber's listing can refuse while the other publishes, and
+    # the Senate's ladder can pass a run on Internet Archive copies of any age
+    # (ss-bruk), so a stale Senate half would hide behind a fresh House max.
+    # The Senate does not vote every day: over 2,662 vote days of 2003-2026
+    # (the published 108th-119th) its longest gap is 56 days (2003-11-25 to
+    # 2004-01-20), election-year October recesses run 46-55, August recesses
+    # 30-47. 60 days rides out every one of them.
+    DateCheck("roll_call_votes", "vote_day", 60, "senate vote day", where="chamber = 'senate'"),
 )
 
 DATE_CHECKS = BASE_TABLE_CHECKS + EXTERNAL_DATE_CHECKS
@@ -117,9 +127,10 @@ def _query(sources: Mapping[str, list[str]]) -> str:
             continue
         label = check.label or check.column
         target = publication.parquet_scan(sources[check.table])
+        where = "" if check.where is None else f" FILTER (WHERE {check.where})"
         branches.append(
             f"""SELECT '{check.table}' AS table_name, '{label}' AS metric,
-                       CAST(MAX(TRY_CAST({check.column} AS TIMESTAMP)) AS VARCHAR) AS latest,
+                       CAST(MAX(TRY_CAST({check.column} AS TIMESTAMP)){where} AS VARCHAR) AS latest,
                        COUNT(*)::BIGINT AS row_count
                 FROM {target}"""
         )

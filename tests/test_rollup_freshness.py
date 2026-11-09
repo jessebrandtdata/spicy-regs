@@ -277,3 +277,19 @@ def test_comment_coverage_reads_per_agency_rows_from_the_published_index(tmp_pat
     pq.write_table(pa.table({"agency_code": ["VA", "VA", "EPA", None], "row_count": [10, 5, 7, 3]}),
                    tmp_path / "comments_index.parquet")
     assert freshness.read_comment_counts(str(tmp_path)) == {"VA": 15, "EPA": 7}
+
+
+def test_senate_vote_freshness_is_held_apart_from_the_house(tmp_path):
+    """A fresh House max must not hide a stale Senate half (ss-bruk); the row count stays the whole table's pin."""
+    member = tmp_path / "roll_call_votes.parquet"
+    pq.write_table(pa.table({"chamber": ["house", "senate", "senate", "house"],
+                             "vote_day": ["2026-11-06", "2026-08-01", None, "2026-11-05"]}), member)  # fmt: skip
+    check = next(c for c in freshness.DATE_CHECKS if c.table == "roll_call_votes")
+    rows = duckdb.sql(freshness._query({"roll_call_votes": [str(member)]})).fetchall()
+    assert [(table, metric, latest[:10], count) for table, metric, latest, count in rows] == [
+        ("roll_call_votes", "senate vote day", "2026-08-01", 4)
+    ]
+    assert check.budget_days == 60
+    assert evaluate_date_rows(rows, date(2026, 11, 9)), "100 days without a Senate vote is stale"
+    # The election-year October recess (2024-09-25 to 2024-11-12, 48 days) is not.
+    assert evaluate_date_rows([("roll_call_votes", "senate vote day", "2024-09-25", 1)], date(2024, 11, 11)) == []
