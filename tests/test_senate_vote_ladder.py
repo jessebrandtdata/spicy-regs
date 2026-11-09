@@ -64,6 +64,7 @@ def refusing(request: httpx.Request) -> httpx.Response:
 
 
 def digest(body: bytes) -> str:
+    """Recomputed here with the stdlib, not with the spicy-docs helper the code under test uses."""
     return base64.b32encode(hashlib.sha1(body).digest()).decode()
 
 
@@ -146,15 +147,41 @@ def test_every_rung_failing_is_a_refusal_naming_each_rung():
     assert not source.rungs
 
 
-def test_a_rendered_page_from_a_proxy_is_refused_before_the_reader_trusts_it():
-    """A proxy answering an HTML page (or the wrong file) is not the vote: the reader refuses it; nothing is counted."""
+def test_a_rendered_page_from_a_proxy_is_an_error_page_and_the_ladder_climbs_past_it():
+    """An HTML page from a proxy, whatever its label, is not the file: the ladder asks the next rung (spicy-docs
+    0.80.0's error-page outcome, with ``is_senate_xml`` as the publisher page), so Firecrawl serves the vote."""
     page = b"<!DOCTYPE html><html><body>Roll Call Vote 119th Congress</body></html>"
-    for body, content_type in ((page, "text/html"), (page, "text/xml"), (MENU, "text/xml")):
-        zyte, firecrawl = Fetcher(body, content_type), Fetcher(VOTE)
+    for content_type in ("text/html", "text/xml"):
+        zyte, firecrawl = Fetcher(page, content_type), Fetcher(VOTE)
         source = acquirer(refusing, zyte, firecrawl)
-        with pytest.raises(VoteSourceError):
+        assert source.acquire(SENATE_1).capture.body == VOTE
+        assert (zyte.calls, firecrawl.calls) == (1, 1) and source.rungs == {"firecrawl_raw": 1}
+
+
+def test_the_wrong_xml_file_from_a_proxy_stops_the_ladder_at_the_reader():
+    """XML is the publisher's own page, so the ladder returns it; the reader then refuses the wrong file unread."""
+    zyte, firecrawl = Fetcher(MENU), Fetcher(VOTE)
+    source = acquirer(refusing, zyte, firecrawl)
+    with pytest.raises(VoteSourceError):
+        source.acquire(SENATE_1)
+    assert firecrawl.calls == 0 and not source.rungs
+
+
+def test_a_proxy_that_fails_one_senate_file_is_not_asked_again_this_run():
+    """senate.gov bans a provider's pool, not one file: one failed Zyte call per run, not one per file."""
+    page = b"<!DOCTYPE html><html><body>Website Ban</body></html>"
+    zyte, firecrawl = Fetcher(page, "text/html"), Fetcher(VOTE)
+    source = acquirer(refusing, zyte, firecrawl)
+    for _ in range(3):
+        assert source.acquire(SENATE_1).capture.body == VOTE
+    assert (zyte.calls, firecrawl.calls) == (1, 3)
+
+    zyte, firecrawl = Fetcher(page, "text/html"), Fetcher(page, "text/html")
+    source = acquirer(refusing, zyte, firecrawl)
+    for _ in range(3):
+        with pytest.raises(VoteRefusedError):
             source.acquire(SENATE_1)
-        assert firecrawl.calls == 0 and not source.rungs
+    assert (zyte.calls, firecrawl.calls) == (1, 1), "an exhausted ladder retires both proxies"
 
 
 def test_house_reads_never_reach_the_ladder():
@@ -189,6 +216,8 @@ def test_the_archive_serves_the_newest_capture_when_every_rung_refuses_and_says_
     assert fields["cdx_digest"] == digest(gz) and fields["fetched_at"] == got.capture.observed_at
     assert isinstance(fields["age_seconds"], int) and fields["age_seconds"] > 0, "the journal admits no floats"
     assert all(not isinstance(value, float) for value in fields.values())
+    [serve] = source.archived
+    assert (serve.url, serve.age_seconds, serve.menu) == (original, fields["age_seconds"], False)
 
 
 def test_one_cdx_read_serves_a_whole_session_directory():
@@ -238,6 +267,75 @@ def test_an_unreachable_archive_is_the_file_s_refusal_not_a_crash(monkeypatch):
 
     with pytest.raises(VoteRefusedError):
         no_proxies(down).list_senate_votes(119, 1)
+
+
+def test_an_unreachable_archive_is_asked_once_per_run_not_once_per_file(monkeypatch):
+    import spicy_docs.transport.retry as retry
+
+    monkeypatch.setattr(retry.time, "sleep", lambda _seconds: None)
+    archive_requests = []
+
+    def down(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "web.archive.org":
+            archive_requests.append(str(request.url))
+            raise httpx.ReadTimeout("archive hangs")
+        return refusing(request)
+
+    source = no_proxies(down)
+    with pytest.raises(VoteRefusedError):
+        source.acquire(SENATE_1)
+    first = len(archive_requests)
+    assert first >= 1
+    for roll in (2, 3):
+        with pytest.raises(VoteRefusedError):
+            source.acquire(VoteLocator("senate", 119, 1, roll))
+    with pytest.raises(VoteRefusedError):
+        source.list_senate_votes(119, 1)
+    assert len(archive_requests) == first, "no file after the first asks the Archive again"
+
+
+def test_a_failed_cdx_read_is_not_repeated_for_its_session():
+    """A malformed CDX answer is the first file's error; its session's other files keep the ladder refusal, unread."""
+    cdx_reads = []
+
+    def broken(request: httpx.Request) -> httpx.Response:
+        if request.url.host != "web.archive.org":
+            return refusing(request)
+        cdx_reads.append(str(request.url))
+        return httpx.Response(200, headers={"content-type": "application/json"}, stream=httpx.ByteStream(b"{}"))
+
+    source = no_proxies(broken)
+    with pytest.raises(VoteSourceError, match="requested fields"):
+        source.acquire(SENATE_1)
+    with pytest.raises(VoteRefusedError):
+        source.acquire(VoteLocator("senate", 119, 1, 2))
+    assert len(cdx_reads) == 1
+
+
+@pytest.mark.parametrize("row", [["2026071901", SENATE_1.url(), "X" * 32], [20260719010444, SENATE_1.url(), "X" * 32],
+                                 ["20260719010444", SENATE_1.url()], "20260719010444"])  # fmt: skip
+def test_a_malformed_cdx_row_refuses_the_file_and_never_crashes_the_run(row):
+    archive = Archive({}, [row])
+    with pytest.raises(VoteSourceError, match="CDX row is malformed"):
+        no_proxies(archive).acquire(SENATE_1)
+
+
+def test_archive_copies_and_refused_files_are_said_aloud():
+    from datetime import UTC, datetime
+
+    from spicy_regs.sources.senate_vote_ladder import ArchiveServe, senate_warnings
+
+    day = 86400
+    menu = "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_119_2.xml"
+    served = [ArchiveServe(menu, datetime(2026, 11, 6, 6, 1, tzinfo=UTC), 3 * day + 5),
+              ArchiveServe(SENATE_1.url(), datetime(2026, 7, 19, tzinfo=UTC), 40 * day),
+              ArchiveServe(SENATE_1.url(), datetime(2026, 11, 1, tzinfo=UTC), 8 * day)]  # fmt: skip
+    assert senate_warnings(served, 2) == [
+        f"Senate vote menu {menu} read from an Internet Archive capture of 2026-11-06 06:01 UTC, 3 day(s) old",
+        "2 Senate vote file(s) read from Internet Archive captures 8-40 day(s) old",
+        "2 Senate vote file(s) refused; their held rows stay as published",
+    ]
+    assert senate_warnings([], 0) == []
 
 
 def test_a_menu_reads_its_own_capture_exactly():

@@ -6,7 +6,11 @@ session's largest held roll (the EVS index pages answer 404 since 2026-10-02),
 and the LIS vote menu for the Senate. Both hosts are keyless. senate.gov
 refuses direct reads from runners (2026-11-08), so Senate files go through the
 walled-fetch ladder (:mod:`spicy_regs.sources.senate_vote_ladder`): direct
-first, then Zyte with ``ZYTE_TOKEN``, then Firecrawl with ``FIRECRAWL_API_KEY``. Each chamber is listed on its own: a chamber whose
+first, then Zyte with ``ZYTE_TOKEN``, then Firecrawl with ``FIRECRAWL_API_KEY``,
+then the Internet Archive's newest capture; Zyte and Firecrawl were both
+refused by senate.gov on 2026-11-09, so the Archive is what serves today. An
+Archive copy or a refused Senate file passes the run, so each is raised as a CI
+warning naming the copy's age. Each chamber is listed on its own: a chamber whose
 listing refuses leaves the run's scope, its held rows stay as published (as in
 a ``ROLL_CALL_CHAMBERS`` run of the other), the refusal is journaled, and the
 run builds the other chamber and then fails (:class:`ChamberListingRefused`),
@@ -112,7 +116,8 @@ from spicy_docs.sources.congress.votes import (
 )
 
 from spicy_regs.sources import r2
-from spicy_regs.sources.senate_vote_ladder import LadderVoteAcquirer
+from spicy_regs.phase_log import annotate
+from spicy_regs.sources.senate_vote_ladder import LadderVoteAcquirer, senate_warnings
 from spicy_regs.transforms.build_bill_family import VOTE_REFERENCES_TABLE
 from spicy_regs.transforms.congress_scope import (
     FIRST_CONGRESS_YEAR,
@@ -844,7 +849,7 @@ def build_roll_call_votes(
 
     vote_rows: list[dict] = []
     member_rows: list[dict] = []
-    refused = 0
+    refused: Counter[str] = Counter()
     # An archive copy can predate a correction the held row already carries (119-2-235: the Internet Archive's
     # newest capture says modified September 15, the published direct read September 16), so a re-read never moves
     # a Senate row's modify_date backward; the held row and its member positions stay as published.
@@ -869,7 +874,7 @@ def build_roll_call_votes(
                 evidence.refusal(error, stage="vote-source")
             # A roll call the Clerk will not serve is counted, never dropped
             # silently and never published with a fabricated tally.
-            refused += 1
+            refused[key.chamber] += 1
             logger.warning("Roll-call votes: {} refused: {}", locator.url(), error)
             continue
         row = shape_roll_call_vote(vote, tally=vote.tallies, member_vote_count=len(vote.member_votes))
@@ -898,7 +903,7 @@ def build_roll_call_votes(
         " {:,} older than the held row",
         len(vote_rows),
         len(member_rows),
-        refused,
+        refused.total(),
         len(withheld),
         older_copies,
     )
@@ -907,6 +912,8 @@ def build_roll_call_votes(
         logger.info("Roll-call votes: Senate files served by {}", dict(rungs))
         if evidence is not None:
             evidence.event("senate-vote-rungs", **rungs)
+    for message in senate_warnings(getattr(acquirer, "archived", ()), refused["senate"]):
+        annotate("warning", "roll_call_votes", message)
     members = merge_contract_table(
         output_dir,
         "member_votes",

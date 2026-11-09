@@ -1769,3 +1769,30 @@ def test_a_re_read_older_than_the_held_senate_row_keeps_the_held_row(tmp_path, s
         published.append(row["modify_date"])
     assert published == ["September 16, 2026,  04:09 PM", "September 16, 2026,  04:09 PM",
                          "September 17, 2026,  09:00 AM"]  # fmt: skip
+
+
+def test_an_archive_copy_or_a_refused_senate_file_is_a_ci_warning(tmp_path, scoped, capsys):
+    """Both pass the run green (ss-bruk), so the run says each aloud, with the Archive copy's age."""
+    from datetime import UTC, datetime
+
+    from spicy_regs.sources.senate_vote_ladder import ArchiveServe
+
+    class Archived(StubVoteAcquirer):
+        archived = [ArchiveServe("https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00002.xml",
+                                 datetime(2026, 7, 19, tzinfo=UTC), 40 * 86400)]  # fmt: skip
+
+        def acquire(self, locator, *, crosswalk=None):
+            if locator.chamber == "senate" and locator.roll_number == 1:
+                raise VoteSourceError("refused")
+            return super().acquire(locator)
+
+    build_roll_call_votes(tmp_path, acquirer=Archived(senate_rolls=(1, 2), house_rolls=(5,)), download_prior=_no_prior,
+                          open_congresses=(119,))  # fmt: skip
+    out = capsys.readouterr().out
+    assert "::warning title=roll_call_votes::1 Senate vote file(s) read from Internet Archive captures 40 day(s) old" in out
+    assert "::warning title=roll_call_votes::1 Senate vote file(s) refused; their held rows stay as published" in out
+
+    (tmp_path / "quiet").mkdir()
+    build_roll_call_votes(tmp_path / "quiet", acquirer=StubVoteAcquirer(senate_rolls=(2,)), download_prior=_no_prior,
+                          open_congresses=(119,))  # fmt: skip
+    assert "::warning" not in capsys.readouterr().out

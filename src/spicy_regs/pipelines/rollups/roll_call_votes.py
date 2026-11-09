@@ -15,8 +15,9 @@ label; ``run-rollup-members`` finishes those tables before votes start in the sa
 refresh workflow, so the captured crosswalk cannot race its own writer. These
 reads are not declared ``soft_inputs`` because the declaration test models
 separate writer crons rather than dependencies within one workflow. Both publishers
-are keyless; senate.gov refuses runners, so the Senate is read through Zyte
-(``ZYTE_TOKEN``) after a refused direct attempt. The cron runs an hour after the
+are keyless; senate.gov refuses runners, so a refused Senate read climbs the
+walled-fetch ladder (Zyte, Firecrawl) and then reads the Internet Archive's newest
+capture (``sources.senate_vote_ladder``). The cron runs an hour after the
 family's to reuse any available links.
 
 A chamber whose listing refuses is left out of the run and the other chamber is
