@@ -138,7 +138,7 @@ def validate_export(output_dir: Path, previous_url: str, *,
                     resources: ExportResources | None = None, candidate_builder=None) -> PublicPredecessor:
     """Keep every prior ID; refuse a moving predecessor and inconsistent coverage."""
     resources = resources or ExportResources()
-    before = r2.public_object_version(previous_url)
+    before = publication.public_object_version(previous_url)
     if before is None:
         raise RuntimeError("Prior comments mirror is missing; cannot verify its population")
     with TemporaryDirectory(prefix="comments-check-", dir=output_dir) as spill, duckdb.connect() as con:
@@ -158,7 +158,7 @@ def validate_export(output_dir: Path, previous_url: str, *,
         agencies = frozenset(row[0] for row in con.execute("SELECT DISTINCT agency_code FROM previous").fetchall())
         if any(not isinstance(a, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", a) for a in agencies):
             raise RuntimeError("Prior comments mirror has invalid agency codes")
-    if r2.public_object_version(previous_url) != before:
+    if publication.public_object_version(previous_url) != before:
         raise RuntimeError("Prior comments mirror changed during validation; retry on a stable predecessor")
     return PublicPredecessor(before["etag"], agencies)
 
@@ -259,7 +259,7 @@ def _receipt_matches(receipt: dict | None, snapshot: iceberg.CatalogPairSnapshot
     with ThreadPoolExecutor(max_workers=8) as pool:
         if not all(list(pool.map(stored, files.items()))):
             return False
-    return not r2.public_version_drift({f"{base_url}/{key}": item for key, item in files.items()})
+    return not publication.public_version_drift({f"{base_url}/{key}": item for key, item in files.items()})
 
 
 def _prepare_catalog(record_type) -> None:
@@ -360,7 +360,7 @@ def publish_comments_mirror(output_dir: Path, *, resources: ExportResources | No
         raise RuntimeError("Catalog changed during export; refusing publication")
     if prepared_export is not None:
         _validate_prepared_export(output_dir, prepared_export, snapshot)
-    current = r2.public_object_version(previous_url)
+    current = publication.public_object_version(previous_url)
     if current is None or current["etag"] != predecessor.etag:
         raise RuntimeError("Prior comments mirror changed before publication; refusing overwrite")
     files = [result["comments"], *agency_files, result["index"]]

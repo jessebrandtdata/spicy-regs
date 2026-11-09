@@ -31,7 +31,7 @@ import httpx
 from spicy_regs.pipelines.comments_mirror import receipt_files, receipt_source
 from spicy_regs.public_url import resolve_r2_base_url
 from spicy_regs.schemas.regulations import RECORD_TYPES
-from spicy_regs.sources import iceberg, publication, r2
+from spicy_regs.sources import iceberg, publication
 
 #: One 429 or 5xx from the public host must not fail the night; SpicyDocs' backoff caps each wait.
 PUBLIC_ATTEMPTS = 4
@@ -68,7 +68,7 @@ def main() -> int:
                 print("FAIL public: comments-publication.json does not state a complete comments publication",
                       flush=True)
                 return 1
-            errors = r2.public_version_drift({f"{base}/{key}": item for key, item in files.items()},
+            errors = publication.public_version_drift({f"{base}/{key}": item for key, item in files.items()},
                                              attempts=PUBLIC_ATTEMPTS)
         for error in errors[:args.limit]:
             print(f"FAIL public: differs from the publication receipt: {error}", flush=True)

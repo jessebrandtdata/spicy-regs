@@ -454,6 +454,9 @@ def load_rulemaking_snapshot(base_url: str, *, read=None) -> dict | None:
 
 #: The comment files the export receipt identifies at fixed public URLs, as table names; the receipt's agency
 #: partitions are downloads, not served tables.
+#: Public reads ask for the stored bytes, so ETag and length are the stored version's.
+PUBLIC_HEADERS = {"User-Agent": "spicy-regs", "Accept-Encoding": "identity"}
+
 COMMENTS_EXPORT_TABLES = ("comments", "comments_index")
 
 
@@ -503,13 +506,58 @@ def comments_export_pins(base_url: str, comments: Mapping, tables: Iterable[str]
     return pins
 
 
+def public_object_version(url: str, *, timeout: float = 60, attempts: int = 1) -> dict | None:
+    """The stored version of a public object, as ``r2.object_version`` states it; ``None`` when it is absent.
+
+    The request asks for the stored bytes: the public host otherwise answers a JSON object gzip-encoded, with a
+    weak ETag and no length (``publication.v2.json`` on the custom domain, 2026-10-05). It also bypasses the edge
+    cache, which can answer a replaced object's old version. ``attempts`` above one retries 429, 5xx and transport
+    failures with a capped backoff; other refusals fail at once. Plain httpx: the MCP image installs neither boto3
+    nor SpicyDocs, and ``mutable_versions_match`` reaches this there.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            response = httpx.head(url, follow_redirects=True, timeout=timeout,
+                                  headers={**PUBLIC_HEADERS, "Cache-Control": "no-cache"})
+        except httpx.TransportError:
+            if attempt == attempts:
+                raise
+        else:
+            if (response.status_code != 429 and response.status_code < 500) or attempt == attempts:
+                break
+        time.sleep(remaining_timeout(min(2 ** attempt, 16)))
+    if response.status_code == 404:
+        return None
+    response.raise_for_status()
+    etag = response.headers.get("etag")
+    if not etag:
+        raise RuntimeError(f"Public object has no ETag: {url}")
+    return {"etag": etag, "bytes": int(response.headers["content-length"])}
+
+
+def public_version_drift(expected: Mapping[str, Mapping], *, timeout: float = 60, attempts: int = 1) -> list[str]:
+    """``url: expected, public`` for each URL whose public stored version is not ``{"etag", "bytes"}`` as expected.
+
+    Any rewrite or removal of an object changes its ETag, so a match binds the bytes a publisher read back.
+    """
+    def drift(entry: tuple[str, Mapping]) -> str | None:
+        url, item = entry
+        wanted = {"etag": item["etag"], "bytes": item["bytes"]}
+        actual = public_object_version(url, timeout=timeout, attempts=attempts)
+        return None if actual == wanted else f"{url}: expected {wanted}, public {actual}"
+
+    if len(expected) == 1:
+        return [error for error in map(drift, expected.items()) if error]
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return [error for error in pool.map(drift, sorted(expected.items())) if error]
+
+
 def mutable_versions_match(pins: Mapping[str, Mapping | None]) -> bool:
     """Fixed comment URLs are usable only while their published object versions match the receipt.
 
     One HEAD per comments-mirror pin; other pins are immutable and pass.
     """
-    from spicy_regs.sources.r2 import public_version_drift
-
     mutable = {pin["urls"][0]: pin for pin in pins.values() if pin is not None and pin.get("kind") == "comments-mirror"}
     return not mutable or not public_version_drift(mutable, timeout=remaining_timeout(30))
 

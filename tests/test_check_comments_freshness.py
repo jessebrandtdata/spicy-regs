@@ -10,7 +10,7 @@ import pytest
 from spicy_regs.comments_health import check_comments
 from spicy_regs.pipelines.comments_mirror import receipt_files, receipt_source
 from spicy_regs.schemas.regulations import RECORD_TYPES
-from spicy_regs.sources import iceberg, publication, r2, regulatory_catalog
+from spicy_regs.sources import iceberg, publication, regulatory_catalog
 
 _SPEC = importlib.util.spec_from_file_location(
     "check_comments_freshness", Path(__file__).parents[1] / "scripts/check_comments_freshness.py")
@@ -58,7 +58,7 @@ def published(monkeypatch):
     monkeypatch.setattr(publication, "load_comments_publication", load)
     monkeypatch.setattr(publication, "load_index", lambda base: {
         "families": {} if state["family"] is None else {"comments": state["family"]}})
-    monkeypatch.setattr(r2, "public_object_version", lambda url, **_: state["versions"].get(url))
+    monkeypatch.setattr(publication, "public_object_version", lambda url, **_: state["versions"].get(url))
     monkeypatch.setattr(iceberg, "rows_unchanged_since", lambda rt, snapshot, **_: state["bound"])
     monkeypatch.setattr(iceberg, "check_comments_against_indexes", check)
     return state
@@ -153,9 +153,29 @@ def test_one_throttled_head_is_retried(monkeypatch):
         return httpx.Response(answers.pop(0), headers={"etag": '"e"', "content-length": "7"},
                               request=httpx.Request("HEAD", url))
 
-    monkeypatch.setattr(r2.httpx, "head", head)
-    monkeypatch.setattr("spicy_docs.transport.retry.time.sleep", lambda _: None)
-    assert r2.public_version_drift({f"{BASE}/x": {"etag": '"e"', "bytes": 7}}, attempts=2) == []
+    monkeypatch.setattr(publication.httpx, "head", head)
+    monkeypatch.setattr(publication.time, "sleep", lambda _: None)
+    assert publication.public_version_drift({f"{BASE}/x": {"etag": '"e"', "bytes": 7}}, attempts=2) == []
+
+
+def test_mcp_image_checks_comment_pins_without_boto3_or_spicy_docs(tmp_path):
+    """The Cloudflare MCP image installs spicy_regs ``--no-deps``: neither boto3 nor SpicyDocs is importable there."""
+    import subprocess
+    import sys
+    probe = """
+import sys
+for name in ("boto3", "botocore", "spicy_docs"):
+    sys.modules[name] = None
+import httpx
+from spicy_regs.sources import publication
+httpx.head = lambda url, **kw: httpx.Response(200, headers={"etag": '"e"', "content-length": "7"},
+                                              request=httpx.Request("HEAD", url))
+pin = {"kind": "comments-mirror", "urls": ["https://data.example/comments.parquet"], "etag": '"e"', "bytes": 7}
+assert publication.mutable_versions_match({"comments": pin}) is True
+assert publication.mutable_versions_match({"comments": {**pin, "etag": '"x"'}}) is False
+"""
+    result = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
 
 
 def test_receipt_helpers_bind_only_complete_receipts():

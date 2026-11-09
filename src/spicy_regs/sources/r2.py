@@ -11,7 +11,7 @@ download error produced an empty local file, and the upload overwrote the
 historical 3.3 GB ``comments.parquet``.
 """
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -26,9 +26,10 @@ import httpx
 from loguru import logger
 
 from spicy_regs.sources.cloudflare import purge_urls
-from spicy_regs.sources.publication import _get_bounded, _head
+from spicy_regs.sources.publication import (  # noqa: F401  (the public version check lives with public reads)
+    PUBLIC_HEADERS as _PUBLIC_HEADERS, _get_bounded, _head, public_object_version, public_version_drift,
+)
 
-_PUBLIC_HEADERS = {"User-Agent": "spicy-regs", "Accept-Encoding": "identity"}
 
 
 # --- download (public URL) -------------------------------------------------
@@ -386,51 +387,6 @@ def object_version(remote_key: str) -> dict | None:
     """Storage version used to detect out-of-band mirror replacements."""
     stored = _head(get_r2_client(), getenv("R2_BUCKET_NAME", "spicy-regs"), remote_key)
     return None if stored is None else {"etag": stored["ETag"], "bytes": stored["ContentLength"]}
-
-
-def public_object_version(url: str, *, timeout: float = 60, attempts: int = 1) -> dict | None:
-    """The stored version of a public object, as :func:`object_version` states it; ``None`` when it is absent.
-
-    The request asks for the stored bytes: the public host otherwise answers a JSON object gzip-encoded, with a
-    weak ETag and no length (``publication.v2.json`` on the custom domain, 2026-10-05). It also bypasses the edge
-    cache, which can answer a replaced object's old version. ``attempts`` above one retries 429, 5xx and transport
-    failures with SpicyDocs' capped, jittered backoff; other refusals fail at once.
-    """
-    from spicy_docs.transport.http import RetryableHTTPStatusError
-    from spicy_docs.transport.retry import retry_http
-
-    def head() -> httpx.Response:
-        response = httpx.head(url, follow_redirects=True, timeout=timeout,
-                              headers={**_PUBLIC_HEADERS, "Cache-Control": "no-cache"})
-        if response.status_code == 429 or response.status_code >= 500:
-            raise RetryableHTTPStatusError("retryable public HEAD", request=response.request, response=response)
-        return response
-
-    response = retry_http(head, retryable=(RetryableHTTPStatusError, httpx.TransportError), max_attempts=attempts)
-    if response.status_code == 404:
-        return None
-    response.raise_for_status()
-    etag = response.headers.get("etag")
-    if not etag:
-        raise RuntimeError(f"Public object has no ETag: {url}")
-    return {"etag": etag, "bytes": int(response.headers["content-length"])}
-
-
-def public_version_drift(expected: Mapping[str, Mapping], *, timeout: float = 60, attempts: int = 1) -> list[str]:
-    """``url: expected, public`` for each URL whose public stored version is not ``{"etag", "bytes"}`` as expected.
-
-    Any rewrite or removal of an object changes its ETag, so a match binds the bytes a publisher read back.
-    """
-    def drift(entry: tuple[str, Mapping]) -> str | None:
-        url, item = entry
-        wanted = {"etag": item["etag"], "bytes": item["bytes"]}
-        actual = public_object_version(url, timeout=timeout, attempts=attempts)
-        return None if actual == wanted else f"{url}: expected {wanted}, public {actual}"
-
-    if len(expected) == 1:
-        return [error for error in map(drift, expected.items()) if error]
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        return [error for error in pool.map(drift, sorted(expected.items())) if error]
 
 
 def verify_public_file(local_path: Path, remote_key: str, base_url: str) -> dict:

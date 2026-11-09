@@ -85,7 +85,7 @@ def publication(tmp_path, monkeypatch):
     monkeypatch.setattr(iceberg, "rows_unchanged_since", lambda rt, pinned: iceberg.catalog_snapshot(rt) == pinned)
     monkeypatch.setattr(mirror.r2, "read_json_object", lambda _: state["receipt"])
     monkeypatch.setattr(mirror.r2, "object_version", lambda key: state["objects"].get(key))
-    monkeypatch.setattr(mirror.r2, "public_object_version", lambda url, **_: state["objects"].get(url.removeprefix("https://public.example/")))
+    monkeypatch.setattr(mirror.publication, "public_object_version", lambda url, **_: state["objects"].get(url.removeprefix("https://public.example/")))
     state["objects"]["comments.parquet"] = {"etag": "prior", "bytes": 99}
     monkeypatch.setattr(mirror, "validate_export", lambda *a, **kw: mirror.PublicPredecessor(state["objects"]["comments.parquet"]["etag"], frozenset({"EPA"})))
     monkeypatch.setattr(mirror.r2, "preflight_uploads", lambda *a: None)
