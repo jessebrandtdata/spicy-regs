@@ -2,11 +2,11 @@
 
 ``policy_migrations.json`` lists, per dataset, the descriptor digests shipped in order; the last is the
 installed ``etl_policies`` file. It was seeded from the policies the live generations' roots declare
-(2026-11-09), not from git history: a descriptor that never reached a publication needs no reader. An earlier shipped descriptor is either declared readable by
-``earlier_receipt_policies`` (its rows carry forward under their own receipts) or named in
-``replay_required`` with a reason: its rows cannot become current rows, so the next run rebuilds them from
-retained originals. ``unreadable_shipped_policies`` is the CI guard: a policy change that does neither fails
-before a nightly meets the old generation.
+(2026-11-09), not from git history: a descriptor that never reached a publication needs no reader. An earlier
+shipped descriptor is either declared readable by ``earlier_receipt_policies`` (its rows carry forward under
+their own receipts) or named in ``replay_required`` with a reason: its rows cannot become current rows, so the
+next run rebuilds them from retained originals. ``unreadable_shipped_policies`` is the CI guard: a policy
+change that does neither fails before a nightly meets the old generation.
 """
 
 from __future__ import annotations
