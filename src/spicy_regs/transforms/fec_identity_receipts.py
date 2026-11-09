@@ -86,7 +86,8 @@ class IdentityReceiptWriter:
 
     With ``prior_receipts`` (the selected bundle's receipt members), an attempt whose input and subject
     are unchanged keeps its prior receipt exactly, and a changed row references its direct predecessor
-    (``carry_receipt_history``), so receipt history does not grow with every refresh.
+    (``carry_receipt_history``), so receipt history does not grow with every refresh. Such a writer refuses
+    to emit a refusal: FEC refusals carry no identity, so a fixed refusal could never be matched and retired.
     """
 
     def __init__(self, output_dir, *, generation_id, tables, batch_size=512, attempt_offset=0, prior_receipts=()):
@@ -221,6 +222,8 @@ class IdentityReceiptWriter:
         finish()
 
     def _append(self, table, subject, receipt):
+        if self.prior_receipts and receipt["outcome"] in {"error", "rejected", "refused"}:
+            raise ValueError("A writer carrying prior receipts cannot emit a refusal: it has no identity to retire")
         if subject is not None:
             self.buffers[table].append(subject)
             self.counts[table] += 1

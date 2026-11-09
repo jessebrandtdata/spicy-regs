@@ -592,3 +592,18 @@ def test_a_changed_committee_references_its_predecessor_without_copying_its_hist
         assert "prior_receipts" not in diagnostics and "retained_processing" not in diagnostics
         assert current["witnesses"] == [WITNESS]  # a refresh does not accumulate earlier witnesses
         previous = tmp_path / generation
+
+
+def test_a_writer_carrying_prior_receipts_cannot_emit_a_refusal(tmp_path):
+    """FEC refusals have no identity, so a carried refusal could never be retired once its row is fixed."""
+    from spicy_regs.transforms.build_fec_committees import _shape
+
+    table = "fec_committees"
+    row = _shape({"committee_id": "C00000001", "cycles": [2024], "candidate_ids": None, "first_file_date": "2024-01-02"})
+    with IdentityReceiptWriter(tmp_path / "g1", generation_id="g1", tables=[table]) as writer:
+        writer.emit(table, row, input_witness=WITNESS)
+    with pytest.raises(ValueError, match="cannot emit a refusal"):
+        with IdentityReceiptWriter(tmp_path / "g2", generation_id="g2", tables=[table],
+                                   prior_receipts=[tmp_path / "g1" / "etl_receipts.parquet"]) as writer:
+            writer.emit(table, row, input_witness=WITNESS, outcome="refused")
+    assert not (tmp_path / "g2").exists()
