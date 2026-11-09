@@ -88,6 +88,16 @@ REFUSED_FINAL = "refused_final"
 #: The basis of a size refusal whose response stated its length: ``size=<stated bytes>``.
 SIZE_BASIS = "size="
 
+#: A hearing whose body was read and published, but whose Congress.gov hearing
+#: detail answered 404/410 for the exact jacket (``PagedJsonUnavailableError``).
+#: Congress.gov states no hearing for any jacket of the 87th-90th Congresses, so
+#: retrying every run re-read the same 200 bodies nightly and starved the rest of
+#: the cap (run 42558022791). Its ``detail_refused`` checkpoint carries
+#: ``refusal_rule(..., DETAIL_UNAVAILABLE)`` and is settled until the rule or the
+#: package's ``last_modified`` moves; any other detail refusal is retried every run.
+DETAIL_UNAVAILABLE = "hearing-detail-unavailable"
+DETAIL_REFUSED = "detail_refused"
+
 
 def refusal_rule(collection: str, basis: str) -> str:
     """The token a final refusal is recorded under: the collection's rule and what refused it.
@@ -107,7 +117,12 @@ def settled(row: dict, collection: str, modified: str | None = None, *, bounds: 
     it reads the package again. Any other final refusal stands while ``bounds`` is
     unchanged. Either way a new ``last_modified`` reads it again: GovInfo moves a
     package's stamp with its content, and a stated size is known only by asking.
+    A ``detail_refused`` hearing is settled only when its detail was unavailable
+    (:data:`DETAIL_UNAVAILABLE`) under the current rule.
     """
+    if row.get("outcome") == DETAIL_REFUSED:
+        return (row.get("rule_version") == refusal_rule(collection, DETAIL_UNAVAILABLE)
+                and (modified is None or modified == row.get("last_modified")))
     if row.get("outcome") != REFUSED_FINAL:
         return complete(row, collection, modified)
     prefix = refusal_rule(collection, "")

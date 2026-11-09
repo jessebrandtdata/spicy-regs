@@ -48,7 +48,7 @@ from spicy_docs.sources.govinfo.body_acquisition import (
     GovInfoPartsOverBudgetError,
 )
 from spicy_docs.reading.refusals import RefusedResponse
-from spicy_docs.reading.paged_json import PagedJsonSourceError
+from spicy_docs.reading.paged_json import PagedJsonSourceError, PagedJsonUnavailableError
 from spicy_docs.schemas.tables import text
 from spicy_docs.sources.congress.listing import LIST_ROUTES, hearing_detail_event_id, list_route_url
 from spicy_docs.sources.govinfo.discovery import GovInfoDiscoveryReader, collection_url
@@ -65,6 +65,8 @@ from spicy_regs.transforms.table_merge import (
     write_in_place,
 )
 from spicy_regs.transforms.committee_report_reads import (
+    DETAIL_REFUSED,
+    DETAIL_UNAVAILABLE,
     READ_COLUMNS,
     READS_TABLE,
     REFUSED_FINAL,
@@ -383,9 +385,12 @@ def _event_id(hearings: HearingDetailSource, package: Any,
               evidence: CaptureEvidence | None = None) -> tuple[str | None, str]:
     """``(event_id, outcome)`` for one CHRG package from its Congress.gov hearing detail.
 
-    ``outcome`` is ``meeting``, ``no_meeting`` or ``refused``, so the run log
-    can count the three apart. The detail must name the jacket and Congress
-    the package id spells, or it is refused rather than read.
+    ``outcome`` is ``meeting``, ``no_meeting``, ``unavailable`` or ``refused``,
+    so the run log can count them apart. ``unavailable`` is Congress.gov's
+    404/410 for the exact jacket, which every later run would meet again
+    (:data:`DETAIL_UNAVAILABLE`); ``refused`` is anything that may be transient.
+    The detail must name the jacket and Congress the package id spells, or it
+    is refused rather than read.
     """
     identity = package.identity
     # The hearing detail route wants the chamber's word; spicy-docs maps each document type to it.
@@ -405,9 +410,10 @@ def _event_id(hearings: HearingDetailSource, package: Any,
     except _HEARING_REFUSALS as error:
         if evidence:
             evidence.refusal(error, stage=identity.package_id + ":hearing-detail")
-        logger.warning("CHRG: {} hearing detail refused: {}", identity.package_id,
+        outcome = "unavailable" if isinstance(error, PagedJsonUnavailableError) else "refused"
+        logger.warning("CHRG: {} hearing detail {}: {}", identity.package_id, outcome,
                        scrub_credential(str(error), evidence.credential if evidence else ""))
-        return None, "refused"
+        return None, outcome
     return event_id, "meeting" if event_id is not None else "no_meeting"
 
 
@@ -589,8 +595,11 @@ def build_committee_reports(
                 if collection == "CHRG":
                     event_id, outcome = _event_id(hearings, body, evidence)
                     meetings[outcome] += 1
-                    if outcome == "refused":
-                        state["outcome"] = "detail_refused"
+                    if outcome == "unavailable":
+                        # Settled until the rule or the package's stamp moves (``settled``).
+                        state.update(outcome=DETAIL_REFUSED, rule_version=refusal_rule(collection, DETAIL_UNAVAILABLE))
+                    elif outcome == "refused":
+                        state["outcome"] = DETAIL_REFUSED
                     hearing_rows.append(shape_hearing_transcript(body, event_id=event_id, **common))
                     link_rows.extend(shape_hearing_bill_link(link, last_modified=modified)
                                      for link in cover_links(body.mods, event_id=event_id))

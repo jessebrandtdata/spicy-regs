@@ -547,6 +547,54 @@ def test_a_credential_refusal_on_the_hearing_detail_aborts_the_run(tmp_path, mon
         )
 
 
+def test_an_unavailable_hearing_detail_is_settled_and_a_transient_one_is_retried(tmp_path, monkeypatch):
+    """Congress.gov answers 404 for every 87th-90th Congress jacket (run 42558022791): such a hearing's body is
+    published with a NULL event_id and not read again under the same rule and stamp, so it neither holds the cap
+    nor keeps the run pending. Any other detail refusal (a 500, a wrong record) is still retried every run."""
+    import shutil
+    from types import SimpleNamespace
+    from typing import Any, cast
+
+    from spicy_docs.reading.paged_json import PagedJsonSourceError, PagedJsonUnavailableError
+
+    from spicy_regs.transforms.committee_report_reads import READS_TABLE
+
+    monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
+
+    class Mixed(StubHearings):
+        """63127 is absent from Congress.gov; 64431 fails transiently."""
+
+        def records(self, route, url, *, max_pages=1):
+            self.requested.append(url)
+            if url.split("?", 1)[0].endswith("/63127"):
+                raise PagedJsonUnavailableError(cast(Any, SimpleNamespace(status_code=404)))
+            raise PagedJsonSourceError("stub: list source answered HTTP 500")
+            yield  # pragma: no cover
+
+    first, second = tmp_path / "first", tmp_path / "second"
+    first.mkdir(), second.mkdir()
+    coverage: dict = {}
+    tables = _tables(build_committee_reports(first, reader=TwoHearingsDiscovery(), acquirer=HearingBodyAcquirer(),
+                                             hearings=Mixed(), download_prior=_no_prior, coverage=coverage))
+    assert {row["package_id"]: row["event_id"] for row in tables["hearing_transcripts"]} == {
+        CHRG_ID: None, JACKET_64431: None}, "both bodies publish"
+    reads = {row["package_id"]: row for row in tables[READS_TABLE]}
+    assert {key: row["outcome"] for key, row in reads.items()} == {CHRG_ID: "detail_refused",
+                                                                  JACKET_64431: "detail_refused"}
+    assert reads[CHRG_ID]["rule_version"].endswith(";refused-under=hearing-detail-unavailable")
+    assert coverage["pending"] == 1, "only the transient refusal stays pending"
+
+    def from_first(remote_key: str, local_path: Path) -> bool:
+        source = first / remote_key
+        return source.exists() and bool(shutil.copy(source, local_path))
+
+    acquirer, hearings = HearingBodyAcquirer(), Mixed()
+    build_committee_reports(second, reader=TwoHearingsDiscovery(), acquirer=acquirer, hearings=hearings,
+                            download_prior=from_first)
+    assert acquirer.requested == [JACKET_64431], "the unavailable detail is not asked for again"
+    assert [url.split("?", 1)[0].rsplit("/", 1)[-1] for url in hearings.requested] == ["64431"]
+
+
 def test_a_hearing_read_before_the_mods_columns_is_read_once_more():
     """spicy-docs 0.54.0 reads a hearing's MODS event ids, witnesses and held date (E's 7db044f) into three appended
     hearing_transcripts columns; a hearing read under the rule before them is not complete, so each held hearing is
