@@ -573,6 +573,44 @@ def test_a_report_of_seven_parts_is_refused_before_any_body_request(tmp_path):
     assert again.paths == [], "a final refusal is not asked for again"
 
 
+class PartsRefused(SevenParts):
+    """``TWO_PARTS`` with its Part 2 stating part number 1: a record whose parts the reader refuses, as
+    CRPT-119hrpt853's states two parts as part 1."""
+
+    def __init__(self):
+        self.paths = []
+        mods = (FIXTURES / f"mods-{TWO_PARTS}.xml").read_bytes()
+        assert mods.count(b"<partNumber>2</partNumber>") == 1
+        self.mods = mods.replace(b"<partNumber>2</partNumber>", b"<partNumber>1</partNumber>")
+
+
+def test_a_report_whose_record_states_its_parts_ambiguously_is_refused_for_good(tmp_path):
+    """The record, not the run, refuses it, so every later run would meet the same refusal: it is final, not asked
+    for again until the package's stamp or the rule (which moves with the reader's code) moves, and the nightly is
+    not held pending by it (ss-wxrf, CRPT-119hrpt853)."""
+    _two_part_priors(tmp_path)
+    budget = replace(BODY_BUDGET, min_request_interval_seconds=0.0)
+    evidence = CaptureEvidence(tmp_path, "committee-reports")
+    source = PartsRefused()
+    with GovInfoBodyAcquirer(budget=budget, api_key="test-key", transport=httpx.MockTransport(source.respond)) as owner:
+        tables = _run(tmp_path, owner, evidence=evidence)
+    [refusal] = [
+        row
+        for row in (json.loads(line) for line in (evidence.artifact_dir / "journal.jsonl").read_bytes().splitlines())
+        if row["event"] == "refusal"
+    ]
+    assert refusal["error_type"] == "GovInfoPartsRefusedError"
+    [state] = tables[READS_TABLE]
+    assert state["outcome"] == REFUSED_FINAL
+    assert state["rule_version"].startswith(RULE_VERSIONS["CRPT"] + ";refused-under=")
+    for name in ("committee_reports", "report_sections", READS_TABLE):
+        shutil.copyfile(tmp_path / f"{name}.parquet", prior_scratch_path(tmp_path, name))
+    again = PartsRefused()
+    with GovInfoBodyAcquirer(budget=budget, api_key="test-key", transport=httpx.MockTransport(again.respond)) as owner:
+        _run(tmp_path, owner)
+    assert again.paths == [], "a final refusal is not asked for again"
+
+
 class ListedReport:
     """Discovery listing ``CRPT_ID`` at one ``lastModified``, the way it answers a publisher refresh."""
 

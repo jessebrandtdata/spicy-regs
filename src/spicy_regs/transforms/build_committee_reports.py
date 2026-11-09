@@ -40,7 +40,13 @@ from spicy_docs.schemas.committee_report_tables import (
 )
 from spicy_docs.schemas.tables import natural_key
 from spicy_docs.sources.agency_reports.report_blocks import parse_agency_blocks
-from spicy_docs.sources.govinfo.bodies import ModsBill, GovInfoBodySourceError, parse_package_id, publisher_body_status
+from spicy_docs.sources.govinfo.bodies import (
+    GovInfoBodySourceError,
+    GovInfoPartsRefusedError,
+    ModsBill,
+    parse_package_id,
+    publisher_body_status,
+)
 from spicy_docs.sources.govinfo.body_acquisition import (
     GovInfoBodyAcquirer,
     GovInfoBodyBudget,
@@ -309,12 +315,14 @@ def _refusal_is_final(error: Exception) -> bool:
     """Whether a later run would get the same refusal: the publisher's record and this run's bounds decide it.
 
     A rendition a part does not offer, a report whose parts exceed the request
-    budget, and a body past the byte bound (the transport's
-    ``response-byte-limit`` refusal) repeat until the publisher changes the
-    package, which moves its ``last_modified``, or the bound grows past it (:func:`_refusal_basis`).
+    budget, a record stating its parts in a shape the reader refuses
+    (CRPT-119hrpt853 states two parts as part 1), and a body past the byte bound
+    (the transport's ``response-byte-limit`` refusal) repeat until the publisher
+    changes the package, which moves its ``last_modified``, the reader changes,
+    which moves the rule, or the bound grows past it (:func:`_refusal_basis`).
     Anything else may be transient.
     """
-    if isinstance(error, (GovInfoFormatNotOfferedError, GovInfoPartsOverBudgetError)):
+    if isinstance(error, (GovInfoFormatNotOfferedError, GovInfoPartsOverBudgetError, GovInfoPartsRefusedError)):
         return True
     refused = getattr(error, "refused_response", None)
     return isinstance(refused, RefusedResponse) and refused.unavailable_reason == "response-byte-limit"
@@ -325,8 +333,8 @@ def _refusal_basis(error: Exception) -> str:
 
     A body past the byte bound states its ``Content-Length`` (the 1946 parts'
     312,487,940 and 373,504,330 bytes), so it is final on that size against the
-    bound, not on the bound's value; a record stating too many parts, no rendition
-    taken, or an unstated length rests on :data:`REFUSAL_BOUNDS`.
+    bound, not on the bound's value; a record stating too many parts or parts the
+    reader refuses, no rendition taken, or an unstated length rests on :data:`REFUSAL_BOUNDS`.
     """
     refused = getattr(error, "refused_response", None)
     if isinstance(refused, RefusedResponse) and refused.stated_byte_size is not None:
