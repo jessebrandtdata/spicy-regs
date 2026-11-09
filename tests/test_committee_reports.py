@@ -547,19 +547,24 @@ def test_a_credential_refusal_on_the_hearing_detail_aborts_the_run(tmp_path, mon
         )
 
 
-def test_an_unavailable_hearing_detail_is_settled_and_a_transient_one_is_retried(tmp_path, monkeypatch):
+@pytest.mark.parametrize("ended", [True, False], ids=["ended-congress", "current-congress"])
+def test_an_unavailable_hearing_detail_settles_only_for_an_ended_congress(tmp_path, monkeypatch, ended):
     """Congress.gov answers 404 for every 87th-90th Congress jacket (run 42558022791): such a hearing's body is
     published with a NULL event_id and not read again under the same rule and stamp, so it neither holds the cap
-    nor keeps the run pending. Any other detail refusal (a 500, a wrong record) is still retried every run."""
+    nor keeps the run pending. The current Congress's 404 is retried every run, since Congress.gov may still add
+    that hearing (owner decision 2026-11-09), as is any other detail refusal (a 500, a wrong record)."""
     import shutil
     from types import SimpleNamespace
     from typing import Any, cast
 
     from spicy_docs.reading.paged_json import PagedJsonSourceError, PagedJsonUnavailableError
 
+    from spicy_regs.transforms import build_committee_reports as module
     from spicy_regs.transforms.committee_report_reads import READS_TABLE
 
     monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
+    # Both fixtures are 119th Congress hearings: the 120th makes theirs an ended Congress.
+    monkeypatch.setattr(module, "current_congress", lambda: 120 if ended else 119)
 
     class Mixed(StubHearings):
         """63127 is absent from Congress.gov; 64431 fails transiently."""
@@ -581,8 +586,8 @@ def test_an_unavailable_hearing_detail_is_settled_and_a_transient_one_is_retried
     reads = {row["package_id"]: row for row in tables[READS_TABLE]}
     assert {key: row["outcome"] for key, row in reads.items()} == {CHRG_ID: "detail_refused",
                                                                   JACKET_64431: "detail_refused"}
-    assert reads[CHRG_ID]["rule_version"].endswith(";refused-under=hearing-detail-unavailable")
-    assert coverage["pending"] == 1, "only the transient refusal stays pending"
+    assert reads[CHRG_ID]["rule_version"].endswith(";refused-under=hearing-detail-unavailable") is ended
+    assert coverage["pending"] == (1 if ended else 2), "only an ended Congress's 404 settles"
 
     def from_first(remote_key: str, local_path: Path) -> bool:
         source = first / remote_key
@@ -591,8 +596,10 @@ def test_an_unavailable_hearing_detail_is_settled_and_a_transient_one_is_retried
     acquirer, hearings = HearingBodyAcquirer(), Mixed()
     build_committee_reports(second, reader=TwoHearingsDiscovery(), acquirer=acquirer, hearings=hearings,
                             download_prior=from_first)
-    assert acquirer.requested == [JACKET_64431], "the unavailable detail is not asked for again"
-    assert [url.split("?", 1)[0].rsplit("/", 1)[-1] for url in hearings.requested] == ["64431"]
+    retried = [JACKET_64431] if ended else sorted([CHRG_ID, JACKET_64431])
+    assert sorted(acquirer.requested) == retried, "an ended Congress's unavailable detail is not asked for again"
+    assert sorted(url.split("?", 1)[0].rsplit("/", 1)[-1] for url in hearings.requested) == sorted(
+        key.removeprefix("CHRG-119hhrg") for key in retried)
 
 
 def test_a_hearing_read_before_the_mods_columns_is_read_once_more():

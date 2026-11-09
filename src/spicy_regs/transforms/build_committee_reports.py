@@ -57,6 +57,7 @@ from spicy_docs.transport.credentials import CredentialRefusedError, scrub_crede
 from spicy_regs.govinfo_revisions import latest_read, revision_instant
 from spicy_regs.sources import r2
 from spicy_regs.sources.congress_bills import API_KEY_ENV_VARS, _resolve_api_key, listing_reader
+from spicy_regs.transforms.congress_scope import current_congress
 from spicy_regs.transforms.table_merge import (
     merge_contract_table,
     merge_table,
@@ -387,8 +388,10 @@ def _event_id(hearings: HearingDetailSource, package: Any,
 
     ``outcome`` is ``meeting``, ``no_meeting``, ``unavailable`` or ``refused``,
     so the run log can count them apart. ``unavailable`` is Congress.gov's
-    404/410 for the exact jacket, which every later run would meet again
-    (:data:`DETAIL_UNAVAILABLE`); ``refused`` is anything that may be transient.
+    404/410 for the exact jacket of an ended Congress, which every later run
+    would meet again (:data:`DETAIL_UNAVAILABLE`). The current Congress's
+    404 is ``refused``, like anything else that may change: Congress.gov may
+    still add that hearing (owner decision 2026-11-09).
     The detail must name the jacket and Congress the package id spells, or it
     is refused rather than read.
     """
@@ -410,7 +413,8 @@ def _event_id(hearings: HearingDetailSource, package: Any,
     except _HEARING_REFUSALS as error:
         if evidence:
             evidence.refusal(error, stage=identity.package_id + ":hearing-detail")
-        outcome = "unavailable" if isinstance(error, PagedJsonUnavailableError) else "refused"
+        ended = int(identity.congress) < current_congress()
+        outcome = "unavailable" if isinstance(error, PagedJsonUnavailableError) and ended else "refused"
         logger.warning("CHRG: {} hearing detail {}: {}", identity.package_id, outcome,
                        scrub_credential(str(error), evidence.credential if evidence else ""))
         return None, outcome

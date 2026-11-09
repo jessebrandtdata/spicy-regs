@@ -89,12 +89,14 @@ REFUSED_FINAL = "refused_final"
 SIZE_BASIS = "size="
 
 #: A hearing whose body was read and published, but whose Congress.gov hearing
-#: detail answered 404/410 for the exact jacket (``PagedJsonUnavailableError``).
-#: Congress.gov states no hearing for any jacket of the 87th-90th Congresses, so
-#: retrying every run re-read the same 200 bodies nightly and starved the rest of
-#: the cap (run 42558022791). Its ``detail_refused`` checkpoint carries
-#: ``refusal_rule(..., DETAIL_UNAVAILABLE)`` and is settled until the rule or the
-#: package's ``last_modified`` moves; any other detail refusal is retried every run.
+#: detail answered 404/410 for the exact jacket (``PagedJsonUnavailableError``)
+#: and whose Congress has ended. Congress.gov states no hearing for any jacket of
+#: the 87th-90th Congresses, so retrying every run re-read the same 200 bodies
+#: nightly and starved the rest of the cap (run 42558022791). Its
+#: ``detail_refused`` checkpoint carries ``refusal_rule(..., DETAIL_UNAVAILABLE)``
+#: and is settled until the rule or the package's ``last_modified`` moves. A
+#: current-Congress 404 (Congress.gov may add the hearing later) and any other
+#: detail refusal are retried every run.
 DETAIL_UNAVAILABLE = "hearing-detail-unavailable"
 DETAIL_REFUSED = "detail_refused"
 
