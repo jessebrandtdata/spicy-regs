@@ -5,7 +5,8 @@ spellings the scrubber never writes) and accepted HTTP 200 HTML as XML. A
 ``Scan`` decodes gzip, finds credential parameters and configured key values
 across chunk boundaries, and sniffs what the body actually is; ``expected_kind``
 says what it was requested as. Values are never kept, only names, offsets and
-lengths.
+lengths. What a body is (``sniff``) is answered by SpicyDocs' one error-page classifier,
+``spicy_docs.reading.error_pages``.
 """
 
 from __future__ import annotations
@@ -18,8 +19,9 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
+from spicy_docs.reading.error_pages import SNIFF_BYTES, sniff
+
 CHUNK = 1024 * 1024
-SNIFF_BYTES = 4096
 HIT_SAMPLES = 20
 def _redacted() -> tuple[str, ...]:
     """Values written in place of a key, lower-cased: a parameter carrying one of these holds no secret.
@@ -52,42 +54,9 @@ CREDENTIAL_PATTERN = (
 )
 _CREDENTIAL = re.compile(CREDENTIAL_PATTERN.encode())
 _CREDENTIAL_TEXT = re.compile(CREDENTIAL_PATTERN)
-_PROLOG = re.compile(rb"\s*(?:<\?.*?\?>|<!--.*?-->|<!doctype\s+([A-Za-z]+)[^>]*>)", re.I | re.S)
-_ELEMENT = re.compile(rb"\s*<(?:[A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)")
-#: HTML elements an error or warning page can open with (a PHP warning opens with ``<br />``); no XML payload
-#: this repository reads has one of these as its document element.
-_HTML_ROOTS = frozenset(b"""a b body br center div em font form h1 h2 h3 h4 h5 h6 head hr html i iframe img li link meta
-    noscript ol p pre script span strong style title u ul""".split())
-#: Compression a response body can carry that ``Scan`` does not decode; each is reported as a limit.
-_UNDECODED = ((b"BZh", "bzip2"), (b"\xfd7zXZ\x00", "xz"), (b"\x28\xb5\x2f\xfd", "zstd"))
 _SUFFIX_KINDS = {".json": "json", ".xml": "xml", ".htm": "html", ".html": "html", ".shtml": "html", ".asp": "html",
                  ".aspx": "html", ".pdf": "pdf", ".zip": "zip"}
 _SECRET_NAME = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|_GOV$", re.I)
-
-
-def sniff(head: bytes) -> str:
-    """Classify leading bytes: html, xml, json, pdf, zip, gzip, text, binary or empty.
-
-    Looks past a BOM, an XML declaration, comments and a DOCTYPE, so an XHTML
-    error page behind an XML prolog is HTML. SpicyDocs' acquisition check
-    (``validate_body_prefix``) reads only the first tag, which that page passes.
-    """
-    text = head.removeprefix(b"\xef\xbb\xbf").lstrip()
-    if not text:
-        return "empty"
-    for magic, kind in ((b"%PDF", "pdf"), (b"PK\x03\x04", "zip"), (b"\x1f\x8b", "gzip"), *_UNDECODED):
-        if text.startswith(magic):
-            return kind
-    if text[:1] in (b"{", b"["):
-        return "json"
-    if not text.startswith(b"<"):
-        return "binary" if b"\x00" in text else "text"
-    position, doctype = 0, b""
-    while match := _PROLOG.match(text, position):
-        doctype, position = doctype or (match.group(1) or b""), match.end()
-    element = _ELEMENT.match(text, position)
-    root = element.group(1).lower() if element else b""
-    return "html" if doctype.lower() == b"html" or root in _HTML_ROOTS else "xml"
 
 
 def expected_kind(url: str, content_type: str | None) -> str | None:

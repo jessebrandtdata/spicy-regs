@@ -126,8 +126,14 @@ def filing_announcement(description, published):
 
 
 def source_page_body(title, text, url):
-    """Known held-text boundaries only; unsupported captures remain diagnostics."""
-    if (title or "").strip().lower() in {"server error", "403 forbidden", "404 not found", "access denied"}:
+    """Known held-text boundaries only; unsupported captures remain diagnostics.
+
+    A whole error or interstitial title is a failed page, read by SpicyDocs' one shared classifier:
+    the four whole titles this check always held, plus whole interstitial titles such as Cloudflare's.
+    """
+    from spicy_docs.reading.error_pages import error_page_title
+
+    if error_page_title(title or "") is not None:
         return None, "failed_page"
     if not text or not text.strip():
         return None, "empty_page"

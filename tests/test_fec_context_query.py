@@ -126,6 +126,8 @@ def test_build_pages_remove_template_and_keep_failure_dispositions():
     text = f"Browser warning\n{masthead}\nMenu\n{masthead}\nCourt decision\nAbout\nCareers\nPress\nContact\nPrivacy and security policy"
     assert source_page_body("Court cases", text, "https://www.fec.gov/") == ("Court decision", "body_extracted")
     assert source_page_body("Server error", text, "https://www.fec.gov/") == (None, "failed_page")
+    # The shared classifier also names an interstitial title FEC's collection reader refused.
+    assert source_page_body("Just a moment...", text, "https://www.fec.gov/") == (None, "failed_page")
     assert source_page_body("Unknown", "Uncertain text boundaries", None) == (None, "unsupported_body_boundaries")
     assert source_page_body("Empty", "\n\t ", None) == (None, "empty_page")
 

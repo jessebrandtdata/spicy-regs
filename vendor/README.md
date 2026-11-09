@@ -1,6 +1,12 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.79.0` adds the Congressional Directory roster reader
+- **Selected provider** `spicy_docs-0.80.0` makes the shared walled-fetch ladder try its next rung
+  when a rung answers 2xx with an error, wall or interstitial page (owner decision 2026-11-08), and
+  makes `spicy_docs.reading.error_pages` the one error-page classifier, which `content_checks.sniff`
+  and the FEC context failed-page titles now use. It is built from spicy-docs main, so it also
+  carries the fork-main OCR and extraction commits (owner decision 2026-11-08). See
+  [the build receipt](spicy_docs-0.80.0.json).
+- **Earlier provider** `spicy_docs-0.79.0` adds the Congressional Directory roster reader
   (`sources/govinfo/directory_rosters.py`), CDIR package-metadata acquisition, six
   `committee_assignments` columns, `committee_directory_entries` and archived chamber files (ss-ehci). It is built on 0.78.0's source, without the later fork-main OCR commits.
   See [the build receipt](spicy_docs-0.79.0.json).
