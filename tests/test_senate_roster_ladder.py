@@ -98,20 +98,39 @@ def test_every_rung_failing_stops_the_run_with_each_rungs_outcome():
     ]  # fmt: skip
 
 
-@pytest.mark.parametrize(("body", "content_type", "resolved_url", "reason"), [
-    (HTML, "text/xml", None, "not the Senate's XML file"),  # a page about the file, labeled as XML
-    (XML, "text/html", None, "Content-Type"),  # the file under another media type
-    (XML, "text/xml", "https://www.senate.gov/legislative/LIS_MEMBER/other.xml", "final URL"),
+@pytest.mark.parametrize("content_type", ["text/html", "text/xml"])
+def test_an_html_page_escalates_to_the_next_rung(content_type):
+    """A 2xx page about the file, however labeled, is an error page: the ladder asks Firecrawl (spicy-docs 0.80.0)."""
+    zyte, firecrawl, evidence = Fetcher(HTML, content_type=content_type), Fetcher(XML), Evidence()
+    got = acquirer(zyte, firecrawl, evidence).acquire_senate()
+    assert got.capture.body == XML and (zyte.calls, firecrawl.calls) == (1, 1)
+    assert [stage for stage, _ in evidence.captures] == ["senate-cvc:firecrawl_raw"]
+
+
+def test_error_pages_on_every_rung_stop_the_run_unread():
+    evidence = Evidence()
+    zyte, firecrawl = Fetcher(HTML, content_type="text/html"), Fetcher(HTML, content_type="text/xml")
+    with pytest.raises(CommitteeRosterRefusedError) as refused:
+        acquirer(zyte, firecrawl, evidence).acquire_senate()
+    assert [(o.transport.value, o.kind) for o in refused.value.__dict__["rung_outcomes"]] == [
+        ("direct", "publisher-refused"), ("zyte_http", "error-page"), ("firecrawl_raw", "error-page"),
+    ]  # fmt: skip
+    assert evidence.captures == []
+
+
+@pytest.mark.parametrize(("content_type", "resolved_url", "reason"), [
+    ("text/html", None, "Content-Type"),  # the file itself, under another media type
+    ("text/xml", "https://www.senate.gov/legislative/LIS_MEMBER/other.xml", "final URL"),
 ])  # fmt: skip
-def test_a_wrong_answer_stops_the_ladder_unread(body, content_type, resolved_url, reason):
+def test_the_file_with_a_wrong_label_stops_the_ladder_unread(content_type, resolved_url, reason):
+    """Not an error page, so no escalation: the capture's own checks refuse it and Firecrawl is never asked."""
     zyte, firecrawl, evidence = (
-        Fetcher(body, content_type=content_type, resolved_url=resolved_url),
+        Fetcher(XML, content_type=content_type, resolved_url=resolved_url),
         Fetcher(XML),
         Evidence(),
     )
-    with pytest.raises(CommitteeRosterError) as refused:
+    with pytest.raises(CommitteeRosterError, match=reason):
         acquirer(zyte, firecrawl, evidence).acquire_senate()
-    assert reason in f"{refused.value} {refused.value.__cause__}"
     assert firecrawl.calls == 0 and evidence.captures == []
 
 

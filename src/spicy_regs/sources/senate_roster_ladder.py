@@ -9,7 +9,8 @@ through ``SourceAcquirer.capture_walled``, spicy-docs' ladder (one direct attemp
 then one Zyte ``httpResponseBody`` call, then one Firecrawl ``rawBase64`` call; never a rendered page). Every rung is
 charged and paced on the same ``CommitteeRosterBudget`` as a direct capture, and each answer is held to the budget's
 byte bound, the exact locator (``check_final_url``), the file's media types (``text/xml``/``application/xml``) and
-the reader's own validation. The timeout is the budget's, per rung: the worst case is three timeouts in a row
+the reader's own validation. A 2xx error or interstitial page (spicy-docs' one classifier, plus
+:func:`is_cvc_xml`) escalates to the next rung; the file under a wrong media type or locator stops the ladder. The timeout is the budget's, per rung: the worst case is three timeouts in a row
 (3 x 120 s with the rollup's ``ROSTER_BUDGET``). When every rung fails, ``CommitteeRosterRefusedError`` carries the
 ladder's ``rung_outcomes`` and the run stops, as a direct refusal always has. The House file, and any archived
 capture (``archived_at``), are read exactly as before.
