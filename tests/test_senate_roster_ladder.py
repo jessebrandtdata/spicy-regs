@@ -210,3 +210,13 @@ def test_the_opt_in_builds_the_ladder_acquirer(monkeypatch, tmp_path):
     bcr.build_committee_rosters(tmp_path, reader=StubListingReader(), download_prior=no_download,
                                 senate_paid_ladder=True)  # fmt: skip
     assert built["budget"] is bcr.ROSTER_BUDGET and "evidence" in built
+
+
+def test_the_hosted_rollup_passes_the_ladder_flag_and_its_keys_to_committee_rosters_only():
+    shared = (Path(__file__).parents[1] / ".github/workflows/_rollup.yml").read_text()
+    assert (
+        "if [ \"$COMMAND\" = 'run-rollup-committee-rosters' ]; then\n            ARGS+=(--senate-paid-ladder)" in shared
+    )
+    assert "inputs.command == 'run-rollup-committee-rosters' && secrets.FIRECRAWL_API_KEY || ''" in shared
+    zyte = next(line for line in shared.splitlines() if line.strip().startswith("ZYTE_TOKEN:"))
+    assert "inputs.command == 'run-rollup-committee-rosters'" in zyte
