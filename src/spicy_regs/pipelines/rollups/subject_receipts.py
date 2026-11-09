@@ -40,6 +40,7 @@ from spicy_regs.legislative_receipts import (
 )
 from spicy_regs.native_types import described_schema
 from spicy_regs.phase_log import phase_log
+from spicy_regs.policy_migrations import PriorReplayRequired, replay_reason
 from spicy_regs.navigation_read_outcomes import (
     POLICIES as NAVIGATION_OUTCOME_POLICIES, READ_TABLES, FILE_TABLES, family_tables, write_recorded_outcomes,
 )
@@ -87,6 +88,8 @@ class SelectedPriors:
         self.selections = {}
         self.scoped = {}
         self.processing_members = {}
+        #: dataset -> (subjects, scoped receipts, generation, policy version, reason) of a replay-required prior.
+        self.replaced = {}
 
     def get(self, dataset):
         if dataset in self.restored:
@@ -117,6 +120,12 @@ class SelectedPriors:
             scoped = (receipt_path if dataset in self.selected.ranged
                       else select_pinned_receipts(receipt_path, directory / "scoped.parquet", dataset=dataset))
         selected_policy = selected_subject_policy(selected_policy, subjects)
+        if (reason := replay_reason(selected_policy)) is not None:
+            # Never restored or carried: the builder rebuilds these rows from originals, and the rollup retains
+            # this exact pair as evidence first (``retain_replaced_priors``).
+            self.replaced[dataset] = (tuple(subjects), scoped, generation, selected_policy.policy_version, reason)
+            self.restored[dataset] = None
+            return None
         # The regulatory restore below admits the pair itself: complete admission in
         # regulations_bulk._materialize_selected, or the full read_with_receipts pass in _qualified_rows.
         if dataset in CONGRESS or dataset in FEC:
@@ -203,8 +212,15 @@ class SelectedPriors:
         for path in members:
             self.selected.member_pin(path)
 
+    def _required(self, dataset):
+        source = self.get(dataset)
+        if dataset in self.replaced:
+            _, _, _, version, reason = self.replaced[dataset]
+            raise PriorReplayRequired(dataset, version, reason)
+        return source
+
     def download(self, key, target):
-        source = self.get(key.removesuffix(".parquet"))
+        source = self._required(key.removesuffix(".parquet"))
         if source is None:
             return False
         if source.is_dir():
@@ -251,7 +267,7 @@ class SelectedPriors:
         return binding
 
     def download_members(self, key, target):
-        source = self.get(key.removesuffix(".parquet"))
+        source = self._required(key.removesuffix(".parquet"))
         if source is None:
             return ()
         members = sorted(source.rglob("*.parquet")) if source.is_dir() else [source]
@@ -354,6 +370,25 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
     def generation_schemas(self):
         return {p.dataset: described_schema(p.subject_schema) for p in self.receipt_policies if not p.receipt_only}
 
+    def retain_replaced_priors(self, prior):
+        """Keep each replay-required prior pair in this run's evidence before the new generation replaces it.
+
+        The builder has rebuilt those rows from originals; the exact selected subject and its scoped receipts
+        go into the generation's own evidence (content-addressed blobs, uploaded with it), so nothing selected
+        is lost when the pointer moves.
+        """
+        if not prior.replaced:
+            return
+        if self.source_evidence is None:
+            raise ValueError("A replay-required prior can be replaced only by a family that retains source evidence")
+        for dataset, (subjects, scoped, generation, version, reason) in prior.replaced.items():
+            members = [*((path, "subject") for path in subjects), (scoped, "receipts")]
+            for ordinal, (path, role) in enumerate(members):
+                self.source_evidence.retain_file(
+                    path, stage="replaced-prior", dataset=dataset, role=role, ordinal=ordinal,
+                    generation_id=generation, policy_version=version, reason=reason,
+                )
+
     def build_receipts(self, output_dir, builder, **kwargs):
         from spicy_regs.selected_generations import remember_selection, SelectedDataset
 
@@ -379,6 +414,7 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
             if any(p.dataset == ACQUISITION_POLICY.dataset for p in self.receipt_policies):
                 _build_events(candidate, self.receipt_generation_id, builder.__name__, self.source_evidence, error)
             raise
+        self.retain_replaced_priors(prior)
         paths = built if isinstance(built, tuple) else (built,)
         observed = {path.name if path.is_dir() else path.stem for path in paths}
         if observed != {key.removesuffix(".parquet") for key in self.source_outputs}:
@@ -424,6 +460,7 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
                     bundle,
                     generation_id=self.receipt_generation_id,
                     prior_receipts=list(dict.fromkeys(v[1] for v in prior.selections.values())),
+                    replayed=frozenset(prior.replaced),
                     file_outcomes_table=FILE_TABLES.get(getattr(self, "publication_family", None) or self.name),
                     validate=False,  # the completed generation admits these exact bytes once
                 )

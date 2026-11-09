@@ -36,7 +36,7 @@ def test_a_changed_policy_fails_until_recorded_then_until_its_predecessor_is_rea
 def test_summary_v2_is_identified_but_replayed_while_bill_versions_v1_carries():
     summaries = receipt_policies(legislative_policy("bill_publisher_summaries"))
     assert [p.policy_version for p in summaries] == [f"legislative-documents/{n}" for n in (3, 2, 1)]
-    assert replay_reason(summaries[0]) is None and "BILLSTATUS" in replay_reason(summaries[1])
+    assert replay_reason(summaries[0]) is None and "BILLSTATUS" in (replay_reason(summaries[1]) or "")
     current, earlier = receipt_policies(legislative_policy("bill_versions"))
     assert replay_reason(current) is None and replay_reason(earlier) is None
     assert set(ledger()["replay_required"]) == {"bill_publisher_summaries", "committee_assignments"}

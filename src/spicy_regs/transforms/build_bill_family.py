@@ -78,6 +78,7 @@ from spicy_docs.transport.credentials import CredentialRefusedError, scrub_crede
 
 from spicy_regs.generations import spicy_docs_code
 from spicy_regs.legislative_documents import printing_id
+from spicy_regs.policy_migrations import PriorReplayRequired
 from spicy_regs.source_evidence import SourceEvidenceError
 from spicy_regs.sources import r2
 from spicy_regs.sources.congress_bills import (
@@ -111,6 +112,7 @@ from spicy_regs.transforms.bill_family_bodies import (
 )
 from spicy_regs.transforms.congress_scope import (
     BULK_STATUS_FLOOR,
+    DEFAULT_BILL_TYPES,
     bill_types_from_env,
     bulk_status_budget,
     congresses_from_env,
@@ -215,7 +217,12 @@ STATUS_READERS_KEY = "spicy_regs.bill_family.status_readers.v1"
 #: This rollup's own status-pass rule, in the recorded reader beside SpicyDocs' code as the committee-report and
 #: Table III readers carry theirs. Bump it when a change here alters what a status read publishes (the shaping
 #: around ``build_family``, the vote references, the listed printings), and every bill is read once more.
-STATUS_READER_RULE = "status-v1"
+#: status-v2: CRS summaries gained both native clocks and their schema context (2853bad1).
+STATUS_READER_RULE = "status-v2"
+
+#: The table a replay-required prior (``policy_migrations``) can rebuild here: every row derives from the bill's
+#: BILLSTATUS read, so re-reading every bulk folder whole restates all of them from the publisher's XML.
+REPLAYED_FROM_STATUS = "bill_publisher_summaries"
 
 
 def status_reader() -> str:
@@ -595,25 +602,53 @@ class PriorIndex:
         return set(self.xml_printings.get(bill_id, ()))
 
 
-def _download_prior(output_dir: Path, download_prior: Callable[[str, Path], bool]) -> dict[str, Path | None]:
+def _download_prior(
+    output_dir: Path, download_prior: Callable[[str, Path], bool]
+) -> tuple[dict[str, Path | None], PriorReplayRequired | None]:
     """Fetch each single-file prior table this run reads before merging, to the path the merge reuses in place.
 
-    ``bill_sections`` is stored one file per Congress and comes through ``published_members`` instead.
+    ``bill_sections`` is stored one file per Congress and comes through ``published_members`` instead. A
+    replay-required ``REPLAYED_FROM_STATUS`` prior is absent here and returned, so the run can rebuild it whole.
     """
-    return {
-        name: published_table(output_dir, name, download_prior)
-        for name in (
-            *SNAPSHOT_TABLES,
-            "bill_actions",
-            "section_diffs",
-            "section_diff_items",
-            "cbo_cost_estimates",
-            "bill_cosponsors",
-            ARCHIVES_TABLE,
-            BACKFILLS_TABLE,
-            BACKFILL_WALKS_TABLE,
+    paths: dict[str, Path | None] = {}
+    replay = None
+    for name in (
+        *SNAPSHOT_TABLES,
+        "bill_actions",
+        "section_diffs",
+        "section_diff_items",
+        "cbo_cost_estimates",
+        "bill_cosponsors",
+        REPLAYED_FROM_STATUS,
+        ARCHIVES_TABLE,
+        BACKFILLS_TABLE,
+        BACKFILL_WALKS_TABLE,
+    ):
+        try:
+            paths[name] = published_table(output_dir, name, download_prior)
+        except PriorReplayRequired as required:
+            if name != REPLAYED_FROM_STATUS:
+                raise
+            paths[name], replay = None, required
+    return paths, replay
+
+
+def _require_replay_scope(
+    replay: PriorReplayRequired, status_bills: Mapping[tuple[str, str], set[str]],
+    congresses: Sequence[int], bill_types: Sequence[str],
+) -> None:
+    """A replay rebuilds every prior row, so the run must read every folder a prior BILLSTATUS read published."""
+    published = {int(congress) for congress, _ in status_bills}
+    wanted = sorted({*published, *range(BULK_STATUS_FLOOR, max([*published, *congresses]) + 1)})
+    missing = sorted(set(wanted) - set(congresses))
+    types = sorted(set(DEFAULT_BILL_TYPES) - set(bill_types))
+    if missing or types:
+        raise ValueError(
+            f"{replay}. This run covers Congresses {list(congresses)} and bill types {list(bill_types)}; a replay "
+            f"must re-read every bulk folder ({wanted[0]}-{wanted[-1]}, all eight bill types) or it would drop "
+            f"the rows it cannot restate. Run once: gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs "
+            f"-f congresses={wanted[0]}-{wanted[-1]}"
         )
-    }
 
 
 def _prior_index(
@@ -2069,7 +2104,7 @@ def build_bill_family(
     logger.info("Bill family: engine {} {} @ {}", stamp.name, stamp.version, stamp.revision or "(unknown)")
 
     # 1. What the last run already published, so this one can skip it.
-    prior_paths = _download_prior(output_dir, download_prior)
+    prior_paths, replay = _download_prior(output_dir, download_prior)
     _require_spelled_digests(prior_paths)
     split_priors = {name: published_members(output_dir, name, download_members) for name in PARTITIONED}
     index = _prior_index(
@@ -2125,7 +2160,13 @@ def build_bill_family(
             ):
                 held_archives.pop((congress, bill_type), None)
 
-    if prior_paths.get("bill_versions") is None or bills_prior is None:
+    if replay is not None:
+        _require_replay_scope(replay, status_bills, bulk_congresses, bill_types)
+        logger.warning("Bill family: {} — re-reading every bulk folder and bill to rebuild it", replay)
+        if evidence is not None:
+            evidence.event("prior-replay", dataset=replay.dataset, policy_version=replay.policy_version,
+                           congresses=list(bulk_congresses))
+    if prior_paths.get("bill_versions") is None or bills_prior is None or replay is not None:
         held_archives.clear()
     completed_archives = set(held_archives)
     visited_archives: set[tuple[str, str]] = set()
@@ -2195,7 +2236,8 @@ def build_bill_family(
                 # read its status again.
                 published = index.bill_text_dates.get(identifier)
                 if (
-                    published is not None
+                    replay is None
+                    and published is not None
                     and published == member.status.update_date_including_text
                     and identifier not in index.pending_bills
                 ):

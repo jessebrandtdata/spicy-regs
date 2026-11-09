@@ -28908,6 +28908,10 @@
       "summary_version_code",
       "action_date",
       "update_date"
+    ],
+    "later_policy_columns": [
+      "last_summary_update_date",
+      "source_schema_version"
     ]
   },
   "bill_versions": {

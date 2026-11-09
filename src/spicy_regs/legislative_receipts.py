@@ -12,7 +12,7 @@ import inspect
 import itertools
 import json
 import shutil
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from contextlib import ExitStack
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -132,6 +132,7 @@ def write_legislative_outputs(
     generation_id: str,
     source_witnesses: Sequence[Mapping] = (),
     prior_receipts: Sequence[Path] = (),
+    replayed: Collection[str] = (),
     file_outcomes_table: str | None = None,
     validate: bool = True,
     bulk: bool = True,
@@ -330,7 +331,10 @@ def write_legislative_outputs(
                 RefusalIdentity, carry_receipt_history, crs_revision_identity_migrations,
             )
 
-            active = [*manifest["datasets"], *manifest["outcome_subjects"], FILE_STATES]
+            # A replayed dataset's prior was replay-required (policy_migrations): its rows were rebuilt from
+            # originals, so its receipts are not carried and no new receipt cites them as a predecessor.
+            active = [name for name in (*manifest["datasets"], *manifest["outcome_subjects"], FILE_STATES)
+                      if name not in replayed]
             with phase_log("scope-legislative-prior", priors=len(prior_receipts)):
                 scoped = stage / ".shards" / "selected-prior.parquet"
                 with open_receipt_writer(scoped) as writer:

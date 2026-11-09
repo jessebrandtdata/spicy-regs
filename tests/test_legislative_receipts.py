@@ -127,12 +127,22 @@ def test_crs_clock_policy_roundtrips_source_fields_and_refuses_earlier_priors(tm
     )
     assert subject is not None
     old_bytes = old_receipts.read_bytes()
-    with pytest.raises(ValueError, match="Subject schema differs from policy"):
-        input_policy(dataset, [subject])
+    # /2 is identified, so a run can see it, but it is replay-required: it is never carried (ss-aj7t).
+    from spicy_regs.policy_migrations import replay_reason
+
+    selected = input_policy(dataset, [subject])
+    assert selected.policy_version == "legislative-documents/2" and replay_reason(selected)
     with pytest.raises(ValueError, match="incompatible clock policy"):
         write_legislative_outputs([new_input], tmp_path / "incompatible", generation_id="incompatible",
                                   prior_receipts=[old_receipts], bulk=bulk)
     assert not (tmp_path / "incompatible").exists()
+    # A replay rebuilt every row from originals: the /2 receipts are left behind and no predecessor is invented.
+    write_legislative_outputs([new_input], tmp_path / "replayed", generation_id="replayed",
+                              prior_receipts=[old_receipts], replayed={dataset}, bulk=bulk)
+    replayed = [r for r in pq.read_table(tmp_path / "replayed/etl_receipts.parquet").to_pylist()
+                if r["dataset"] == dataset]
+    assert {r["policy_version"] for r in replayed} == {"legislative-documents/3"} and len(replayed) == 2
+    assert all("prior_receipt" not in r["diagnostic_json"] for r in replayed)
     assert old_receipts.read_bytes() == old_bytes
 
 

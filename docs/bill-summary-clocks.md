@@ -67,8 +67,17 @@ Earlier policies dropped the legacy summary clock, so their subject/receipt
 bundles cannot qualify an incremental prior under this policy. Their refusal
 does not mean the source changed. A rebuild that adds the previously unread
 field is a processing correction, keeps the original item clock and key, and
-does not invent a receipt predecessor. Build an exact affected subset into a
-separate candidate; keep selected generations and raw originals unchanged.
+does not invent a receipt predecessor.
+
+The bill family performs that replay itself (`policy_migrations.json` marks the
+`/2` descriptor replay-required). When the selected summary prior is `/2`, the
+run neither restores nor carries it: it re-downloads every BILLSTATUS folder of
+every bulk Congress and re-reads every bill, rebuilds the whole summary table
+from the XML, and retains the replaced `/2` subject and its receipts in its own
+source evidence before writing. A run that does not cover every bulk Congress
+and all eight bill types refuses and names the one dispatch to run:
+`gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs -f congresses=108-119`.
+Raw originals and earlier generations stay unchanged.
 
 The [final-text-to-first-summary feasibility investigation](final-text-summary-delay-feasibility.md)
 qualifies the remaining publication and stage-matching gaps in a bounded cohort.

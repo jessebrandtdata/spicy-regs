@@ -999,7 +999,7 @@ def test_a_bill_read_by_the_running_spicy_docs_is_skipped(tmp_path, scoped, stat
 
 
 @pytest.mark.parametrize(
-    ("moved", "value"), [("spicy_docs_code", lambda: "0" * 64), ("STATUS_READER_RULE", "status-v2")]
+    ("moved", "value"), [("spicy_docs_code", lambda: "0" * 64), ("STATUS_READER_RULE", "status-v3")]
 )
 def test_a_bill_another_reader_read_is_read_again(tmp_path, scoped, status_reads, monkeypatch, moved, value):
     """A new SpicyDocs code, or this rollup's bumped status rule, re-reads the bill."""
