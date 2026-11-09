@@ -312,6 +312,17 @@ def test_ineligible_sources_stay_on_the_row_writer_loudly(tmp_path, monkeypatch)
     assert pq.read_table(path).to_pylist()[0]['depth'] == 3
 
 
+def test_a_local_witness_path_is_refused_before_any_receipt_is_written(tmp_path):
+    columns, rows = citation_map(random.Random(7), 3)
+    source = _write(tmp_path / 'source.parquet', _table(columns, rows))
+    local = [WITNESSES[0] | {'source_uri': '/Users/builder/export.csv.bz2'}]
+    with pytest.raises(ValueError, match='local filesystem path'):
+        court_bulk.write_bundle('court_citation_map', source, tmp_path / 's.parquet', tmp_path / 'r.parquet',
+                                policy=POLICIES['court_citation_map'], generation_id='g', processor='p',
+                                witnesses=local, diagnostics={}, attempt_prefix='row', attempt=lambda raw, ordinal: (None, {}))
+    assert not (tmp_path / 'r.parquet').exists()
+
+
 def test_a_cut_short_read_or_duckdb_fault_is_not_retried_by_row(tmp_path, monkeypatch):
     columns, rows = citation_map(random.Random(9), 50)
     source = _write(tmp_path / 'source.parquet', _table(columns, rows))

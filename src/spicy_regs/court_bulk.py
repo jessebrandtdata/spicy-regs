@@ -24,7 +24,7 @@ import pyarrow.parquet as pq
 
 from spicy_regs import etl_bulk
 from spicy_regs.court_subjects import IDENTITIES, LEGACY_COLUMNS, RECEIPT_FIELDS, SUBJECT_SCHEMAS
-from spicy_regs.etl_receipts import WITNESS_TYPE, DatasetPolicy, ReceiptContext, exact_json
+from spicy_regs.etl_receipts import WITNESS_TYPE, DatasetPolicy, ReceiptContext, exact_json, refuse_local_witnesses
 
 #: Tables whose mapping is only the rules above (the others convert lists, derive identities or read JSON).
 DATASETS = frozenset({
@@ -150,6 +150,7 @@ def write_bundle(
         raise etl_bulk.NotBulkEligible(f"{dataset}: the source schema has columns the court bulk writer does not map")
     # The shared checks on the constants (witness shape and digest, nonempty identities).
     ReceiptContext(generation_id, f"{dataset}:{attempt_prefix}:0", processor, [dict(w) for w in witnesses], diagnostics)
+    refuse_local_witnesses(witnesses)  # SQL builds these receipts, so ``etl_receipts._receipt`` never sees them
 
     columns, flags, originals = _subject_sql(dataset, schema)
     processing = _processing_sql(dataset, schema, originals)
