@@ -18,7 +18,7 @@ import pyarrow.parquet as pq
 from spicy_regs.etl_receipts import (
     DatasetPolicy,
     ReceiptContext,
-    RECEIPT_SCHEMA,
+    RECEIPT_SCHEMA, open_receipt_writer,
     split_record,
     split_records,
     failure_receipt,
@@ -124,7 +124,7 @@ class IdentityReceiptWriter:
             if not policy.receipt_only
         }
         self.receipt_writer = self._stack.enter_context(
-            pq.ParquetWriter(self.stage / "etl_receipts.parquet", RECEIPT_SCHEMA, compression="zstd")
+            open_receipt_writer(self.stage / "etl_receipts.parquet")
         )
         self.buffers = {name: [] for name in self.subject_writers}
         self.receipts = []

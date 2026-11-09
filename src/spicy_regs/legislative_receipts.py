@@ -24,7 +24,7 @@ import pyarrow.parquet as pq
 from loguru import logger
 
 from spicy_regs.etl_receipts import (
-    RECEIPT_SCHEMA,
+    open_receipt_writer,
     DatasetPolicy,
     ReceiptContext,
     combine_receipts,
@@ -333,7 +333,7 @@ def write_legislative_outputs(
             active = [*manifest["datasets"], *manifest["outcome_subjects"], FILE_STATES]
             with phase_log("scope-legislative-prior", priors=len(prior_receipts)):
                 scoped = stage / ".shards" / "selected-prior.parquet"
-                with pq.ParquetWriter(scoped, RECEIPT_SCHEMA, compression="zstd") as writer:
+                with open_receipt_writer(scoped) as writer:
                     for path in prior_receipts:
                         with pq.ParquetFile(path) as previous:
                             for batch in previous.iter_batches(batch_size=2000):

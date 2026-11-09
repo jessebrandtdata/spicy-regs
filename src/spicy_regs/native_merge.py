@@ -34,7 +34,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from spicy_regs import etl_bulk
-from spicy_regs.etl_receipts import RECEIPT_SCHEMA, DatasetPolicy, subject_identity
+from spicy_regs.etl_receipts import RECEIPT_SCHEMA, open_receipt_writer, DatasetPolicy, subject_identity
 from spicy_regs.receipt_history import RefusalIdentity, _take_prior_rows, carry_receipt_history
 
 _BATCH = 50_000
@@ -198,7 +198,7 @@ def native_merge(
         # identities and every non-accepted one (a refusal or observation repeated verbatim keeps its prior receipt).
         prior_receipt_files = [Path(prior_receipts)] if prior_receipts else []
         replaced = root / "replaced.parquet"
-        with pq.ParquetWriter(replaced, RECEIPT_SCHEMA, compression="zstd") as out:
+        with open_receipt_writer(replaced) as out:
             replaced_rows = _gather(
                 con,
                 "SELECT _o FROM prior_r WHERE outcome <> 'accepted' OR record_id IN "
@@ -238,7 +238,7 @@ def native_merge(
             with (
                 ExitStack() as stack,
                 pq.ParquetWriter(subjects, policy.subject_schema, compression="zstd") as subject_out,
-                pq.ParquetWriter(receipts, RECEIPT_SCHEMA, compression="zstd", write_statistics=etl_bulk._STATISTICS) as out,
+                open_receipt_writer(receipts) as out,
             ):
                 subject_gather = _Gatherer(stack, subject_files, policy.subject_schema)
                 receipt_gather = _Gatherer(stack, files, RECEIPT_SCHEMA)

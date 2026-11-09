@@ -262,7 +262,7 @@ def _carry_receipt_history(
     import pyarrow.parquet as pq
     import pyarrow.compute as pc
     from spicy_regs.etl_receipts import (
-        RECEIPT_SCHEMA, ReceiptContext, _digest, decode_exact_json, exact_json, inherit_receipt,
+        RECEIPT_SCHEMA, open_receipt_writer, ReceiptContext, _digest, decode_exact_json, exact_json, inherit_receipt,
     )
 
     def compute(name, *args):
@@ -395,7 +395,7 @@ def _carry_receipt_history(
         target = Path(temporary) / "receipts.parquet"
         with (
             pq.ParquetFile(current_path) as current,
-            pq.ParquetWriter(target, RECEIPT_SCHEMA, compression="zstd") as writer,
+            open_receipt_writer(target) as writer,
         ):
             expected_count = current.metadata.num_rows
             written = 0

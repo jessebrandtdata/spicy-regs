@@ -20,7 +20,7 @@ from spicy_regs.court_subjects import (
     IDENTITIES, RECEIPT_FIELDS, SUBJECT_SCHEMAS, normalize_court_row, opinion_body_id,
 )
 from spicy_regs.etl_receipts import (
-    DatasetPolicy, RECEIPT_SCHEMA, ReceiptContext, combine_receipts, failure_receipt,
+    DatasetPolicy, RECEIPT_SCHEMA, open_receipt_writer, ReceiptContext, combine_receipts, failure_receipt,
     read_with_receipts, select_receipts, split_record, validate_receipt_bundle, write_dataset,
 )
 
@@ -136,7 +136,7 @@ def write_court_rows(
     def build(bundle: Path) -> Path:
         with TemporaryDirectory(prefix='.court-failures-', dir=output_dir) as temporary:
             failures_path = Path(temporary) / 'etl_receipts.parquet'
-            with pq.ParquetWriter(failures_path, RECEIPT_SCHEMA, compression='zstd') as writer:
+            with open_receipt_writer(failures_path) as writer:
                 failures = []
 
                 def records():

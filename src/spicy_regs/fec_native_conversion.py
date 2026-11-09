@@ -16,7 +16,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from spicy_regs.dictionary_resources import INPUTS as DICTIONARY_INPUTS
-from spicy_regs.etl_receipts import RECEIPT_SCHEMA, ReceiptContext
+from spicy_regs.etl_receipts import RECEIPT_SCHEMA, open_receipt_writer, ReceiptContext
 from spicy_regs.generations import build_generation
 from spicy_regs.sources import publication
 from spicy_regs.transforms.assemble_fec_query import (
@@ -742,7 +742,7 @@ def build_retained_family(family, old, captured, retained, work, *, operation,
         receipt_writer = None
         if observation_writer is None:
             stream = stack.enter_context(shared.open('xb'))
-            receipt_writer = stack.enter_context(pq.ParquetWriter(stream, RECEIPT_SCHEMA, compression='zstd'))
+            receipt_writer = stack.enter_context(open_receipt_writer(stream))
         for key, original in sorted(retained.items()):
             check_resources()
             if key in RETIRED_TABLES.get(family, ()):

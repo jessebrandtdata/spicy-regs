@@ -9,11 +9,10 @@ from tempfile import TemporaryDirectory
 
 import duckdb
 import pyarrow as pa
-import pyarrow.parquet as pq
 
 from spicy_regs.contract_types import arrow_schema
 from spicy_regs.etl_receipts import (
-    RECEIPT_SCHEMA,
+    RECEIPT_SCHEMA, open_receipt_writer,
     WITNESS_TYPE,
     ReceiptContext,
     combine_receipts,
@@ -95,7 +94,7 @@ def build_attribute_generation(
             write_rows(prior_rows(), work / "prior.parquet", schema)
 
         observations_path = work / "observations.parquet"
-        with pq.ParquetWriter(observations_path, RECEIPT_SCHEMA, compression="zstd") as observation_writer:
+        with open_receipt_writer(observations_path) as observation_writer:
             observations = []
 
             def remember(receipt):

@@ -30,7 +30,7 @@ from spicy_regs import etl_bulk, government_bulk
 from spicy_regs.earlier_receipt_policies import earlier_policies
 from spicy_regs.etl_receipts import (
     RECEIPT_KEY,
-    RECEIPT_SCHEMA,
+    RECEIPT_SCHEMA, open_receipt_writer,
     DatasetPolicy,
     ReceiptContext,
     combine_receipts,
@@ -367,9 +367,9 @@ def _write_by_row(retained: Path, subject_path: Path, receipt_path: Path, datase
     subjects, receipts, refused = [], [], []
     with (
         pq.ParquetWriter(subject_path, policy.subject_schema, compression="zstd") as subject_writer,
-        pq.ParquetWriter(receipt_path, RECEIPT_SCHEMA, compression="zstd") as receipt_writer,
+        open_receipt_writer(receipt_path) as receipt_writer,
         TemporaryDirectory(dir=receipt_path.parent) as scratch,
-        pq.ParquetWriter(Path(scratch) / "refused.parquet", RECEIPT_SCHEMA, compression="zstd") as refused_writer,
+        open_receipt_writer(Path(scratch) / "refused.parquet") as refused_writer,
     ):
         def flush():
             if subjects:

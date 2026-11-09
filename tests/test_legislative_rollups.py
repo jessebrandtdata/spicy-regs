@@ -85,3 +85,19 @@ def test_senate_rollup_returns_native_subject_and_file_outcomes_in_one_generatio
     assert artifact.root["spec"]["etlReceipts"]["generationId"]
     assert "senate_expenditures_document_file_outcomes.parquet" in artifact.root["spec"]["tables"]
     assert pq.read_table(scheduled / "senate_expenditures.parquet").equals(table)
+
+
+def test_receipt_writers_bound_only_the_key_columns(tmp_path):
+    import pyarrow as pa
+    from spicy_regs.etl_receipts import RECEIPT_SCHEMA, RECEIPT_STATISTICS, dataset_row_groups, open_receipt_writer
+
+    rows = [{name: f"{dataset}-{name}" for name in RECEIPT_SCHEMA.names if name != "witnesses"}
+            | {"dataset": dataset, "witnesses": []} for dataset in ("a", "b", "c")]
+    with open_receipt_writer(tmp_path / "r.parquet") as writer:
+        for row in rows:
+            writer.write_table(pa.Table.from_pylist([row], schema=RECEIPT_SCHEMA))
+    with pq.ParquetFile(tmp_path / "r.parquet") as parquet:
+        group = parquet.metadata.row_group(0)
+        bounded = {group.column(i).path_in_schema for i in range(group.num_columns) if group.column(i).is_stats_set}
+        assert bounded == set(RECEIPT_STATISTICS) and "processor" in bounded
+        assert dataset_row_groups(parquet, "b") == [1]

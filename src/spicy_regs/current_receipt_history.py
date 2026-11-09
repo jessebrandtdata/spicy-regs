@@ -21,7 +21,7 @@ def inherit_current_receipts(current: Path, priors: Sequence[Path], destination:
     import pyarrow.parquet as pq
     from spicy_regs.etl_bulk import NotBulkEligible, bulk_connection, _literal
     from spicy_regs.receipt_history import _take_prior_rows
-    from spicy_regs.etl_receipts import (RECEIPT_SCHEMA, ReceiptContext, decode_exact_json,
+    from spicy_regs.etl_receipts import (RECEIPT_SCHEMA, open_receipt_writer, ReceiptContext, decode_exact_json,
                                         exact_json, inherit_receipt, _digest as receipt_digest)
     with bulk_connection(destination.parent) as (con, _), ExitStack() as files:
         # File ordinals and explicit ORDER BY clauses define every required order.
@@ -83,7 +83,7 @@ def inherit_current_receipts(current: Path, priors: Sequence[Path], destination:
         reader = con.execute(query, [str(current)]).to_arrow_reader(batch_size=2000)
         count = 0
         with pq.ParquetFile(current) as source, \
-                pq.ParquetWriter(destination, RECEIPT_SCHEMA, compression='zstd') as writer:
+                open_receipt_writer(destination) as writer:
             expected_count = source.metadata.num_rows
             for batch in source.iter_batches(batch_size=2000, columns=RECEIPT_SCHEMA.names, use_threads=False):
                 try:

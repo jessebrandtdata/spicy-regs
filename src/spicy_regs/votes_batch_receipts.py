@@ -11,7 +11,7 @@ import pyarrow.parquet as pq
 from spicy_regs import congress_bulk, etl_bulk
 from spicy_regs.congress_receipts import PROCESSOR, CongressInput, _digest, _rows, policy, refusal_identities, input_policy, has_unmatched_failures
 from spicy_regs.congress_subjects import map_record
-from spicy_regs.etl_receipts import (RECEIPT_SCHEMA, ReceiptContext, _unpack,
+from spicy_regs.etl_receipts import (RECEIPT_SCHEMA, open_receipt_writer, ReceiptContext, _unpack,
     failure_receipt, observation_receipt, select_receipts, split_record, validate_receipt_bundle)
 from spicy_regs.transforms.parquet_rows import write_rows
 from spicy_regs.receipt_history import carry_receipt_history
@@ -144,7 +144,7 @@ def write_congress_dataset(
         if not in_bulk:
             etl_bulk.log_row_fallback("congress-write", etl_bulk.NotBulkEligible("source value types have no proven SQL spelling"),
                                       dataset=dataset, rows=pq.ParquetFile(source).metadata.num_rows)
-            with pq.ParquetWriter(receipts, RECEIPT_SCHEMA, compression="zstd") as rw:
+            with open_receipt_writer(receipts) as rw:
                 sw = None if subjects is None else pq.ParquetWriter(subjects, selected.subject_schema, compression="zstd")
                 try:
                     receipt_batch, subject_batch = [first], []

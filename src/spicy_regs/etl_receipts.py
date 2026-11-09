@@ -62,6 +62,17 @@ RECEIPT_SCHEMA = pa.schema(
 )
 #: Receipt row-group size: readers gather single receipts by whole row group, so it stays small (2000 since write_rows).
 RECEIPT_ROW_GROUP = 2000
+#: Receipt columns given footer min/max bounds: the short keys readers prune on (``dataset`` for a dataset's row
+#: groups, ``policy_version`` in receipt lookups, ``processor`` in the regulatory catalog). The payload and witness
+#: columns are never filtered on; their bounds made the bill-family footer 30 MB (21 MB of statistics).
+RECEIPT_STATISTICS = ["dataset", "record_id", "receipt_id", "outcome", "generation_id", "attempt_id", "policy_version",
+                      "processor"]
+
+
+def open_receipt_writer(sink: Any) -> pq.ParquetWriter:
+    """The one receipt Parquet writer: shared schema, zstd, statistics only on :data:`RECEIPT_STATISTICS`."""
+    return pq.ParquetWriter(sink, RECEIPT_SCHEMA, compression="zstd", write_statistics=RECEIPT_STATISTICS)
+
 _COMBINE_BATCH = 50_000
 OUTCOMES = frozenset({"accepted", "rejected", "refused", "error", "observed"})
 _NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
@@ -519,7 +530,7 @@ def write_dataset(
             else:
                 subject_writer = stack.enter_context(
                     pq.ParquetWriter(subject_path, policy.subject_schema, compression="zstd"))
-            receipt_writer = stack.enter_context(pq.ParquetWriter(receipt_path, RECEIPT_SCHEMA, compression="zstd"))
+            receipt_writer = stack.enter_context(open_receipt_writer(receipt_path))
             for subject, receipt in _dataset_batches(records, policy, failures=failures, batch_size=batch_size):
                 if subject is not None:
                     assert subject_writer is not None
@@ -549,7 +560,7 @@ def combine_receipts(paths: Sequence[Path], destination: Path) -> Path:
     """
     with TemporaryDirectory(dir=destination.parent) as scratch:
         temporary = Path(scratch) / "rows.parquet"
-        with pq.ParquetWriter(temporary, RECEIPT_SCHEMA, compression="zstd") as writer:
+        with open_receipt_writer(temporary) as writer:
             for path in paths:
                 with _parquet(path) as parquet:
                     if not parquet.schema_arrow.equals(RECEIPT_SCHEMA):
@@ -931,7 +942,7 @@ def _read_with_receipts_rows(subject_paths, receipt_paths, policy, *, generation
 def _select_receipt_batches(batches, destinations: Mapping[str, Path]) -> None:
     """Decode every source cell once and preserve each dataset's complete ordered outcomes."""
     with ExitStack() as stack:
-        writers = {dataset: stack.enter_context(pq.ParquetWriter(path, RECEIPT_SCHEMA, compression="zstd"))
+        writers = {dataset: stack.enter_context(open_receipt_writer(path))
                    for dataset, path in destinations.items()}
         for batch in batches:
             checkpoint()

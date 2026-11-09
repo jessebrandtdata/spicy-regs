@@ -20,7 +20,7 @@ import pyarrow.parquet as pq
 from spicy_regs.etl_receipts import (
     DatasetPolicy,
     ReceiptContext,
-    RECEIPT_SCHEMA,
+    RECEIPT_SCHEMA, open_receipt_writer,
     combine_receipts,
     failure_receipt,
     read_with_receipts,
@@ -414,7 +414,7 @@ def write_records(
     destination.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(prefix="regulations-refusals-", dir=destination.parent) as temp:
         refusal_path = Path(temp) / "refused.parquet"
-        writer = pq.ParquetWriter(refusal_path, RECEIPT_SCHEMA, compression="zstd")
+        writer = open_receipt_writer(refusal_path)
         refused = []
 
         def flush():

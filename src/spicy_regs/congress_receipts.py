@@ -23,7 +23,7 @@ import pyarrow.parquet as pq
 
 from spicy_regs.congress_subjects import IDENTITIES, INPUT_COLUMNS, RECEIPT_ONLY, map_record, subject_schema
 from spicy_regs.etl_receipts import (
-    RECEIPT_SCHEMA,
+    RECEIPT_SCHEMA, open_receipt_writer,
     DatasetPolicy,
     ReceiptContext,
     combine_receipts,
@@ -237,7 +237,7 @@ def write_congress_dataset(
                 diagnostics or {},
             )
 
-        with pq.ParquetWriter(receipts, RECEIPT_SCHEMA, compression="zstd") as rw:
+        with open_receipt_writer(receipts) as rw:
             sw = None if subjects is None else pq.ParquetWriter(subjects, selected.subject_schema, compression="zstd")
             try:
                 receipt_batch, subject_batch = [], []

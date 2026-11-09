@@ -34,7 +34,7 @@ import pyarrow.parquet as pq
 from spicy_regs.runtime_bounds import bounded_connection, checkpoint
 from spicy_regs.etl_receipts import (
     RECEIPT_ROW_GROUP,
-    RECEIPT_SCHEMA,
+    RECEIPT_SCHEMA, open_receipt_writer,
     DatasetPolicy,
     ParquetInput,
     _bundle_policies,
@@ -292,8 +292,6 @@ def bulk_connection(directory: Path | None = None, *, threads: int = 4, memory_l
             yield con, root
 
 
-#: Receipt columns worth a footer bound; the payload and witness columns are never filtered on.
-_STATISTICS = ["dataset", "record_id", "receipt_id", "outcome", "generation_id", "attempt_id", "policy_version"]
 _GROUP = RECEIPT_ROW_GROUP
 #: The table a :func:`write_split` query reads: the source's batch, with ``file_row_number`` as ``read_parquet`` gives it.
 SOURCE_BATCH = "source_batch"
@@ -313,7 +311,7 @@ def with_insertions(kept: pa.Table, mask: list[bool], insertions: Mapping[int, d
 
 def new_receipt_writer(path: Path) -> pq.ParquetWriter:
     """Open a receipt writer; its caller owns closing the shared member."""
-    return pq.ParquetWriter(path, RECEIPT_SCHEMA, compression="zstd", write_statistics=_STATISTICS)
+    return open_receipt_writer(path)
 
 
 def write_split(
@@ -377,7 +375,7 @@ def write_split(
         subjects = subject_writer if subject_writer is not None else stack.enter_context(
             pq.ParquetWriter(subject_path, subject_schema, compression="zstd"))
         receipts = receipt_writer if receipt_writer is not None else stack.enter_context(new_receipt_writer(receipt_path))
-        refused = stack.enter_context(pq.ParquetWriter(scratch / "refused.parquet", RECEIPT_SCHEMA, compression="zstd"))
+        refused = stack.enter_context(open_receipt_writer(scratch / "refused.parquet"))
 
         def emit(table: pa.Table, final: bool = False) -> None:
             nonlocal pending
