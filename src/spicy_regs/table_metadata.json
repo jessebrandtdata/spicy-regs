@@ -29011,6 +29011,10 @@
       "bill_id",
       "version_code",
       "printing_id"
+    ],
+    "later_policy_columns": [
+      "publication_dates",
+      "publication_evidence_status"
     ]
   },
   "bill_sections": {
