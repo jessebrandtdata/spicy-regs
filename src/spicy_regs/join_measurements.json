@@ -4081,6 +4081,35 @@
       "measured_on": "2026-11-08",
       "receipt": "docs/evidence/join-baselines-2026-11-08.json",
       "measured_expected_cardinality": "one"
+    },
+    {
+      "join": "hearing_bill_links.package_id+last_modified -> hearing_transcripts.package_id+last_modified",
+      "kind": "complete",
+      "keys": 18,
+      "missing": 0,
+      "resolved_pct": 100.0,
+      "examples": [],
+      "child_input_rows": 105,
+      "child_nonnull_rows": 105,
+      "parent_input_rows": 1064,
+      "parent_distinct_keys": 1064,
+      "parent_duplicate_keys": 0,
+      "max_parent_multiplicity": 1,
+      "max_matched_parent_multiplicity": 1,
+      "inner_join_rows": 105,
+      "left_join_nonnull_rows": 105,
+      "scope": "full_selected_inputs",
+      "child_urls": [
+        "https://data.spicygov.ai/generations/committee-reports/629148c35e7e7567a58db6298109fd542bd0bde59e03c45353cbc54d42b04862/hearing_bill_links.parquet"
+      ],
+      "parent_urls": [
+        "https://data.spicygov.ai/generations/committee-reports/629148c35e7e7567a58db6298109fd542bd0bde59e03c45353cbc54d42b04862/hearing_transcripts.parquet"
+      ],
+      "sql": "\n        WITH child_input AS (SELECT \"package_id\", \"last_modified\" FROM read_parquet(['https://data.spicygov.ai/generations/committee-reports/629148c35e7e7567a58db6298109fd542bd0bde59e03c45353cbc54d42b04862/hearing_bill_links.parquet'], hive_partitioning = false)),\n             parent_input AS (SELECT \"package_id\", \"last_modified\" FROM read_parquet(['https://data.spicygov.ai/generations/committee-reports/629148c35e7e7567a58db6298109fd542bd0bde59e03c45353cbc54d42b04862/hearing_transcripts.parquet'], hive_partitioning = false)),\n             c AS (SELECT \"package_id\" AS c0, \"last_modified\" AS c1, count(*) AS child_rows\n                   FROM child_input WHERE \"package_id\" IS NOT NULL AND \"last_modified\" IS NOT NULL\n                   GROUP BY ALL),\n             p AS (SELECT \"package_id\" AS p0, \"last_modified\" AS p1, count(*) AS parent_rows\n                   FROM parent_input WHERE \"package_id\" IS NOT NULL AND \"last_modified\" IS NOT NULL\n                   GROUP BY ALL),\n             j AS (SELECT c0, c1, child_rows, coalesce(parent_rows, 0) AS parent_rows\n                   FROM c LEFT JOIN p ON c.c0 = p.p0 AND c.c1 = p.p1)\n        SELECT count(*) AS keys, count(*) FILTER (WHERE parent_rows=0) AS missing,\n               (list(concat_ws('|', c0, c1) ORDER BY c0, c1) FILTER (WHERE parent_rows=0))[1:3] AS examples,\n               (SELECT count(*) FROM child_input) AS child_input_rows,\n               coalesce(sum(child_rows),0) AS child_nonnull_rows,\n               (SELECT count(*) FROM parent_input) AS parent_input_rows,\n               (SELECT count(*) FROM p) AS parent_distinct_keys,\n               (SELECT count(*) FROM p WHERE parent_rows>1) AS parent_duplicate_keys,\n               coalesce((SELECT max(parent_rows) FROM p),0) AS max_parent_multiplicity,\n               coalesce(max(parent_rows),0) AS max_matched_parent_multiplicity,\n               coalesce(sum(child_rows*parent_rows),0) AS inner_join_rows,\n               coalesce(sum(child_rows*greatest(parent_rows,1)),0) AS left_join_nonnull_rows\n        FROM j",
+      "expected_cardinality": "one",
+      "measured_on": "2026-11-08",
+      "receipt": "docs/evidence/join-baselines-hearing-links-2026-11-08.json",
+      "measured_expected_cardinality": "one"
     }
   ]
 }
