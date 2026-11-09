@@ -72,6 +72,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from loguru import logger
 
+from spicy_regs.phase_log import annotate
 from spicy_regs.transforms.parquet_rows import str_or_none
 from spicy_regs.sources import r2
 from spicy_regs.sources.cfr_sections import INDEX_PACKAGE_RE, CfrSectionsError, CfrSectionsReader
@@ -437,12 +438,6 @@ def _unchanged(rows: list[dict], prior: dict[str, str | None]) -> bool:
     return all(row["granule_id"] in prior and prior[row["granule_id"]] == row["last_modified"] for row in rows)
 
 
-def _annotate(level: str, message: str) -> None:
-    """Log ``message`` and emit it as a GitHub Actions annotation (plain text outside Actions)."""
-    logger.log(level.upper(), "CFR: {}", message)
-    print(f"::{level} title=cfr_sections::{message}", flush=True)
-
-
 def _volume_acquirer() -> CfrAcquirer:
     """A paced, bounded GovInfo client for annual volume XML."""
     from spicy_docs.sources.cfr.acquisition import CfrAcquirer, CfrAcquisitionBudget
@@ -519,9 +514,9 @@ def build_cfr_sections(
     for package_id in failed:
         assert prior is not None
         if package_id in prior.packages:
-            _annotate("warning", f"{package_id} volume failed; its prior rows stand")
+            annotate("warning", "cfr_sections", f"{package_id} volume failed; its prior rows stand")
         else:
-            _annotate("error", f"{package_id} volume failed and it has no prior rows; its granules are absent")
+            annotate("error", "cfr_sections", f"{package_id} volume failed and it has no prior rows; its granules are absent")
     # Marked output promises every row was placed by this rule: true when the prior
     # was, or there was none, or every prior package was re-placed this run.
     marked = prior is None or prior.placed or (not failed and prior.packages <= replaced)
