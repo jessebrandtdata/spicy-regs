@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from collections.abc import Callable, Mapping, Sequence
 from bisect import bisect_right
+import weakref
 from contextlib import ExitStack
 from dataclasses import dataclass
 
@@ -185,8 +186,14 @@ def _processing_key(column: str) -> str:
     return f"unhex(sha256({column}))"
 
 
+#: Each open prior file's most recently decoded row group, by file handle. Callers gather 2,000-row batches in
+#: ordinal order from 64k-row receipt groups (``RECEIPT_ROW_GROUP``); without it each group was decoded once per
+#: batch, ~33 times. One decoded group per open file is held, released with the handle.
+_LAST_GROUP: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+
+
 def _take_prior_rows(priors, file_ends, group_ends, ordinals, schema):
-    """Gather one output batch, reading each required prior row group once."""
+    """Gather one output batch, decoding each required prior row group once across consecutive batches."""
     import pyarrow as pa
 
     requests = {}
@@ -202,7 +209,12 @@ def _take_prior_rows(priors, file_ends, group_ends, ordinals, schema):
         requests.setdefault((file, group), []).append((position, row))
     chunks, positions = [], []
     for (file, group), rows in requests.items():
-        source = priors[file].read_row_group(group, columns=schema.names, use_threads=False)
+        held = _LAST_GROUP.get(priors[file])
+        if held is not None and held[0] == (group, tuple(schema.names)):
+            source = held[1]
+        else:
+            source = priors[file].read_row_group(group, columns=schema.names, use_threads=False)
+            _LAST_GROUP[priors[file]] = ((group, tuple(schema.names)), source)
         chunks.append(source.take(pa.array([row for _, row in rows], type=pa.int64())))
         del source
         positions.extend(position for position, _ in rows)

@@ -392,7 +392,8 @@ def test_collision_after_first_output_batch_preserves_destination(tmp_path, poli
     current = write(tmp_path / "current.parquet", fresh)
     destination = write(tmp_path / "destination.parquet", old)
     before = destination.read_bytes()
-    original_writer = pq.ParquetWriter
+    from spicy_regs import etl_receipts
+    original_writer = etl_receipts.open_receipt_writer
     written = []
 
     class RecordingWriter:
@@ -409,7 +410,7 @@ def test_collision_after_first_output_batch_preserves_destination(tmp_path, poli
             self.writer.write_table(table)
             written.append(table.num_rows)
 
-    monkeypatch.setattr(pq, "ParquetWriter", RecordingWriter)
+    monkeypatch.setattr(etl_receipts, "open_receipt_writer", RecordingWriter)
     monkeypatch.setattr(receipt_history, "_processing_key", lambda column: "unhex('00')")
     with pytest.raises(ValueError, match="candidate keys differ from exact values"):
         carry_receipt_history(current, [prior], destination)
@@ -438,7 +439,8 @@ def test_partial_write_or_interruption_preserves_in_place_current(tmp_path, poli
             self.path.write_bytes(b"partial owned output")
             raise error_type("injected write failure")
 
-    monkeypatch.setattr(pq, "ParquetWriter", FailingWriter)
+    from spicy_regs import etl_receipts
+    monkeypatch.setattr(etl_receipts, "open_receipt_writer", FailingWriter)
     with pytest.raises(error_type):
         carry_receipt_history(current, [prior], current)
     assert current.read_bytes() == before

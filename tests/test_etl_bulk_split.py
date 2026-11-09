@@ -176,7 +176,8 @@ def test_an_isolated_row_is_its_own_receipt_row_group(tmp_path):
 
 
 def test_closing_receipts_stream_in_bounded_groups_before_generator_finishes(tmp_path, monkeypatch):
-    original = pq.ParquetWriter
+    original = etl_bulk.open_receipt_writer
+    monkeypatch.setattr(etl_bulk, "_GROUP", 2000)  # the bound under test; production emits whole receipt groups
     written = []
 
     class RecordingWriter:
@@ -204,10 +205,10 @@ def test_closing_receipts_stream_in_bounded_groups_before_generator_finishes(tmp
                 assert written  # materializing the whole iterable would fail here
             yield {"receipt_id": f"closing-{i}", "outcome": "refused", "witnesses": []}
 
-    monkeypatch.setattr(pq, "ParquetWriter", RecordingWriter)
+    monkeypatch.setattr(etl_bulk, "open_receipt_writer", RecordingWriter)
     _split(tmp_path, last_receipts=closing())
     assert _ids(tmp_path / "r.parquet", "receipt_id")[-4001:] == [f"closing-{i}" for i in range(4001)]
-    assert max(written) <= etl_bulk.RECEIPT_ROW_GROUP
+    assert max(written) <= 2000
 
 
 def test_unmapped_eligibility_warns_with_count_while_mapped_fallback_still_refuses():

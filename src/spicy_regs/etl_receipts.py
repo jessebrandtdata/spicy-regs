@@ -60,18 +60,77 @@ RECEIPT_SCHEMA = pa.schema(
         ("diagnostic_json", pa.string()),
     ]
 )
-#: Receipt row-group size: readers gather single receipts by whole row group, so it stays small (2000 since write_rows).
-RECEIPT_ROW_GROUP = 2000
-#: Receipt columns given footer min/max bounds: the short keys readers prune on (``dataset`` for a dataset's row
-#: groups, ``policy_version`` in receipt lookups, ``processor`` in the regulatory catalog). The payload and witness
-#: columns are never filtered on; their bounds made the bill-family footer 30 MB (21 MB of statistics).
-RECEIPT_STATISTICS = ["dataset", "record_id", "receipt_id", "outcome", "generation_id", "attempt_id", "policy_version",
-                      "processor"]
+#: Receipt row-group size. Readers find one receipt through the page index (``write_page_index``,
+#: :data:`RECEIPT_PAGE_ROWS`), not by reading its whole group, so groups are sized for a small footer: measured
+#: on a live bill-family slice (2026-11-09, ss-e4nx), 64k-row groups cut its footer from 641 KB to 30 KB
+#: (~0.5 MB for the whole family, from 10.9 MB) while a cold browser lookup by identity read ~1.4-2.9 MB.
+RECEIPT_ROW_GROUP = 65_536
+#: Rows per data page: the unit a page-indexed lookup reads from each column.
+RECEIPT_PAGE_ROWS = 1000
+#: Receipt columns given footer and page-index bounds: the keys readers filter on (``dataset`` for a dataset's row
+#: groups, ``identity_json`` and ``record_id`` for one row's receipts, ``policy_version`` in receipt lookups,
+#: ``processor`` in the regulatory catalog). The payload and witness columns are never filtered on; their bounds
+#: made the bill-family footer 30 MB (21 MB of statistics).
+RECEIPT_STATISTICS = ["dataset", "record_id", "identity_json", "receipt_id", "outcome", "generation_id", "attempt_id",
+                      "policy_version", "processor"]
+#: Columns dictionary-encoded: only the low-cardinality ones. A hash or payload column's dictionary page holds up to
+#: 1 MB of near-unique values, and a page-indexed lookup must read it whole for every column it touches.
+RECEIPT_DICTIONARY = ["dataset", "policy_version", "generation_id", "processor", "outcome",
+                      "witnesses.list.element.source_id", "witnesses.list.element.body_version"]
+
+
+class _ReceiptWriter(pq.ParquetWriter):
+    """Cut receipt rows into whole :data:`RECEIPT_ROW_GROUP`-row groups whatever sizes callers write in.
+
+    A ``ParquetWriter`` closes a row group on every ``write_table``; callers write 2,000-50,000-row batches. Held rows
+    are Arrow references to the callers' batches, at most one group's worth.
+    """
+
+    def __init__(self, sink: Any):
+        super().__init__(sink, RECEIPT_SCHEMA, compression="zstd", write_statistics=RECEIPT_STATISTICS,
+                         use_dictionary=RECEIPT_DICTIONARY, write_page_index=True,
+                         max_rows_per_page=RECEIPT_PAGE_ROWS)
+        self._pending: list[pa.Table] = []
+        self._held = 0
+
+    def write_table(self, table: pa.Table, row_group_size: int | None = None) -> None:
+        if not table.schema.equals(self.schema, check_metadata=False):
+            raise ValueError("Table schema does not match schema used to create file")
+        if table.num_rows:
+            self._pending.append(table)
+            self._held += table.num_rows
+        while self._held >= RECEIPT_ROW_GROUP:
+            held = pa.concat_tables(self._pending)
+            super().write_table(held.slice(0, RECEIPT_ROW_GROUP), row_group_size=RECEIPT_ROW_GROUP)
+            rest = held.slice(RECEIPT_ROW_GROUP)
+            self._pending, self._held = ([rest] if rest.num_rows else []), rest.num_rows
+
+    def end_row_group(self) -> None:
+        """Write the held rows as a row group now: a caller isolating a large receipt cuts groups around it."""
+        if self._pending:
+            super().write_table(pa.concat_tables(self._pending), row_group_size=RECEIPT_ROW_GROUP)
+            self._pending, self._held = [], 0
+
+    def write_batch(self, batch: pa.RecordBatch, row_group_size: int | None = None) -> None:
+        self.write_table(pa.Table.from_batches([batch]))
+
+    def write(self, table_or_batch: Any, row_group_size: int | None = None) -> None:
+        if isinstance(table_or_batch, pa.RecordBatch):
+            self.write_batch(table_or_batch)
+        else:
+            self.write_table(table_or_batch)
+
+    def close(self) -> None:
+        if self.is_open:
+            self.end_row_group()
+        super().close()
 
 
 def open_receipt_writer(sink: Any) -> pq.ParquetWriter:
-    """The one receipt Parquet writer: shared schema, zstd, statistics only on :data:`RECEIPT_STATISTICS`."""
-    return pq.ParquetWriter(sink, RECEIPT_SCHEMA, compression="zstd", write_statistics=RECEIPT_STATISTICS)
+    """The one receipt Parquet writer: shared schema, zstd, whole :data:`RECEIPT_ROW_GROUP`-row groups, a page
+    index, statistics only on :data:`RECEIPT_STATISTICS` and dictionaries only on :data:`RECEIPT_DICTIONARY`."""
+    return _ReceiptWriter(sink)
+
 
 _COMBINE_BATCH = 50_000
 OUTCOMES = frozenset({"accepted", "rejected", "refused", "error", "observed"})
@@ -556,7 +615,7 @@ def combine_receipts(paths: Sequence[Path], destination: Path) -> Path:
     """Combine dataset shards, keeping every row and witness, with the shared schema.
 
     Whole Arrow batches are copied, never decoded into rows (a million receipts took minutes through Python); a shard
-    that is not exactly ``RECEIPT_SCHEMA`` is refused, the output has ``RECEIPT_ROW_GROUP``-row groups as before, and ``destination`` appears only once every shard is copied.
+    that is not exactly ``RECEIPT_SCHEMA`` is refused, the writer cuts ``RECEIPT_ROW_GROUP``-row groups, and ``destination`` appears only once every shard is copied.
     """
     with TemporaryDirectory(dir=destination.parent) as scratch:
         temporary = Path(scratch) / "rows.parquet"

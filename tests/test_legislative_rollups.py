@@ -87,17 +87,24 @@ def test_senate_rollup_returns_native_subject_and_file_outcomes_in_one_generatio
     assert pq.read_table(scheduled / "senate_expenditures.parquet").equals(table)
 
 
-def test_receipt_writers_bound_only_the_key_columns(tmp_path):
+def test_receipt_writers_use_the_standard_lookup_layout(tmp_path, monkeypatch):
     import pyarrow as pa
+    from spicy_regs import etl_receipts
     from spicy_regs.etl_receipts import RECEIPT_SCHEMA, RECEIPT_STATISTICS, dataset_row_groups, open_receipt_writer
 
-    rows = [{name: f"{dataset}-{name}" for name in RECEIPT_SCHEMA.names if name != "witnesses"}
-            | {"dataset": dataset, "witnesses": []} for dataset in ("a", "b", "c")]
+    monkeypatch.setattr(etl_receipts, "RECEIPT_ROW_GROUP", 2)  # whole groups whatever the caller writes
+    rows = [{name: f"{dataset}-{n}-{name}" for name in RECEIPT_SCHEMA.names if name != "witnesses"}
+            | {"dataset": dataset, "witnesses": []} for dataset in ("a", "b", "c") for n in range(2)]
     with open_receipt_writer(tmp_path / "r.parquet") as writer:
         for row in rows:
             writer.write_table(pa.Table.from_pylist([row], schema=RECEIPT_SCHEMA))
     with pq.ParquetFile(tmp_path / "r.parquet") as parquet:
+        assert [parquet.metadata.row_group(i).num_rows for i in range(parquet.metadata.num_row_groups)] == [2, 2, 2]
         group = parquet.metadata.row_group(0)
-        bounded = {group.column(i).path_in_schema for i in range(group.num_columns) if group.column(i).is_stats_set}
-        assert bounded == set(RECEIPT_STATISTICS) and "processor" in bounded
+        columns = {group.column(i).path_in_schema: group.column(i) for i in range(group.num_columns)}
+        assert {name for name, column in columns.items() if column.is_stats_set} == set(RECEIPT_STATISTICS)
+        assert {"processor", "identity_json"} <= set(RECEIPT_STATISTICS)
+        assert all(column.has_offset_index for column in columns.values())  # the page index
+        assert columns["identity_json"].has_column_index
+        assert "PLAIN_DICTIONARY" not in columns["record_id"].encodings and "RLE_DICTIONARY" not in columns["record_id"].encodings
         assert dataset_row_groups(parquet, "b") == [1]
