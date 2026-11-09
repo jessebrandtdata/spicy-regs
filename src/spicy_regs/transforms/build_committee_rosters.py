@@ -34,10 +34,10 @@ row for its chamber and Congress (:func:`retire_prior_rows`), so a seat the
 file no longer lists is gone on the next capture and an earlier Congress keeps
 its last capture. A chamber whose file was not established this run keeps its
 prior rows; a keyless ``401``/``403`` (``CommitteeRosterRefusedError``) aborts.
-``senate_paid_ladder`` (the rollup's ``--senate-paid-ladder``) reads today's
-Senate file through the walled-fetch ladder instead
-(:mod:`spicy_regs.sources.senate_roster_ladder`), which aborts the same way when
-every rung fails.
+``senate_paid_ladder`` (the rollup's ``--senate-paid-ladder``) builds the
+acquirer that reads today's Senate file through the shared walled-fetch ladder
+(:mod:`spicy_regs.sources.senate_roster_ladder`; up to three rungs, each with the
+budget's timeout), which aborts the same way when every rung fails.
 
 **Earlier Congresses come from the Congressional Directory** (ss-ehci): one
 GovInfo edition per Congress, 113-117, and for the 118th a reviewed reading of its
@@ -272,13 +272,8 @@ def _committee_rows(
     return rows
 
 
-def _assignment_rows(
-    rosters: RosterSource, congress: int, prior_file: Path | None, acquire_senate: Callable[[], Any] | None = None
-) -> list[dict]:
-    """Today's seats from both chamber files; a file not established this run leaves its chamber's prior rows.
-
-    ``acquire_senate`` replaces the direct Senate request (``senate_paid_ladder``); a refusal still stops the run.
-    """
+def _assignment_rows(rosters: RosterSource, congress: int, prior_file: Path | None) -> list[dict]:
+    """Today's seats from both chamber files; a file not established this run leaves its chamber's prior rows."""
     rows: list[dict] = []
     try:
         house = rosters.acquire_house(congress=congress)
@@ -312,7 +307,7 @@ def _assignment_rows(
             placeholders,
         )
     try:
-        senate = acquire_senate() if acquire_senate is not None else rosters.acquire_senate()
+        senate = rosters.acquire_senate()
     except CommitteeRosterRefusedError:
         raise
     except (CommitteeRosterError, httpx.HTTPError, ConnectionError) as error:
@@ -468,7 +463,6 @@ def build_committee_rosters(
     directory: DirectorySource | None = None,
     evidence=None,
     senate_paid_ladder: bool = False,
-    senate_ladder: Callable[[], Any] | None = None,
     max_details: int = MAX_DETAILS_PER_RUN,
     download_prior: Callable[[str, Path], bool] = r2.download,
     receipt_build=None,
@@ -480,6 +474,10 @@ def build_committee_rosters(
         })
     if reader is None:
         reader = CongressListingReader(budget=LIST_BUDGET, api_key=_api_key())
+    if rosters is None and senate_paid_ladder:
+        from spicy_regs.sources.senate_roster_ladder import LadderCommitteeRosterAcquirer
+
+        rosters = LadderCommitteeRosterAcquirer(budget=ROSTER_BUDGET, evidence=evidence)
     rosters = rosters or CommitteeRosterAcquirer(budget=ROSTER_BUDGET)
 
     priors = {name: published_table(output_dir, name, download_prior) for name in (NAME, ASSIGNMENTS, ENTRIES)}
@@ -490,15 +488,7 @@ def build_committee_rosters(
     committee_rows = _committee_rows(listed, _held_committees(priors[NAME]), reader, max_details)
 
     # 2. Today's seats, for the Congress the files describe.
-    if senate_paid_ladder and senate_ladder is None:
-        from spicy_regs.sources.senate_roster_ladder import acquire_senate_via_ladder
-
-        def senate_ladder():
-            return acquire_senate_via_ladder(evidence)
-
-    assignment_rows = _assignment_rows(
-        rosters, current_congress(), priors[ASSIGNMENTS], senate_ladder if senate_paid_ladder else None
-    )
+    assignment_rows = _assignment_rows(rosters, current_congress(), priors[ASSIGNMENTS])
 
     # 3. Earlier Congresses' seats, once each, from their directory editions.
     reread = {int(c) for c in os.environ.get(DIRECTORY_REREAD_ENV, "").split(",") if c.strip()}

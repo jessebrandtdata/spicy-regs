@@ -1,95 +1,80 @@
-"""Today's Senate committee file through spicy-docs' walled-fetch ladder, when a run opts in (ss-ehci).
+"""Today's Senate committee file through the shared walled-fetch ladder, when a run opts in (ss-ehci).
 
 www.senate.gov answers ``cvc_member_data.xml`` with HTTP 403 to this Mac and to GitHub's runners (measured
 2026-11-01 and 2026-11-08). Owner decision 2026-11-08: read it through the paid ladder, Zyte first and Firecrawl as
-the fallback. :func:`spicy_docs.sources.walled_fetch.walled_fetch` is that ladder: one bounded direct attempt, then
-one Zyte ``httpResponseBody`` call, then one Firecrawl ``rawBase64`` call, never a rendered page, never more than
-:data:`MAX_REQUESTS` requests or :data:`MAX_BYTES` bytes.
+the fallback.
 
-The answer must be the publisher's own XML: a body that is not the file (an HTML page, a rendered DOM) is refused
-before the reader sees it, and the reader still validates it exactly as it validates a direct capture. The capture
-is retained like any source with the rung that served it in its stage (``senate-cvc:<rung>``) and journaled
-(``senate-roster-rung``). When every rung fails the run stops, as a direct refusal always has.
+:class:`LadderCommitteeRosterAcquirer` is the chamber-file acquirer with one change: today's Senate file goes
+through ``SourceAcquirer.capture_walled``, spicy-docs' ladder (one direct attempt on this acquirer's own client,
+then one Zyte ``httpResponseBody`` call, then one Firecrawl ``rawBase64`` call; never a rendered page). Every rung is
+charged and paced on the same ``CommitteeRosterBudget`` as a direct capture, and each answer is held to the budget's
+byte bound, the exact locator (``check_final_url``), the file's media types (``text/xml``/``application/xml``) and
+the reader's own validation. The timeout is the budget's, per rung: the worst case is three timeouts in a row
+(3 x 120 s with the rollup's ``ROSTER_BUDGET``). When every rung fails, ``CommitteeRosterRefusedError`` carries the
+ladder's ``rung_outcomes`` and the run stops, as a direct refusal always has. The House file, and any archived
+capture (``archived_at``), are read exactly as before.
+
+The serving rung is retained: the capture is kept with stage ``senate-cvc:<rung>`` and journaled as
+``senate-roster-rung`` with the provider's request id.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 from spicy_docs.sources.congress.committee_rosters import (
+    MEDIA_TYPES,
     SENATE_CVC_URL,
+    CommitteeRosterAcquirer,
     CommitteeRosterRefusedError,
-    SenateCvc,
+    CommitteeRosterUnavailableError,
+    SenateRosterAcquisition,
     parse_senate_cvc,
 )
-from spicy_docs.sources.walled_fetch import ProxyFetchers, WalledFetchError, walled_fetch
-from spicy_docs.transport.captured import CapturedBodyResponse, observed_instant
-from spicy_docs.transport.credentials import scrub_credential
-from spicy_docs.transport.source_acquirer import utc_now
+from spicy_docs.transport.source_acquirer import narrow_byte_limit
 
-#: Direct, Zyte, Firecrawl: one attempt each, no rendered-browser rung.
-MAX_REQUESTS = 3
-#: The file was 66,846 bytes on 2024-09-11 and 68 KB on 2026-09-19; the bound leaves room without being open-ended.
-MAX_BYTES = 4 * 1024 * 1024
-TIMEOUT_SECONDS = 90.0
-USER_AGENT = "spicy-docs-committee-rosters/1.0"
+_BOM = b"\xef\xbb\xbf"
 
 
-@dataclass(frozen=True, slots=True)
-class LadderAcquisition:
-    """The shape the committee-rosters transform reads from an acquisition, plus the rung that served it."""
-
-    roster: SenateCvc
-    capture: CapturedBodyResponse
-    rung: str
-
-
-def _is_cvc_xml(body: bytes) -> bool:
-    """Whether the bytes are the Senate's XML file rather than a page about it."""
-    head = body.lstrip()[:512].lower()
+def is_cvc_xml(body: bytes) -> bool:
+    """Whether a 2xx body is the Senate's XML file (a leading UTF-8 byte-order mark allowed), not a page about it."""
+    head = body.removeprefix(_BOM).lstrip()[:512].lower()
     return (head.startswith(b"<?xml") or head.startswith(b"<senators")) and b"<html" not in head
 
 
-def acquire_senate_via_ladder(
-    evidence: Any = None, *, proxies: ProxyFetchers | None = None, direct: Any = None
-) -> LadderAcquisition:
-    """``cvc_member_data.xml`` through the ladder, refused unless it is the publisher's XML; retained when evidenced."""
-    try:
-        result = walled_fetch(
+class LadderCommitteeRosterAcquirer(CommitteeRosterAcquirer):
+    """The chamber-file acquirer, reading today's Senate file through the walled-fetch ladder."""
+
+    def __init__(self, *args: Any, evidence: Any = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.evidence = evidence
+
+    def acquire_senate(
+        self, *, max_bytes: int | None = None, archived_at: str | None = None
+    ) -> SenateRosterAcquisition:
+        if archived_at is not None:
+            return super().acquire_senate(max_bytes=max_bytes, archived_at=archived_at)
+
+        def parse(response, _limit):
+            if not is_cvc_xml(response.body):
+                raise CommitteeRosterRefusedError(SENATE_CVC_URL) from ValueError(
+                    "the ladder's answer is not the Senate's XML file"
+                )
+            return parse_senate_cvc(response.body)
+
+        roster, capture, answer = self.capture_walled(
             SENATE_CVC_URL,
-            max_bytes=MAX_BYTES,
-            timeout_seconds=TIMEOUT_SECONDS,
-            user_agent=USER_AGENT,
-            allow_browser=False,
-            max_requests=MAX_REQUESTS,
-            publisher_page=_is_cvc_xml,
-            direct=direct,
-            proxies=proxies,
+            media_types=MEDIA_TYPES,
+            parse=parse,
+            max_bytes=narrow_byte_limit(self.budget.max_bytes, max_bytes),
+            unavailable=CommitteeRosterUnavailableError,
+            context={"operation": "senate-cvc", "url": SENATE_CVC_URL},
+            publisher_page=is_cvc_xml,
+            refusal=CommitteeRosterRefusedError,
         )
-    except WalledFetchError as error:
-        outcomes = "; ".join(f"{o.transport.value}: {o.kind}" for o in error.rung_outcomes)
-        raise CommitteeRosterRefusedError(SENATE_CVC_URL) from WalledFetchError(
-            scrub_credential(f"{error} ({outcomes})")
-        )
-    rung = result.transport.value
-    if not (200 <= result.status_code < 300) or not _is_cvc_xml(result.body):
-        raise CommitteeRosterRefusedError(SENATE_CVC_URL) from ValueError(
-            f"the {rung} rung answered HTTP {result.status_code} with something other than the Senate's XML file"
-        )
-    capture = CapturedBodyResponse(
-        requested_url=SENATE_CVC_URL,
-        resolved_url=result.final_url,
-        status_code=result.status_code,
-        content_type=result.content_type,
-        observed_at=observed_instant(utc_now),
-        body=result.body,
-        response_headers=(("x-spicy-acquisition-rung", rung),)
-        + ((("x-spicy-provider-request-id", result.request_id),) if result.request_id else ()),
-    )
-    roster = parse_senate_cvc(capture.body)
-    if evidence is not None:
-        evidence.capture(capture, stage=f"senate-cvc:{rung}")
-        evidence.event("senate-roster-rung", rung=rung, provider_request_id=result.request_id,
-                       sha256=capture.sha256, bytes=capture.byte_size)  # fmt: skip
-    return LadderAcquisition(roster, capture, rung)
+        rung = answer.transport.value
+        if self.evidence is not None:
+            self.evidence.capture(capture, stage=f"senate-cvc:{rung}")
+            self.evidence.event("senate-roster-rung", rung=rung, provider_request_id=answer.request_id,
+                                sha256=capture.sha256, bytes=capture.byte_size)  # fmt: skip
+        return SenateRosterAcquisition(roster, capture, self.request_count, self.budget)

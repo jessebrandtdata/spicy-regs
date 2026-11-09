@@ -1,4 +1,4 @@
-"""Today's Senate committee file through the walled-fetch ladder (ss-ehci): fake rungs, no network, no credentials."""
+"""Today's Senate committee file through the shared walled-fetch ladder (ss-ehci): fake rungs, no network or keys."""
 
 from __future__ import annotations
 
@@ -6,43 +6,45 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
+import httpx
+import pyarrow.parquet as pq
 import pytest
-from spicy_docs.sources.congress.committee_rosters import SENATE_CVC_URL, CommitteeRosterRefusedError
+from spicy_docs.sources.congress.committee_rosters import (
+    HOUSE_MEMBER_DATA_URL,
+    CommitteeRosterBudget,
+    CommitteeRosterError,
+    CommitteeRosterRefusedError,
+)
 from spicy_docs.sources.firecrawl import FirecrawlTransportError
 from spicy_docs.sources.walled_fetch import ProxyFetchers
 from spicy_docs.sources.zyte import ZyteTransportError
-from spicy_docs.transport.captured import CapturedBodyResponse
 
-from spicy_regs.sources.senate_roster_ladder import acquire_senate_via_ladder
+from spicy_regs.sources.senate_roster_ladder import LadderCommitteeRosterAcquirer, is_cvc_xml
 from spicy_regs.transforms import build_committee_rosters as bcr
-from tests.test_committee_rosters import StubListingReader, StubRosters
+from tests.test_committee_rosters import StubListingReader
 from tests.test_incremental_rollups import no_download
 
-XML = (Path(__file__).parent / "fixtures" / "congress_rosters" / "cvc-member-data-excerpt.xml").read_bytes()
+FIXTURES = Path(__file__).parent / "fixtures" / "congress_rosters"
+XML = (FIXTURES / "cvc-member-data-excerpt.xml").read_bytes()
+HOUSE_XML = (FIXTURES / "memberdata-119-excerpt.xml").read_bytes()
 HTML = b"<!DOCTYPE html><html><head><title>U.S. Senate</title></head><body>Committee membership</body></html>"
-
-
-def fakes(zyte, firecrawl) -> ProxyFetchers:
-    """Fake provider rungs where the ladder takes its resolved clients."""
-    return ProxyFetchers(cast(Any, zyte), cast(Any, firecrawl))
-
-
-def refused_directly(url, max_bytes):
-    return CapturedBodyResponse(url, url, 403, "text/html", "2026-11-08T00:00:00Z", b"Forbidden")
+BUDGET = CommitteeRosterBudget(max_requests=4, max_bytes=4 << 20, timeout_seconds=30, min_request_interval_seconds=0)
 
 
 class Fetcher:
     """One provider rung: answers ``body`` (or raises ``error``) and counts its calls."""
 
-    def __init__(self, body=None, error=None, content_type="text/xml"):
-        self.body, self.error, self.content_type, self.calls = body, error, content_type, 0
+    def __init__(self, body=None, error=None, content_type="text/xml", resolved_url=None):
+        self.body, self.error, self.content_type, self.resolved_url, self.calls = (
+            body, error, content_type, resolved_url, 0,
+        )  # fmt: skip
 
     def fetch(self, url, *, timeout_seconds, max_bytes, mode=None):
         self.calls += 1
         if self.error is not None:
             raise self.error
-        return SimpleNamespace(resolved_url=url, status_code=200, content_type=self.content_type, body=self.body,
-                               request_id="req-1")  # fmt: skip
+        return SimpleNamespace(resolved_url=self.resolved_url or url, status_code=200,
+                               content_type=self.content_type, body=self.body, request_id="req-1")  # fmt: skip
 
 
 class Evidence:
@@ -56,42 +58,67 @@ class Evidence:
         self.events.append((name, fields))
 
 
+def publisher(request: httpx.Request) -> httpx.Response:
+    """The publishers as measured: the Clerk answers, the Senate refuses direct clients."""
+    if str(request.url) == HOUSE_MEMBER_DATA_URL:
+        return httpx.Response(200, headers={"content-type": "text/xml"}, stream=httpx.ByteStream(HOUSE_XML))
+    return httpx.Response(403, headers={"content-type": "text/html"}, stream=httpx.ByteStream(b"Forbidden"))
+
+
+def acquirer(zyte, firecrawl, evidence=None) -> LadderCommitteeRosterAcquirer:
+    source = LadderCommitteeRosterAcquirer(budget=BUDGET, transport=httpx.MockTransport(publisher), evidence=evidence)
+    source._proxies = ProxyFetchers(cast(Any, zyte), cast(Any, firecrawl))
+    return source
+
+
 def test_zyte_serves_the_file_and_the_rung_is_recorded():
     zyte, firecrawl, evidence = Fetcher(XML), Fetcher(XML), Evidence()
-    got = acquire_senate_via_ladder(evidence, proxies=fakes(zyte, firecrawl), direct=refused_directly)
-    assert got.rung == "zyte_http" and (zyte.calls, firecrawl.calls) == (1, 0)
-    assert got.roster.senators and got.capture.body == XML
+    got = acquirer(zyte, firecrawl, evidence).acquire_senate()
+    assert got.roster.senators and got.capture.body == XML and (zyte.calls, firecrawl.calls) == (1, 0)
     assert [stage for stage, _ in evidence.captures] == ["senate-cvc:zyte_http"]
-    assert evidence.events[0][0] == "senate-roster-rung" and evidence.events[0][1]["rung"] == "zyte_http"
-    assert ("x-spicy-acquisition-rung", "zyte_http") in got.capture.response_headers
+    assert evidence.events == [("senate-roster-rung", {"rung": "zyte_http", "provider_request_id": "req-1",
+                                                       "sha256": got.capture.sha256, "bytes": len(XML)})]  # fmt: skip
 
 
 def test_firecrawl_serves_when_zyte_fails():
-    zyte, firecrawl = Fetcher(error=ZyteTransportError("Zyte acquisition failed")), Fetcher(XML)
-    got = acquire_senate_via_ladder(Evidence(), proxies=fakes(zyte, firecrawl), direct=refused_directly)
-    assert got.rung == "firecrawl_raw" and (zyte.calls, firecrawl.calls) == (1, 1)
+    zyte, firecrawl, evidence = Fetcher(error=ZyteTransportError("Zyte acquisition failed")), Fetcher(XML), Evidence()
+    acquirer(zyte, firecrawl, evidence).acquire_senate()
+    assert (zyte.calls, firecrawl.calls) == (1, 1)
+    assert [stage for stage, _ in evidence.captures] == ["senate-cvc:firecrawl_raw"]
 
 
-def test_every_rung_failing_stops_the_run():
+def test_every_rung_failing_stops_the_run_with_each_rungs_outcome():
     zyte = Fetcher(error=ZyteTransportError("Zyte acquisition failed"))
     firecrawl = Fetcher(error=FirecrawlTransportError("Firecrawl acquisition failed with HTTP 500"))
-    with pytest.raises(CommitteeRosterRefusedError):
-        acquire_senate_via_ladder(Evidence(), proxies=fakes(zyte, firecrawl), direct=refused_directly)
+    with pytest.raises(CommitteeRosterRefusedError) as refused:
+        acquirer(zyte, firecrawl).acquire_senate()
+    outcomes = refused.value.__dict__["rung_outcomes"]
+    assert [(o.transport.value, o.kind) for o in outcomes] == [
+        ("direct", "publisher-refused"), ("zyte_http", "transport-error"), ("firecrawl_raw", "transport-error"),
+    ]  # fmt: skip
 
 
-def test_an_html_page_is_refused_not_read():
-    zyte, firecrawl = Fetcher(HTML, content_type="text/html"), Fetcher(XML)
-    evidence = Evidence()
-    with pytest.raises(CommitteeRosterRefusedError):
-        acquire_senate_via_ladder(evidence, proxies=fakes(zyte, firecrawl), direct=refused_directly)
-    assert evidence.captures == []
+@pytest.mark.parametrize(("body", "content_type", "resolved_url", "reason"), [
+    (HTML, "text/xml", None, "not the Senate's XML file"),  # a page about the file, labeled as XML
+    (XML, "text/html", None, "Content-Type"),  # the file under another media type
+    (XML, "text/xml", "https://www.senate.gov/legislative/LIS_MEMBER/other.xml", "final URL"),
+])  # fmt: skip
+def test_a_wrong_answer_stops_the_ladder_unread(body, content_type, resolved_url, reason):
+    zyte, firecrawl, evidence = (
+        Fetcher(body, content_type=content_type, resolved_url=resolved_url),
+        Fetcher(XML),
+        Evidence(),
+    )
+    with pytest.raises(CommitteeRosterError) as refused:
+        acquirer(zyte, firecrawl, evidence).acquire_senate()
+    assert reason in f"{refused.value} {refused.value.__cause__}"
+    assert firecrawl.calls == 0 and evidence.captures == []
 
 
-def test_a_missing_credential_is_a_rung_outcome_not_a_request():
-    firecrawl = Fetcher(XML)
-    got = acquire_senate_via_ladder(None, proxies=fakes("ZYTE_TOKEN is not set", firecrawl),
-                                    direct=refused_directly)  # fmt: skip
-    assert got.rung == "firecrawl_raw"
+def test_a_byte_order_mark_before_the_xml_is_the_file():
+    assert is_cvc_xml(b"\xef\xbb\xbf" + XML) and not is_cvc_xml(b"\xef\xbb\xbf" + HTML)
+    got = acquirer(Fetcher(b"\xef\xbb\xbf" + XML), Fetcher(XML)).acquire_senate()
+    assert got.roster.senators
 
 
 @pytest.fixture(autouse=True)
@@ -99,27 +126,32 @@ def scoped(monkeypatch):
     monkeypatch.setattr(bcr, "current_congress", lambda: 119)
 
 
-def _build(tmp_path, ladder):
-    return bcr.build_committee_rosters(
-        tmp_path, reader=StubListingReader(), rosters=StubRosters(senate_error=AssertionError("direct not asked")),
-        download_prior=no_download, senate_paid_ladder=True, senate_ladder=ladder,
-    )  # fmt: skip
+def test_the_ladder_acquirer_changes_only_the_senate_request(tmp_path):
+    _, assignments, _ = bcr.build_committee_rosters(
+        tmp_path, reader=StubListingReader(), rosters=acquirer(Fetcher(XML), Fetcher(XML)), download_prior=no_download
+    )
+    assert {row["chamber"] for row in pq.read_table(assignments).to_pylist()} == {"house", "senate"}
 
 
-def test_the_opt_in_replaces_only_the_senate_request(tmp_path):
-    import pyarrow.parquet as pq
-
-    def ladder():
-        return acquire_senate_via_ladder(None, proxies=fakes(Fetcher(XML), Fetcher(XML)), direct=refused_directly)
-
-    _, assignments, _ = _build(tmp_path, ladder)
-    chambers = {row["chamber"] for row in pq.read_table(assignments).to_pylist()}
-    assert chambers == {"house", "senate"}
-
-
-def test_the_opt_in_still_stops_the_run_when_every_rung_fails(tmp_path):
-    def ladder():
-        raise CommitteeRosterRefusedError(SENATE_CVC_URL)
-
+def test_the_run_still_stops_when_every_rung_fails(tmp_path):
+    zyte = Fetcher(error=ZyteTransportError("Zyte acquisition failed"))
+    firecrawl = Fetcher(error=FirecrawlTransportError("Firecrawl acquisition failed with HTTP 500"))
     with pytest.raises(CommitteeRosterRefusedError):
-        _build(tmp_path, ladder)
+        bcr.build_committee_rosters(
+            tmp_path, reader=StubListingReader(), rosters=acquirer(zyte, firecrawl), download_prior=no_download
+        )
+
+
+def test_the_opt_in_builds_the_ladder_acquirer(monkeypatch, tmp_path):
+    built = {}
+
+    class Recording(LadderCommitteeRosterAcquirer):
+        def __init__(self, **kwargs):
+            built.update(kwargs)
+            super().__init__(**kwargs, transport=httpx.MockTransport(publisher))
+            self._proxies = ProxyFetchers(cast(Any, Fetcher(XML)), cast(Any, Fetcher(XML)))
+
+    monkeypatch.setattr("spicy_regs.sources.senate_roster_ladder.LadderCommitteeRosterAcquirer", Recording)
+    bcr.build_committee_rosters(tmp_path, reader=StubListingReader(), download_prior=no_download,
+                                senate_paid_ladder=True)  # fmt: skip
+    assert built["budget"] is bcr.ROSTER_BUDGET and "evidence" in built
