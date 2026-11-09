@@ -104,6 +104,13 @@ def test_generation_readers_see_must_be_the_receipts(published, capsys):
     assert freshness.main() == 1
 
 
+def test_generation_is_the_artifact_digest_not_the_whole_entry(published):
+    """The index may restate a family's other fields (a new key or prefix spelling); the digest names the bytes."""
+    published["family"] = {**FAMILY, "publishedAt": "2026-11-09T00:00:00Z"}
+    assert freshness.main() == 0
+    assert published["verified"] == []
+
+
 def test_receipt_without_generation_or_pair_cannot_bind(published, capsys):
     published["receipt"] = _receipt(source={k: v for k, v in SOURCE.items() if k != "receipts"})
     del published["receipt"]["generation"]

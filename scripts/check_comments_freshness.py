@@ -13,8 +13,11 @@ the current state to that receipt and reads rows only where a binding breaks:
 
 Otherwise the raw catalog's IDs and agency/docket/month counts must equal both the fixed and the generation index,
 which fails when the catalog advanced past the publication. A deduplicating consumer view cannot establish physical
-catalog integrity. A receipt without a generation or catalog pair (format 1 before 2026-11, such as the 2026-10-03
-receipt) binds nothing, so every run reads rows until the next comments publication.
+catalog integrity. Counts cannot see a text-only change, so any comments-table commit other than compaction since the
+receipt's snapshot fails as unpublished; the counts then print as diagnostics. The receipt table is shared by every
+dataset's writers, so any write to it sends the run to the row path (~95 s, 2026-11-09; accepted). A receipt that
+names no generation or catalog pair (written before the publisher recorded them; the receipt format number did not
+change) binds nothing, so every run reads rows until a comments publication writes one.
 
 Exit 0 when bound or verified, 1 on any mismatch or incomplete check.
 """
@@ -84,7 +87,8 @@ def main() -> int:
             index = publication.load_index(base)
             family = index["families"].get("comments")
             # Without a comments family, readers fall back to the fixed files bound above.
-            generation_bound = family is None or receipt.get("generation") == family
+            generation_bound = family is None or (isinstance(receipt.get("generation"), dict) and
+                                                  receipt["generation"].get("artifactDigest") == family["artifactDigest"])
         source = receipt_source(receipt)
         with _stage("catalog: snapshot against the published source"):
             subject_bound, receipts_bound = ((False, False) if source is None else

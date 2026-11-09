@@ -10,9 +10,10 @@ name: Check comments freshness
 # the receipt's source snapshot through compaction alone under the declared schema.
 # Only a broken binding reads rows: raw catalog IDs and agency/docket/month counts
 # must then equal the fixed and the generation index (OMB-2026-0034: ~39k June-2026
-# comments in the index, zero rows in `comments`, drove this check). The 2026-10-03
-# receipt names no generation or pair, so every run reads rows (~2 min) until the
-# next comments publication. The shared writer queue prevents a scheduled check
+# comments in the index, zero rows in `comments`, drove this check). A receipt that
+# names no generation or pair binds nothing, so runs read rows (~2 min) until a
+# comments publication writes one; any comments-table commit other than compaction
+# since the receipt fails as unpublished. The shared writer queue prevents a scheduled check
 # from reading a catalog during replacement.
 on:
   schedule:
