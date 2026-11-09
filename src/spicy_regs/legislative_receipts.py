@@ -16,10 +16,12 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import ExitStack
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from time import monotonic
 from typing import Any
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+from loguru import logger
 
 from spicy_regs.etl_receipts import (
     RECEIPT_SCHEMA,
@@ -41,6 +43,7 @@ from spicy_regs.legislative_documents import (
 )
 from spicy_regs.govinfo_revisions import DATED_TABLES
 from spicy_regs.transforms.parquet_rows import write_rows
+from spicy_regs.phase_log import phase_log
 from spicy_regs.navigation_read_outcomes import POLICIES as OUTCOME_POLICIES, READ_TABLES, checkpoint_rows, file_rows
 
 
@@ -165,6 +168,7 @@ def write_legislative_outputs(
             if dataset in manifest["datasets"]:
                 raise ValueError(f"Repeated dataset output: {dataset}")
             manifest["datasets"].append(dataset)
+            dataset_started = monotonic()
             manifest["subjects"][dataset] = []
             manifest["source_outputs"][dataset] = str(output.resolve())
             manifest["refused_rows"][dataset] = 0
@@ -266,7 +270,6 @@ def write_legislative_outputs(
                         locator_prefix="row:", refusals_last=True,
                     )
                     if routed:
-                        from loguru import logger
                         logger.warning("legislative-write route=bulk dataset={} row_decisions={}", dataset, routed)
                     subject = None if selected.receipt_only else subject_path
                 else:
@@ -297,9 +300,12 @@ def write_legislative_outputs(
                 shutil.copyfile(subject, stage / f"{name}.parquet")
                 receipt_shards.append(receipts)
                 manifest["outcome_subjects"][name] = [f"{name}.parquet"]
+            logger.info("receipt-phase write-legislative-dataset dataset={} members={} seconds={:.1f} status=ok",
+                        dataset, len(members), monotonic() - dataset_started)
         if not manifest["datasets"]:
             raise ValueError("No owned legislative producer outputs selected")
-        _, state_receipts = write_dataset(states, stage / ".shards" / FILE_STATES, FILE_POLICY, validate=False)
+        with phase_log("write-file-states", files=len(states)):
+            _, state_receipts = write_dataset(states, stage / ".shards" / FILE_STATES, FILE_POLICY, validate=False)
         receipt_shards.append(state_receipts)
         if file_outcomes_table is not None:
             selected_policy = OUTCOME_POLICIES[file_outcomes_table]
@@ -313,7 +319,8 @@ def write_legislative_outputs(
             shutil.copyfile(subject, stage / f"{file_outcomes_table}.parquet")
             receipt_shards.append(receipts)
             manifest["outcome_subjects"][file_outcomes_table] = [f"{file_outcomes_table}.parquet"]
-        combine_receipts(receipt_shards, stage / manifest["receipt_file"])
+        with phase_log("combine-legislative-receipts", shards=len(receipt_shards)):
+            combine_receipts(receipt_shards, stage / manifest["receipt_file"])
         manifest["fresh_refused_rows"] = dict(manifest["refused_rows"])
         if prior_receipts:
             # Carry once over the complete dataset, including all partitions. A
@@ -324,18 +331,19 @@ def write_legislative_outputs(
             )
 
             active = [*manifest["datasets"], *manifest["outcome_subjects"], FILE_STATES]
-            scoped = stage / ".shards" / "selected-prior.parquet"
-            with pq.ParquetWriter(scoped, RECEIPT_SCHEMA, compression="zstd") as writer:
-                for path in prior_receipts:
-                    with pq.ParquetFile(path) as previous:
-                        for batch in previous.iter_batches(batch_size=2000):
-                            scoped_rows = pa.Table.from_batches([batch]).filter(ds.field("dataset").isin(active))
-                            if scoped_rows.filter(
-                                (ds.field("dataset") == "bill_publisher_summaries") &
-                                (ds.field("policy_version") != policy("bill_publisher_summaries").policy_version)
-                            ).num_rows:
-                                raise ValueError("CRS summary prior uses an incompatible clock policy; replay retained originals")
-                            writer.write_table(scoped_rows)
+            with phase_log("scope-legislative-prior", priors=len(prior_receipts)):
+                scoped = stage / ".shards" / "selected-prior.parquet"
+                with pq.ParquetWriter(scoped, RECEIPT_SCHEMA, compression="zstd") as writer:
+                    for path in prior_receipts:
+                        with pq.ParquetFile(path) as previous:
+                            for batch in previous.iter_batches(batch_size=2000):
+                                scoped_rows = pa.Table.from_batches([batch]).filter(ds.field("dataset").isin(active))
+                                if scoped_rows.filter(
+                                    (ds.field("dataset") == "bill_publisher_summaries") &
+                                    (ds.field("policy_version") != policy("bill_publisher_summaries").policy_version)
+                                ).num_rows:
+                                    raise ValueError("CRS summary prior uses an incompatible clock policy; replay retained originals")
+                                writer.write_table(scoped_rows)
             identities, migrations = {}, {}
             for name in manifest["datasets"]:
                 current_policy = policy(name)
@@ -348,19 +356,21 @@ def write_legislative_outputs(
             receipt_path = stage / manifest["receipt_file"]
             carry_receipt_history(receipt_path, [scoped], receipt_path, refusal_identities=identities,
                                   identity_migrations=migrations)
-            held = ds.dataset(receipt_path, format="parquet")
-            for name in manifest["datasets"]:
-                manifest["refused_rows"][name] = held.count_rows(
-                    filter=(ds.field("dataset") == name) & (ds.field("outcome") == "refused"))
+            with phase_log("count-legislative-refusals", datasets=len(manifest["datasets"])):
+                held = ds.dataset(receipt_path, format="parquet")
+                for name in manifest["datasets"]:
+                    manifest["refused_rows"][name] = held.count_rows(
+                        filter=(ds.field("dataset") == name) & (ds.field("outcome") == "refused"))
         if validate:
-            validate_receipt_bundle(
-                {name: [stage / f for f in paths] for name, paths in
-                 (manifest["subjects"] | manifest["outcome_subjects"]).items()} | {FILE_STATES: []},
-                [stage / manifest["receipt_file"]],
-                [policy(n) for n in manifest["datasets"]] + [FILE_POLICY] +
-                [OUTCOME_POLICIES[n] for n in manifest["outcome_subjects"]],
-                generation_id=generation_id,
-            )
+            with phase_log("legislative-admission"):
+                validate_receipt_bundle(
+                    {name: [stage / f for f in paths] for name, paths in
+                     (manifest["subjects"] | manifest["outcome_subjects"]).items()} | {FILE_STATES: []},
+                    [stage / manifest["receipt_file"]],
+                    [policy(n) for n in manifest["datasets"]] + [FILE_POLICY] +
+                    [OUTCOME_POLICIES[n] for n in manifest["outcome_subjects"]],
+                    generation_id=generation_id,
+                )
         # Staging shards are private duplicates; the admitted bundle has one shared receipt member.
         shutil.rmtree(stage / ".shards")
         if (stage / ".outcomes").exists():

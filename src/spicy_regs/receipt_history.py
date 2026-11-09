@@ -219,7 +219,15 @@ def history_query_threads(value: int) -> int:
     return value
 
 
-def carry_receipt_history(
+def carry_receipt_history(current_path: Path, prior_paths: Sequence[Path], destination: Path, **options):
+    """Time :func:`_carry_receipt_history`, which this only calls (``receipt-phase carry``)."""
+    from spicy_regs.phase_log import phase_log
+
+    with phase_log("carry", priors=len(prior_paths)):
+        return _carry_receipt_history(current_path, prior_paths, destination, **options)
+
+
+def _carry_receipt_history(
     current_path: Path, prior_paths: Sequence[Path], destination: Path, *,
     refusal_identities: Mapping[str, RefusalIdentity] | None = None,
     identity_migrations: Mapping[tuple[str, str], Callable[[str, str], str]] | None = None,

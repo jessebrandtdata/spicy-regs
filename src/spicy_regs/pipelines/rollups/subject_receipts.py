@@ -37,6 +37,7 @@ from spicy_regs.legislative_receipts import (
     restore_prior,
 )
 from spicy_regs.native_types import described_schema
+from spicy_regs.phase_log import phase_log
 from spicy_regs.navigation_read_outcomes import (
     POLICIES as NAVIGATION_OUTCOME_POLICIES, READ_TABLES, FILE_TABLES, family_tables, write_recorded_outcomes,
 )
@@ -86,12 +87,19 @@ class SelectedPriors:
 
     def get(self, dataset):
         if dataset in self.restored:
+            return self._get(dataset)
+        with phase_log("prior-restore", dataset=dataset):
+            return self._get(dataset)
+
+    def _get(self, dataset):
+        if dataset in self.restored:
             if self.restored[dataset] is not None:
                 self.selected.select(dataset, ranged=dataset in self.ranged)
                 self._check_processing(dataset)
             return self.restored[dataset]
         selected_policy = dataset_policy(dataset)
-        selection = self.selected.select(dataset, ranged=dataset in self.ranged)
+        with phase_log("prior-select", dataset=dataset):
+            selection = self.selected.select(dataset, ranged=dataset in self.ranged)
         if selection is None:
             self.restored[dataset] = None
             return None
@@ -101,23 +109,27 @@ class SelectedPriors:
         directory = self.directory / dataset
         directory.mkdir()
         # A ranged read already wrote exactly this dataset's receipts, in source order, through the same selector.
-        scoped = (receipt_path if dataset in self.selected.ranged
-                  else select_receipts(receipt_path, directory / "scoped.parquet", dataset=dataset))
+        with phase_log("prior-scope", dataset=dataset, ranged=dataset in self.selected.ranged):
+            scoped = (receipt_path if dataset in self.selected.ranged
+                      else select_receipts(receipt_path, directory / "scoped.parquet", dataset=dataset))
         selected_policy = selected_subject_policy(selected_policy, subjects)
         # The regulatory restore below admits the pair itself: complete admission in
         # regulations_bulk._materialize_selected, or the full read_with_receipts pass in _qualified_rows.
         if dataset in CONGRESS or dataset in FEC:
-            validate_receipt_bundle({dataset: subjects}, [scoped], [selected_policy], generation_id=generation)
+            with phase_log("prior-admit", dataset=dataset):
+                validate_receipt_bundle({dataset: subjects}, [scoped], [selected_policy], generation_id=generation)
         self.selections[dataset] = (subjects, receipt_path, generation)
         output = directory / "processing" / (dataset + ".parquet")
         if dataset in CONGRESS:
             output.parent.mkdir(parents=True, exist_ok=True)
-            restore_processing_input(
-                tuple(subjects), scoped, output, dataset=dataset, generation_id=generation,
-                bulk=True, validate=False, scoped=True,  # this exact pair was admitted just above
-            )
+            with phase_log("prior-restore-input", dataset=dataset):
+                restore_processing_input(
+                    tuple(subjects), scoped, output, dataset=dataset, generation_id=generation,
+                    bulk=True, validate=False, scoped=True,  # this exact pair was admitted just above
+                )
         elif dataset in field_registry():
-            files = select_receipts(receipt_path, directory / "file-receipts.parquet", dataset=FILE_STATES)
+            with phase_log("prior-scope", dataset=FILE_STATES, owner=dataset):
+                files = select_receipts(receipt_path, directory / "file-receipts.parquet", dataset=FILE_STATES)
             bundle = directory / "legislative"
             bundle.mkdir()
             combine_receipts([scoped, files], bundle / "etl_receipts.parquet")
@@ -135,7 +147,8 @@ class SelectedPriors:
                 refused_rows={},
             )
             (bundle / "legislative-bundle.json").write_text(json.dumps(manifest))
-            output = restore_prior(bundle, directory / "processing")[dataset]
+            with phase_log("prior-restore-input", dataset=dataset):
+                output = restore_prior(bundle, directory / "processing")[dataset]
         elif dataset == "fec_committees":
             from spicy_regs.transforms.build_fec_committees import COLUMNS, _SCHEMA
             from spicy_regs.transforms.parquet_rows import write_rows
@@ -166,10 +179,11 @@ class SelectedPriors:
             raise ValueError(f"No processing reconstruction declared for {dataset}")
         else:
             output.parent.mkdir(parents=True, exist_ok=True)
-            materialize_internal(
-                ReceiptInput(dataset, tuple(subjects), scoped, generation), output,
-                bulk=dataset in RESTORE_DATASETS, scoped=True,
-            )
+            with phase_log("prior-restore-input", dataset=dataset):
+                materialize_internal(
+                    ReceiptInput(dataset, tuple(subjects), scoped, generation), output,
+                    bulk=dataset in RESTORE_DATASETS, scoped=True,
+                )
         self.restored[dataset] = output
         members = tuple(sorted(output.rglob("*.parquet"))) if output.is_dir() else (output,)
         self.processing_members[dataset] = members
@@ -354,7 +368,8 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
         if "selected_input" in parameters:
             kwargs["selected_input"] = prior.input_provenance
         try:
-            built = builder(work, **kwargs)
+            with phase_log("builder", family=self.name):
+                built = builder(work, **kwargs)
         except Exception as error:
             if any(p.dataset == ACQUISITION_POLICY.dataset for p in self.receipt_policies):
                 _build_events(candidate, self.receipt_generation_id, builder.__name__, self.source_evidence, error)
@@ -374,19 +389,21 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
             if dataset in CONGRESS:
                 selection = prior.selections.get(dataset)
                 held = None if selection is None else CongressInput(tuple(selection[0]), selection[1], selection[2])
-                subject, receipt = write_congress_dataset(
-                    path, destination, dataset=dataset, generation_id=self.receipt_generation_id, prior=held,
-                    bulk=True, on_fresh_failure=lambda: fresh_failure_datasets.append(dataset),
-                    validate=False,  # the prior was admitted when selected; the new pair is admitted with its generation
-                )
+                with phase_log("write-dataset", dataset=dataset, writer="congress"):
+                    subject, receipt = write_congress_dataset(
+                        path, destination, dataset=dataset, generation_id=self.receipt_generation_id, prior=held,
+                        bulk=True, on_fresh_failure=lambda: fresh_failure_datasets.append(dataset),
+                        validate=False,  # the prior was admitted when selected; the new pair is admitted with its generation
+                    )
             else:
                 etl_bulk.log_row_eligibility(
                     "regulatory write", dataset=dataset, rows=pq.ParquetFile(path).metadata.num_rows,
                     reason="bulk not requested by subject receipt rollup",
                 )
-                subject, receipt = write_held_dataset(
-                    dataset, path, destination, generation_id=self.receipt_generation_id
-                )
+                with phase_log("write-dataset", dataset=dataset, writer="held"):
+                    subject, receipt = write_held_dataset(
+                        dataset, path, destination, generation_id=self.receipt_generation_id
+                    )
             receipts.append(receipt)
             if subject is not None:
                 target = candidate / subject.name
@@ -394,14 +411,15 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
                 subjects.append(target)
         if legislative:
             bundle = private / "legislative-bundle"
-            manifest = write_legislative_outputs(
-                legislative,
-                bundle,
-                generation_id=self.receipt_generation_id,
-                prior_receipts=list(dict.fromkeys(v[1] for v in prior.selections.values())),
-                file_outcomes_table=FILE_TABLES.get(getattr(self, "publication_family", None) or self.name),
-                validate=False,  # the completed generation admits these exact bytes once
-            )
+            with phase_log("write-legislative", datasets=len(legislative)):
+                manifest = write_legislative_outputs(
+                    legislative,
+                    bundle,
+                    generation_id=self.receipt_generation_id,
+                    prior_receipts=list(dict.fromkeys(v[1] for v in prior.selections.values())),
+                    file_outcomes_table=FILE_TABLES.get(getattr(self, "publication_family", None) or self.name),
+                    validate=False,  # the completed generation admits these exact bytes once
+                )
             if manifest["unowned_outputs"] or any(manifest["fresh_refused_rows"].values()):
                 raise ValueError("Legislative output conversion refused")
             receipts.append(bundle / "etl_receipts.parquet")
@@ -420,22 +438,28 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
                 shutil.copyfile(bundle / members[0], target)
                 subjects.append(target)
         if any(p.dataset == ACQUISITION_POLICY.dataset for p in self.receipt_policies):
-            receipts.append(
-                _build_events(candidate, self.receipt_generation_id, builder.__name__, self.source_evidence)
-            )
+            with phase_log("write-acquisition-events"):
+                receipts.append(
+                    _build_events(candidate, self.receipt_generation_id, builder.__name__, self.source_evidence)
+                )
         outcome_names = family_tables(tuple(key.removesuffix(".parquet") for key in self.source_outputs))
         if outcome_names:
             journal = None if self.source_evidence is None else self.source_evidence.artifact_dir / "journal.jsonl"
-            outcome_subjects, outcome_receipts = write_recorded_outcomes(
-                journal, private / "read-outcomes", generation_id=self.receipt_generation_id, tables=outcome_names,
-                priors={name: prior.selected.select(name) for name in outcome_names})
+            with phase_log("write-read-outcomes", tables=len(outcome_names)):
+                outcome_subjects, outcome_receipts = write_recorded_outcomes(
+                    journal, private / "read-outcomes", generation_id=self.receipt_generation_id, tables=outcome_names,
+                    priors={name: prior.selected.select(name) for name in outcome_names})
             receipts.extend(outcome_receipts)
             for source in outcome_subjects:
                 target = candidate / source.name
                 shutil.copyfile(source, target)
                 subjects.append(target)
-        combined = combine_receipts(receipts, candidate / "etl_receipts.parquet")
-        if fresh_failure_datasets or has_unmatched_failures(combined, {name: [selection[1]] for name, selection in prior.selections.items()}):
+        with phase_log("combine-receipts", shards=len(receipts)):
+            combined = combine_receipts(receipts, candidate / "etl_receipts.parquet")
+        with phase_log("unmatched-failures"):
+            unmatched = has_unmatched_failures(
+                combined, {name: [selection[1]] for name, selection in prior.selections.items()})
+        if fresh_failure_datasets or unmatched:
             raise ValueError("Subject conversion refused; retained receipts require review")
         by_dataset = {p.dataset: [] for p in self.receipt_policies}
         for path in subjects:
@@ -446,21 +470,24 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
         # (every policy, every subject member) before anything is visible or selected. That admission is the one
         # validation; outside a run, ``remember_selection`` below pins "admitted members", so validate here.
         if not getattr(self, "_defer_native_selection", False):
-            validate_receipt_bundle(by_dataset, [combined], self.receipt_policies, generation_id=self.receipt_generation_id)
+            with phase_log("admission", family=self.name):
+                validate_receipt_bundle(by_dataset, [combined], self.receipt_policies,
+                                        generation_id=self.receipt_generation_id)
         # Private files are final here; the copies below make them visible.
-        visible = []
-        for source in subjects:
-            target = output_dir / source.name
-            if source.is_dir():
-                if target.exists():
-                    previous = private / "previous" / source.name
-                    previous.parent.mkdir(parents=True, exist_ok=True)
-                    target.rename(previous)
-                shutil.copytree(source, target)
-            else:
-                shutil.copyfile(source, target)
-            visible.append(target)
-        shutil.copyfile(combined, output_dir / "etl_receipts.parquet")
+        with phase_log("visible-copies", files=len(subjects)):
+            visible = []
+            for source in subjects:
+                target = output_dir / source.name
+                if source.is_dir():
+                    if target.exists():
+                        previous = private / "previous" / source.name
+                        previous.parent.mkdir(parents=True, exist_ok=True)
+                        target.rename(previous)
+                    shutil.copytree(source, target)
+                else:
+                    shutil.copyfile(source, target)
+                visible.append(target)
+            shutil.copyfile(combined, output_dir / "etl_receipts.parquet")
         if not getattr(self, "_defer_native_selection", False):
             remember_selection(
                 self.output_dir or output_dir,
