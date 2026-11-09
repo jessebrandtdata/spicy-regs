@@ -93,6 +93,15 @@ jobs:
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL || format('https://data.{0}', vars.SPICYREGS_DOMAIN || 'spicy-regs.dev') }}
         run: uv run --frozen python scripts/check_source_refusals.py
 
+      # A published policy missing from the shipped-policy ledger means the CI
+      # guard (policy_migrations) was bypassed: the next policy change would
+      # not be asked how that generation is read. One artifact.json per family.
+      - name: Check published policies are recorded
+        if: always()
+        env:
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL || format('https://data.{0}', vars.SPICYREGS_DOMAIN || 'spicy-regs.dev') }}
+        run: uv run --frozen python -m spicy_regs.policy_migrations --base-url "$R2_PUBLIC_URL"
+
       - name: Save row-count history
         if: always()
         uses: actions/cache/save@v4

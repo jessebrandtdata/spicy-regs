@@ -12,12 +12,40 @@ change that does neither fails before a nightly meets the old generation.
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 from collections.abc import Mapping
+from dataclasses import dataclass
 from functools import cache
 from importlib.resources import files
 
 LEDGER = "policy_migrations.json"
+
+
+@dataclass(frozen=True)
+class Replay:
+    """The code that rebuilds a dataset from originals when its selected prior is replay-required.
+
+    ``owner`` is ``module:attribute`` naming that code's own constant for the dataset, so a registration cannot
+    outlive the replay. ``max_dropped_rows`` bounds how many prior rows the rebuild may leave out (a bill the
+    reader refuses or the zip no longer holds, a revision the XML no longer lists) before the run refuses.
+    """
+
+    owner: str
+    max_dropped_rows: int
+    bound_basis: str
+
+
+#: Only these datasets may be replay-required: any other withheld prior would read as "nothing published"
+#: to a caller of ``SelectedPriors.get`` that has no replay.
+REPLAYS: Mapping[str, Replay] = {
+    "bill_publisher_summaries": Replay(
+        "spicy_regs.transforms.build_bill_family:REPLAYED_FROM_STATUS",
+        max_dropped_rows=100,
+        bound_basis="PROVISIONAL: the 108th Congress replay restated all 14,833 live rows (0 dropped); "
+                    "set from the full 108-119 measurement",
+    ),
+}
 
 
 class PriorReplayRequired(ValueError):
@@ -61,6 +89,8 @@ def unreadable_shipped_policies(installed: Mapping | None = None, migrations: Ma
             continue
         readable = {descriptor_digest(p) for p in receipt_policies(policy)}
         replay = migrations["replay_required"].get(name, {})
+        if replay and not _registered(name):
+            problems.append(f"{name}: replay-required in {LEDGER} but no code replays it (policy_migrations.REPLAYS)")
         for digest in shipped[:-1]:
             if digest in replay:
                 if not str(replay[digest].get("reason", "")).strip():
@@ -69,3 +99,55 @@ def unreadable_shipped_policies(installed: Mapping | None = None, migrations: Ma
                 problems.append(f"{name}: shipped {digest} is neither declared readable in earlier_receipt_policies "
                                 "nor listed in replay_required with a reason")
     return problems
+
+
+def _registered(dataset: str) -> bool:
+    replay = REPLAYS.get(dataset)
+    if replay is None:
+        return False
+    module, _, attribute = replay.owner.partition(":")
+    return getattr(importlib.import_module(module), attribute, None) == dataset
+
+
+def dropped_replay_rows(dataset: str, identity_fields, prior_subjects, rebuilt) -> list[dict]:
+    """Prior identities the rebuilt table no longer holds, compared as text so native and source types agree."""
+    import duckdb
+
+    def keys(paths):
+        listed = ", ".join("'" + str(path).replace("'", "''") + "'" for path in paths)
+        columns = ", ".join(f'CAST("{name}" AS VARCHAR) AS "{name}"' for name in identity_fields)
+        return f"SELECT DISTINCT {columns} FROM read_parquet([{listed}])"
+
+    with duckdb.connect() as con:
+        cursor = con.execute(f"SELECT * FROM ({keys(prior_subjects)}) EXCEPT SELECT * FROM ({keys([rebuilt])}) "
+                             f"ORDER BY ALL")
+        return [dict(zip(identity_fields, row, strict=True)) for row in cursor.fetchall()]
+
+
+def published_policies_unrecorded(base_url: str) -> list[str]:
+    """Live check: each policy a published family root declares must be a shipped descriptor in the ledger."""
+    from spicy_regs.etl_receipts import DatasetPolicy
+    from spicy_regs.sources import publication
+    from spicy_regs.subject_catalog import SHARED_LOG
+
+    index = publication.current_index(base_url)
+    problems = []
+    for family, entry in sorted(index["families"].items()):
+        _, root = publication.load_family_root(base_url, entry)
+        for declared in root.get("spec", {}).get("etlReceipts", {}).get("policies", []):
+            policy = DatasetPolicy.from_descriptor({k: v for k, v in declared.items() if k != SHARED_LOG})
+            if descriptor_digest(policy) not in ledger()["shipped"].get(policy.dataset, []):
+                problems.append(f"{family}: published {policy.dataset} {policy.policy_version} "
+                                f"({descriptor_digest(policy)}) is not in {LEDGER}")
+    return problems
+
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description="Check every published policy is a shipped descriptor.")
+    parser.add_argument("--base-url", required=True)
+    found = published_policies_unrecorded(parser.parse_args().base_url)
+    print("\n".join(found) or "Every published policy is recorded.")
+    sys.exit(1 if found else 0)

@@ -648,9 +648,13 @@ def _require_replay_scope(
         raise ValueError(
             f"{replay}. This run covers Congresses {list(congresses)} and bill types {list(bill_types)}; a replay "
             f"must re-read every bulk folder ({wanted[0]}-{wanted[-1]}, all eight bill types) or it would drop "
-            f"the rows it cannot restate. Run once: gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs "
-            f"-f congresses={wanted[0]}-{wanted[-1]}"
+            f"the rows it cannot restate. Run once: {replay_dispatch(wanted[0], wanted[-1])}"
         )
+
+
+def replay_dispatch(first: int, last: int) -> str:
+    """The one dispatch that replays every bulk folder: the refusal names it, the tests derive it from here."""
+    return f"gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs -f congresses={first}-{last}"
 
 
 def _prior_index(

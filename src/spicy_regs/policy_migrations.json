@@ -3,8 +3,7 @@
   "bill_publisher_summaries": {
    "sha256:b0c7edd5e9e6d8b2d8dac735cf087fcd2b99394cc6cd9ab8c63e45ec701e14ac": {
     "policy_version": "legislative-documents/2",
-    "reason": "legislative-documents/3 (2853bad1) adds last_summary_update_date and NOT NULL source_schema_version. /2 readers never read lastSummaryUpdateDate, so a NULL would claim the clock is absent at the source. The bill family rebuilds every summary from the BILLSTATUS zips of every bulk Congress (docs/bill-summary-clocks.md); the replaced /2 rows are retained in that run's source evidence.",
-    "replay": "gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs -f congresses=108-119"
+    "reason": "legislative-documents/3 (2853bad1) adds last_summary_update_date and NOT NULL source_schema_version. /2 readers never read lastSummaryUpdateDate, so a NULL would claim the clock is absent at the source. The bill family rebuilds every summary from the BILLSTATUS zips of every bulk Congress (docs/bill-summary-clocks.md); the replaced /2 rows are retained in that run's source evidence."
    }
   }
  },

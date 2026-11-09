@@ -1,5 +1,7 @@
 """A replay-required CRS summary prior is rebuilt whole from every BILLSTATUS folder, or the run refuses (ss-aj7t)."""
 
+import re
+
 import pyarrow.parquet as pq
 import pytest
 
@@ -10,6 +12,7 @@ from tests.test_bill_family import scoped as fixture_scope
 
 scoped = fixture_scope
 SUMMARIES = "bill_publisher_summaries"
+FULL_DISPATCH = build.replay_dispatch(build.BULK_STATUS_FLOOR, max(build.default_congresses()))
 
 
 def replay_priors(published):
@@ -40,7 +43,7 @@ def test_a_nightly_scope_refuses_before_restoring_anything_and_names_the_one_dis
     download = priors["download_prior"]
     priors["download_prior"] = lambda key, target: asked.append(key) or download(key, target)
     bulk = StubBulkAcquirer()
-    with pytest.raises(ValueError, match=r"gh workflow run rollup-bill-family.yml .*-f congresses=108-119"):
+    with pytest.raises(ValueError, match=re.escape(FULL_DISPATCH)):
         build_run(tmp_path / "second", bulk, **priors)
     assert asked == [f"{SUMMARIES}.parquet"] and bulk.calls == []
 
@@ -94,7 +97,7 @@ def test_rollup_retains_the_replaced_pair_then_writes_fresh_summary_receipts_onl
         return pipeline, pipeline.build_receipts(directory, build_bill_family, bulk_acquirer=StubBulkAcquirer(),
                                                  body_acquirer=StubBodyAcquirer(), evidence=pipeline.source_evidence)
 
-    with pytest.raises(ValueError, match="-f congresses=108-119"):
+    with pytest.raises(ValueError, match=re.escape(FULL_DISPATCH)):
         rollup(tmp_path / "nightly")
     monkeypatch.setenv("BILL_FAMILY_CONGRESSES", "108-119")
     monkeypatch.delenv("BILL_FAMILY_BILL_TYPES")
@@ -105,6 +108,8 @@ def test_rollup_retains_the_replaced_pair_then_writes_fresh_summary_receipts_onl
     events = [json.loads(line) for line in (pipeline.source_evidence.artifact_dir / "journal.jsonl").open()]
     kept = [e for e in events if e.get("stage") == "replaced-prior"]
     assert [(e["dataset"], e["role"]) for e in kept] == [(SUMMARIES, "subject"), (SUMMARIES, "receipts")]
+    [dropped] = [e for e in events if e.get("event") == "replay-dropped-rows"]
+    assert (dropped["dataset"], dropped["count"], dropped["identities"]) == (SUMMARIES, 0, [])
     assert all(e["body_retained"] for e in kept)
     old = {r["receipt_id"] for r in pq.read_table(first_dir / "etl_receipts.parquet").to_pylist()
            if r["dataset"] == SUMMARIES}
@@ -123,3 +128,42 @@ def test_only_a_congress_scoped_dispatch_gets_the_hosted_maximum_timeout():
     workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/rollup-bill-family.yml").read_text())
     assert workflow["jobs"]["run"]["with"]["timeout_minutes"] == (
         "${{ (github.event_name == 'workflow_dispatch' && inputs.congresses != '') && 360 || 180 }}")
+
+
+def test_rows_a_replay_cannot_restate_are_journaled_and_refused_above_the_bound(tmp_path, monkeypatch):
+    import json
+    from types import SimpleNamespace
+
+    import pyarrow as pa
+
+    from spicy_regs import policy_migrations
+    from spicy_regs.pipelines.rollups.bill_family import BillFamilyRollup
+    from spicy_regs.source_evidence import CaptureEvidence
+
+    keys = ("bill_id", "summary_version_code", "action_date", "update_date")
+    row = dict(zip(keys, ("119-hr-1", "00", "2025-01-03", "2025-02-01T00:00:00Z"), strict=True))
+    prior, rebuilt = tmp_path / "prior.parquet", tmp_path / f"{SUMMARIES}.parquet"
+    pq.write_table(pa.Table.from_pylist([row, row | {"update_date": "2025-01-05T00:00:00Z"}]), prior)
+    pq.write_table(pa.Table.from_pylist([row | {"summary_html": "<p>x</p>"}]), rebuilt)
+    scoped = tmp_path / "scoped.parquet"
+    pq.write_table(pa.table({"dataset": [SUMMARIES]}), scoped)
+    selected = SimpleNamespace(replaced={SUMMARIES: ((prior,), scoped, "g", "legislative-documents/2", "why")})
+
+    def retain(bound):
+        monkeypatch.setitem(policy_migrations.REPLAYS, SUMMARIES, policy_migrations.Replay(
+            policy_migrations.REPLAYS[SUMMARIES].owner, bound, "fixture"))
+        pipeline = BillFamilyRollup()
+        pipeline.source_evidence = CaptureEvidence(tmp_path / f"out-{bound}", "bill-family", archive_root=tmp_path / "raw")
+        monkeypatch.setattr("spicy_regs.pipelines.rollups.subject_receipts.REPLAYS", policy_migrations.REPLAYS)
+        try:
+            pipeline.retain_replaced_priors(selected, (rebuilt,))
+        finally:
+            journal = pipeline.source_evidence.artifact_dir / "journal.jsonl"
+            events = [json.loads(line) for line in journal.open()]
+            [event] = [e for e in events if e.get("event") == "replay-dropped-rows"]
+            assert event["count"] == 1
+            assert event["identities"] == [dict(row, update_date="2025-01-05T00:00:00Z")]
+
+    retain(1)
+    with pytest.raises(ValueError, match="drops 1 prior rows, above its bound of 0"):
+        retain(0)

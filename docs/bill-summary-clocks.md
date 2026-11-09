@@ -74,7 +74,9 @@ The bill family performs that replay itself (`policy_migrations.json` marks the
 run neither restores nor carries it: it re-downloads every BILLSTATUS folder of
 every bulk Congress and re-reads every bill, rebuilds the whole summary table
 from the XML, and retains the replaced `/2` subject and its receipts in its own
-source evidence before writing. A run that does not cover every bulk Congress
+source evidence before writing. It journals every prior summary identity the
+rebuild no longer holds (`replay-dropped-rows`) and refuses above the bound
+`policy_migrations.REPLAYS` states. A run that does not cover every bulk Congress
 and all eight bill types refuses and names the one dispatch to run:
 `gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs -f congresses=108-119`.
 Raw originals and earlier generations stay unchanged.

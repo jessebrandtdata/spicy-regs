@@ -81,7 +81,8 @@ def earlier_policies(policy):
         expected = replace(policy, subject_schema=previous_schema, policy_version="legislative-documents/2")
         if earlier.descriptor() != expected.descriptor():
             raise ValueError("CRS summary clock policy changes fields beyond the two appended columns")
-        return (earlier, *earlier_policies(earlier))
+        # Only /2, and only to identify it: /1 lacks the dated key and the clocks, and no /1 selection is live.
+        return (earlier,)
     if policy.dataset == "bill_publisher_summaries" and policy.policy_version == "legislative-documents/2":
         history = json.loads(files("spicy_regs").joinpath("legislative_policy_history.json").read_text())
         earlier = DatasetPolicy.from_descriptor(history[policy.dataset])

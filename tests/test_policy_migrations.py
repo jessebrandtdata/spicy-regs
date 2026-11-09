@@ -27,15 +27,21 @@ def test_a_changed_policy_fails_until_recorded_then_until_its_predecessor_is_rea
     problems = unreadable_shipped_policies(installed, migrations)
     assert len(problems) == 1 and "neither declared readable" in problems[0]
 
-    migrations["replay_required"]["bill_cosponsors"] = {descriptor_digest(current): {"reason": " "}}
-    assert "states no reason" in unreadable_shipped_policies(installed, migrations)[0]
-    migrations["replay_required"]["bill_cosponsors"][descriptor_digest(current)]["reason"] = "rebuilt from originals"
-    assert unreadable_shipped_policies(installed, migrations) == []
+    # Replay-required needs code that replays it: a withheld prior must never read as "nothing published".
+    migrations["replay_required"]["bill_cosponsors"] = {descriptor_digest(current): {"reason": "rebuilt"}}
+    assert "no code replays it" in unreadable_shipped_policies(installed, migrations)[0]
+
+
+def test_a_registered_replay_still_states_its_reason():
+    migrations = copy.deepcopy(dict(ledger()))
+    entry = next(iter(migrations["replay_required"]["bill_publisher_summaries"].values()))
+    entry["reason"] = " "
+    assert ["states no reason" in p for p in unreadable_shipped_policies(migrations=migrations)] == [True]
 
 
 def test_summary_v2_is_identified_but_replayed_while_bill_versions_v1_carries():
     summaries = receipt_policies(legislative_policy("bill_publisher_summaries"))
-    assert [p.policy_version for p in summaries] == [f"legislative-documents/{n}" for n in (3, 2, 1)]
+    assert [p.policy_version for p in summaries] == [f"legislative-documents/{n}" for n in (3, 2)]
     assert replay_reason(summaries[0]) is None and "BILLSTATUS" in (replay_reason(summaries[1]) or "")
     current, earlier = receipt_policies(legislative_policy("bill_versions"))
     assert replay_reason(current) is None and replay_reason(earlier) is None
@@ -43,3 +49,17 @@ def test_summary_v2_is_identified_but_replayed_while_bill_versions_v1_carries():
     # Seeded from the descriptors live generations state (2026-11-09): only these two differ from installed.
     assert {name for name, digests in ledger()["shipped"].items() if len(digests) > 1} == {
         "bill_versions", "bill_publisher_summaries"}
+
+
+def test_live_check_names_a_published_policy_missing_from_the_ledger(monkeypatch):
+    from spicy_regs import policy_migrations
+    from spicy_regs.sources import publication
+
+    recorded = installed_policies()["bill_cosponsors"]
+    unrecorded = replace(recorded, policy_version="fixture/9")
+    roots = {"a": [recorded.descriptor()], "b": [recorded.descriptor(), unrecorded.descriptor()]}
+    monkeypatch.setattr(publication, "current_index", lambda base: {"families": {name: name for name in roots}})
+    monkeypatch.setattr(publication, "load_family_root",
+                        lambda base, entry: (b"", {"spec": {"etlReceipts": {"policies": roots[entry]}}}))
+    [problem] = policy_migrations.published_policies_unrecorded("https://example.invalid")
+    assert problem.startswith("b: published bill_cosponsors fixture/9")

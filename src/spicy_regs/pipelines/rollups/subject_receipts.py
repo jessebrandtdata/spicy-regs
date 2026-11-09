@@ -40,7 +40,7 @@ from spicy_regs.legislative_receipts import (
 )
 from spicy_regs.native_types import described_schema
 from spicy_regs.phase_log import phase_log
-from spicy_regs.policy_migrations import PriorReplayRequired, replay_reason
+from spicy_regs.policy_migrations import REPLAYS, PriorReplayRequired, dropped_replay_rows, replay_reason
 from spicy_regs.navigation_read_outcomes import (
     POLICIES as NAVIGATION_OUTCOME_POLICIES, READ_TABLES, FILE_TABLES, family_tables, write_recorded_outcomes,
 )
@@ -370,24 +370,35 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
     def generation_schemas(self):
         return {p.dataset: described_schema(p.subject_schema) for p in self.receipt_policies if not p.receipt_only}
 
-    def retain_replaced_priors(self, prior):
+    def retain_replaced_priors(self, prior, paths):
         """Keep each replay-required prior pair in this run's evidence before the new generation replaces it.
 
         The builder has rebuilt those rows from originals; the exact selected subject and its scoped receipts
         go into the generation's own evidence (content-addressed blobs, uploaded with it), so nothing selected
-        is lost when the pointer moves.
+        is lost when the pointer moves. Each prior identity the rebuild no longer holds is journaled, and more
+        than the replay's stated bound refuses the run.
         """
         if not prior.replaced:
             return
         if self.source_evidence is None:
             raise ValueError("A replay-required prior can be replaced only by a family that retains source evidence")
         for dataset, (subjects, scoped, generation, version, reason) in prior.replaced.items():
+            replay = REPLAYS.get(dataset)
+            rebuilt = next((path for path in paths if path.stem == dataset and not path.is_dir()), None)
+            if replay is None or rebuilt is None:
+                raise ValueError(f"Replay-required {dataset} has no registered replay output")
             members = [*((path, "subject") for path in subjects), (scoped, "receipts")]
             for ordinal, (path, role) in enumerate(members):
                 self.source_evidence.retain_file(
                     path, stage="replaced-prior", dataset=dataset, role=role, ordinal=ordinal,
                     generation_id=generation, policy_version=version, reason=reason,
                 )
+            dropped = dropped_replay_rows(dataset, dataset_policy(dataset).identity_fields, subjects, rebuilt)
+            self.source_evidence.event("replay-dropped-rows", dataset=dataset, generation_id=generation,
+                                       count=len(dropped), bound=replay.max_dropped_rows, identities=dropped)
+            if len(dropped) > replay.max_dropped_rows:
+                raise ValueError(f"Replay of {dataset} drops {len(dropped):,} prior rows, above its bound of "
+                                 f"{replay.max_dropped_rows} ({replay.bound_basis}); see the replay-dropped-rows event")
 
     def build_receipts(self, output_dir, builder, **kwargs):
         from spicy_regs.selected_generations import remember_selection, SelectedDataset
@@ -414,8 +425,8 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
             if any(p.dataset == ACQUISITION_POLICY.dataset for p in self.receipt_policies):
                 _build_events(candidate, self.receipt_generation_id, builder.__name__, self.source_evidence, error)
             raise
-        self.retain_replaced_priors(prior)
         paths = built if isinstance(built, tuple) else (built,)
+        self.retain_replaced_priors(prior, paths)
         observed = {path.name if path.is_dir() else path.stem for path in paths}
         if observed != {key.removesuffix(".parquet") for key in self.source_outputs}:
             raise ValueError("Producer outputs differ from the complete classified family")
