@@ -122,7 +122,10 @@ def test_bulk_bundle_equals_the_row_writers(tmp_path, monkeypatch, batch, datase
     assert pq.read_table(bulk_subject).to_pylist() == pq.read_table(row_subject).to_pylist()
     written = pq.ParquetFile(bulk_receipts)
     assert written.schema_arrow.equals(RECEIPT_SCHEMA)
-    assert [written.metadata.row_group(i).num_rows for i in range(written.metadata.num_row_groups)] == [2000, 2000, 501]
+    from spicy_regs.etl_receipts import RECEIPT_ROW_GROUP
+    whole, rest = divmod(written.metadata.num_rows, RECEIPT_ROW_GROUP)  # whole receipt groups, then the remainder
+    assert [written.metadata.row_group(i).num_rows for i in range(written.metadata.num_row_groups)] == (
+        [RECEIPT_ROW_GROUP] * whole + ([rest] if rest else []))
 
 
 def test_rows_without_a_subject_are_the_mappers(tmp_path) -> None:
