@@ -55,6 +55,33 @@ def test_restore_replays_only_exceptional_rows_and_admits_once(tmp_path, monkeyp
     assert admissions == [1]
 
 
+def test_restore_batches_run_on_one_thread_then_restore_the_caller_setting(tmp_path, monkeypatch):
+    # With 4 threads the live 10.2M-row cluster batches exceeded the 4GB engine limit (2026-11-09).
+    from spicy_regs import etl_bulk
+
+    dataset = 'court_citation_map'
+    rows = [{'citing_opinion_id': str(i), 'cited_opinion_id': '2', 'depth': '1'} for i in range(30)]
+    native = court_receipts.write_court_rows(dataset, rows, tmp_path / 'native',
+                                            witnesses=WITNESSES, generation_id='selected')
+    settings = []
+    materialize = court_restore.materialize
+
+    def observed(reader, *args):
+        setting = "SELECT current_setting('threads')"
+        monkeypatch.setattr(court_restore, 'checkpoint',
+                            lambda: settings.append(reader.connection.execute(setting).fetchone()[0]))
+        try:
+            return materialize(reader, *args)
+        finally:
+            settings.append(reader.connection.execute(setting).fetchone()[0])
+
+    monkeypatch.setattr(court_restore, 'materialize', observed)
+    with etl_bulk.bulk_limits(threads=3, memory_limit='1GB', require_bulk=True):
+        restore_processing_input(native, tmp_path / 'restored.parquet', dataset=dataset,
+                                 schema=pa.schema([(name, pa.string()) for name in rows[0]]))
+    assert settings == [1, 3]
+
+
 def test_restore_refuses_corrupt_selected_receipts_without_replacing_output(tmp_path):
     dataset = 'court_citation_map'
     source = _write(tmp_path / 'source.parquet', pa.table({'citing_opinion_id': ['1'], 'cited_opinion_id': ['2']}))

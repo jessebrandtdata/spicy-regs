@@ -1,6 +1,7 @@
 """Restore court mapper inputs from one admitted subject/receipt selection."""
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -65,6 +66,22 @@ def _query(dataset, policy, schema):
                {', '.join(fields)} FROM inputs ORDER BY _ordinal'''
 
 
+@contextmanager
+def _one_thread(connection):
+    """Run the per-batch join on one DuckDB thread, then restore the caller's setting.
+
+    The join is serial JSON work over 10k wide rows. With 4 threads the live 10.2M-row
+    clusters exceeded the 4GB engine limit by the second or third of 1,018 batches
+    (2026-11-09); one thread ran 120 batches at the same ~1 s each.
+    """
+    threads = connection.execute("SELECT current_setting('threads')").fetchone()[0]
+    connection.execute('SET threads = 1')
+    try:
+        yield
+    finally:
+        connection.execute(f'SET threads = {int(threads)}')
+
+
 def materialize(reader, dataset: str, schema: pa.Schema, destination: Path) -> Path:
     """Use the reader's admitted match; only unproven rows use the maintained decoder."""
     from spicy_regs.court_receipts import processing_rows
@@ -77,7 +94,8 @@ def materialize(reader, dataset: str, schema: pa.Schema, destination: Path) -> P
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     seen = 0
-    with reader._stream(), TemporaryDirectory(prefix='.court-restore-', dir=destination.parent) as temporary:
+    with (reader._stream(), _one_thread(reader.connection),
+          TemporaryDirectory(prefix='.court-restore-', dir=destination.parent) as temporary):
         staged = Path(temporary) / 'processing.parquet'
         with pq.ParquetFile(reader.subjects[dataset][0]) as source, pq.ParquetWriter(staged, schema, compression='zstd') as writer:
             for batch in source.iter_batches(batch_size=10_000):
