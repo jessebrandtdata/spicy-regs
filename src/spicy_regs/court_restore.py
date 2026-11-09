@@ -1,10 +1,11 @@
 """Restore court mapper inputs from one admitted subject/receipt selection."""
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -76,10 +77,15 @@ def _one_thread(connection):
     """
     threads = connection.execute("SELECT current_setting('threads')").fetchone()[0]
     connection.execute('SET threads = 1')
+    restore = f'SET threads = {int(threads)}'
     try:
         yield
-    finally:
-        connection.execute(f'SET threads = {int(threads)}')
+    except BaseException:
+        # Keep the restore's own failure (e.g. a closed connection) from replacing the original one.
+        with suppress(duckdb.Error):
+            connection.execute(restore)
+        raise
+    connection.execute(restore)
 
 
 def materialize(reader, dataset: str, schema: pa.Schema, destination: Path) -> Path:

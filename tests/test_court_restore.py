@@ -82,6 +82,20 @@ def test_restore_batches_run_on_one_thread_then_restore_the_caller_setting(tmp_p
     assert settings == [1, 3]
 
 
+def test_one_thread_restores_on_failure_and_keeps_the_original_error():
+    import duckdb
+
+    connection = duckdb.connect(config={'threads': 3})
+    with pytest.raises(KeyError, match='original'):
+        with court_restore._one_thread(connection):
+            raise KeyError('original')
+    assert connection.execute("SELECT current_setting('threads')").fetchone()[0] == 3
+    with pytest.raises(KeyError, match='original'):
+        with court_restore._one_thread(connection):
+            connection.close()  # The restore cannot run; the caller still sees its own failure.
+            raise KeyError('original')
+
+
 def test_restore_refuses_corrupt_selected_receipts_without_replacing_output(tmp_path):
     dataset = 'court_citation_map'
     source = _write(tmp_path / 'source.parquet', pa.table({'citing_opinion_id': ['1'], 'cited_opinion_id': ['2']}))
