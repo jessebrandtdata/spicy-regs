@@ -11,10 +11,8 @@ import pytest
 import pyarrow.parquet as pq
 
 from spicy_regs import citation_receipts as inputs, mcp_server
-from spicy_regs.selected_generations import SelectedDataset, remember_selection
 from tests.test_citation_receipts import select, occurrence
 from tests.test_mcp_server import _listed, _tool_data
-from tests.test_receipt_key_index import sidecar
 from tests.receipt_lookup_fixtures import index_of, published
 
 
@@ -167,26 +165,7 @@ def test_real_source_listing_and_sql_do_not_prepare_citations(tmp_path, monkeypa
         assert result["rows"] == [[1]]
 
 
-def test_selected_sidecar_is_checked_privately_after_public_lockdown(tmp_path, monkeypatch):
-    subject, receipts = select(tmp_path, "document_citations", [occurrence("sha256:" + "c" * 64)])
-    key = tmp_path / "citation-keys.parquet"
-    descriptor, _ = sidecar(receipts, key)
-    remember_selection(tmp_path, [SelectedDataset("document_citations", (subject,), receipts,
-                                                "citation-generation", key, descriptor)])
-    monkeypatch.setattr(mcp_server, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(mcp_server, "TABLES", ())
-    with mcp_server._build_connection() as con, con.cursor() as cursor:
-        selected = mcp_server._connection_local_selection(cursor)
-        before = con.execute("SELECT current_setting('allowed_paths')").fetchone()
-        inputs.ensure_citation_inputs(con, cursor, mcp_server._connection_index(cursor), "", ["document_citations"],
-                                      local_directory=tmp_path, local_selection=selected)
-        assert inputs.selected_citation_inputs(cursor)["publication"]["document_citations"]["generation_id"] == (
-            "citation-generation")
-        assert con.execute("SELECT current_setting('allowed_paths')").fetchone() == before
-        assert con.execute("SELECT current_setting('lock_configuration')").fetchone() == (True,)
-
-
-def test_downloaded_sidecar_never_enters_public_allowed_paths(tmp_path, monkeypatch):
+def test_downloaded_receipts_never_enter_public_allowed_paths(tmp_path, monkeypatch):
     from spicy_regs.fec_receipt_adapter import ReceiptAdapter
     from spicy_regs.sources import publication
 
@@ -195,9 +174,6 @@ def test_downloaded_sidecar_never_enters_public_allowed_paths(tmp_path, monkeypa
     entry = published(bucket, "citations", {"document_citations": subject}, pq.read_table(receipts),
                       generation="citation-generation")
     shared = bucket / entry["prefix"] / entry["etlReceipts"]["key"]
-    key = shared.parent / "etl_receipts.keys.parquet"
-    descriptor, _ = sidecar(shared, key)
-    entry["etlReceipts"]["keyIndex"] = descriptor
     index = index_of({"citations": entry})
     fetched = []
 
@@ -214,8 +190,8 @@ def test_downloaded_sidecar_never_enters_public_allowed_paths(tmp_path, monkeypa
         inputs.ensure_citation_inputs(con, cursor, index, "https://unused.invalid", ["document_citations"])
         assert inputs.selected_citation_inputs(cursor)["publication"]["document_citations"]["receipt_sha256"] == (
             entry["etlReceipts"]["sha256"])
-        assert any(name == "etl_receipts.keys.parquet" for name, _ in fetched)
+        assert any(name == "etl_receipts.parquet" for name, _ in fetched)
         assert all(not path.exists() for _, path in fetched)
         assert con.execute("SELECT current_setting('allowed_paths')").fetchone() == ([],)
         with pytest.raises(duckdb.Error, match="disabled"):
-            con.execute("SELECT * FROM read_parquet(?)", [str(key)])
+            con.execute("SELECT * FROM read_parquet(?)", [str(shared)])

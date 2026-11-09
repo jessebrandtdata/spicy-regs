@@ -1,5 +1,6 @@
 """Discovery avoids row restoration; one request budget also bounds cold admission."""
 import asyncio
+import json
 from time import monotonic, sleep
 from threading import Event, Timer
 
@@ -456,19 +457,21 @@ def test_old_receipt_only_discovery_is_hidden_without_payload_restore(tmp_path, 
     assert server._cached_connection is None
 
 
-def test_remote_indexed_receipt_lookup_skips_unrelated_admission_but_queries_do_not(tmp_path, monkeypatch):
+def test_remote_receipt_lookup_skips_unrelated_admission_but_queries_do_not(tmp_path, monkeypatch):
     from pathlib import Path
     from spicy_regs.relationship_views.core import literal
-    from spicy_regs import citation_receipts, receipt_key_index, receipt_lookup
+    from spicy_regs import citation_receipts, receipt_lookup
     from spicy_regs.fec_receipt_adapter import ReceiptAdapter
     from tests.receipt_lookup_fixtures import one_family
     from tests.test_mcp_fec_release import configure, connection
-    from tests.test_mcp_receipt_lookup import _add_selected_index, fcc
+    from tests.test_mcp_receipt_lookup import fcc
     from mcp.server.mcpserver.exceptions import ToolError
 
     get_connection = server._get_connection
     fixture = one_family(tmp_path / 'fcc', monkeypatch, {'fcc_filings': [fcc('100')]}, family='fcc')
-    fcc_index, entry = _add_selected_index(fixture)
+    [(snapshot,)] = fixture.execute("SELECT snapshot FROM _spicy_publication").fetchall()
+    fcc_index = json.loads(snapshot)
+    entry = next(iter(fcc_index['families'].values()))
     fixture.close()
     root = Path(server.R2_BASE_URL)
     (tmp_path / 'fec').mkdir()
@@ -477,7 +480,6 @@ def test_remote_indexed_receipt_lookup_skips_unrelated_admission_but_queries_do_
     monkeypatch.setattr(server, '_get_connection', get_connection)
     receipt = entry['etlReceipts']
     receipt_path = root / entry['prefix'] / receipt['key']
-    index_path = root / entry['prefix'] / receipt['keyIndex']['key']
     subject_path = root / entry['prefix'] / 'fcc_filings.parquet'
     counts = {'prepare': 0, 'prepare_qualified': 0, 'citations': 0}
     for name in ('prepare', 'prepare_qualified'):
@@ -496,12 +498,9 @@ def test_remote_indexed_receipt_lookup_skips_unrelated_admission_but_queries_do_
     def build():
         con = connection(index)  # Real FEC release installation; fixture source bytes only.
         con.execute(f'CREATE VIEW fcc_filings AS SELECT * FROM read_parquet({literal(str(subject_path))})')
-        receipt_key_index.check_reader(con, str(index_path), receipt['keyIndex'], receipt)
-        apply_security(con, list(map(str, (subject_path, receipt_path, index_path))))
+        apply_security(con, list(map(str, (subject_path, receipt_path))))
         return con
     monkeypatch.setattr(server, '_build_connection', build)
-    monkeypatch.setattr(receipt_lookup, '_accepted', lambda *args: pytest.fail('Indexed lookup fell back to scanning receipts'))
-    monkeypatch.setattr(receipt_lookup, 'SCAN_ROW_BOUND', 0)
     mcp = server.build_server()
     arguments = {'table': 'fcc_filings', 'keys': [{'id_submission': '100'}], 'fields': ['filing_url']}
     reply = _tool_data(mcp, 'read_receipt_fields', arguments)
@@ -512,6 +511,8 @@ def test_remote_indexed_receipt_lookup_skips_unrelated_admission_but_queries_do_
     assert receipt_connection is not None
     assert server._cached_discovery_connection is None
     assert receipt_connection.execute("SELECT current_setting('enable_external_access')").fetchone() == (False,)
+    # No group's identity bounds admit an unknown key, so only the subject search is left to bound.
+    monkeypatch.setattr(receipt_lookup, 'SCAN_ROW_BOUND', 0)
     with pytest.raises(ToolError, match='over the 0-row bound'):
         _tool_data(mcp, 'read_receipt_fields', {**arguments, 'keys': [{'id_submission': 'missing'}]})
     assert counts == {'prepare': 0, 'prepare_qualified': 0, 'citations': 0}
@@ -606,7 +607,6 @@ def scoped_remote(tmp_path, monkeypatch):
                     "rows": 1,
                     "byteSize": 1,
                     "sha256": "sha256:" + "b" * 64,
-                    "keyIndex": {"key": "unrequested-missing.keys.parquet"},
                 },
             }
         }

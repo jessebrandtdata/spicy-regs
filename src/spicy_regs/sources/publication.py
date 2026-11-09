@@ -234,7 +234,7 @@ def generation_entry(artifact, members) -> dict:
     members = list(members)
     try:
         tables = (table_entries(spec["tables"],
-                                [m for m in members if m.object_key not in {"etl_receipts.parquet", "etl_receipts.keys.parquet"}])
+                                [m for m in members if m.object_key != "etl_receipts.parquet"])
                   if spec["tables"] else {})
     except ValueError as exc:
         raise PublicationError(str(exc)) from exc
@@ -251,7 +251,6 @@ def generation_entry(artifact, members) -> dict:
             "key": receipt.object_key, "sha256": receipt.sha256, "byteSize": receipt.byte_size,
             "rows": receipt.record_count, "columns": declared["columns"], "generationId": declared["generationId"],
             "datasets": [p["dataset"] for p in declared["policies"] if p["dataset"] not in shared_receipt_logs()],
-            **({"keyIndex": declared["keyIndex"]} if "keyIndex" in declared else {}),
         }
     return entry
 
@@ -295,7 +294,7 @@ def parse_index(raw: bytes) -> dict:
                 raise ValueError("empty family")
             if "etlReceipts" in entry:
                 receipt = entry["etlReceipts"]
-                if (not {"key", "sha256", "byteSize", "rows", "columns", "generationId", "datasets"} <= set(receipt) <= {"key", "sha256", "byteSize", "rows", "columns", "generationId", "datasets", "keyIndex"}
+                if ({"key", "sha256", "byteSize", "rows", "columns", "generationId", "datasets"} != set(receipt)
                         or receipt["key"] != "etl_receipts.parquet"
                         or not _DIGEST.fullmatch(receipt["sha256"]) or not _counts(receipt)
                         or not isinstance(receipt["generationId"], str) or not receipt["generationId"]
@@ -307,9 +306,6 @@ def parse_index(raw: bytes) -> dict:
                         or any(not isinstance(name, str) or not _NAME.fullmatch(name) for name in receipt["datasets"])
                         or len(set(receipt["datasets"])) != len(receipt["datasets"])):
                     raise ValueError("invalid ETL receipt member")
-                if "keyIndex" in receipt:
-                    from spicy_regs.receipt_key_index import validate_descriptor
-                    validate_descriptor(receipt["keyIndex"], receipt)
             datasets = {key.removesuffix(".parquet") for key in entry["tables"]}
             datasets.update(entry.get("etlReceipts", {}).get("datasets", []))
             if datasets & dataset_owners:
@@ -1428,14 +1424,14 @@ SNAPSHOT_DIRECTORY = "publication.v2"  # content-addressed copies of the pointer
 def generation_files(entry: Mapping) -> dict[str, Member]:
     """Every file under a published family entry's generation prefix, by key.
 
-    The tables' members, the receipt member and its key index carry their pins; the artifact root and member list
+    The tables' members and the receipt member carry their pins; the artifact root and member list
     are unpinned here (``artifactDigest`` pins the root). This is the key set ``_stage_verified_generation`` uploads.
     """
     prefix = entry["prefix"]
     files = {name: Member(f"{prefix}/{name}", None, None, None) for name in _ROOT_FILES}
     described = [m for key, table in entry["tables"].items() for m in table.get("members", [{"key": key, **table}])]
     if receipt := entry.get("etlReceipts"):
-        described += [receipt, *([receipt["keyIndex"]] if "keyIndex" in receipt else [])]
+        described.append(receipt)
     for m in described:
         files[m["key"]] = Member(f"{prefix}/{m['key']}", m["sha256"], m["byteSize"], m.get("rows"))
     return files
@@ -2040,11 +2036,3 @@ def receipt_members(index: Mapping, *, dataset: str | None = None) -> tuple[Memb
     return tuple(Member(f"{entry['prefix']}/{receipt['key']}", receipt["sha256"],
                         receipt["byteSize"], receipt["rows"])
                  for entry in entries if (receipt := entry.get("etlReceipts")))
-
-
-def receipt_key_members(index: Mapping, *, dataset: str | None = None) -> tuple[Member, ...]:
-    """The declared key indexes beside the exact selected receipt members."""
-    selected = {member.path for member in receipt_members(index, dataset=dataset)}
-    return tuple(Member(f"{entry['prefix']}/{key['key']}", key['sha256'], key['byteSize'], key['rows'])
-                 for entry in index['families'].values() if (receipt := entry.get('etlReceipts'))
-                 and f"{entry['prefix']}/{receipt['key']}" in selected and (key := receipt.get('keyIndex')))

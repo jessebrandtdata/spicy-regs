@@ -8,7 +8,6 @@ import duckdb
 import pytest
 
 from spicy_regs import mcp_server as server
-from spicy_regs.receipt_key_index import KEY, FORMAT
 from spicy_regs.sources import publication as pub
 
 
@@ -27,16 +26,14 @@ def index(*, receipts=True):
     if receipts:
         entry["etlReceipts"] = {"key": "etl_receipts.parquet", "sha256": digest, "byteSize": 1,
                                 "rows": 1, "columns": [["id", "INTEGER"]], "generationId": "g",
-                                "datasets": ["s"], "keyIndex": {
-                                    "key": KEY, "format": FORMAT, "sha256": digest, "byteSize": 1,
-                                    "rows": 1, "receiptSha256": digest}}
+                                "datasets": ["s"]}
     value["families"]["fixture"] = entry
     return pub.parse_index(json.dumps(value).encode())
 
 
 def paths(value):
     prefix = server.R2_BASE_URL + "/" + value["families"]["fixture"]["prefix"]
-    return [prefix + "/s.parquet", prefix + "/etl_receipts.parquet", prefix + "/" + KEY]
+    return [prefix + "/s.parquet", prefix + "/etl_receipts.parquet"]
 
 
 def snapshot(*, receipt=False):

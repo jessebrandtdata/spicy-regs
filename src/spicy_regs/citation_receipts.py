@@ -93,8 +93,7 @@ def ensure_citation_inputs(connection, cursor, index, base_url, available, *,
                     private.execute("SET temp_directory=?", [temp_directory])
                 adapter = ReceiptAdapter(
                     private, index, base_url, local_directory=local_directory,
-                    local_receipts=({**selected.get("receipt_members", {}), **selected.get("receipt_indexes", {})}
-                                    if local_selection is not None else None),
+                    local_receipts=(selected.get("receipt_members", {}) if local_selection is not None else None),
                     local_native=selected.get("native", {}),
                 )
                 install_citation_inputs(private, adapter, available)

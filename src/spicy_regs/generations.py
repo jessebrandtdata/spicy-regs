@@ -251,28 +251,7 @@ def _verify_admitted_generation(artifact, source, table_info, admit_receipts, *,
     receipt_members = [member for member in members if member.object_key == "etl_receipts.parquet"]
     if bool(receipt_spec) != bool(receipt_members) or len(receipt_members) > 1:
         raise ValueError("Generation receipt membership differs from its declaration")
-    from spicy_regs.receipt_key_index import KEY as RECEIPT_INDEX_KEY, validate_descriptor, verify_key_index
-    index_members = [member for member in members if member.object_key == RECEIPT_INDEX_KEY]
-    index_spec = receipt_spec.get("keyIndex") if receipt_spec else None
-    declared_index = receipt_spec is not None and "keyIndex" in receipt_spec
-    if declared_index != bool(index_members) or len(index_members) > 1:
-        raise ValueError("Generation receipt key index membership differs from its declaration")
-    if declared_index:
-        if not isinstance(index_spec, dict):
-            raise ValueError("Invalid generation receipt key index declaration")
-        receipt_member = receipt_members[0]
-        receipt_pin = {"sha256": receipt_member.sha256, "byteSize": receipt_member.byte_size,
-                       "rows": receipt_member.record_count}
-        validate_descriptor(index_spec, receipt_pin)
-        member = index_members[0]
-        if (member.sha256, member.byte_size, member.record_count) != (
-                index_spec["sha256"], index_spec["byteSize"], index_spec["rows"]):
-            raise ValueError("Generation receipt key index differs from its declared member")
-        if semantic:
-            verify_key_index(lambda: source.open("etl_receipts.parquet"), lambda: source.open(RECEIPT_INDEX_KEY),
-                             index_spec, receipt_pin)
-    table_members_only = [member for member in members
-                          if member.object_key not in {"etl_receipts.parquet", RECEIPT_INDEX_KEY}]
+    table_members_only = [member for member in members if member.object_key != "etl_receipts.parquet"]
     if tables or table_members_only:
         table_entries(tables, table_members_only)
     elif not receipt_spec:
@@ -366,7 +345,6 @@ def build_generation(
     receipt_path: Path | None = None,
     receipt_policies: Sequence | None = None,
     receipt_generation_id: str | None = None,
-    receipt_index: tuple[Path, Mapping] | None = None,
     adopt_owned_receipt: bool = False,
     owned_output_root: Path | None = None,
     read_operation=None,
@@ -402,9 +380,6 @@ def build_generation(
     failed build retains moved files in this directory and remaining files at
     their prior owned paths; no retained source may be passed as owned output.
 
-    ``receipt_index`` explicitly adopts an already built key sidecar and its
-    descriptor. Normal builds create no index. Full generation admission checks
-    its exact receipt binding and every position before this artifact can publish.
     """
     from rulespec_artifacts import (
         LocalMemberSource,
@@ -417,8 +392,6 @@ def build_generation(
     names = output_keys(files, partitioned)
     if adopt_owned_receipt and receipt_path is None:
         raise ValueError("Owned receipt adoption requires a receipt file")
-    if receipt_index is not None and receipt_path is None:
-        raise ValueError("Receipt index adoption requires a receipt file")
     if (not expected and receipt_path is None) or len(expected) != len(expected_keys) or len(set(names)) != len(names) or set(names) != expected:
         raise ValueError("Build outputs differ from the declared complete family")
     if any(Path(key).name != key or not key.endswith(".parquet") for key in expected):
@@ -466,15 +439,6 @@ def build_generation(
                         "policies": [policy.descriptor() for policy in receipt_policies],
                         **table_info(directory / RECEIPT_KEY)}
         rows[RECEIPT_KEY] = receipt_spec["rows"]
-        if receipt_index is not None:
-            from spicy_regs.receipt_key_index import KEY as RECEIPT_INDEX_KEY
-            index_path, index_descriptor = receipt_index
-            if (index_path.is_symlink() or not index_path.is_file()
-                    or RECEIPT_INDEX_KEY in tables):
-                raise ValueError("Receipt index adoption requires a separate regular sidecar")
-            shutil.copyfile(index_path, directory / RECEIPT_INDEX_KEY)
-            receipt_spec["keyIndex"] = dict(index_descriptor)
-            rows[RECEIPT_INDEX_KEY] = table_info(directory / RECEIPT_INDEX_KEY)["rows"]
     elif receipt_policies is not None or receipt_generation_id is not None:
         raise ValueError("Receipt admission cannot omit the shared receipt member")
     from spicy_regs.etl_policy_registry import require_registered_receipts
@@ -633,7 +597,7 @@ def _verify_receipts(source, tables, members, receipt_spec, table_info, admit_re
     from spicy_regs.etl_receipts import DatasetPolicy, RECEIPT_KEY
     from spicy_regs.sources.publication import member_table
 
-    if (not {"key", "generationId", "policies", "columns", "rows"} <= set(receipt_spec) <= {"key", "generationId", "policies", "columns", "rows", "keyIndex"}
+    if ({"key", "generationId", "policies", "columns", "rows"} != set(receipt_spec)
             or receipt_spec["key"] != RECEIPT_KEY or not isinstance(receipt_spec["generationId"], str)
             or not receipt_spec["generationId"]):
         raise ValueError("Invalid generation receipt declaration")

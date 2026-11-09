@@ -101,8 +101,8 @@ def prepare(*, captured_index: Path, member_bindings: Path, reports: Path, decis
         raise ValueError("The exact complete selected GAO family is required")
     if KEY in dict(entry["tables"]["gao_reports.parquet"]["columns"]):
         raise ValueError("Selected GAO reports already expose the citation key")
-    if "etlReceipts" not in entry or publication.receipt_key_members(snapshot, dataset="gao_reports"):
-        raise ValueError("This recipe requires the shared GAO receipt without a key sidecar")
+    if "etlReceipts" not in entry:
+        raise ValueError("This recipe requires the shared GAO receipt")
     prior = _stage(snapshot, bindings, reports, decisions, output)
     with ConversionReadOperation() as operation, ExitStack() as stack:
         old, old_reader, old_source = operation.admit_generation(prior, expected_pin={

@@ -49,7 +49,6 @@ def _stage_prior(controls: Path, bindings: dict, entry: dict, destination: Path)
     members = [member for key in entry["tables"]
                for member in publication.table_members(selected_index, key)]
     members.extend(publication.receipt_members(selected_index))
-    members.extend(publication.receipt_key_members(selected_index))
     expected = {member.key: member for member in members}
     selected = [item for item in bindings.get("bindings", ()) if item.get("family") == FAMILY]
     mapped = {item["objectKey"]: item for item in selected}

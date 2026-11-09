@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from spicy_regs.runtime_bounds import checkpoint, stream_sha256
-from spicy_regs.sources.publication import empty_index, parse_index, table_descriptor, table_members, receipt_members, receipt_key_members, table_owner
+from spicy_regs.sources.publication import empty_index, parse_index, table_descriptor, table_members, receipt_members, table_owner
 
 _NAME = re.compile(r"[a-z][a-z0-9_-]*\Z")
 
@@ -42,13 +42,6 @@ class LocalSelection:
         return {member.path: self.directory / receipt_local_key(member)
                 for member in selected_receipt_members(self.publication, self.files)}
 
-    @property
-    def receipt_indexes(self) -> dict[str, Path]:
-        if self.native:
-            return {str(v.key_index): v.key_index for v in self.native.values() if v.key_index is not None}
-        return {m.path: self.directory / receipt_local_key(m)
-                for m in selected_receipt_key_members(self.publication, self.files)}
-
     def paths(self, name: str) -> tuple[Path, ...]:
         """Every local file of table ``name``: a split table's members in index order, else its one file."""
         return self.split[name] if name in self.split else (self.files[name][0],)
@@ -67,12 +60,6 @@ def selected_receipt_members(index: Mapping, selected) -> tuple:
             for member in receipt_members(index, dataset=name):
                 members[member.path] = member
     return tuple(members.values())
-
-
-def selected_receipt_key_members(index: Mapping, selected) -> tuple:
-    selected_receipts = {m.path for m in selected_receipt_members(index, selected)}
-    prefixes = {path.rsplit("/", 1)[0] for path in selected_receipts}
-    return tuple(m for m in receipt_key_members(index) if m.path.rsplit("/", 1)[0] in prefixes)
 
 
 def selection_record(index: Mapping, name: str) -> dict:
@@ -158,7 +145,7 @@ def local_selection(output_dir: Path, *, admit_rows=True) -> LocalSelection:
             if _NAME.fullmatch(path.stem) and path.is_file():
                 result.setdefault(path.stem, (path.resolve(), "local-unmanaged"))
     selection = LocalSelection(directory, result, index, is_download, split)
-    for path in (*selection.receipts.values(), *selection.receipt_indexes.values()):
+    for path in selection.receipts.values():
         file_signature(path)
     return selection
 
@@ -182,7 +169,7 @@ def _native_selection(root: Path, *, admit_rows=True) -> LocalSelection:
             selected = inputs.select(name)
             validate_publisher_generation(selected.generation_id)
             native[name] = selected
-            paths = (*selected.subjects, selected.receipts, *((selected.key_index,) if selected.key_index else ()))
+            paths = (*selected.subjects, selected.receipts)
             for path in paths:
                 signatures[str(path)] = file_signature(path)
             checkpoint()
@@ -278,8 +265,7 @@ def verify_local_members(selection: LocalSelection) -> dict[str, list[int]]:
             if file_signature(path) != before:
                 raise RuntimeError(f"Local download member changed during verification: {name}")
             signatures[str(path)] = before
-    for member in (*selected_receipt_members(selection.publication, selection.files),
-                   *selected_receipt_key_members(selection.publication, selection.files)):
+    for member in selected_receipt_members(selection.publication, selection.files):
         path = selection.directory / receipt_local_key(member)
         before = file_signature(path)
         with path.open("rb") as stream:

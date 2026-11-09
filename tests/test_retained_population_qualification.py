@@ -271,3 +271,26 @@ def test_base_route_refuses_completed_row_fallback(monkeypatch):
     assert record == {'baseAdapterCalls': 1, 'baseAdapterCompleted': 0}
     assert runner.regulations_bulk.write_held_dataset is unsupported
     monkeypatch.setattr(runner.regulations_bulk, 'write_held_dataset', original)
+
+
+def test_explicit_httpfs_seeds_default_private_home(tmp_path, installed_httpfs):
+    import duckdb
+    from scripts.retained_qualification_support import install_local_httpfs
+    from spicy_regs.duckdb_settings import load_public_http
+    from spicy_regs.sources.publication import file_identity
+
+    home = tmp_path / 'mcp-home'
+    home.mkdir()
+    with duckdb.connect() as seed:
+        seed.execute('SET home_directory=?', [str(home)])
+        install_local_httpfs(seed, installed_httpfs)
+    with duckdb.connect() as consumer:
+        consumer.execute('SET home_directory=?', [str(home)])
+        load_public_http(consumer)
+        row = consumer.execute("SELECT loaded,install_path FROM duckdb_extensions() "
+                               "WHERE extension_name='httpfs'").fetchone()
+        assert row is not None
+        loaded, path = row
+        assert loaded and Path(path).is_relative_to(home)
+        assert file_identity(Path(path)) == file_identity(installed_httpfs)
+        assert consumer.execute("SELECT current_setting('allow_unsigned_extensions')").fetchone() == (False,)

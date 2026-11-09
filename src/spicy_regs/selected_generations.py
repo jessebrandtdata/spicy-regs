@@ -51,8 +51,6 @@ class SelectedDataset:
     subjects: tuple[Path, ...]
     receipts: Path
     generation_id: str
-    key_index: Path | None = None
-    key_index_descriptor: dict | None = None
 
 
 def unique_build_directory(root: Path) -> Path:
@@ -80,8 +78,6 @@ def _remember_selection(root, selections, checked):
             "generation_id": selected.generation_id,
             "subjects": [member(p) for p in selected.subjects],
             "receipts": member(selected.receipts),
-            **({"key_index": member(selected.key_index), "key_index_descriptor": selected.key_index_descriptor}
-               if selected.key_index is not None else {}),
         }
     temporary = target.with_name(target.name + "." + uuid4().hex)
     temporary.write_text(json.dumps(values))
@@ -153,10 +149,9 @@ class SelectedInputs:
             self.check()
             for dataset, path in scoped.items():
                 self.member_pin(path)
-                # A sidecar describes the original member, not the selected rows.
                 value = selected[dataset]
                 assert value is not None
-                selected[dataset] = replace(value, receipts=path, key_index=None, key_index_descriptor=None)
+                selected[dataset] = replace(value, receipts=path)
         self.check()
         return selected
 
@@ -205,8 +200,7 @@ class SelectedInputs:
             if dataset in self.ranged and not ranged:
                 raise ValueError(f"{dataset}: receipts were selected for this dataset alone")
             selected = self.cache[dataset]
-            for path in (*selected.subjects, selected.receipts,
-                         *((selected.key_index,) if selected.key_index is not None else ())):
+            for path in (*selected.subjects, selected.receipts):
                 _member_pin(path, self.checked)
             return self.cache[dataset]
         if self.index is None:
@@ -225,8 +219,6 @@ class SelectedInputs:
                 tuple(checked(p) for p in value["subjects"]),
                 checked(value["receipts"]),
                 value["generation_id"],
-                checked(value["key_index"]) if "key_index" in value else None,
-                value.get("key_index_descriptor"),
             )
         else:
             owner = publication.table_owner(self.index, dataset + ".parquet")
@@ -291,25 +283,11 @@ class SelectedInputs:
             if len(receipts) != 1:
                 raise ValueError(f"{dataset}: ambiguous selected receipt member")
             specification = owners[0]["etlReceipts"]
-            # A published key index serves lookups by row key (the MCP server and local_data read it from local
-            # selections). Pipelines select by dataset and never read it, so a remote selection neither fetches
-            # nor checks it: bill-family's would add 1.08 GB to every reader of its receipts.
             receipt_path = (self._ranged_receipts(receipts[0], dataset, directory / "receipts.parquet")
                             if ranged and len(receipts) == 1 else None)
             if receipt_path is not None:
                 self.ranged[dataset] = {"sha256": receipts[0].sha256, "byteSize": receipts[0].byte_size}
             result = SelectedDataset(dataset, subjects, receipt_path or fetch(receipts[0]), specification["generationId"])
-        if (result.key_index is None) != (result.key_index_descriptor is None):
-            raise ValueError("Selected receipt key index declaration is incomplete")
-        if result.key_index is not None:
-            import duckdb
-            import pyarrow.parquet as pq
-            assert result.key_index_descriptor is not None
-            from spicy_regs.receipt_key_index import check_reader
-            with duckdb.connect() as con:
-                check_reader(con, str(result.key_index), result.key_index_descriptor,
-                             {"sha256": _member_pin(result.receipts, self.checked), "byteSize": result.receipts.stat().st_size,
-                              "rows": pq.ParquetFile(result.receipts).metadata.num_rows})
         self.cache[dataset] = result
         return result
 
@@ -343,11 +321,9 @@ def remember_generation(root: Path, directory: Path, artifact) -> None:
             key = member.object_key
             if key is None:
                 raise ValueError("Native generation member has no object key")
-            if key not in {specification["key"], specification.get("keyIndex", {}).get("key")} and member_table(key) == dataset + ".parquet":
+            if key != specification["key"] and member_table(key) == dataset + ".parquet":
                 subjects.append(directory / key)
         selected.append(
-            SelectedDataset(dataset, tuple(subjects), directory / specification["key"], specification["generationId"],
-                            directory / specification["keyIndex"]["key"] if "keyIndex" in specification else None,
-                            specification.get("keyIndex"))
+            SelectedDataset(dataset, tuple(subjects), directory / specification["key"], specification["generationId"])
         )
     _remember_selection(root, selected, checked)

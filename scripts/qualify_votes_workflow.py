@@ -23,13 +23,12 @@ from starlette.testclient import TestClient
 from rulespec_artifacts import LocalMemberSource, admit_artifact
 
 from scripts.qualification_store import DiskStore
-from scripts.qualify_receipt_index import assert_pin, bind_key_index_for_qualification, copy_exact, phase, serve
+from scripts.retained_qualification_support import assert_pin, copy_exact, phase, serve
 from scripts.qualify_congress_bulk import compare_files
 from spicy_regs.congress_receipts import policy
 from spicy_regs.votes_batch_receipts import restore_processing_input, write_congress_dataset
 from spicy_regs.etl_receipts import combine_receipts
 from spicy_regs.generations import build_generation, implementation_id, source_digest
-from spicy_regs.receipt_key_index import KEY
 from spicy_regs.sources import publication
 
 
@@ -204,24 +203,9 @@ def main():
         receipt = shared if family == 'roll-call-votes' else receipts['member_vote_terms']
         generation = args.output / (family + '-generation')
         with phase(log, family + '-complete-generation-admission'):
-            build_generation(generation, family=family, files=[subjects[name] for name in datasets],
+            artifacts[family] = build_generation(generation, family=family, files=[subjects[name] for name in datasets],
                 expected_keys=[name + '.parquet' for name in datasets], receipt_path=receipt,
                 receipt_policies=[policy(name) for name in datasets], receipt_generation_id=labels[datasets[0]])
-        measurement = args.output / (family + '-index')
-        held = publication.file_identity(receipt)
-        pin = args.output / (family + '-receipt-pin.json')
-        pin.write_text(json.dumps({'sha256': held['sha256'], 'byteSize': held['bytes'],
-                                 'rows': pq.read_metadata(receipt).num_rows}) + '\n')
-        with phase(log, family + '-index-local-upload-and-locked-range-serving'):
-            command = [str(receipt), str(measurement), '--pin', str(pin), '--dataset', datasets[-1]]
-            for name in datasets:
-                command += ['--member', str(subjects[name])]
-            if args.fixture:
-                command.append('--force-small-fixture')
-            child('qualify_receipt_index.py', command)
-        with phase(log, family + '-explicit-index-artifact-admission'):
-            descriptor = json.loads((measurement / 'descriptor.json').read_text())
-            artifacts[family] = bind_key_index_for_qualification(generation, measurement / KEY, descriptor)
         with phase(log, family + '-actual-private-publication-upload-readback'):
             index = publication.publish_generation(generation, client=store, bucket=store.bucket, prior_index=index)
     (args.output / 'private-publication.json').write_text(json.dumps(index, indent=2) + '\n')

@@ -29,7 +29,7 @@ removals use `retire_receipt` to preserve evidence without an orphan accepted
 subject join. Original source files and capture evidence remain retained.
 
 See [receipt writer adoption](receipt-writer-adoption.md) for the distinction
-between included helpers and maintained writer activation, optional key indexes,
+between included helpers and maintained writer activation, the receipt lookup layout,
 and replacement of the earlier receipt drafts.
 
 Native subjects are authoritative for domain readers. Maintained source builders

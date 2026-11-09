@@ -72,7 +72,7 @@ class ReceiptAdapter:
             fetch_member(self.base_url, member, destination)
         else:
             import shutil
-            if member.key in {"etl_receipts.parquet", "etl_receipts.keys.parquet"} and self.local_receipts is not None:
+            if member.key == "etl_receipts.parquet" and self.local_receipts is not None:
                 if member.path not in self.local_receipts:
                     raise ValueError("Receipt not part of selected local download")
                 source = Path(self.local_receipts[member.path])
@@ -97,7 +97,7 @@ class ReceiptAdapter:
         """Keep the admitted historical/current policy beside each verified row."""
         from .etl_receipts import DatasetPolicy, read_with_receipts, read_attempts, select_receipts, selected_subject_policy, receipt_policies
         from .subject_catalog import descriptors
-        from .sources.publication import receipt_members, receipt_key_members, table_members, table_owner
+        from .sources.publication import receipt_members, table_members, table_owner
 
         checkpoint()
         self.require_selected((table,))
@@ -119,25 +119,6 @@ class ReceiptAdapter:
                         self._fetch(member, path)
                         subjects.append(path)
                 generation = owner[1]["etlReceipts"]["generationId"]
-            specification = native.get("key_index_descriptor") if native is not None else owner[1]["etlReceipts"].get("keyIndex")
-            if specification is not None:
-                from .receipt_key_index import check_reader
-                from .sources.publication import file_identity
-                import pyarrow.parquet as pq
-                if native is not None:
-                    if not native.get("key_index"):
-                        raise ValueError("Selected native receipt key index is missing")
-                    key_path = Path(native["key_index"])
-                else:
-                    key_path = directory / "keys.parquet"
-                    indexes = receipt_key_members(self.index, dataset=table)
-                    if len(indexes) != 1:
-                        raise ValueError("Selected receipt key index is ambiguous")
-                    self._fetch(indexes[0], key_path)
-                identity = file_identity(shared)
-                check_reader(self.connection, str(key_path), specification,
-                             {"sha256": identity["sha256"], "byteSize": identity["bytes"],
-                              "rows": pq.ParquetFile(shared).metadata.num_rows})
             receipt = select_receipts(shared, directory / "receipt.parquet", dataset=table)
             if not subjects and not policy.receipt_only:
                 historical = [p for p in receipt_policies(policy) if p.receipt_only]

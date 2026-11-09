@@ -4,6 +4,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
+import resource
+import threading
+import time
+from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
 from importlib.metadata import version
 from itertools import zip_longest
 from pathlib import Path
@@ -13,8 +20,152 @@ import sys
 import pyarrow.parquet as pq
 from starlette.testclient import TestClient
 
-from scripts.qualify_receipt_index import install_local_httpfs, phase
 from spicy_regs.generations import implementation_id, source_digest
+from spicy_regs.sources.publication import file_identity
+
+def append(path: Path, record: dict):
+    with path.open('a') as sink:
+        sink.write(json.dumps(record, sort_keys=True)+'\n')
+
+
+@contextmanager
+def phase(log: Path, name: str):
+    started = time.monotonic()
+    record: dict[str, Any] = {'phase': name, 'status': 'running', 'scope': 'local-simulation',
+                            'startedMonotonicNs': time.monotonic_ns()}
+    append(log, record)
+    try:
+        yield record
+        record['status'] = 'passed'
+    except BaseException as error:
+        record.update(status='failed', errorType=type(error).__name__, error=str(error))
+        raise
+    finally:
+        record.update(seconds=time.monotonic()-started, finishedMonotonicNs=time.monotonic_ns(),
+            peakRssBytes=resource.getrusage(
+            resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform == 'darwin' else 1024))
+        append(log, record)
+        print(json.dumps(record, sort_keys=True), flush=True)
+
+
+def assert_pin(path: Path, pin: dict):
+    if set(pin) != {'sha256', 'byteSize', 'rows'} or type(pin.get('sha256')) is not str or (
+            re.fullmatch(r'sha256:[0-9a-f]{64}', pin['sha256']) is None) or (
+            type(pin.get('byteSize')) is not int or pin['byteSize'] <= 0) or (
+            type(pin.get('rows')) is not int or pin['rows'] < 0):
+        raise ValueError('Receipt pin must have exact canonical hash, byte-size and row fields')
+    actual = file_identity(path)
+    if actual['sha256'] != pin['sha256'] or actual['bytes'] != pin['byteSize'] or (
+            pq.read_metadata(path).num_rows != pin['rows']):
+        raise ValueError('Receipt differs from its admitted hash, byte-size or footer row pin')
+
+
+def copy_exact(source: Path, target: Path) -> dict:
+    """Stream real bytes to private local object storage, then independently hash both."""
+    before = file_identity(source)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with source.open('rb') as origin, target.open('xb') as sink:
+        for chunk in iter(lambda: origin.read(1024*1024), b''):
+            sink.write(chunk)
+    if file_identity(target) != before or file_identity(source) != before:
+        raise ValueError('Local uploaded member or original source bytes changed')
+    return before
+
+
+@contextmanager
+def serve(objects: dict[str, Path], request_log: Path, marker: dict[str, str]):
+    """Serve only immutable, explicitly mapped objects; retain real body/range bytes."""
+    log_lock = threading.Lock()
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            pass
+
+        def do_HEAD(self):
+            self.transfer(False)
+
+        def do_GET(self):
+            self.transfer(True)
+
+        def transfer(self, body: bool):
+            began = time.monotonic_ns()
+            probe = marker['probe']
+            path = objects.get(self.path)
+            if path is None:
+                self.send_error(404)
+                return
+            size = path.stat().st_size
+            start, end, status = 0, size-1, 200
+            requested = self.headers.get('Range')
+            if requested:
+                try:
+                    if not requested.startswith('bytes=') or ',' in requested:
+                        raise ValueError('Unsupported range')
+                    left, right = requested[6:].split('-', 1)
+                    if left:
+                        start = int(left)
+                        end = min(int(right), size-1) if right else size-1
+                    else:
+                        suffix = int(right)
+                        if suffix <= 0:
+                            raise ValueError('Invalid suffix')
+                        start = max(0, size-suffix)
+                    if start < 0 or start > end or start >= size:
+                        raise ValueError('Invalid range')
+                    status = 206
+                except ValueError:
+                    self.send_response(416)
+                    self.send_header('Content-Range', f'bytes */{size}')
+                    self.send_header('Content-Length', '0')
+                    self.end_headers()
+                    return
+            self.send_response(status)
+            self.send_header('Content-Length', str(end-start+1))
+            self.send_header('Accept-Ranges', 'bytes')
+            if status == 206:
+                self.send_header('Content-Range', f'bytes {start}-{end}/{size}')
+            self.end_headers()
+            sent, failure = 0, None
+            try:
+                if body:
+                    with path.open('rb') as stream:
+                        stream.seek(start)
+                        remaining = end-start+1
+                        while remaining:
+                            chunk = stream.read(min(remaining, 1024*1024))
+                            if not chunk:
+                                raise ValueError('Served member truncated')
+                            self.wfile.write(chunk)
+                            sent += len(chunk)
+                            remaining -= len(chunk)
+            except (OSError, ValueError) as error:
+                failure = str(error)
+                raise
+            finally:
+                with log_lock:
+                    append(request_log, {'method': self.command, 'object': self.path,
+                        'range': requested, 'start': start, 'end': end, 'status': status,
+                        'bodyBytes': sent, 'error': failure, 'probe': probe,
+                        'startedMonotonicNs': began, 'finishedMonotonicNs': time.monotonic_ns()})
+
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    try:
+        yield f'http://127.0.0.1:{server.server_port}'
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join()
+
+
+def install_local_httpfs(con, path: Path):
+    """Seed this connection's private cache; ordinary LOAD validates signature/version."""
+    local = path.resolve(strict=True)
+    if not local.is_file() or local.name != 'httpfs.duckdb_extension':
+        raise ValueError('Expected an exact local httpfs.duckdb_extension file')
+    con.execute("INSTALL '" + str(local).replace("'", "''") + "'")
+
 
 def compare_files(source: Path, restored: Path):
     expected, actual = pq.ParquetFile(source), pq.ParquetFile(restored)

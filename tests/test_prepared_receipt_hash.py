@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from rulespec_artifacts import iter_member_descriptors
 
-from spicy_regs import conversion_reads, etl_bulk, generations, receipt_key_index
+from spicy_regs import conversion_reads, etl_bulk, generations
 from spicy_regs import native_conversion as conversion
 from spicy_regs.conversion_reads import ConversionReadOperation
 from spicy_regs.sources import publication
@@ -38,10 +38,9 @@ def publish(path, digest, **options):
 
 
 def count_validators(monkeypatch):
-    """Record every row-level validation entry: the family reader, the bulk bundle check and the key-index check."""
+    """Record every row-level validation entry: the family reader and the bulk bundle check."""
     calls = []
-    for owner, name in ((conversion_reads, "_open_family_reader"), (etl_bulk, "_validated_bundle"),
-                        (receipt_key_index, "verify_key_index")):
+    for owner, name in ((conversion_reads, "_open_family_reader"), (etl_bulk, "_validated_bundle")):
         real = getattr(owner, name)
 
         def counted(*args, _real=real, _name=name, **kwargs):
@@ -58,7 +57,6 @@ def forbid_validators(monkeypatch):
 
     monkeypatch.setattr(conversion_reads, "_open_family_reader", validator)
     monkeypatch.setattr(etl_bulk, "_validated_bundle", validator)
-    monkeypatch.setattr(receipt_key_index, "verify_key_index", validator)
 
 
 def flip_one_byte(path: Path) -> None:

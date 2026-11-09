@@ -132,7 +132,7 @@ def cmd_download(args):
     for name in types_to_download:
         _table_name(name)
 
-    from spicy_regs.local_data import selection_record, selected_receipt_members, selected_receipt_key_members, receipt_local_key
+    from spicy_regs.local_data import selection_record, selected_receipt_members, receipt_local_key
     from spicy_regs.sources.publication import snapshot, fetch_member
 
     base_url = resolve_r2_base_url()
@@ -162,7 +162,7 @@ def cmd_download(args):
             print(f"  {data_type}: {selected[data_type]['status']}")
             if download_file(data_type, destination, force=args.force, base_url=base_url) is None:
                 raise RuntimeError(f"Download incomplete: {data_type}")
-        for member in (*selected_receipt_members(index, selected), *selected_receipt_key_members(index, selected)):
+        for member in selected_receipt_members(index, selected):
             receipt_path = destination / receipt_local_key(member)
             receipt_path.parent.mkdir(parents=True, exist_ok=True)
             fetch_member(base_url, member, receipt_path, member.path, headers=DEFAULT_HEADERS, timeout=60.0)

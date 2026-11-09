@@ -10,7 +10,6 @@ import sys
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
-from typing import Any
 
 import duckdb
 import pyarrow as pa
@@ -411,56 +410,18 @@ def test_a_table_past_the_bound_is_refused_from_its_footer_alone(tmp_path, monke
             if "read_parquet" in sql or "parquet_metadata" in sql] == ["parquet_metadata"]
 
 
-def _add_selected_index(con):
-    from pathlib import Path
-    from spicy_regs.receipt_key_index import KEY
-    from spicy_regs.receipt_key_index_writer import build_key_index
-
-    snapshot = json.loads(con.execute("SELECT snapshot FROM _spicy_publication").fetchone()[0])
-    entry = next(iter(snapshot["families"].values()))
-    directory = Path(server.R2_BASE_URL) / entry["prefix"]
-    entry["etlReceipts"]["keyIndex"] = build_key_index(
-        directory / entry["etlReceipts"]["key"], directory / KEY, force=True)
-    con.execute("UPDATE _spicy_publication SET snapshot=?", [json.dumps(snapshot)])
-    return snapshot, entry
-
-
-def test_selected_index_reads_large_table_without_receipt_id_scan(tmp_path, monkeypatch):
-    rows = [fcc(str(number)) for number in range(100, 109)]
-    con = one_family(tmp_path, monkeypatch, {"fcc_filings": rows}, row_group=2, edit=_descending)
-    keys = [{"id_submission": str(number)} for number in (108, 100, 108)]
-    expected = call("fcc_filings", keys, ["filing_url"])
-    _add_selected_index(con)
-    monkeypatch.setattr(lookup, "SCAN_ROW_BOUND", 8)
-    monkeypatch.setattr(lookup, "_accepted", lambda *a: pytest.fail("Indexed lookup scanned all receipt ids"))
-    assert call("fcc_filings", keys, ["filing_url"]) == expected
-
-
-def test_declared_index_wrong_receipt_pin_refuses_without_scan_fallback(tmp_path, monkeypatch):
-    con = one_family(tmp_path, monkeypatch, {"fcc_filings": [fcc("100")]})
-    snapshot, entry = _add_selected_index(con)
-    entry["etlReceipts"]["keyIndex"]["receiptSha256"] = "sha256:" + "f" * 64
-    con.execute("UPDATE _spicy_publication SET snapshot=?", [json.dumps(snapshot)])
-    monkeypatch.setattr(lookup, "_accepted", lambda *a: pytest.fail("Corrupt index fell back to a scan"))
-    assert "Invalid or stale receipt key index descriptor" in refused(
-        "fcc_filings", [{"id_submission": "100"}], ["filing_url"])
-
-
-def test_indexed_lookup_retains_identity_version_refusal(tmp_path, monkeypatch):
+def test_lookup_retains_identity_version_refusal(tmp_path, monkeypatch):
     installed = POLICIES["fcc_filings"]
     other = replace(installed, identity_fields=("id_submission", "total_page_count"),
                     policy_version="government-sources/8")
     _under(tmp_path, monkeypatch, [(other, [fcc("100", total_page_count="4")])])
-    con = server._get_connection()
-    _add_selected_index(con)
     monkeypatch.setattr(lookup, "SCAN_ROW_BOUND", 0)
     message = refused("fcc_filings", [{"id_submission": "100"}], ["filing_url"])
     assert "Every key would miss" in message and "total_page_count (integer)" in message
 
 
-def test_index_does_not_remove_missing_key_subject_search_bound(tmp_path, monkeypatch):
-    con = one_family(tmp_path, monkeypatch, {"fcc_filings": [fcc(str(n)) for n in range(100, 109)]})
-    _add_selected_index(con)
+def test_missing_key_subject_search_keeps_its_bound(tmp_path, monkeypatch):
+    one_family(tmp_path, monkeypatch, {"fcc_filings": [fcc(str(n)) for n in range(100, 109)]})
     monkeypatch.setattr(lookup, "SCAN_ROW_BOUND", 8)
     assert "would search its 9 rows, over the 8-row bound" in refused(
         "fcc_filings", [{"id_submission": "999"}], ["filing_url"])
@@ -531,7 +492,7 @@ def test_crs_receipt_lookup_distinguishes_revisions_and_normalizes_timestamp_off
     raw_rows = [{**dict.fromkeys(LEGACY_COLUMNS["crs_reports"]), "report_id": "R1",
                  "update_date": stamp, "url": f"https://example.test/revision-{index}"}
                 for index, stamp in enumerate(("2026-07-17T22:38:55Z", "2026-07-17T23:38:55.123456Z"))]
-    con = one_family(tmp_path, monkeypatch, {"crs_reports": [
+    one_family(tmp_path, monkeypatch, {"crs_reports": [
         {**map_subject("crs_reports", raw), "raw_record": raw} for raw in raw_rows
     ]})
     keys = [{"report_id": "R1", "update_date": stamp} for stamp in (
@@ -541,8 +502,6 @@ def test_crs_receipt_lookup_distinguishes_revisions_and_normalizes_timestamp_off
     assert [item["receipt"] for item in reply["keys"]] == ["found", "found", "not_in_table"]
     assert [item["fields"]["url"]["value"] for item in reply["keys"][:2]] == [raw["url"] for raw in raw_rows]
     assert reply["keys"][1]["key"]["update_date"] == "2026-07-17T23:38:55.123456+00:00"
-    _add_selected_index(con)
-    assert call("crs_reports", keys, ["url"]) == reply
     for invalid in ("2026-07-17", "2026-07-17T22:38:55", "2026-02-30T22:38:55Z",
                     "2026-07-17T22:38:55.1234567Z", "2026-07-17T22:38:55+00:99", 123):
         message = refused("crs_reports", [{"report_id": "R1", "update_date": invalid}], ["url"])
@@ -1117,105 +1076,7 @@ def test_snapshot_selection_follows_subject_precedence_and_never_supplies_local_
     con.close()
 
 
-@pytest.mark.parametrize('selection', ['download', 'native'])
-def test_indexed_local_selection_full_reply_parity(tmp_path, monkeypatch, selection):
-    con = one_family(tmp_path, monkeypatch, {'fcc_filings': [
-        fcc('100', text_data='', native_fields_json=None), fcc('200', text_data='held')]})
-    keys = [{'id_submission': '200'}, {'id_submission': '100'}, {'id_submission': '200'}]
-    fields = ['filing_url', 'native_fields_json', 'text_data']
-    expected = call('fcc_filings', keys, fields)
-    _, entry = _add_selected_index(con)
-    receipt_path = entry['prefix'] + '/' + entry['etlReceipts']['key']
-    index_path = entry['prefix'] + '/' + entry['etlReceipts']['keyIndex']['key']
-    receipt_location = str(tmp_path / receipt_path)
-    index_location = str(tmp_path / index_path)
-    local: dict[str, Any]
-    if selection == 'download':
-        local = {'selected_tables': ['fcc_filings'], 'receipt_members': {receipt_path: receipt_location},
-                 'receipt_indexes': {index_path: index_location}}
-    else:
-        local = {'native': {'fcc_filings': {'receipts': receipt_location,
-                  'generation_id': entry['etlReceipts']['generationId'], 'key_index': index_location,
-                  'key_index_descriptor': entry['etlReceipts']['keyIndex']}}}
-    # Fixture remote-style files are rooted at the actual server URL, not necessarily tmp_path.
-    from pathlib import Path
-    local_receipt = str(Path(server.R2_BASE_URL) / receipt_path)
-    local_index = str(Path(server.R2_BASE_URL) / index_path)
-    if selection == 'download':
-        local['receipt_members'][receipt_path] = local_receipt
-        local['receipt_indexes'][index_path] = local_index
-    else:
-        local['native']['fcc_filings'].update(receipts=local_receipt, key_index=local_index)
-    from spicy_regs.local_data import file_signature
-    local['signatures'] = {str(path): file_signature(path) for path in
-                           (Path(server.R2_BASE_URL) / entry['prefix']).glob('*.parquet')}
-    local.setdefault('selected_tables', ['fcc_filings'])
-    local['directory'] = str(tmp_path)
-    monkeypatch.setattr(server, 'DATA_DIR', tmp_path)
-    monkeypatch.setattr(server, '_connection_local_selection', lambda cursor: local)
-    monkeypatch.setattr(lookup, '_accepted', lambda *a: pytest.fail('Indexed local lookup scanned receipts'))
-    monkeypatch.setattr(lookup, '_stated_identities', lambda *a: pytest.fail('Indexed local lookup scanned policy payloads'))
-    actual = call('fcc_filings', keys, fields)
-    expected.pop('base_url', None)
-    expected.update(source='local', base_path=str(tmp_path), selected_directory=str(tmp_path))
-    # Native selections identify their own publisher, without a remote family artifact.
-    if selection == 'native':
-        expected['receipts'] = {**expected['receipts'], 'family': None, 'artifact_digest': None}
-    assert actual == expected
-
-
-@pytest.mark.parametrize('selection', ['download', 'native'])
-def test_local_declared_index_missing_refuses_without_scan(tmp_path, monkeypatch, selection):
-    from pathlib import Path
-    con = one_family(tmp_path, monkeypatch, {'fcc_filings': [fcc('100')]})
-    _, entry = _add_selected_index(con)
-    path = entry['prefix'] + '/' + entry['etlReceipts']['key']
-    local: dict[str, Any]
-    if selection == 'download':
-        local = {'selected_tables': ['fcc_filings'],
-                 'receipt_members': {path: str(Path(server.R2_BASE_URL) / path)}, 'receipt_indexes': {}}
-        message = 'Declared receipt key index is absent'
-    else:
-        local = {'native': {'fcc_filings': {'receipts': str(Path(server.R2_BASE_URL) / path),
-                 'generation_id': entry['etlReceipts']['generationId'], 'key_index': None,
-                 'key_index_descriptor': entry['etlReceipts']['keyIndex']}}}
-        message = 'Selected native receipt index declaration is incomplete'
-    from spicy_regs.local_data import file_signature
-    local['signatures'] = {str(path): file_signature(path) for path in
-                           (Path(server.R2_BASE_URL) / entry['prefix']).glob('*.parquet')}
-    local.setdefault('selected_tables', ['fcc_filings'])
-    local['directory'] = str(tmp_path)
-    monkeypatch.setattr(server, 'DATA_DIR', tmp_path)
-    monkeypatch.setattr(server, '_connection_local_selection', lambda cursor: local)
-    monkeypatch.setattr(lookup, '_accepted', lambda *a: pytest.fail('Declared index fell back to scan'))
-    assert message in refused('fcc_filings', [{'id_submission': '100'}], ['filing_url'])
-
-
-def test_indexed_mixed_versions_use_only_representative_receipt_positions(tmp_path, monkeypatch):
-    installed = POLICIES['fcc_filings']
-    _under(tmp_path, monkeypatch, [(installed, [fcc('100')]),
-           (replace(installed, policy_version='government-sources/0'), [fcc('200')])])
-    con = server._get_connection()
-    _add_selected_index(con)
-    monkeypatch.setattr(lookup, '_stated_identities', lambda *a: pytest.fail('Indexed mixed-policy payload scan'))
-    monkeypatch.setattr(lookup, 'SCAN_ROW_BOUND', 0)
-    result = call('fcc_filings', [{'id_submission': '100'}], ['filing_url'])
-    assert result['keys'][0]['receipt'] == 'found'
-    assert result['receipts']['policy_version'] == ['government-sources/0', installed.policy_version]
-
-
-def test_indexed_unrequested_incompatible_policy_version_refuses(tmp_path, monkeypatch):
-    installed = POLICIES['fcc_filings']
-    other = replace(installed, identity_fields=('id_submission', 'total_page_count'),
-                    policy_version='government-sources/8')
-    _under(tmp_path, monkeypatch, [(installed, [fcc('100')]), (other, [fcc('200', total_page_count='4')])])
-    _add_selected_index(server._get_connection())
-    monkeypatch.setattr(lookup, '_stated_identities', lambda *a: pytest.fail('Indexed identity payload scan'))
-    message = refused('fcc_filings', [{'id_submission': '100'}], ['filing_url'])
-    assert "'government-sources/8'" in message and 'total_page_count (integer)' in message
-
-
-def test_indexed_receipt_reply_retains_all_detail_field_states(tmp_path, monkeypatch):
+def test_receipt_reply_retains_all_detail_field_states(tmp_path, monkeypatch):
     rows = []
     for number, (read, values) in enumerate([
         ('false', dict.fromkeys(MEETING_LISTS)), ('true', dict.fromkeys(MEETING_LISTS)),
@@ -1223,11 +1084,8 @@ def test_indexed_receipt_reply_retains_all_detail_field_states(tmp_path, monkeyp
         ('true', MEETING_LISTS)], 1):
         rows.append(congress('committee_meetings', congress='119', chamber='house', event_id=str(number),
                              detail_read=read, **values))
-    con = one_family(tmp_path, monkeypatch, {'committee_meetings': rows})
+    one_family(tmp_path, monkeypatch, {'committee_meetings': rows})
     keys = [{'congress': '119', 'chamber': 'house', 'event_id': str(n)} for n in range(1, 6)]
     fields = list(MEETING_LISTS)
     expected = call('committee_meetings', keys, fields)
-    _add_selected_index(con)
-    monkeypatch.setattr(lookup, '_accepted', lambda *a: pytest.fail('Indexed field-state lookup scanned receipts'))
-    assert call('committee_meetings', keys, fields) == expected
     assert set(expected['state_meaning']) >= {'unread', 'not_stated', 'stated_empty', 'stated'}

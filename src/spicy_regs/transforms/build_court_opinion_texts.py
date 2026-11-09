@@ -42,7 +42,7 @@ range requests on the member computed from the id, 6 through the whole member li
 and 154 cold with only ``opinion_id`` filtered. On the same rows reshuffled, DuckDB's ``COPY ... ORDER BY`` with
 ``PARTITION_BY`` and ``ROW_GROUP_SIZE_BYTES`` was 8% faster than the spill and sort but wrote members out of id order
 (byte-sized row groups need ``preserve_insertion_order=false``) with row groups of up to 54 MB of Markdown, so the
-sort stays here. Export-order members with a sorted id index (the ``receipt_key_index`` pattern) skip the spill and
+sort stays here. Export-order members with a sorted id index (a key-to-position sidecar, measured then) skip the spill and
 sort (1.1 GB peak RSS against 3.7 GB for the comparison's in-memory sort) at the same write time, but are 6% larger
 and a point read takes 9 requests.
 

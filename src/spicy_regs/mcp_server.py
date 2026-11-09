@@ -751,7 +751,7 @@ def _immutable_metadata_inputs(index, rulemaking, allowed_paths, archive=None) -
     """
     from spicy_regs.sources.publication import (
         PublicationError, SNAPSHOT_POINTER, load_rulemaking_snapshot, parse_index,
-        receipt_key_members, receipt_members, rulemaking_receipt, table_members,
+        receipt_members, rulemaking_receipt, table_members,
     )
 
     base = R2_BASE_URL.rstrip("/")
@@ -765,7 +765,7 @@ def _immutable_metadata_inputs(index, rulemaking, allowed_paths, archive=None) -
                 owned.update({f"{base}/{member.path}": "managed_generation"
                               for member in table_members(captured, key)})
         owned.update({f"{base}/{member.path}": "managed_generation"
-                      for member in (*receipt_members(captured), *receipt_key_members(captured))})
+                      for member in receipt_members(captured)})
         if rulemaking is not None:
             # Reuse the maintained pointer/manifest validator with the captured
             # documents only: no additional HTTP read or filename inference.
@@ -996,11 +996,8 @@ def _build_connection_inputs(con, publication):
                         "selected_tables": list(local.files),
                         "receipt_rows_admitted": not _discovery_only.get(),
                         "receipt_members": {name: str(path) for name, path in local.receipts.items()},
-                        "receipt_indexes": {name: str(path) for name, path in local.receipt_indexes.items()},
                         "native": {name: {"subjects": [str(p) for p in value.subjects],
-                                           "receipts": str(value.receipts), "generation_id": value.generation_id,
-                                           "key_index": str(value.key_index) if value.key_index else None,
-                                           "key_index_descriptor": value.key_index_descriptor}
+                                           "receipts": str(value.receipts), "generation_id": value.generation_id}
                                    for name, value in local.native.items()},
                     }
                 )
@@ -1183,33 +1180,6 @@ def _build_connection_inputs(con, publication):
         except (duckdb.Error, RuntimeError) as exc:
             con.close()
             raise RuntimeError("Published ETL receipt member unavailable") from exc
-    from spicy_regs.receipt_key_index import check_reader
-
-    selected_receipt_paths = set(local_receipts) if local_receipts is not None else {m.path for m in receipts}
-    for entry in publication_index["families"].values():
-        specification = entry.get("etlReceipts", {})
-        key = specification.get("keyIndex")
-        receipt_path = f"{entry['prefix']}/{specification.get('key', '')}"
-        if key is None or receipt_path not in selected_receipt_paths:
-            continue
-        member_path = f"{entry['prefix']}/{key['key']}"
-        location = str(local.receipt_indexes[member_path]) if local is not None else f"{R2_BASE_URL}/{member_path}"
-        try:
-            with _diagnostic_phase("receipt_key_index"):
-                check_reader(con, location, key, specification)
-        except ValueError:
-            con.close()
-            raise
-        allowed_paths.append(location)
-    if local is not None:
-        for value in local.native.values():
-            if value.key_index is not None:
-                import pyarrow.parquet as pq
-                from spicy_regs.selected_generations import _pin
-                check_reader(con, str(value.key_index), value.key_index_descriptor,
-                             {"sha256": _pin(value.receipts), "byteSize": value.receipts.stat().st_size,
-                              "rows": pq.ParquetFile(value.receipts).metadata.num_rows})
-                allowed_paths.append(str(value.key_index))
     if local is None and rulemaking is not None and not catalog_only:
         from spicy_regs.sources.publication import rulemaking_receipt
 
@@ -1355,8 +1325,7 @@ def _install_relationship_views(con: duckdb.DuckDBPyConnection) -> None:
     processing |= {name for name in native if declared.get(name, {}).get("receipt_only")}
     local_directory = local_selection["directory"] if local_selection else DATA_DIR
     adapter = ReceiptAdapter(con, index, R2_BASE_URL, local_directory=local_directory,
-                             local_receipts=({**local_selection.get("receipt_members", {}),
-                                              **local_selection.get("receipt_indexes", {})} if local_selection else None),
+                             local_receipts=(local_selection.get("receipt_members", {}) if local_selection else None),
                              local_native=native)
     # A mixed old/native dependency set is a refusal, never a pass-through.
     adapted = [spec for spec in FEC_VIEWS

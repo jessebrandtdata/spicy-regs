@@ -184,12 +184,11 @@ def test_a_truncated_leftover_is_replaced_and_no_source_counts_missing(tmp_path,
     assert (root / member.path).read_bytes() == (directory / member.key).read_bytes()
 
 
-def test_generation_files_include_receipts_and_their_key_index():
+def test_generation_files_include_receipts():
     pin = {"sha256": "sha256:" + "0" * 64, "byteSize": 1, "rows": 1}
     entry = {"prefix": "generations/f/" + "a" * 64, "tables": {"t.parquet": pin}, "etlReceipts": {
-        "key": "etl_receipts.parquet", **pin, "keyIndex": {"key": "etl_receipts.keys.parquet", **pin}}}
-    assert sorted(pub.generation_files(entry)) == ["artifact.json", "etl_receipts.keys.parquet",
-                                                   "etl_receipts.parquet", "members.json", "t.parquet"]
+        "key": "etl_receipts.parquet", **pin}}
+    assert sorted(pub.generation_files(entry)) == ["artifact.json", "etl_receipts.parquet", "members.json", "t.parquet"]
 
 
 def test_conftest_isolates_the_mirror_root():

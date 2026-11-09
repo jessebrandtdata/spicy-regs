@@ -65,8 +65,6 @@ def prepare_successor(*, captured_index: Path, prior_controls: Path, prepared: P
     if manifest_digest != manifest_spec["sha256"]:
         raise ValueError("Prepared manifest differs from its root pin")
     expected_members = set(spec["tables"]) | {"etl_receipts.parquet"}
-    if "keyIndex" in spec["etlReceipts"]:
-        expected_members.add(spec["etlReceipts"]["keyIndex"]["key"])
     names = [item["objectKey"] for item in manifest["members"]]
     if len(set(names)) != len(names) or set(names) != expected_members:
         raise ValueError("Prepared physical members differ from complete family membership")

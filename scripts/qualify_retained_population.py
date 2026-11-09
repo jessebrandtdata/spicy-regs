@@ -20,15 +20,14 @@ import pyarrow.parquet as pq
 from rulespec_artifacts import LocalMemberSource, admit_artifact
 
 from scripts.qualification_store import DiskStore
-from scripts.qualify_receipt_index import assert_pin, bind_key_index_for_qualification, phase, serve
 from scripts.retained_qualification_support import (
-    compare_files, capture_code_pins, child, mcp_controls, verify_code_pins,
+    assert_pin, phase, serve,
+    compare_files, capture_code_pins, mcp_controls, verify_code_pins,
 )
 from spicy_regs import court_receipts, etl_bulk, regulations_bulk
 from spicy_regs.etl_receipts import carry_receipt_history, validate_receipt_bundle
 from spicy_regs.generations import build_generation
 from spicy_regs.native_types import described_schema
-from spicy_regs.receipt_key_index import KEY
 from spicy_regs.sources import publication
 from spicy_regs.transforms import regulations_receipts as regulations
 
@@ -413,24 +412,9 @@ def audit_candidates(plan_path, candidate, output, *, fixture=False, httpfs_exte
             record['rows'] = restore(dataset, source, subject, carried, output / 'restored.parquet', generation)
     directory = output / 'generation'
     with phase(log, 'complete-native-generation-admission'):
-        build_generation(directory, family=family, files=[subject], expected_keys=[dataset + '.parquet'],
+        artifact = build_generation(directory, family=family, files=[subject], expected_keys=[dataset + '.parquet'],
                          schemas={dataset: described_schema(declared.subject_schema)}, receipt_path=carried,
                          receipt_policies=[declared], receipt_generation_id=generation)
-    with phase(log, 'full-key-index-private-copy-and-locked-range-serving'):
-        identity = publication.file_identity(carried)
-        receipt_pin = output / 'receipt-pin.json'
-        receipt_pin.write_text(json.dumps({'sha256': identity['sha256'], 'byteSize': identity['bytes'],
-                                          'rows': pq.read_metadata(carried).num_rows}) + '\n')
-        arguments = [str(carried), str(output / 'index'), '--pin', str(receipt_pin), '--dataset', dataset,
-                     '--member', str(subject)]
-        if fixture:
-            arguments.append('--force-small-fixture')
-        if httpfs_extension is not None:
-            arguments.extend(['--httpfs-extension', str(httpfs_extension)])
-        child('qualify_receipt_index.py', arguments)
-    with phase(log, 'explicit-full-index-artifact-admission'):
-        descriptor = json.loads((output / 'index' / 'descriptor.json').read_text())
-        artifact = bind_key_index_for_qualification(directory, output / 'index' / KEY, descriptor)
     store = DiskStore(output / 'private-store', bucket='retained-qualification')
     with phase(log, 'actual-private-publication-upload-readback'):
         index = publication.publish_generation(directory, client=store, bucket=store.bucket,

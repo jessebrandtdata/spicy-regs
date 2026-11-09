@@ -1,4 +1,4 @@
-# Receipt history and key-index adoption
+# Receipt history and receipt lookup adoption
 
 Receipt writers use the family history rules below. The carry changes preserve
 the receipt schema and canonical digests; original receipt generations remain
@@ -84,35 +84,20 @@ reproduction; an unsupported proof returns the whole pair to the row reader for
 its exact first error. Batch conversion preserves source order and count, routes
 unsupported rows through the shared mapper, and retains refused attempts.
 
-## Explicit auxiliary key indexes
+## Finding one receipt: the standard Parquet layout
 
-`receipt_key_index_writer.build_key_index` builds a separate narrow key file. It
-records original physical receipt ordinals, verifies the complete positional
-map and receipt pin, and replaces its destination only after verification. It
-never sorts or rewrites the receipt member. `force=True` exercises the same
-format on a small fixture; the threshold controls an explicit utility call.
-
-`generations.build_generation` does not call this builder automatically.
-`remote_generations.prepare_remote_generation` does not accept a
-`receipt_key_index` argument or require an index above the threshold. An admitted
-optional `keyIndex` can be read by the existing generation readers. Private
-qualification can explicitly attach a measured sidecar using
-`scripts/qualify_receipt_index.py`; that script is not a scheduled writer.
-
-The retained historical measurement passed exact positional-map, byte-pin and
-locked loopback read checks. It measured the explicit utility on one pinned
-historical receipt member, not current production membership, hosted upload or
-deployed readers. Its result and failed attempts remain under
-`~/Work/corpora/session-reports-2026-10-05/` and
-`~/Work/corpora/receipt-index-qualification-20261005/`; see
-`receipt-historical-index-RESULT.md` and its linked evidence. Automatic writer
-activation or a mandatory remote index needs its own current-family
-qualification and reader/publication decision. No historical rerun follows from
-the inclusion of this documentation.
-
-Boundary checks are in `tests/test_receipt_key_index_writer.py`,
-`tests/test_qualify_receipt_index.py`, `tests/test_generation_publication.py` and
-`tests/test_remote_generations.py`.
+Every receipt member is written by `etl_receipts.open_receipt_writer`: whole
+65,536-row groups, a page index with 1,000-row pages, footer and page bounds on
+the key columns (including `identity_json`), and dictionaries only on
+low-cardinality columns. A reader finds one row's receipts by filtering on
+`dataset` and `identity_json`, so the footer and page index prune to the pages
+that can hold it; rows are not sorted. `read_receipt_fields` reads those groups
+with DuckDB, and the browser reads the identity columns first, then the one row.
+Measured 2026-11-09 on bill-family's largest dataset (3.7M receipts): ~2-5 MB a
+cold lookup (ticket ss-e4nx). This replaced the earlier key-to-position sidecar
+(`etl_receipts.keys.parquet`), which no family ever published; its 2026-10-05
+qualification evidence stays under
+`~/Work/corpora/receipt-index-qualification-20261005/`.
 
 ## Receipt-order experiment
 
@@ -125,8 +110,7 @@ and null candidates. Its rule is `fec-companion-location-v3`.
 `tests/test_fec_receipt_order.py` exercises the receipt-backed serving path in
 both physical orders. Navigation tests cover repeated and null candidates.
 This makes the derived list deterministic without rewriting source observations
-or adopting the proposed physical receipt sort. The separate key-index utility
-continues to refer to original receipt ordinals.
+or adopting the proposed physical receipt sort.
 
 ## Replacement of the earlier draft stack
 

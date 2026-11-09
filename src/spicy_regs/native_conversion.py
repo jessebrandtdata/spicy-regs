@@ -1443,12 +1443,7 @@ def _qualify_conversion(family: str, built: _Built, old: Mapping, retained: Mapp
     if (subjects := set(artifact["spec"]["tables"])) != expected:
         problems.append(f"the generation holds {sorted(subjects)}; publication expects {sorted(expected)}")
     # Keep the original physical-file guard as well as the logical membership check.
-    # Receipt indexes are declared auxiliary members, never public subject tables.
-    from spicy_regs.receipt_key_index import KEY as RECEIPT_INDEX_KEY
-
     auxiliary = {"etl_receipts.parquet"}
-    if artifact["spec"].get("etlReceipts", {}).get("keyIndex"):
-        auxiliary.add(RECEIPT_INDEX_KEY)
     physical = {publication.member_table(path.relative_to(built.generation).as_posix())
                 for path in built.generation.rglob("*.parquet") if path.relative_to(built.generation).as_posix() not in auxiliary}
     if physical != subjects:

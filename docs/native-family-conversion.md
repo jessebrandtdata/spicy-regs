@@ -506,7 +506,7 @@ the lock is identical). Only same-revision API callers, such as tests, omit it.
 Prepared publication never runs the source writer. It always re-hashes every
 generation member and retained original (decoding the originals) and reruns
 the structural, membership, policy, lineage and handed-on-journal checks. Row
-admission (bundle validation, key-index check) and original restoration run
+admission (bundle validation) and original restoration run
 again only when the seal's admission key differs from the publisher's, for a
 version-1 seal, for `fec-query` with staged observations (its parent's
 admission is not in the seal), or with `--full-verification`; the receipt's
