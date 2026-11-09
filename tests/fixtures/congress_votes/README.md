@@ -57,3 +57,10 @@ quorum call of 1991, is a file before 2003: it names no legislator by bioguide
 114-1-300 is one of the five votes the House vacated by unanimous consent
 before any position was recorded: it lists no member, totals zero, files its
 body under `<committee>` and says so in `<vote-desc>`.
+
+`senate-vote-menu-119-1.xml` is spicy-docs' byte-exact head-and-tail excerpt of
+the Senate's 119th-Congress first-session vote menu (captured keyless
+2026-09-19; 19,841 bytes, SHA-256
+`55c6f51697a46eac80bf151971bf6d9f428681e7eb1b54f828d7a62c3502789d`), copied
+unmodified from `spicy-docs/tests/fixtures/congress_votes/`, whose README states
+the kept spans. `tests/test_senate_vote_ladder.py` serves it from fake proxy rungs.

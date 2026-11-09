@@ -360,9 +360,12 @@ jobs:
           # Bulk downloads and verified replay need no token; every other
           # rollup stays keyless.
           COURTLISTENER_API_TOKEN: ${{ (inputs.command == 'run-rollup-courtlistener' || inputs.command == 'run-rollup-court-opinion-clusters') && secrets.COURTLISTENER_API_TOKEN || '' }}
-          # Zyte is a paid proxy; only a rollup that reads www.gao.gov through it gets the token:
-          # gao-recommendations (one request a run), and gao-reports only while its product-page read is on.
-          ZYTE_TOKEN: ${{ (inputs.command == 'run-rollup-gao-recommendations' || (inputs.command == 'run-rollup-gao-reports' && inputs.gao_product_pages)) && secrets.ZYTE_TOKEN || '' }}
+          # Zyte is a paid proxy; only a rollup that reads a walled host through it gets the token:
+          # gao-recommendations (one request a run), gao-reports only while its product-page read is on,
+          # and roll-call-votes, whose Senate files senate.gov refuses to runners (a Senate read pays only
+          # after its direct attempt is refused: two session menus, 25 correction re-reads and each new
+          # vote a night, ss-bruk). Zyte answered senate.gov with a ban (520, unbilled) on 2026-11-09.
+          ZYTE_TOKEN: ${{ (inputs.command == 'run-rollup-gao-recommendations' || inputs.command == 'run-rollup-roll-call-votes' || (inputs.command == 'run-rollup-gao-reports' && inputs.gao_product_pages)) && secrets.ZYTE_TOKEN || '' }}
           # Passed via env (not interpolated into the command) to keep the run
           # step free of any templated string in an executable position.
           COMMAND: ${{ inputs.command }}

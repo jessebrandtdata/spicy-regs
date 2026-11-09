@@ -3,8 +3,10 @@
 Each chamber's own session listing determines which votes to acquire: the
 Clerk's roll files for the House, which spicy-docs probes forward from the
 session's largest held roll (the EVS index pages answer 404 since 2026-10-02),
-and the LIS vote menu for the Senate. Both hosts are keyless, so the rollup
-needs no credential. Each chamber is listed on its own: a chamber whose
+and the LIS vote menu for the Senate. Both hosts are keyless. senate.gov
+refuses direct reads from runners (2026-11-08), so Senate files go through the
+walled-fetch ladder (:mod:`spicy_regs.sources.senate_vote_ladder`): direct
+first, then Zyte with ``ZYTE_TOKEN``, then Firecrawl with ``FIRECRAWL_API_KEY``. Each chamber is listed on its own: a chamber whose
 listing refuses leaves the run's scope, its held rows stay as published (as in
 a ``ROLL_CALL_CHAMBERS`` run of the other), the refusal is journaled, and the
 run builds the other chamber and then fails (:class:`ChamberListingRefused`),
@@ -100,7 +102,6 @@ from spicy_docs.schemas.congress_activity_tables import (
 from spicy_docs.sources.congress.bill_status import BillIdentity, BillSourceError
 from spicy_docs.sources.congress.votes import (
     ClerkRollNotServedError,
-    VoteAcquirer,
     VoteBudget,
     VoteLocator,
     VoteSourceError,
@@ -110,6 +111,7 @@ from spicy_docs.sources.congress.votes import (
 )
 
 from spicy_regs.sources import r2
+from spicy_regs.sources.senate_vote_ladder import LadderVoteAcquirer
 from spicy_regs.transforms.build_bill_family import VOTE_REFERENCES_TABLE
 from spicy_regs.transforms.congress_scope import (
     FIRST_CONGRESS_YEAR,
@@ -710,9 +712,10 @@ def build_roll_call_votes(
         return receipt_build.run(build_roll_call_votes, output_dir, **{
             key: value for key, value in locals().items() if key not in {"output_dir", "receipt_build"}
         })
-    acquirer = acquirer or VoteAcquirer(
+    acquirer = acquirer or LadderVoteAcquirer(
         budget=VOTE_BUDGET,
         transport=None if evidence is None else evidence.transport(stage="vote-source", max_bytes=VOTE_BUDGET.max_bytes),
+        evidence=evidence,
     )
 
     # 1. Population from each chamber's own session index.
@@ -858,6 +861,11 @@ def build_roll_call_votes(
         refused,
         len(withheld),
     )
+    if rungs := getattr(acquirer, "rungs", None):
+        # Which route served each Senate file this run; a proxy request is a paid one.
+        logger.info("Roll-call votes: Senate files served by {}", dict(rungs))
+        if evidence is not None:
+            evidence.event("senate-vote-rungs", **rungs)
     members = merge_contract_table(
         output_dir,
         "member_votes",

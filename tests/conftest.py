@@ -12,7 +12,9 @@ import pytest
 
 _ISOLATED_PREFIXES = ("R2_", "SPICYREGS_", "SPICY_REGS_", "CLOUDFLARE_", "AWS_", "FEC_")
 _ISOLATED_NAMES = frozenset({"AGENCIES", "API_GOV", "DATA_GOV_API_KEY", "SAM_API_KEY", "LDA_API_KEY", "COURTLISTENER_API_TOKEN",
-                             "SPICYGOV_PUBLICATION_MIRROR"})
+                             "SPICYGOV_PUBLICATION_MIRROR",
+                             # Paid proxies: a walled-fetch ladder must never spend a developer's credits in a test.
+                             "ZYTE_TOKEN", "FIRECRAWL_API_KEY"})
 
 
 @pytest.fixture(autouse=True)
