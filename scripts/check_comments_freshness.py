@@ -93,7 +93,8 @@ def main() -> int:
         with _stage("catalog: snapshot against the published source"):
             subject_bound, receipts_bound = ((False, False) if source is None else
                                              iceberg.compacted_since(rt, source, declared_schema=True))
-        if generation_bound and subject_bound and receipts_bound and not (args.agency or args.verify_content):
+        if (source is not None and generation_bound and subject_bound and receipts_bound
+                and not (args.agency or args.verify_content)):
             print(f"OK: generation {family['artifactDigest'][:19] if family else 'none'} and catalog snapshot "
                   f"{source.snapshot_id} (compaction only) are the receipt's", flush=True)
             return 0
