@@ -516,36 +516,25 @@ class RegulationsPipeline(Pipeline):
         record_types: list[RecordType],
         staged: dict[str, int],
     ) -> None:
-        """Merge staging files: documents monolithically, comments into the catalog.
+        """Merge staging files: dockets and documents monolithically, comments into the catalog.
 
         ``comments`` always go through :func:`iceberg.merge_comments` (a
         row-level upsert into the catalog; the final mirror owns index
-        publication). When ``use_iceberg`` is set, ``dockets`` are routed
-        through the R2 Data Catalog (Iceberg ``MERGE INTO`` + public Parquet
-        export) instead of the whole-file ``merge_staging_files`` rewrite.
-        ``documents`` stay on the whole-file path until the Iceberg flow is
-        vetted for them.
+        publication). ``dockets`` and ``documents`` merge into the selected
+        generation that :meth:`_download_existing` restored. The native catalog
+        has never held the published dockets (its namespace began empty on
+        2026-10-03), so a catalog merge exported only the day's rows and every
+        nightly from then on was refused by the upload shrink guard.
         """
         names = [rt.name for rt in record_types]
         if "comments" in names:
             validate_staged_comments(staging_dir)
 
         non_comment = [n for n in names if n != "comments"]
-
-        iceberg_names = []
-        if self.use_iceberg and "dockets" in non_comment:
-            iceberg_names = ["dockets"]
-            non_comment = [n for n in non_comment if n != "dockets"]
-
         if non_comment:
             schemas = {n: RECORD_TYPES[n].schema for n in non_comment}
             dedup_keys = {n: RECORD_TYPES[n].dedup_key for n in non_comment}
             merge_staging_files(staging_dir, output_dir, non_comment, schemas, dedup_keys)
-
-        # Iceberg path: MERGE into the catalog, then export the public Parquet
-        # snapshot that the existing R2 upload (dual model) will publish.
-        for name in iceberg_names:
-            iceberg.merge_and_export(staging_dir, output_dir, RECORD_TYPES[name])
 
         self._merged_attributes = [
             table
@@ -556,7 +545,7 @@ class RegulationsPipeline(Pipeline):
         from spicy_regs.pipelines.regulatory_publication import finish_attribute_dataset, finish_dataset
 
         root = self.output_dir or Path.cwd() / "output"
-        for name in [*non_comment, *iceberg_names]:
+        for name in non_comment:
             source = output_dir / f"{name}.parquet"
             if source.exists():
                 finish_dataset(root, name, source, publish=not self.skip_upload, inputs=self._selected_inputs)
@@ -603,7 +592,7 @@ def main(
     text_workers: Annotated[int, Parameter(help="Comment text reads in parallel across all agencies (at most 16)")] = 8,
     use_iceberg: Annotated[
         bool,
-        Parameter(help="Route dockets and comments through R2 Data Catalog (Iceberg); comments require it"),
+        Parameter(help="Route comments through R2 Data Catalog (Iceberg); comments require it"),
     ] = False,
     enrich_text: Annotated[
         bool,

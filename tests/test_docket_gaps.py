@@ -105,24 +105,34 @@ def test_a_served_docket_becomes_a_row_through_the_etl_extraction():
                      "rin": "Not Assigned"}]
 
 
-def test_a_served_docket_is_merged_and_the_working_copy_uploaded(working, monkeypatch):
+def test_a_served_docket_is_merged_over_the_selected_dockets_and_the_outcomes_uploaded(working, monkeypatch):
     from tests.regulatory_publication_fakes import install
 
     install(monkeypatch)
-    merged, uploaded, finalized = [], [], []
+    uploaded, finalized = [], []
 
-    def merge(staging_dir, output_dir, record_type):
-        merged.extend(pl.read_parquet(next((staging_dir / record_type.name).glob("*.parquet")))["docket_id"])
-        return output_dir / "dockets.parquet"
+    def restore(root, dataset, destination, *, inputs):
+        destination.parent.mkdir(parents=True)
+        pl.read_parquet(working / "dockets.parquet").write_parquet(destination)
+        return True
 
-    monkeypatch.setattr(docket_gaps.iceberg, "merge_and_export", merge)
+    monkeypatch.setattr(docket_gaps, "restore_dataset", restore)
     monkeypatch.setattr(docket_gaps, "finish_dataset", lambda root, dataset, source, **kw:
-                        finalized.append((root, dataset, source, kw)))
+                        finalized.append((root, dataset, pl.read_parquet(source)["docket_id"].sort().to_list(), kw)))
     monkeypatch.setattr(r2, "upload_file", lambda path, remote_key=None: uploaded.append(remote_key))
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="1 docket request"):
         docket_gaps.fill(working, _Reader(), skip_upload=False, now=lambda: NOW)
-    assert sorted(merged) == ["BIS-2023-0005", "GIPSA-2010-FGIS-0004"]
     assert uploaded == [docket_gaps.OUTCOMES]
-    [(root, dataset, source, options)] = finalized
-    assert (root, dataset, source) == (working, "dockets", working / "dockets.parquet")
+    [(root, dataset, ids, options)] = finalized
+    assert (root, dataset, ids) == (working, "dockets", ["BIS-2023-0005", "EPA-1", "GIPSA-2010-FGIS-0004"])
     assert options["publish"] is True and options["inputs"].index is not None
+
+
+def test_served_dockets_without_a_selected_generation_publish_nothing(working, monkeypatch):
+    from tests.regulatory_publication_fakes import install
+
+    install(monkeypatch)
+    monkeypatch.setattr(docket_gaps, "finish_dataset", lambda *a, **k: pytest.fail("published without the prior"))
+    with pytest.raises(RuntimeError, match="no selected dockets generation"):
+        docket_gaps.fill(working, _Reader(), skip_upload=False, now=lambda: NOW)
+    assert not (working / docket_gaps.OUTCOMES).exists()

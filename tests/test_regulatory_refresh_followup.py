@@ -75,21 +75,14 @@ def gap_case(tmp_path, monkeypatch):
             assert identity == SERVED["data"]["id"]
             return _Detail(SERVED)
 
-    def merge(staging, output, record_type):
-        target = output / "dockets.parquet"
-        incoming = pl.read_parquet(next((staging / record_type.name).glob("*.parquet")))
-        pl.concat([pl.read_parquet(target), incoming]).write_parquet(target)
-        return target
-
-    monkeypatch.setattr(docket_gaps.iceberg, "merge_and_export", merge)
     monkeypatch.setattr(r2, "preflight_uploads", lambda *args: None)
     monkeypatch.setattr(r2, "upload_file", lambda *args, **kwargs: None)
     monkeypatch.setattr(r2, "download_working_copy", lambda *args: False)
-    return remote, working, Reader(), merge
+    return remote, working, Reader()
 
 
 def test_served_gap_docket_reaches_the_selected_native_publication(tmp_path, gap_case):
-    remote, working, reader, _merge = gap_case
+    remote, working, reader = gap_case
     result = docket_gaps.fill(working, reader, skip_upload=False, now=lambda: NOW)
     assert result["served"] == 1
     assert SERVED["data"]["id"] in pl.read_parquet(working / "dockets.parquet")["docket_id"].to_list()
@@ -100,16 +93,16 @@ def test_served_gap_docket_reaches_the_selected_native_publication(tmp_path, gap
 def test_gap_publication_conflict_preserves_the_current_native_selection(tmp_path, monkeypatch, gap_case):
     from spicy_regs.sources import publication
 
-    remote, working, reader, merge = gap_case
+    remote, working, reader = gap_case
     expected = {}
+    merge = docket_gaps.merge_staging_files
 
-    def intervening(staging, output, record_type):
-        exported = merge(staging, output, record_type)
+    def intervening(*args, **kwargs):
+        merge(*args, **kwargs)
         _publish_source(tmp_path, ["EPA-1", "EPA-2"])
         expected["index"] = remote.objects[publication.INDEX_V2_KEY]
-        return exported
 
-    monkeypatch.setattr(docket_gaps.iceberg, "merge_and_export", intervening)
+    monkeypatch.setattr(docket_gaps, "merge_staging_files", intervening)
     with pytest.raises((ValueError, RuntimeError), match="changed|concurrent|stale|Conflict"):
         docket_gaps.fill(working, reader, skip_upload=False, now=lambda: NOW)
     assert remote.objects[publication.INDEX_V2_KEY] == expected["index"]

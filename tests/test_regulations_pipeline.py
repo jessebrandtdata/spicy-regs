@@ -608,6 +608,35 @@ def test_run_does_not_advance_manifest_after_base_upload_failure(
     assert (tmp_output / "manifest.parquet", "manifest.parquet") not in uploaded
 
 
+def test_catalog_run_publishes_dockets_over_the_selected_generation(tmp_path, monkeypatch, native_publication):
+    """A catalog run merges the day's dockets into the published generation, as it does documents.
+
+    The native catalog has never held the published dockets, so a merge there exported only the
+    day's rows: 45 against 279,719 published, refused by the shrink guard (run 42574758742).
+    """
+    from tests.test_regulatory_base_families import _publish_source, _published_ids
+
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://test.invalid")
+    _publish_source(tmp_path, ["EPA-2024-0001"])
+    store = {_docket_key("EPA-2025-0002"): dumps(_docket_payload("EPA-2025-0002", "2025-01-01")).encode()}
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+
+    def unseeded_catalog(staging_dir, output_dir, record_type):
+        # What the catalog held: the day's rows and nothing else.
+        target = output_dir / f"{record_type.name}.parquet"
+        pl.read_parquet(next((staging_dir / record_type.name).glob("*.parquet"))).write_parquet(target)
+        return target
+
+    monkeypatch.setattr(regulations.iceberg, "merge_and_export", unseeded_catalog)
+    monkeypatch.setattr(regulations.r2, "preflight_uploads", lambda out, files: None)
+    monkeypatch.setattr(regulations.r2, "upload_file", lambda path, remote_key=None: None)
+    RegulationsPipeline(
+        allow_fresh_start=True, agency=AGENCY, output_dir=tmp_path / "output", skip_comments=True,
+        use_iceberg=True, enrich_text=False, skip_upload=False,
+    ).run()
+    assert sorted(_published_ids(native_publication)) == ["EPA-2024-0001", "EPA-2025-0002"]
+
+
 def test_run_preflight_failure_stops_all_publication(tmp_output: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Every planned public object must pass its guard before the first write."""
     monkeypatch.setenv("R2_PUBLIC_URL", "https://test.invalid")

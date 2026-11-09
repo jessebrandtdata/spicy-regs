@@ -15,7 +15,9 @@ of :mod:`spicy_regs.sources.r2`:
 
 * :func:`merge_and_export` — ensure the table exists, MERGE the per-agency
   staging Parquet in, then export a public ``{name}.parquet`` snapshot so the
-  no-credentials CLI / MCP read path keeps working (the "dual model").
+  no-credentials CLI / MCP read path keeps working (the "dual model"). No caller
+  since 2026-11-09: the native dockets table was never seeded from the published
+  generation, so dockets merge into that generation instead.
 * :func:`merge_comments` upserts staged comments without rebuilding public files.
   :func:`export_public_comments` builds the compatible mirror and index together
   at the end of a successful ingestion sweep.

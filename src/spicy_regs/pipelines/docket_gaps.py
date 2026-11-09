@@ -4,9 +4,9 @@ Documents and comments can name a docket whose record the mirror lacks: 165 on
 2026-09-26, although every one of them had mirrored documents, comments or
 attachments (receipt ``join-map-2026-09-26/docket-orphans.json``). This step
 reads the ETL's working copies, asks the publisher once for each missing
-docket, and merges what it serves into the catalog through the ETL's own docket
-extraction. The mirror retains the same JSON:API object per docket, so the rows
-are identical in shape.
+docket, and merges what it serves into the selected dockets generation through
+the ETL's own docket extraction. The mirror retains the same JSON:API object per
+docket, so the rows are identical in shape.
 
 Every other answer is recorded in ``docket_gap_outcomes.parquet`` and not asked
 again for ``RETRY_AFTER``: 404 means the publisher does not publish that docket,
@@ -35,11 +35,12 @@ from dotenv import load_dotenv
 from loguru import logger
 
 from spicy_regs.pipelines.keyed_regulations import keyed_reader, load_outcomes, save_outcomes
-from spicy_regs.pipelines.regulatory_publication import finish_dataset
+from spicy_regs.pipelines.regulatory_publication import finish_dataset, restore_dataset
 from spicy_regs.schemas.regulations import RECORD_TYPES
 from spicy_regs.selected_generations import SelectedInputs, unique_build_directory
-from spicy_regs.sources import iceberg, r2
+from spicy_regs.sources import r2
 from spicy_regs.transforms.extract import ExtractRecords
+from spicy_regs.transforms.merge_staging_files import merge_staging_files
 from spicy_regs.transforms.write_staging import write_staging
 
 OUTCOMES = "docket_gap_outcomes.parquet"
@@ -149,12 +150,16 @@ def fill(
     logger.info("docket gaps: {}", counts)
 
     if served and not skip_upload:
+        # Merge into the selected generation, as the ETL does: the native catalog never held the published dockets.
         rows = list(ExtractRecords(DOCKETS).apply([answer.payload for answer in served]))
-        with TemporaryDirectory(prefix="docket-gaps-", dir=output_dir) as staging:
-            write_staging("regulations-gov-api", DOCKETS.name, rows, Path(staging), DOCKETS.schema)
-            exported = iceberg.merge_and_export(Path(staging), output_dir, DOCKETS)
-        if exported is not None:
-            finish_dataset(output_dir, DOCKETS.name, exported, publish=True, inputs=selected)
+        with TemporaryDirectory(prefix="docket-gaps-", dir=output_dir) as temporary:
+            staging, merged = Path(temporary) / "staging", Path(temporary) / "merged"
+            write_staging("regulations-gov-api", DOCKETS.name, rows, staging, DOCKETS.schema)
+            if not restore_dataset(output_dir, DOCKETS.name, merged / "dockets.parquet", inputs=selected):
+                raise RuntimeError("docket gaps: no selected dockets generation to merge served dockets into")
+            merge_staging_files(staging, merged, [DOCKETS.name], {DOCKETS.name: DOCKETS.schema},
+                                {DOCKETS.name: DOCKETS.dedup_key})
+            finish_dataset(output_dir, DOCKETS.name, merged / "dockets.parquet", publish=True, inputs=selected)
 
     observed_at = now().isoformat()
     save_outcomes(
@@ -177,7 +182,7 @@ app = App(name="fill-docket-gaps", help="Fill dockets the mirror lacks from the 
 def main(
     output_dir: Annotated[Path, Parameter(help="Working directory")] = Path("output"),
     max_dockets: Annotated[int, Parameter(help="Most dockets to ask for in one run")] = DEFAULT_MAX_DOCKETS,
-    skip_upload: Annotated[bool, Parameter(help="Ask and report only; no catalog merge or upload")] = True,
+    skip_upload: Annotated[bool, Parameter(help="Ask and report only; no merge or upload")] = True,
 ) -> None:
     load_dotenv()
     with keyed_reader(max_requests=3, min_request_interval_seconds=1.0) as reader:
