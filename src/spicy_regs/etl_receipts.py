@@ -987,9 +987,13 @@ def select_pinned_receipts(path: Path, destination: Path, *, dataset: str) -> Pa
 
     Reads only the row groups whose ``dataset`` statistics can hold the dataset (:func:`dataset_row_groups`), so one
     dataset of a family's member costs its own groups, not a decode of every receipt. Rows, order and cell checks are
-    :func:`select_receipts`' own; a group without statistics is read. Rows in skipped groups are not decoded: the pin
-    covers their bytes, and admission checks each selected receipt. Another schema, or any decode error, goes to
-    :func:`select_receipts` over the whole member, which keeps the row selector's authority.
+    :func:`select_receipts`' own; a group without statistics is read. Another schema, or any decode error in a read
+    group, goes to :func:`select_receipts` over the whole member, which keeps the row selector's authority.
+
+    Deliberate trade: rows in skipped groups are never decoded, so they no longer get Arrow's ``validate(full=True)``
+    (UTF-8 and offset checks) that :func:`select_receipts` applies to every row. The whole-file SHA-256 pin proves
+    the bytes are the ones published, not that they were well written: a member written badly and then pinned is
+    no longer refused here for rows of other datasets. Admission still checks each selected receipt.
     """
     try:
         with pq.ParquetFile(path) as parquet:
