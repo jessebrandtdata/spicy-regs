@@ -120,12 +120,18 @@ class SelectedInputs:
         """The pin of the receipt member ``dataset`` was selected from: the published member's for a ranged read.
 
         A ranged selection is a local derivative no published object holds, so lineage keeps naming the member it
-        was read from, exactly as a whole read does; the local selection is still held unchanged.
+        was read from, exactly as a whole read does; the local selection is still held unchanged. For a ranged read
+        that pin is the index's, not a digest of bytes read: the whole-file SHA-256 was not verified, and
+        :meth:`receipts_verification` says so beside it.
         """
         if not isinstance(path, Path):
             raise ValueError(f"{dataset}: a split family's receipts have no single file to bind")
         local = self.member_pin(path)
         return dict(self.ranged[dataset]) if dataset in self.ranged else local
+
+    def receipts_verification(self, dataset):
+        """``"ranged"`` when ``dataset``'s receipts were read by row group (whole-file SHA-256 not verified), else ``None``."""
+        return "ranged" if dataset in self.ranged else None
 
     def check(self):
         """Refuse changes to any original or derived member used by this session."""
@@ -160,9 +166,9 @@ class SelectedInputs:
         Reads the footer and the groups that can hold the dataset (a 19,767-row dataset of the 3.15 GB bill-family
         member: 34 MB). Fetches whole instead when this session already holds the member, or when those groups exceed
         :data:`RANGED_MAX_SHARE` of it or :data:`RANGED_MAX_BYTES`. A footer is parsed once per member and session.
-        The whole-file SHA-256 cannot be checked from a partial read; the stored size, the footer's row count and one
-        ETag across every range hold the read to the pinned object, and the caller's admission checks each selected
-        receipt's own digest against its pinned subjects.
+        Accepted checks (owner decision 2026-11-08): the stored size and the footer's row count equal the pin, one
+        ETag keeps the ranges consistent within the read, and the caller's admission checks each selected receipt's
+        own digest against its pinned subjects. The whole-file SHA-256 is not verified.
         """
         import pyarrow.parquet as pq
         from spicy_regs.etl_receipts import RECEIPT_SCHEMA, dataset_row_groups, row_group_bytes, select_member_receipts

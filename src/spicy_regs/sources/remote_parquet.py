@@ -136,7 +136,10 @@ RANGE_ATTEMPTS = 4
 
 
 class _PublishedRanges(io.RawIOBase):
-    """Exact ``Range: bytes=a-b`` reads of one published object, each held to its ETag and stored size.
+    """Exact ``Range: bytes=a-b`` reads of one published object of the pinned size, consistent within the read.
+
+    The ETag comes from this reader's own HEAD, not from the index, so it shows only that every range came from one
+    object of the pinned byte size; the whole-file SHA-256 is not verified.
 
     smart_open's HTTP reader asks for open-ended ranges and drops each body on seek; measured on the bill-family
     receipt member, its row-group read consumed 34 MB while the interface received about 414 MB (86 MB with exact ranges). A Parquet reader states every length.
@@ -163,27 +166,36 @@ class _PublishedRanges(io.RawIOBase):
         self.position = {io.SEEK_SET: 0, io.SEEK_CUR: self.position, io.SEEK_END: self.size}[whence] + offset
         return self.position
 
-    def _get(self, byte_range: str) -> Any:
-        """One exact range, asked again after a dropped connection or a 429/5xx, up to :data:`RANGE_ATTEMPTS` times.
+    def _get(self, start: int, end: int) -> bytes:
+        """Bytes ``start``-``end`` (inclusive), asked again after a dropped connection or a 429/5xx, up to
+        :data:`RANGE_ATTEMPTS` times.
 
-        A range is bounded by the reader's stated length, so a retry re-reads at most that range.
+        The status, ETag and Content-Range are checked before the body is read, so a server that ignores ``Range``
+        and answers 200 is refused without buffering the whole object. A retry re-reads at most this range.
         """
         import time
 
         import httpx
 
+        stated = f"bytes {start}-{end}/{self.size}"
         for attempt in range(1, RANGE_ATTEMPTS + 1):
             try:
-                response = self.client.get(self.url, headers={
-                    "Range": byte_range, "If-Match": self.etag, "Accept-Encoding": "identity"})
-                response.read()
+                with self.client.stream("GET", self.url, headers={
+                        "Range": f"bytes={start}-{end}", "If-Match": self.etag, "Accept-Encoding": "identity"}) as response:
+                    status = response.status_code
+                    if status == 206:
+                        if response.headers.get("ETag") != self.etag or response.headers.get("Content-Range") != stated:
+                            raise ValueError(f"Published member changed or answered a different range: {self.url}")
+                        data = response.read()
+                        if len(data) != end - start + 1:
+                            raise ValueError(f"Published member answered a short range: {self.url}")
+                        return data
+                    if status != 429 and status < 500 or attempt == RANGE_ATTEMPTS:
+                        response.raise_for_status()
+                        raise ValueError(f"Published member answered {status} to a range request: {self.url}")
             except httpx.TransportError:
                 if attempt == RANGE_ATTEMPTS:
                     raise
-            else:
-                if response.status_code != 429 and response.status_code < 500 or attempt == RANGE_ATTEMPTS:
-                    response.raise_for_status()
-                    return response
             time.sleep(min(30, 2 ** attempt))
         raise AssertionError("unreachable")
 
@@ -192,12 +204,7 @@ class _PublishedRanges(io.RawIOBase):
         end = min(self.position + len(view), self.size)
         if end <= self.position:
             return 0
-        response = self._get(f"bytes={self.position}-{end - 1}")
-        data = response.content
-        if (response.status_code != 206 or response.headers.get("ETag") != self.etag
-                or response.headers.get("Content-Range") != f"bytes {self.position}-{end - 1}/{self.size}"
-                or len(data) != end - self.position):
-            raise ValueError(f"Published member changed or answered a different range: {self.url}")
+        data = self._get(self.position, end - 1)
         view[: len(data)] = data
         self.position = end
         return len(data)
@@ -207,8 +214,8 @@ class _PublishedRanges(io.RawIOBase):
 def open_published_http(url: str, *, byte_size: int) -> Iterator[io.BufferedIOBase]:
     """A seekable reader over a published member that issues only the ranges it is asked for.
 
-    The index pins size and SHA-256, not an ETag: one HEAD supplies the ETag that then holds every range to that
-    object. A partial read cannot check the whole-file SHA-256; the caller admits what it reads.
+    The index pins size and SHA-256, not an ETag. The stored size must equal the pin, and one HEAD's ETag keeps the
+    ranges consistent within the read; the whole-file SHA-256 is not verified. The caller admits what it reads.
     """
     import httpx
 

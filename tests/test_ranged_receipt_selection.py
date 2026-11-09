@@ -93,6 +93,7 @@ def test_ranged_selection_reads_only_its_groups_and_keeps_rows_order_and_publish
     published = index['families']['bills']['etlReceipts']
     assert selected.receipts_pin('bill_vote_references', selection.receipts) == {
         'sha256': published['sha256'], 'byteSize': published['byteSize']}
+    assert selected.receipts_verification('bill_vote_references') == 'ranged'
     assert selected.select('bill_vote_references', ranged=True) == selection
     with pytest.raises(ValueError, match='for this dataset alone'):
         selected.select('bill_vote_references')
@@ -104,6 +105,7 @@ def test_whole_selection_still_fetches_the_member_whole(tmp_path, monkeypatch):
     selected, _, log, index = reader(tmp_path, monkeypatch)
     selection = selected.select('bill_vote_references')
     assert RECEIPT_KEY in log['whole'] and not log['opened']
+    assert selected.receipts_verification('bill_vote_references') is None
     assert selected.receipts_pin('bill_vote_references', selection.receipts)['sha256'] == (
         index['families']['bills']['etlReceipts']['sha256'])
 
@@ -218,3 +220,20 @@ def test_only_another_familys_soft_inputs_are_ranged():
     with tempfile.TemporaryDirectory() as scratch:
         _, prior = rollup._new_receipt_work(Path(scratch))
     assert isinstance(prior, SelectedPriors) and prior.ranged == {'bill_vote_references'}
+
+
+def test_published_ranges_refuse_a_full_answer_before_reading_its_body():
+    import httpx
+    from spicy_regs.sources.remote_parquet import _PublishedRanges
+
+    def body():
+        pytest.fail('the body of a non-range answer was read')
+        yield b''
+
+    def handle(request):
+        if request.method == 'HEAD':
+            return httpx.Response(200, headers={'ETag': '"v1"', 'Content-Length': '64'})
+        return httpx.Response(200, content=body(), headers={'ETag': '"v1"'})
+    client = httpx.Client(transport=httpx.MockTransport(handle))
+    with pytest.raises(ValueError, match='answered 200 to a range request'):
+        _PublishedRanges(client, 'https://fixture.invalid/m', byte_size=64).read(8)

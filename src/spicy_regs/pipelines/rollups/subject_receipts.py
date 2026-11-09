@@ -212,6 +212,10 @@ class SelectedPriors:
         binding = {"dataset": dataset, "generationId": generation,
                    "subjects": [pin(path) for path in subjects], "receipts": self.selected.receipts_pin(dataset, receipts),
                    "processing": processing}
+        if verification := self.selected.receipts_verification(dataset):
+            # The parent pin below stays the index's {sha256, byteSize}, the only shape a generation parent admits;
+            # this record says that sha256 was not checked against the bytes read.
+            binding["receiptsVerified"] = verification
         index = self.selected.index
         key = dataset + ".parquet"
         published = publication.table_pin(index, key) if index is not None and publication.table_owner(index, key) else None

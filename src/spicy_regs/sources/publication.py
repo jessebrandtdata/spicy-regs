@@ -724,7 +724,8 @@ def fetch_member(base_url: str, member: Member, local_path: Path, label: str | N
 
 @contextmanager
 def open_member(base_url: str, member: Member):
-    """A seekable ranged reader over one pinned member, held to its pinned size and one ETag (no whole-file hash)."""
+    """A seekable ranged reader over one pinned member: its stored size must equal the pin, and one ETag keeps the
+    ranges consistent within the read. The whole-file SHA-256 is not verified."""
     from spicy_regs.sources.remote_parquet import open_published_http
 
     if member.byte_size is None:
