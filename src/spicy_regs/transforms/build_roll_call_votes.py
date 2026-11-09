@@ -80,6 +80,7 @@ import json
 import os
 from collections import Counter, defaultdict
 from collections.abc import Callable, Collection, Mapping, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -324,6 +325,29 @@ def _recorded_vote_references(
         logger.warning("Roll-call votes: {:,} published reference row(s) unreadable", refused)
     logger.info("Roll-call votes: {:,} recorded-vote references from the bill family", len(references))
     return tuple(references)
+
+
+def _senate_modified(literal: object) -> datetime | None:
+    """A Senate file's ``modify_date`` (``September 16, 2026,  04:09 PM``) as a naive Eastern time, or ``None``."""
+    if not isinstance(literal, str):
+        return None
+    try:
+        return datetime.strptime(" ".join(literal.split()), "%B %d, %Y, %I:%M %p")
+    except ValueError:
+        return None
+
+
+def _held_senate_modified(prior_file: Path | None) -> dict[str, datetime]:
+    """Each held Senate row's ``modify_date``: what a re-read must not move backward. O(held Senate rows)."""
+    if prior_file is None or not prior_file.exists():
+        return {}
+    import duckdb
+
+    relation = duckdb.read_parquet(str(prior_file))
+    if "modify_date" not in relation.columns:
+        return {}
+    rows = relation.filter("chamber = 'senate' AND modify_date IS NOT NULL").select("vote_id, modify_date").fetchall()
+    return {str(vote_id): parsed for vote_id, literal in rows if (parsed := _senate_modified(literal)) is not None}
 
 
 def _held_votes(prior_file: Path) -> set[tuple[str, ...]]:
@@ -821,6 +845,11 @@ def build_roll_call_votes(
     vote_rows: list[dict] = []
     member_rows: list[dict] = []
     refused = 0
+    # An archive copy can predate a correction the held row already carries (119-2-235: the Internet Archive's
+    # newest capture says modified September 15, the published direct read September 16), so a re-read never moves
+    # a Senate row's modify_date backward; the held row and its member positions stay as published.
+    held_modified = _held_senate_modified(prior_file)
+    older_copies = 0
     for key in keys:
         if key.chamber not in VOTE_CHAMBERS:
             # Only "house" and "senate" address a locator; the index cannot
@@ -844,6 +873,16 @@ def build_roll_call_votes(
             logger.warning("Roll-call votes: {} refused: {}", locator.url(), error)
             continue
         row = shape_roll_call_vote(vote, tally=vote.tallies, member_vote_count=len(vote.member_votes))
+        held_at = held_modified.get(str(row["vote_id"]))
+        read_at = _senate_modified(row.get("modify_date"))
+        if held_at is not None and read_at is not None and read_at < held_at:
+            older_copies += 1
+            logger.warning("Roll-call votes: {} read as modified {}, before the held row's {}; held row kept",
+                           row["vote_id"], row.get("modify_date"), held_at.isoformat())
+            if evidence is not None:
+                evidence.event("vote-older-copy-kept-held", vote_id=str(row["vote_id"]),
+                               read_modify_date=row.get("modify_date"), held_modify_date=held_at.isoformat())
+            continue
         row.update(_link_columns(key, recorded_by_vote.get(key, ()), _stated_reference(row)))
         # A re-read held vote keeps a recorded link the input no longer names:
         # silence never replaces an established link.
@@ -855,11 +894,13 @@ def build_roll_call_votes(
             member_rows.append(shape_member_vote(member, vote=vote))
 
     logger.info(
-        "Roll-call votes: {:,} roll calls, {:,} member positions, {:,} refused, {:,} withheld by the Senate's menu",
+        "Roll-call votes: {:,} roll calls, {:,} member positions, {:,} refused, {:,} withheld by the Senate's menu,"
+        " {:,} older than the held row",
         len(vote_rows),
         len(member_rows),
         refused,
         len(withheld),
+        older_copies,
     )
     if rungs := getattr(acquirer, "rungs", None):
         # Which route served each Senate file this run; a proxy request is a paid one.

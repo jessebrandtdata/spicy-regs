@@ -1737,3 +1737,35 @@ def test_a_404_at_roll_one_still_refuses_the_house(tmp_path, scoped):
                                house_rolls=(7,), senate_rolls=(1,))
     with pytest.raises(ChamberListingRefused):
         build_roll_call_votes(tmp_path, acquirer=acquirer, download_prior=_no_prior, open_congresses=(119,))
+
+
+def test_a_re_read_older_than_the_held_senate_row_keeps_the_held_row(tmp_path, scoped):
+    """An archive copy can predate a correction already published (119-2-235, measured 2026-11-09): a re-read whose
+    file states an earlier modify_date leaves the held row as published; a later one replaces it."""
+    import shutil
+
+    published = []
+    for attempt, stated in enumerate(("September 16, 2026,  04:09 PM", "September 15, 2026,  06:33 PM",
+                                      "September 17, 2026,  09:00 AM")):  # fmt: skip
+        run = tmp_path / str(attempt)
+        run.mkdir()
+
+        def prior(remote, local, attempt=attempt):
+            previous = tmp_path / str(attempt - 1) / remote
+            if not previous.exists():
+                return False
+            shutil.copyfile(previous, local)
+            return True
+
+        class Dated(StubVoteAcquirer):
+            def acquire(self, locator, *, crosswalk=None, stated=stated):
+                acquired = super().acquire(locator)
+                acquired.vote.modify_date = stated
+                return acquired
+
+        paths = build_roll_call_votes(run, acquirer=Dated(senate_rolls=(1,)), download_prior=prior,
+                                      open_congresses=(119,))  # fmt: skip
+        [row] = [r for r in pq.read_table(paths[0]).to_pylist() if r["chamber"] == "senate"]
+        published.append(row["modify_date"])
+    assert published == ["September 16, 2026,  04:09 PM", "September 16, 2026,  04:09 PM",
+                         "September 17, 2026,  09:00 AM"]  # fmt: skip
