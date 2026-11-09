@@ -6,7 +6,7 @@
   "source_commit": "5fb74d3b65bec5e047a80f1d8e94e03934979450",
   "source_tree": "8cd4322d1491ce3f54762c64c217a7ced60a9a14",
   "built_at_commit": "5fb74d3b65bec5e047a80f1d8e94e03934979450",
-  "source_state": "Committed local integration candidate on branch claude/ss-ehci-cdir-rosters; no public release performed.",
+  "source_state": "Built from 5fb74d3b (0.78.0's source f9e223cf plus the ss-ehci commits), before the branch was rebased onto fork main as 9d69739f00dc206221f9d2a4890cca40fd877870. Every product file equals 9d69739f00dc206221f9d2a4890cca40fd877870's except the ones listed in members_differing_from_main_commit, which keep 0.78.0's content: owner decision 2026-11-08 left the fork-main OCR commits (3becd92a, 7e362408) out of this wheel for their own review.",
   "build": "uv build --wheel --out-dir <scratch>/build079c (uv 0.13.7)",
   "wheel_record_hashes_verified": true,
   "tracked_source_members_equal": true,
@@ -587,5 +587,9 @@
   "unchanged_package_members": 555,
   "scope": "Congressional Directory roster reader (ss-ehci): directory_rosters, CDIR package metadata, archived chamber files, committee_directory_entries, six committee_assignments columns. Built on 0.78.0's source (f9e223cf) without the later fork-main OCR commits (owner decision 2026-11-08).",
   "validation_status_at_packaging": "provider_full_gate_passed_peer_review_pending",
-  "validation_evidence": "spicy-docs ./scripts/check passed at 93f47990 (18,466 passed); the gzip fix's focused tests passed and its full gate is rerun at the source commit."
+  "validation_evidence": "spicy-docs ./scripts/check passed at 93f47990 (18,466 passed); the gzip fix's focused tests passed and its full gate is rerun at the source commit.",
+  "main_commit": "9d69739f00dc206221f9d2a4890cca40fd877870",
+  "members_differing_from_main_commit": [
+    "spicy_docs/reading/ocr_observations.py"
+  ]
 }
