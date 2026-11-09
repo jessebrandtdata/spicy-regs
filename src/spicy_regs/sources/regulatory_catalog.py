@@ -290,16 +290,9 @@ def _schema_difference(observed, declared) -> str:
     return '; '.join(parts)
 
 
-def metadata_schema_difference(metadata: dict, record_type) -> str | None:
-    """How loaded Iceberg table metadata's current schema differs from the declared policy, or ``None``.
-
-    The same comparison :func:`require_initialized` makes through ``DESCRIBE``, without another catalog read.
-    """
-    from pyiceberg.io.pyarrow import schema_to_pyarrow
-    from pyiceberg.schema import Schema
-
-    current = next(s for s in metadata["schemas"] if s["schema-id"] == metadata["current-schema-id"])
-    observed = described_schema(schema_to_pyarrow(Schema.model_validate(current), include_field_ids=False))
+def schema_difference(con, record_type) -> str | None:
+    """How the catalog table's ``DESCRIBE`` differs from the declared policy, or ``None``: the one schema rule."""
+    observed = [(r[0], r[1]) for r in con.execute(f'DESCRIBE {qualified(record_type)}').fetchall()]
     declared = described_schema(policy(record_type.name).subject_schema)
     return None if observed == declared else _schema_difference(observed, declared)
 
@@ -311,10 +304,8 @@ def require_initialized(con, record_type):
     target = qualified(record_type)
     if not _exists(con, target) or not initialized(con, record_type.name):
         raise ValueError('Native catalog has no qualified initialization receipt')
-    observed = [(r[0], r[1]) for r in con.execute(f'DESCRIBE {target}').fetchall()]
-    declared = described_schema(policy(record_type.name).subject_schema)
-    if observed != declared:
-        raise ValueError('Native catalog schema differs from declared policy: ' + _schema_difference(observed, declared))
+    if difference := schema_difference(con, record_type):
+        raise ValueError('Native catalog schema differs from declared policy: ' + difference)
 
 
 def ensure_native(con, record_type):

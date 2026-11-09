@@ -154,7 +154,7 @@ jobs:
         with:
           python-version: '3.12'
       - uses: astral-sh/setup-uv@v4
-      - run: uv sync --frozen --extra comments-reader
+      - run: uv sync --frozen
       - uses: actions/download-artifact@v4
         if: ${{ !inputs.comments_only }}
         with:
@@ -184,5 +184,5 @@ jobs:
             PYTHONPATH="$COMMENTS_V1_CHECKOUT/src" uv run --frozen python \
               "$COMMENTS_V1_CHECKOUT/scripts/check_comments_freshness.py" --surface catalog
           else
-            uv run --frozen --extra comments-reader python scripts/check_comments_freshness.py
+            uv run --frozen python scripts/check_comments_freshness.py
           fi

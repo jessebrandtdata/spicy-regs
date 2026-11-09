@@ -578,36 +578,43 @@ def _compacted_only(metadata: dict, snapshot: CatalogSnapshot) -> bool:
         return False
     parents = {int(s["snapshot-id"]): s for s in metadata.get("snapshots", [])}
     step = current.snapshot_id
-    while step != snapshot.snapshot_id:
+    for _ in range(len(parents)):  # a chain visits each snapshot once; a parent cycle must not spin forever
+        if step == snapshot.snapshot_id:
+            return True
         commit = parents.get(step)
         if commit is None or commit.get("summary", {}).get("operation") != "replace" \
                 or commit.get("parent-snapshot-id") is None:
             return False
         step = int(commit["parent-snapshot-id"])
-    return True
+    return step == snapshot.snapshot_id
 
 
-def rows_unchanged_since(record_type: RecordType, snapshot: CatalogPairSnapshot, *,
-                         declared_schema: bool = False) -> bool:
-    """Require unchanged subject and receipt rows, allowing compaction of either table.
+def compacted_since(record_type: RecordType, snapshot: CatalogPairSnapshot, *,
+                    declared_schema: bool = False) -> tuple[bool, bool]:
+    """Whether the subject and the receipt table each moved past ``snapshot`` by compaction alone.
 
     Reads table metadata only. ``snapshot`` was pinned under the initialization check, and a pair reached through
     ``replace`` commits alone keeps that table and initialization receipt, so the check's scan of every receipt row
     (78 s on the 26.5M-row table, 2026-11-08) proves nothing more here. The declared policy is code and can move
-    without a commit: ``declared_schema`` also refuses a subject schema that differs from it, as that check does.
+    without a commit: ``declared_schema`` also refuses a subject schema that differs from it, by the rule
+    :func:`regulatory_catalog.require_initialized` applies.
     """
-    from .regulatory_catalog import metadata_schema_difference
+    from .regulatory_catalog import schema_difference
     namespace = _catalog_namespace(record_type)
     con = _connect()
     try:
         with _transaction(con):
-            subject = _table_metadata(con, record_type, namespace=namespace)
-            if declared_schema and (difference := metadata_schema_difference(subject, record_type)):
+            if declared_schema and (difference := schema_difference(con, record_type)):
                 raise ValueError("Native catalog schema differs from declared policy: " + difference)
-            return (_compacted_only(subject, snapshot)
-                    and _compacted_only(_receipt_metadata(con, record_type, namespace=namespace), snapshot.receipts))
+            return (_compacted_only(_table_metadata(con, record_type, namespace=namespace), snapshot),
+                    _compacted_only(_receipt_metadata(con, record_type, namespace=namespace), snapshot.receipts))
     finally:
         con.close()
+
+
+def rows_unchanged_since(record_type: RecordType, snapshot: CatalogPairSnapshot) -> bool:
+    """Require unchanged subject and receipt rows, allowing compaction of either table."""
+    return all(compacted_since(record_type, snapshot))
 
 
 def _snapshot_query(record_type: RecordType, snapshot: CatalogSnapshot, *, namespace: str | None = None) -> str:

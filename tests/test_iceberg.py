@@ -240,6 +240,12 @@ def test_only_compaction_may_move_an_exported_snapshot(commits, unchanged) -> No
     assert iceberg._compacted_only(_metadata(*commits), iceberg.CatalogSnapshot("t", 1, 0)) is unchanged
 
 
+def test_a_parent_cycle_is_not_bound() -> None:
+    """Corrupt metadata whose parents loop ends the walk after one visit per snapshot instead of spinning."""
+    metadata = _metadata((2, 3, "replace"), (3, 2, "replace"))
+    assert not iceberg._compacted_only(metadata, iceberg.CatalogSnapshot("t", 1, 0))
+
+
 @pytest.mark.parametrize("change", [{"uuid": "recreated"}, {"schema": 1}])
 def test_a_recreated_table_or_new_schema_is_a_change(change) -> None:
     metadata = _metadata((1, None, "append"), (2, 1, "replace"), **change)

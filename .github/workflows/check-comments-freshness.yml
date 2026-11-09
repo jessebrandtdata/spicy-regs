@@ -58,8 +58,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies
-        # pyiceberg reads the declared-schema check from loaded table metadata.
-        run: uv sync --frozen --extra comments-reader
+        run: uv sync --frozen
 
       - name: Check comments freshness
         env:
@@ -79,4 +78,4 @@ jobs:
           if [ "$VERIFY_CONTENT" = "true" ]; then
             ARGS+=(--verify-content)
           fi
-          uv run --frozen --extra comments-reader python scripts/check_comments_freshness.py "${ARGS[@]}"
+          uv run --frozen python scripts/check_comments_freshness.py "${ARGS[@]}"

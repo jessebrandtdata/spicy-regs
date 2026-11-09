@@ -1,7 +1,6 @@
 """The nightly check binds what readers see to the publisher's receipt and verifies only what moved."""
 
 import importlib.util
-import json
 from pathlib import Path
 
 import duckdb
@@ -41,7 +40,7 @@ def published(monkeypatch):
     receipt = _receipt()
     versions = {f"{BASE}/{key}": {"etag": item["etag"], "bytes": item["bytes"]}
                 for key, item in receipt["files"].items()}
-    state: dict = {"receipt": receipt, "versions": versions, "family": FAMILY, "bound": True,
+    state: dict = {"receipt": receipt, "versions": versions, "family": FAMILY, "bound": True, "receipts_bound": True,
                    "catalog_errors": [], "verified": []}
     monkeypatch.setenv("SPICY_REGS_R2_URL", BASE)
     monkeypatch.setattr("sys.argv", ["check"])
@@ -59,7 +58,8 @@ def published(monkeypatch):
     monkeypatch.setattr(publication, "load_index", lambda base: {
         "families": {} if state["family"] is None else {"comments": state["family"]}})
     monkeypatch.setattr(publication, "public_object_version", lambda url, **_: state["versions"].get(url))
-    monkeypatch.setattr(iceberg, "rows_unchanged_since", lambda rt, snapshot, **_: state["bound"])
+    monkeypatch.setattr(iceberg, "compacted_since",
+                        lambda rt, snapshot, **_: (state["bound"], state["receipts_bound"]))
     monkeypatch.setattr(iceberg, "check_comments_against_indexes", check)
     return state
 
@@ -113,12 +113,25 @@ def test_receipt_without_generation_or_pair_cannot_bind(published, capsys):
     assert published["verified"] == [(None, ["fixed", "generation"])]
 
 
-def test_changed_catalog_is_verified_and_its_mismatch_fails(published, capsys):
+def test_comments_table_commit_fails_even_when_counts_agree(published, capsys):
+    """A text-only writer (fill-comment-fields, enrich_pdf, ...) keeps IDs and counts; the commit alone fails."""
     published["bound"] = False
-    assert freshness.main() == 0
+    assert freshness.main() == 1
+    out = capsys.readouterr().out
+    assert "unpublished catalog commits" in out
+    assert published["verified"] == [(None, ["fixed", "generation"])]  # the counts still run as the diagnostic
     published["catalog_errors"] = ["comments coverage EPA/EPA-1/2026-9: fixed index=1, actual=2"]
     assert freshness.main() == 1
-    assert "catalog changed since publication" in capsys.readouterr().out
+    assert "fixed index=1, actual=2" in capsys.readouterr().out
+
+
+def test_shared_receipt_table_write_takes_the_content_path(published, capsys):
+    """Any writer's etl_receipts commit moves the shared table; counts decide (the accepted ~95 s path)."""
+    published["receipts_bound"] = False
+    assert freshness.main() == 0
+    assert "shared etl_receipts table changed" in capsys.readouterr().out
+    published["catalog_errors"] = ["comments coverage EPA/EPA-1/2026-9: fixed index=1, actual=2"]
+    assert freshness.main() == 1
 
 
 def test_declared_schema_drift_fails_the_bound_path(published, monkeypatch, capsys):
@@ -126,7 +139,7 @@ def test_declared_schema_drift_fails_the_bound_path(published, monkeypatch, caps
         assert options == {"declared_schema": True}
         raise ValueError("Native catalog schema differs from declared policy: missing ['subtype']")
 
-    monkeypatch.setattr(iceberg, "rows_unchanged_since", refuse)
+    monkeypatch.setattr(iceberg, "compacted_since", refuse)
     assert freshness.main() == 1
     assert "missing ['subtype']" in capsys.readouterr().out
 
@@ -185,13 +198,15 @@ def test_receipt_helpers_bind_only_complete_receipts():
     assert receipt_files(_receipt(files={"comments.parquet": _receipt()["files"]["comments.parquet"]})) is None
 
 
-def test_metadata_schema_check_names_the_missing_column():
-    """The 2026-10-30 refusal, from loaded metadata alone; the fixture is the live table's schema on 2026-11-08."""
-    metadata = json.loads((Path(__file__).parent / "fixtures/comments_iceberg_schema.json").read_text())
-    assert regulatory_catalog.metadata_schema_difference(metadata, RECORD_TYPES["comments"]) is None
-    schema = metadata["schemas"][0]
-    schema["fields"] = [f for f in schema["fields"] if f["name"] != "text_extraction_status"]
-    difference = regulatory_catalog.metadata_schema_difference(metadata, RECORD_TYPES["comments"])
+def test_one_schema_rule_names_the_missing_column(monkeypatch):
+    """The 2026-10-30 refusal, by the DESCRIBE rule both the initialization check and the bound path apply."""
+    rt = RECORD_TYPES["comments"]
+    con = duckdb.connect()
+    con.execute(f"CREATE TABLE comments ({regulatory_catalog._ddl(regulatory_catalog.policy('comments').subject_schema)})")
+    monkeypatch.setattr(regulatory_catalog, "qualified", lambda _: "comments")
+    assert regulatory_catalog.schema_difference(con, rt) is None
+    con.execute("ALTER TABLE comments DROP COLUMN text_extraction_status")
+    difference = regulatory_catalog.schema_difference(con, rt)
     assert difference is not None and "missing ['text_extraction_status']" in difference
 
 
