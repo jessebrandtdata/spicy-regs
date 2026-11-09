@@ -19,8 +19,7 @@ from urllib.parse import urlsplit
 from spicy_regs.table_joins import KINDS
 from spicy_regs.explorer_navigation import directions
 
-KEY = "explorer-metadata.v1.json"
-FORMAT = "spicy-regs-explorer-metadata"
+from spicy_regs.explorer_inputs import FORMAT, KEY  # noqa: F401  (KEY is re-exported)
 ROOT = Path(__file__).parent
 NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
 
@@ -121,8 +120,11 @@ def build_bundle(index: dict, *, descriptions: dict | None = None, registry: dic
                  join_record: dict | None = None, audit: dict | None = None,
                  scorecard_publishers: list[dict] | None = None, source_revision: str = "unknown",
                  generated_at: str | None = None, extra_tables: dict | None = None,
-                 measurements: list[dict] | None = None) -> dict:
-    """Pure construction and validation; reads committed dictionaries by default."""
+                 measurements: list[dict] | None = None, input_digests: dict[str, str | None] | None = None) -> dict:
+    """Pure construction and validation; reads committed dictionaries by default.
+
+    ``input_digests`` records, as ``inputs``, each mutable storage object read (``explorer_inputs``).
+    """
     live = published_tables(index)
     extra_tables = {name: entry for name, entry in (extra_tables or {}).items() if name not in live}
     for name, entry in extra_tables.items():
@@ -311,7 +313,7 @@ def build_bundle(index: dict, *, descriptions: dict | None = None, registry: dic
                for j in join_record.get("processing_joins", [])]
     return {"format": FORMAT, "version": 1,
             "generatedAt": generated_at or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-            "sourceRevision": source_revision,
+            "sourceRevision": source_revision, "inputs": dict(sorted((input_digests or {}).items())),
             "publication": {"sha256": "sha256:" + hashlib.sha256(canonical_bytes(index)).hexdigest(),
                             "families": {f: e["artifactDigest"] for f, e in index["families"].items()}},
             "extra_tables": extra_tables, "tables": tables, "joins": joins, "omittedJoins": omitted,

@@ -19,6 +19,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from spicy_regs.explorer_inputs import input_digest  # noqa: E402
 from spicy_regs.explorer_metadata import KEY, build_bundle, canonical_bytes, public_url, same_metadata  # noqa: E402
 from spicy_regs.explorer_publications import other_tables  # noqa: E402
 from spicy_regs.public_url import resolve_r2_base_url  # noqa: E402
@@ -171,6 +172,8 @@ def main() -> None:
     else:
         raw = args.index.read_bytes() if args.index else get_public(args.base_url.rstrip("/") + "/" + INDEX_V2_KEY, INDEX_LIMIT)
     assert raw is not None
+    # Every mutable object read, by storage key: the scheduled check re-reads these (explorer_inputs).
+    inputs = {INDEX_V2_KEY: input_digest(raw)}
     index = parse_index(raw)
     # Reuse schemas only for the exact previously validated file identity.
     # Publishing reads separate control files from R2, just like the main index.
@@ -181,13 +184,16 @@ def main() -> None:
         previous_raw = get_optional_public(args.base_url.rstrip("/") + "/" + KEY, METADATA_LIMIT)
     previous = previous_metadata(previous_raw)
     def read_publication(url, *, allow_missing=False, headers=None):
+        prefix = args.base_url.rstrip("/") + "/"
+        if not url.startswith(prefix):
+            raise ValueError("Separate publication escaped the configured data host")
         if client:
             assert bucket is not None
-            prefix = args.base_url.rstrip("/") + "/"
-            if not url.startswith(prefix):
-                raise ValueError("Separate publication escaped the configured data host")
-            return read_object(client, bucket, url.removeprefix(prefix), INDEX_LIMIT, optional=allow_missing)
-        return get_optional_public(url, INDEX_LIMIT) if allow_missing else get_public(url, INDEX_LIMIT)
+            body = read_object(client, bucket, url.removeprefix(prefix), INDEX_LIMIT, optional=allow_missing)
+        else:
+            body = get_optional_public(url, INDEX_LIMIT) if allow_missing else get_public(url, INDEX_LIMIT)
+        inputs[url.removeprefix(prefix)] = input_digest(body)
+        return body
     extra_tables = other_tables(index, args.base_url, read=read_publication, previous=previous)
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     if args.measurements:
@@ -198,9 +204,10 @@ def main() -> None:
         raw_measurements = read_object(client, bucket, MEASUREMENTS_KEY, METADATA_LIMIT, optional=True)
     else:
         raw_measurements = get_optional_public(args.base_url.rstrip("/") + "/" + MEASUREMENTS_KEY, METADATA_LIMIT)
+    inputs[MEASUREMENTS_KEY] = input_digest(raw_measurements)
     measurements = measurement_results(raw_measurements)
     bundle = build_bundle(index, scorecard_publishers=scorecard_sources(index, args.base_url), source_revision=revision,
-                          extra_tables=extra_tables, measurements=measurements)
+                          extra_tables=extra_tables, measurements=measurements, input_digests=inputs)
     encoded = canonical_bytes(bundle)
     if len(encoded) > METADATA_LIMIT:
         raise ValueError("Explorer metadata exceeds its reader limit")

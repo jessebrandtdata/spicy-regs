@@ -161,6 +161,17 @@ container. The write is one complete JSON object, followed by an R2 readback.
 It uses a 60-second cache lifetime and the existing best-effort Cloudflare URL
 purge. Unchanged inputs leave `generatedAt` unchanged.
 
+The bundle's `inputs` records the SHA-256 of every mutable storage object the
+publisher read (the index, the separate publication controls and the
+measurement companion; absent ones as null). Before installing anything, every
+trigger except a manual dispatch runs `scripts/explorer_metadata_unchanged.py`:
+it reads the live metadata and each recorded input from R2, and when
+`sourceRevision` equals the verified `main` revision and every input digest
+matches, it logs `Explorer metadata unchanged: ...` and the job ends. Any
+difference, a missing or older record, an unreadable object or a failure of the
+check itself runs the full validate-and-publish path. The decision is
+`explorer_inputs.unchanged` (standard library only).
+
 Read-only local validation:
 
 ```sh

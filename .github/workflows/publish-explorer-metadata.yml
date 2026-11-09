@@ -13,6 +13,8 @@ on:
       - 'src/spicy_regs/data_dictionary.py'
       - 'data_dictionary/descriptions.yaml'
       - 'scripts/publish_explorer_metadata.py'
+      - 'scripts/explorer_metadata_unchanged.py'
+      - 'tests/test_explorer_inputs.py'
       - 'tests/test_explorer_metadata.py'
       - 'tests/test_explorer_publications.py'
       - 'tests/test_column_navigation.py'
@@ -126,19 +128,36 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.preflight.outputs.sha }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
+      # Same verified revision and the same R2 input bytes as the live metadata: nothing to rebuild.
+      # Only an exact match skips; a change, an unreadable input or a failure of this step runs everything.
+      # A manual dispatch always runs the full refresh.
+      - name: Exit early when no input changed
+        id: quick
+        if: github.event_name != 'workflow_dispatch'
+        continue-on-error: true
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: uv run --no-project --python 3.12 --with boto3==1.42.33 python scripts/explorer_metadata_unchanged.py --revision "${{ needs.preflight.outputs.sha }}"
+      - uses: actions/setup-python@v5
+        if: steps.quick.outputs.unchanged != 'true'
+        with:
+          python-version: '3.12'
       - name: Install locked dependencies
+        if: steps.quick.outputs.unchanged != 'true'
         run: uv sync --frozen --group source-readers
       - name: Validate metadata behavior
+        if: steps.quick.outputs.unchanged != 'true'
         env:
           PYTHONPATH: src
-        run: uv run --frozen --no-sync pytest --noconftest tests/test_explorer_metadata.py tests/test_explorer_publications.py tests/test_column_navigation.py tests/test_navigation_measurements.py tests/test_navigation_measurement_runner.py -q
+        run: uv run --frozen --no-sync pytest --noconftest tests/test_explorer_inputs.py tests/test_explorer_metadata.py tests/test_explorer_publications.py tests/test_column_navigation.py tests/test_navigation_measurements.py tests/test_navigation_measurement_runner.py -q
       - name: Publish only the explorer metadata bundle
+        if: steps.quick.outputs.unchanged != 'true'
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -149,6 +168,7 @@ jobs:
           CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
         run: uv run --frozen --no-sync python scripts/publish_explorer_metadata.py --publish
       - uses: actions/upload-artifact@v4
+        if: steps.quick.outputs.unchanged != 'true'
         with:
           name: explorer-metadata
           path: output/explorer-metadata.v1.json
