@@ -41,7 +41,7 @@ may simply lag) writes nothing, so the bill is asked again next run. A bill an
 older Congress's zip does not list, or the API answers 404 for, gets a row with
 a null ``policy_area`` and its carrier, so it is not asked again. Prior and new
 rows merge on ``bill_id``, preferring the fresh one. A bill in
-:data:`RECORDED_REFUSALS` is asked once a week, last, and named in every run's log.
+:data:`RECORDED_REFUSALS` is asked once a week, first, and named in every run's log.
 """
 
 from __future__ import annotations
@@ -103,8 +103,9 @@ MAX_FOLDERS_PER_RUN = 32
 #: never get a row and would be asked first on every run. Observed in runs
 #: 42111825704 through 42524722104 (2026-11-05..08): with the API slow, timeouts
 #: on these three alone took ~13 of the 20-minute budget. They are asked only on
-#: :data:`REFUSAL_RETRY_WEEKDAY`, after every other API bill, and each run logs
-#: them. Remove an entry when its refusal reason no longer holds.
+#: :data:`REFUSAL_RETRY_WEEKDAY`, before every other API bill (about three requests,
+#: so the deadline cannot crowd them out and a recovered bill is found within a
+#: week), and each run logs them. Remove an entry when its refusal reason no longer holds.
 RECORDED_REFUSALS: dict[str, str] = {
     "107-s-2127": "page 1 is empty with 0 of 1 subjects read",
     "106-hr-3194": "1497 subjects stated, more than the 4 pages of 250 the walk reads",
@@ -469,11 +470,11 @@ def enrich_bill_subjects(
         logger.info(
             "Bill subjects: {:,} recorded refusals {}: {}",
             len(recorded),
-            "asked after every other API bill" if retry else f"wait for weekday {REFUSAL_RETRY_WEEKDAY} (UTC)",
+            "asked before every other API bill" if retry else f"wait for weekday {REFUSAL_RETRY_WEEKDAY} (UTC)",
             ", ".join(f"{bill.bill_id} ({RECORDED_REFUSALS[bill.bill_id]})" for bill in recorded),
         )
         if retry:
-            api += recorded
+            api = recorded + api
     api = api[:max_bills]
     if api and fetcher is None and not _resolve_api_key():
         logger.warning("Bill subjects: {:,} bills wait for an api.data.gov key", len(api))

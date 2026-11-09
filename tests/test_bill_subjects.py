@@ -400,8 +400,11 @@ def test_a_capped_api_run_resumes_where_it_stopped(tmp_path):
     assert pq.ParquetFile(out).schema_arrow.names == list(COLUMNS)
 
 
-@pytest.mark.parametrize(("day", "asked"), [(5, ["100-hr-1"]), (6, ["100-hr-1", "100-hr-2"])])
-def test_a_recorded_refusal_is_asked_weekly_and_last(tmp_path, monkeypatch, day, asked):
+@pytest.mark.parametrize(("day", "max_bills", "asked"), [
+    (5, None, ["100-hr-1"]), (6, None, ["100-hr-2", "100-hr-1"]),
+    (6, 1, ["100-hr-2"]),  # a full queue cannot crowd the weekly retry out
+])
+def test_a_recorded_refusal_is_asked_weekly_and_first(tmp_path, monkeypatch, day, max_bills, asked):
     import spicy_regs.transforms.enrich_bill_subjects as module
 
     class Clock(datetime):
@@ -416,11 +419,11 @@ def test_a_recorded_refusal_is_asked_weekly_and_last(tmp_path, monkeypatch, day,
     messages: list[str] = []
     sink = logger.add(messages.append, level="INFO", format="{message}")
     try:
-        out = enrich_bill_subjects(tmp_path, fetcher=fetcher)
+        out = enrich_bill_subjects(tmp_path, fetcher=fetcher, max_bills=max_bills)
     finally:
         logger.remove(sink)
     assert fetcher.asked == asked
-    assert set(_rows(out)) == {"100-hr-1"}  # a refusal never becomes a row
+    assert set(_rows(out)) == ({"100-hr-1"} & set(asked))  # a refusal never becomes a row
     assert any("1 recorded refusals" in m and "100-hr-2 (fixture refusal)" in m for m in messages)
 
 
