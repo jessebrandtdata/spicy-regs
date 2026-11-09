@@ -292,7 +292,8 @@ class CaptureEvidence:
             raw = canonical_json_bytes(
                 self._safe({"event": event, "recorded_at": datetime.now(UTC).isoformat(), **fields})
             )
-            if event in {"capture", "refusal", "capture-incomplete", "build-outcome"} or (
+            # ``senate-archive-capture`` dates the Internet Archive copy a Senate roll call rests on (ss-bruk).
+            if event in {"capture", "refusal", "capture-incomplete", "build-outcome", "senate-archive-capture"} or (
                 event == "retained-file" and fields.get("blob_store") == "central-raw"
             ):
                 # Commit source provenance before the disposable run journal.
