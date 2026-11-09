@@ -265,11 +265,11 @@ def prepare(pair: Path, destination: Path, *, captured_input=None, captured_inpu
         diagnostics = comments_receipt_diagnostics(prior)
         return ReceiptContext(
             generation, attempt_id, processor,
-            [{"source_id": "selected-comments-v1", "source_uri": str(subjects),
+            [{"source_id": "selected-comments-v1", "source_uri": None,
               "sha256": source_identity["sha256"],
               "locator": json.dumps(metadata["snapshot"], sort_keys=True),
               "body_version": metadata["generation_id"]},
-             {"source_id": "selected-comments-v1-receipts", "source_uri": str(receipts),
+             {"source_id": "selected-comments-v1-receipts", "source_uri": None,
               "sha256": receipt_identity["sha256"], "locator": prior["receipt_id"],
               "body_version": prior["generation_id"]}],
             diagnostics,

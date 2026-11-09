@@ -96,7 +96,7 @@ def row_check(source: Path, receipts: Path, *, dataset: str, generation_id: str)
                 if receipt is None:
                     raise ValueError(f'Missing receipt at source ordinal {ordinal}')
                 receipt.pop('ordinal')
-                witness = {'source_id': 'shaped-observation:'+dataset, 'source_uri': str(source.resolve()),
+                witness = {'source_id': 'shaped-observation:'+dataset, 'source_uri': None,
                            'sha256': digest, 'locator': str(ordinal), 'body_version': None}
                 context = ReceiptContext(generation_id, f'{dataset}:{digest}:{ordinal}', PROCESSOR, [witness])
                 _, expected = congress_attempt(dataset, row, context)
