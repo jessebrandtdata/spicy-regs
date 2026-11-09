@@ -111,8 +111,9 @@ LIST_BUDGET = PagedJsonBudget(
     min_request_interval_seconds=0.2,
 )
 
-#: Two requests, paced; the House file is ~557 KB, the Senate file ~68 KB
-#: (measured 2026-09-19), well under the acquirer's own per-file defaults.
+#: Up to four requests per file, paced: the budget resets for each file, the House file takes one, and the
+#: Senate file's walled ladder can take four (direct, Zyte HTTP, Firecrawl, then the Zyte session). The
+#: House file is ~557 KB, the Senate file ~68 KB (measured 2026-09-19), well under the per-file defaults.
 ROSTER_BUDGET = CommitteeRosterBudget(
     max_requests=4,
     max_bytes=4 * 1024 * 1024,

@@ -1,6 +1,12 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.80.0` makes the shared walled-fetch ladder try its next rung
+- **Selected provider** `spicy_docs-0.81.0` adds an opt-in browser-session rung to the shared
+  walled-fetch ladder (owner decision 2026-11-08): Zyte's browser opens a page on the target's
+  origin, fetches the target same-origin, and the rung returns the network-captured raw response,
+  never the rendered page. `capture_walled(..., session_rung=True)` enables it; on 2026-11-09 it
+  served the Senate committee file byte-identical to a desktop browser's fetch. See
+  [the build receipt](spicy_docs-0.81.0.json).
+- **Earlier provider** `spicy_docs-0.80.0` makes the shared walled-fetch ladder try its next rung
   when a rung answers 2xx with an error, wall or interstitial page (owner decision 2026-11-08), and
   makes `spicy_docs.reading.error_pages` the one error-page classifier, which `content_checks.sniff`
   and the FEC context failed-page titles now use. It is built from spicy-docs main, so it also
