@@ -13,12 +13,13 @@ generation and processing evidence. `resolve_receipt_witness` resolves earlier
 `receipt.values.*` and `receipt-processing:` references through that retained
 history. Repeated carries keep processing payloads flat and deduplicated.
 
-Receipts are public, so a witness `source_uri` is a public address, a
-publication object key, a content digest or null, never a path on the build
-machine (`etl_receipts.local_witness_uri`).
+Receipts are public, so a new receipt's witness `source_uri` is a public
+address, a publication object key, a content digest or null, never a path on the
+build machine (`etl_receipts.local_witness_uri`); a carried unchanged row keeps
+its published bytes.
 The receipt writer refuses a new receipt with a local path, and inheritance or
 retirement drops such a path from the earlier witnesses it copies, keeping their
-`source_id` and `sha256`. Carried unchanged receipts keep their published bytes.
+`source_id` and `sha256`.
 
 `receipt_history.carry_receipt_history` reuses exact unchanged occurrences and
 gives changed accepted rows a direct predecessor reference, without copying
