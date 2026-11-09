@@ -11,6 +11,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from scripts import qualify_votes_workflow as workflow
+from scripts import retained_qualification_support as support
 
 
 @pytest.mark.parametrize('key', ['codeHead', 'dirty', 'implementationId', 'qualificationScriptsSha256',
@@ -18,7 +19,7 @@ from scripts import qualify_votes_workflow as workflow
 def test_final_code_drift_refuses_with_retained_phase(tmp_path, monkeypatch, key):
     frozen = workflow.capture_code_pins()
     changed = dict(frozen, **{key: 'changed'})
-    monkeypatch.setattr(workflow, 'capture_code_pins', lambda: changed)
+    monkeypatch.setattr(support, 'capture_code_pins', lambda: changed)
     log = tmp_path / 'phases.jsonl'
     with pytest.raises(ValueError, match=key):
         workflow.verify_code_pins(log, frozen)

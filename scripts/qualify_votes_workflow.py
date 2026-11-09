@@ -12,10 +12,7 @@ import argparse
 import hashlib
 import json
 import os
-from importlib.metadata import version
 from pathlib import Path
-import subprocess
-import sys
 import time
 
 import pyarrow.parquet as pq
@@ -23,63 +20,15 @@ from starlette.testclient import TestClient
 from rulespec_artifacts import LocalMemberSource, admit_artifact
 
 from scripts.qualification_store import DiskStore
-from scripts.retained_qualification_support import assert_pin, copy_exact, phase, serve
+from scripts.retained_qualification_support import (
+    assert_pin, call, capture_code_pins, child, copy_exact, phase, records, serve, verify_code_pins,
+)
 from scripts.qualify_congress_bulk import compare_files
 from spicy_regs.congress_receipts import policy
 from spicy_regs.votes_batch_receipts import restore_processing_input, write_congress_dataset
 from spicy_regs.etl_receipts import combine_receipts
-from spicy_regs.generations import build_generation, implementation_id, source_digest
+from spicy_regs.generations import build_generation
 from spicy_regs.sources import publication
-
-
-def child(script: str, arguments: list[str]):
-    subprocess.run([sys.executable, '-m', 'scripts.' + script.removesuffix('.py'), *arguments],
-                   cwd=Path(__file__).resolve().parent.parent, check=True)
-
-
-def capture_code_pins():
-    """Read code and dependency identity afresh, including subprocess helpers."""
-    import rulespec_artifacts
-    import spicy_docs
-
-    checkout = Path(__file__).resolve().parent.parent
-    return {
-        'codeHead': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=checkout, text=True).strip(),
-        'dirty': subprocess.check_output(['git', 'status', '--porcelain'], cwd=checkout, text=True),
-        'implementationId': implementation_id(),
-        'qualificationScriptsSha256': source_digest(checkout / 'scripts'),
-        'spicyDocsCodeSha256': source_digest(Path(spicy_docs.__file__).parent, ('.py', '.json', '.xsd')),
-        'rulespecCodeSha256': source_digest(Path(rulespec_artifacts.__file__).parent, ('.py', '.json', '.xsd')),
-        'lockSha256': hashlib.sha256((checkout / 'uv.lock').read_bytes()).hexdigest(),
-        'packages': {name: version(name) for name in
-                     ('spicy-regs', 'spicy-docs', 'rulespec-artifacts', 'duckdb', 'pyarrow')},
-    }
-
-
-def verify_code_pins(log: Path, frozen: dict):
-    with phase(log, 'final-code-and-dependency-pins') as record:
-        current = capture_code_pins()
-        record.update(current)
-        if current != frozen:
-            changed = sorted(key for key in current.keys() | frozen.keys() if current.get(key) != frozen.get(key))
-            raise ValueError('Code or dependency pins changed during qualification: ' + ', '.join(changed))
-
-
-def call(http, name, arguments):
-    response = http.post('/mcp', headers={'Accept': 'application/json, text/event-stream',
-        'MCP-Protocol-Version': '2025-06-18'}, json={'jsonrpc': '2.0', 'id': 'qualification',
-        'method': 'tools/call', 'params': {'name': name, 'arguments': arguments}})
-    if response.status_code != 200:
-        raise ValueError(f'MCP HTTP status {response.status_code}')
-    messages = [json.loads(line[5:]) for line in response.text.splitlines() if line.startswith('data:')]
-    return messages[-1]['result']
-
-
-def records(reply):
-    if reply.get('isError'):
-        raise ValueError(f'MCP refused a qualification control: {reply}')
-    data = reply['structuredContent']
-    return [dict(zip(data['columns'], row, strict=True)) for row in data['rows']]
 
 
 def mcp_controls(base: str, output: Path, subjects: dict[str, Path], *, policies=None):
