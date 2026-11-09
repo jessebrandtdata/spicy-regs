@@ -139,7 +139,7 @@ def test_selected_processing_prior_preserves_editions_and_exact_fallback(tmp_pat
         {'document_number': '2026-00001', 'publication_date': '2026-06-30', 'title': 'second'},
     ])
     prior = SelectedPriors(tmp_path / 'selected', index=empty_index(), public_url='https://example.invalid')
-    monkeypatch.setattr(prior.selected, 'select', lambda _: SimpleNamespace(
+    monkeypatch.setattr(prior.selected, 'select', lambda _, ranged=False: SimpleNamespace(
         subjects=selected.subjects, receipts=selected.receipts, generation_id=selected.generation_id,
     ))
     calls = []

@@ -104,7 +104,7 @@ def test_selected_processing_prior_preserves_nullable_positions_and_exact_fallba
 
     selected, source, _ = _source(tmp_path)
     prior = SelectedPriors(tmp_path / 'selected', index=empty_index(), public_url='https://example.invalid')
-    monkeypatch.setattr(prior.selected, 'select', lambda _: SimpleNamespace(
+    monkeypatch.setattr(prior.selected, 'select', lambda _, ranged=False: SimpleNamespace(
         subjects=selected.subjects, receipts=selected.receipts, generation_id=selected.generation_id,
     ))
     calls = []
