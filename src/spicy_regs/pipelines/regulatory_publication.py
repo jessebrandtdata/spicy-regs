@@ -72,59 +72,33 @@ def finish_dataset(root: Path, dataset: str, source: Path, *, publish: bool, inp
     owner = publication.table_owner(index, dataset + ".parquet")
     family = owner[0] if owner else dataset.replace("_", "-")
     directory = root / "generations" / uuid4().hex
-    pair = source.parent / ".catalog-pairs" / dataset
-    if (pair / "generation.json").exists():
+    selected_inputs = inputs or SelectedInputs(root, root / '.selected-write' / uuid4().hex, public_url='')
+    prior = selected_inputs.select(dataset)
+    if prior is not None:
+        from spicy_regs.etl_receipts import select_receipts, selected_subject_policy, validate_receipt_bundle
         from spicy_regs.transforms.regulations_receipts import policy
-        from spicy_regs.native_types import described_schema
-
-        selected = json.loads((pair / "generation.json").read_text())
-        if selected["dataset"] != dataset:
-            raise ValueError("Catalog export identifies a different dataset")
-        with source.open('rb') as actual, (pair / (dataset + '.parquet')).open('rb') as paired:
-            if hashlib.file_digest(actual, 'sha256').digest() != hashlib.file_digest(paired, 'sha256').digest():
-                raise ValueError('Catalog export source differs from its paired native subject')
-        declared = policy(dataset)
-        artifact = build_generation(
-            directory,
-            family=family,
-            files=[pair / (dataset + ".parquet")],
-            expected_keys=[dataset + ".parquet"],
-            schemas={dataset: described_schema(declared.subject_schema)},
-            publication_status="complete-family",
-            receipt_path=pair / "etl_receipts.parquet",
-            receipt_policies=[declared],
-            receipt_generation_id=selected["generation_id"],
-        )
-    else:
-        selected_inputs = inputs or SelectedInputs(root, root / '.selected-write' / uuid4().hex, public_url='')
-        prior = selected_inputs.select(dataset)
-        if prior is not None:
-            from spicy_regs.etl_receipts import select_receipts, selected_subject_policy, validate_receipt_bundle
-            from spicy_regs.transforms.regulations_receipts import policy
-            with TemporaryDirectory(prefix='.regulatory-prior-', dir=root) as temporary:
-                scoped = select_receipts(prior.receipts, Path(temporary) / 'receipts.parquet', dataset=dataset)
-                validate_receipt_bundle({dataset: prior.subjects}, [scoped],
-                    [selected_subject_policy(policy(dataset), prior.subjects)], generation_id=prior.generation_id)
-        artifact = build_local_generation(
-            {dataset: source}, directory, generation_id=uuid4().hex, family=family, publication_status="complete-family",
-            prior_receipts={dataset: [prior.receipts]} if prior is not None else {}
-        )
+        with TemporaryDirectory(prefix='.regulatory-prior-', dir=root) as temporary:
+            scoped = select_receipts(prior.receipts, Path(temporary) / 'receipts.parquet', dataset=dataset)
+            validate_receipt_bundle({dataset: prior.subjects}, [scoped],
+                [selected_subject_policy(policy(dataset), prior.subjects)], generation_id=prior.generation_id)
+    artifact = build_local_generation(
+        {dataset: source}, directory, generation_id=uuid4().hex, family=family, publication_status="complete-family",
+        prior_receipts={dataset: [prior.receipts]} if prior is not None else {}
+    )
     from spicy_regs.transforms.regulations_receipts import CARRY_DATASETS
-    fresh_conversion = not (pair / 'generation.json').exists()
-    if fresh_conversion and dataset in CARRY_DATASETS:
+    if dataset in CARRY_DATASETS:
         # Carry preserves historical refusals. A refused current source row is instead proved by the missing
         # corresponding subject: the regulatory writer makes exactly one accepted subject or refusal per input.
         if pq.ParquetFile(source).metadata.num_rows != pq.ParquetFile(directory / (dataset + '.parquet')).metadata.num_rows:
             raise ValueError(f'{dataset}: native conversion refused; checkpoint remains unadvanced')
     return _seal(root, dataset, directory, artifact, publish=publish, inputs=inputs,
-                 check_refusals=fresh_conversion and dataset not in CARRY_DATASETS)
+                 check_refusals=dataset not in CARRY_DATASETS)
 
 
 def _seal(root, dataset, directory, artifact, *, publish, inputs, check_refusals):
     """Publish (when asked) and remember a built generation of one dataset."""
     if check_refusals:
-        # A current source conversion must be complete. Historical attempts in
-        # an already qualified catalog pair remain evidence, not a veto.
+        # A current source conversion must be complete.
         for batch in pq.ParquetFile(directory / 'etl_receipts.parquet').iter_batches(columns=['outcome']):
             if any(value in {'refused', 'error'} for value in batch.column(0).to_pylist()):
                 raise ValueError(f'{dataset}: native conversion refused; checkpoint remains unadvanced')

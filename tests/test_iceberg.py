@@ -298,9 +298,6 @@ def test_export_parquet_matches_published_shape(tmp_path, local_catalog) -> None
                            [native.policy('dockets')], generation_id=generation)
 
 
-def test_merge_and_export_noop_without_staging(tmp_path) -> None:
-    # No staging files for dockets -> returns None and never touches the catalog.
-    assert iceberg.merge_and_export(tmp_path / "empty", tmp_path / "out", DOCKET) is None
 
 
 # --- comments path (catalog table + derived index) -------------------------

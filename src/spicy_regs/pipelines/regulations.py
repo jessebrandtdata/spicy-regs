@@ -521,10 +521,13 @@ class RegulationsPipeline(Pipeline):
         ``comments`` always go through :func:`iceberg.merge_comments` (a
         row-level upsert into the catalog; the final mirror owns index
         publication). ``dockets`` and ``documents`` merge into the selected
-        generation that :meth:`_download_existing` restored. The native catalog
-        has never held the published dockets (its namespace began empty on
-        2026-10-03), so a catalog merge exported only the day's rows and every
-        nightly from then on was refused by the upload shrink guard.
+        generation that :meth:`_download_existing` restored.
+
+        Owner decision 2026-11-09: dockets (15.5 MB) and documents (91 MB) stay
+        whole-file, since a nightly rewrite takes seconds; Iceberg is for comments
+        (9.7 GB). The dockets catalog route was deleted after its never-seeded
+        native table exported only the day's rows, which the upload shrink guard
+        refused on every nightly run from 2026-10-31 (run 42574758742).
         """
         names = [rt.name for rt in record_types]
         if "comments" in names:

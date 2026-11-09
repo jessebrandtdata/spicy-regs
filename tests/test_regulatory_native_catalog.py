@@ -380,7 +380,6 @@ def test_refusal_persistence_failure_preserves_recoverable_spool(con):
 
 
 def test_historical_refusal_and_stale_attempt_do_not_poison_later_export(con, tmp_path):
-    from spicy_regs.pipelines.regulatory_publication import finish_dataset
     row = source(con, text='current')
     iceberg.replace_rows(con, COMMENT, 'source')
     source(con, attachments='not-json')
@@ -392,9 +391,8 @@ def test_historical_refusal_and_stale_attempt_do_not_poison_later_export(con, tm
     staged = tmp_path / 'stale.parquet'
     pl.DataFrame([{**row, 'modify_date': '2020-01-01'}], schema=COMMENT.schema).write_parquet(staged)
     assert iceberg._merge(con, [staged], COMMENT) == 0
-    source_path = iceberg._export_parquet(con, COMMENT, tmp_path / 'export')
-    result = finish_dataset(tmp_path, 'comments', source_path, publish=False)
-    assert pl.read_parquet(result)['text_content'].to_list() == ['recovered']
+    exported = iceberg._export_parquet(con, COMMENT, tmp_path / 'export')
+    assert pl.read_parquet(exported)['text_content'].to_list() == ['recovered']
 
 
 

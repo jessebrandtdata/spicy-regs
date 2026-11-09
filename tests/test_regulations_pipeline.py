@@ -87,7 +87,6 @@ def test_invalid_comment_staging_refuses_before_any_dataset_merge(tmp_path, monk
         pytest.fail("Dataset merge began before comment preflight")
 
     monkeypatch.setattr(regulations, "merge_staging_files", forbidden)
-    monkeypatch.setattr(regulations.iceberg, "merge_and_export", forbidden)
     monkeypatch.setattr(regulations.iceberg, "merge_comments", forbidden)
     output = tmp_path / "output"
     with pytest.raises(ValueError, match="invalid coordinates"):
@@ -611,8 +610,8 @@ def test_run_does_not_advance_manifest_after_base_upload_failure(
 def test_catalog_run_publishes_dockets_over_the_selected_generation(tmp_path, monkeypatch, native_publication):
     """A catalog run merges the day's dockets into the published generation, as it does documents.
 
-    The native catalog has never held the published dockets, so a merge there exported only the
-    day's rows: 45 against 279,719 published, refused by the shrink guard (run 42574758742).
+    The deleted dockets catalog route exported only the day's rows from a never-seeded table:
+    45 against 279,719 published, refused by the shrink guard (run 42574758742).
     """
     from tests.test_regulatory_base_families import _publish_source, _published_ids
 
@@ -621,13 +620,6 @@ def test_catalog_run_publishes_dockets_over_the_selected_generation(tmp_path, mo
     store = {_docket_key("EPA-2025-0002"): dumps(_docket_payload("EPA-2025-0002", "2025-01-01")).encode()}
     monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
 
-    def unseeded_catalog(staging_dir, output_dir, record_type):
-        # What the catalog held: the day's rows and nothing else.
-        target = output_dir / f"{record_type.name}.parquet"
-        pl.read_parquet(next((staging_dir / record_type.name).glob("*.parquet"))).write_parquet(target)
-        return target
-
-    monkeypatch.setattr(regulations.iceberg, "merge_and_export", unseeded_catalog)
     monkeypatch.setattr(regulations.r2, "preflight_uploads", lambda out, files: None)
     monkeypatch.setattr(regulations.r2, "upload_file", lambda path, remote_key=None: None)
     RegulationsPipeline(

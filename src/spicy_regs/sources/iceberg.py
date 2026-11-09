@@ -13,11 +13,6 @@ the most recent ``modify_date`` for each primary key.
 This module is the "Iceberg load" stage only, mirroring the thin-wrapper style
 of :mod:`spicy_regs.sources.r2`:
 
-* :func:`merge_and_export` — ensure the table exists, MERGE the per-agency
-  staging Parquet in, then export a public ``{name}.parquet`` snapshot so the
-  no-credentials CLI / MCP read path keeps working (the "dual model"). No caller
-  since 2026-11-09: the native dockets table was never seeded from the published
-  generation, so dockets merge into that generation instead.
 * :func:`merge_comments` upserts staged comments without rebuilding public files.
   :func:`export_public_comments` builds the compatible mirror and index together
   at the end of a successful ingestion sweep.
@@ -721,32 +716,3 @@ def audit_duplicates(con, record_type: RecordType) -> list[tuple[str, int, int]]
         """
     ).fetchall()
     return [(r[0], r[1], r[2]) for r in rows]
-
-
-def merge_and_export(staging_dir: Path, output_dir: Path, record_type: RecordType) -> Path | None:
-    """Upsert staged rows into the catalog table, then export the public Parquet.
-
-    Returns the path to the exported ``{name}.parquet`` (so the pipeline can
-    publish it via the existing R2 upload), or ``None`` when there was nothing
-    staged for this record type.
-    """
-    staging_files = _staging_files(staging_dir, record_type)
-    if not staging_files:
-        logger.info("iceberg: no staging files for {}; skipping merge", record_type.name)
-        return None
-
-    con = _connect_for_table(record_type)
-    try:
-        logger.info(
-            "iceberg: MERGE {} staging file(s) into {}",
-            len(staging_files),
-            _qualified(record_type),
-        )
-        _merge(con, staging_files, record_type)
-        total = con.execute(f"SELECT count(*) FROM {_qualified(record_type)}").fetchone()[0]
-        logger.info("iceberg: {} now holds {:,} rows", record_type.name, total)
-        out_file = _export_parquet(con, record_type, output_dir)
-        logger.info("iceberg: exported public snapshot to {}", out_file)
-        return out_file
-    finally:
-        con.close()
