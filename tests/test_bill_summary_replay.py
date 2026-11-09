@@ -34,10 +34,15 @@ def rows(path):
     return sorted(pq.read_table(path).to_pylist(), key=str)
 
 
-def test_a_nightly_scope_refuses_and_names_the_one_dispatch(tmp_path, scoped):
+def test_a_nightly_scope_refuses_before_restoring_anything_and_names_the_one_dispatch(tmp_path, scoped):
     build_run(tmp_path / "first", StubBulkAcquirer(), download_prior=lambda key, target: False)
+    priors, asked = replay_priors(tmp_path / "first"), []
+    download = priors["download_prior"]
+    priors["download_prior"] = lambda key, target: asked.append(key) or download(key, target)
+    bulk = StubBulkAcquirer()
     with pytest.raises(ValueError, match=r"gh workflow run rollup-bill-family.yml .*-f congresses=108-119"):
-        build_run(tmp_path / "second", StubBulkAcquirer(), **replay_priors(tmp_path / "first"))
+        build_run(tmp_path / "second", bulk, **priors)
+    assert asked == [f"{SUMMARIES}.parquet"] and bulk.calls == []
 
 
 def test_a_full_scope_replay_rereads_unchanged_folders_and_bills_and_restates_every_summary(

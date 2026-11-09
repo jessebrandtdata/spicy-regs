@@ -116,6 +116,7 @@ from spicy_regs.transforms.congress_scope import (
     bill_types_from_env,
     bulk_status_budget,
     congresses_from_env,
+    default_congresses,
 )
 from spicy_regs.transforms.model_call import resolve_gemini_key
 from spicy_regs.sources.publication import parquet_scan
@@ -639,7 +640,8 @@ def _require_replay_scope(
 ) -> None:
     """A replay rebuilds every prior row, so the run must read every folder a prior BILLSTATUS read published."""
     published = {int(congress) for congress, _ in status_bills}
-    wanted = sorted({*published, *range(BULK_STATUS_FLOOR, max([*published, *congresses]) + 1)})
+    newest = max([*published, *congresses, *default_congresses()])
+    wanted = sorted({*published, *range(BULK_STATUS_FLOOR, newest + 1)})
     missing = sorted(set(wanted) - set(congresses))
     types = sorted(set(DEFAULT_BILL_TYPES) - set(bill_types))
     if missing or types:
@@ -2103,7 +2105,12 @@ def build_bill_family(
     stamp = engine_stamp()
     logger.info("Bill family: engine {} {} @ {}", stamp.name, stamp.version, stamp.revision or "(unknown)")
 
-    # 1. What the last run already published, so this one can skip it.
+    # 1. What the last run already published, so this one can skip it. A replay-required summary prior is
+    # asked for first: a run whose scope cannot replay it refuses before restoring anything else.
+    try:
+        published_table(output_dir, REPLAYED_FROM_STATUS, download_prior)
+    except PriorReplayRequired as required:
+        _require_replay_scope(required, {}, bulk_congresses, bill_types)
     prior_paths, replay = _download_prior(output_dir, download_prior)
     _require_spelled_digests(prior_paths)
     split_priors = {name: published_members(output_dir, name, download_members) for name in PARTITIONED}
