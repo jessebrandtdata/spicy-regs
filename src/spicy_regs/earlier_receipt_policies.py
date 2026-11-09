@@ -78,6 +78,25 @@ def earlier_policies(policy):
                 or not earlier.subject_schema.equals(previous_schema, check_metadata=True)):
             raise ValueError("CRS summary revision policy changes fields beyond the dated identity")
         return (earlier,)
+    if policy.dataset == "bill_versions" and policy.policy_version == "legislative-documents/2":
+        # /2 (ss-m4r1) only appends the two publication-evidence columns. Their values come from an opt-in
+        # metadata refresh, so an unrefreshed /2 row holds NULL in both: the value a /1 row carries forward.
+        current = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs").joinpath(
+            "etl_policies/bill_versions.json").read_text()))
+        if policy.descriptor() != current.descriptor():
+            raise ValueError("Current bill-version policy differs from its exact declaration")
+        history = json.loads(files("spicy_regs").joinpath("legislative_policy_history.json").read_text())
+        earlier = DatasetPolicy.from_descriptor(history[policy.dataset])
+        previous_schema = policy.subject_schema
+        for name in ("publication_dates", "publication_evidence_status"):
+            at = previous_schema.get_field_index(name)
+            if not previous_schema.field(at).nullable:
+                raise ValueError("Bill-version publication evidence must stay nullable")
+            previous_schema = previous_schema.remove(at)
+        expected = replace(policy, subject_schema=previous_schema, policy_version="legislative-documents/1")
+        if earlier.descriptor() != expected.descriptor():
+            raise ValueError("Bill-version publication policy changes fields beyond the two appended columns")
+        return (earlier,)
     if policy.dataset == "scorecard_member_links" and policy.policy_version == "scorecards-etl-member-links-v4":
         previous = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs.scorecards").joinpath(
             "geography_policy_history.json").read_text()))
