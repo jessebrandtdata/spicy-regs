@@ -6,13 +6,6 @@
     "reason": "legislative-documents/3 (2853bad1) adds last_summary_update_date and NOT NULL source_schema_version. /2 readers never read lastSummaryUpdateDate, so a NULL would claim the clock is absent at the source. The bill family rebuilds every summary from the BILLSTATUS zips of every bulk Congress (docs/bill-summary-clocks.md); the replaced /2 rows are retained in that run's source evidence.",
     "replay": "gh workflow run rollup-bill-family.yml -R mikewolfd/spicy-regs -f congresses=108-119"
    }
-  },
-  "committee_assignments": {
-   "sha256:59d89d7e39a0ac9621e4a6f005dc4c69e7b5915819b6c818f19ea751ea9afff2": {
-    "policy_version": "congress-subjects/2",
-    "reason": "82def55b (ss-ehci) added edition_date, entry_label, position_basis, printed_entry, source_granule and source_line under the unchanged congress-subjects/2 version. They come from the Congressional Directory reader; earlier rows never read them, so NULL would claim them absent at the source. The rosters migration must rebuild the seats from retained directory originals and should also give the new shape its own policy version (ss-uctm).",
-    "replay": "not automated yet: ss-uctm"
-   }
   }
  },
  "shipped": {
@@ -65,7 +58,6 @@
    "sha256:92668442fc6b327163a41ba53f14953c758025d35f30372acf778916913d1e21"
   ],
   "bill_publisher_summaries": [
-   "sha256:f4a242487fc7b982811c8c85c20144f2dbceeb5d0a0616f4f7d0a107593f482f",
    "sha256:b0c7edd5e9e6d8b2d8dac735cf087fcd2b99394cc6cd9ab8c63e45ec701e14ac",
    "sha256:8f2e8238bc924e1dfd46a08dbc62be6bf59b324ab60b8c7b586f637bd524b293"
   ],
@@ -119,7 +111,6 @@
    "sha256:0286139f818701ab1c478d2ce2c64a60345b59b8476823c30caa0710031c770b"
   ],
   "committee_assignments": [
-   "sha256:59d89d7e39a0ac9621e4a6f005dc4c69e7b5915819b6c818f19ea751ea9afff2",
    "sha256:332b644685a6a019d34d5620bf8451ff674545554a2d4ab37fa7d1b6fa59e690"
   ],
   "committee_directory_entries": [

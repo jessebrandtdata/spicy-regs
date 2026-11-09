@@ -39,4 +39,7 @@ def test_summary_v2_is_identified_but_replayed_while_bill_versions_v1_carries():
     assert replay_reason(summaries[0]) is None and "BILLSTATUS" in (replay_reason(summaries[1]) or "")
     current, earlier = receipt_policies(legislative_policy("bill_versions"))
     assert replay_reason(current) is None and replay_reason(earlier) is None
-    assert set(ledger()["replay_required"]) == {"bill_publisher_summaries", "committee_assignments"}
+    assert set(ledger()["replay_required"]) == {"bill_publisher_summaries"}
+    # Seeded from the descriptors live generations state (2026-11-09): only these two differ from installed.
+    assert {name for name, digests in ledger()["shipped"].items() if len(digests) > 1} == {
+        "bill_versions", "bill_publisher_summaries"}
