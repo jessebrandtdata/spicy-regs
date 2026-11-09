@@ -20,6 +20,25 @@ PACKAGE = "CREC-2025-01-06"
 SENTENCE = "A letter from the Secretary of State, transmitting a report; to the Committee on Foreign Affairs."
 
 
+def published_fetch(evidence, root, *, changed=False):
+    """Serve a sealed evidence artifact the way publish_evidence lays it out on R2.
+
+    Metadata lives under ``source-evidence/<digest>/``; blobs live once under the
+    shared ``source-evidence/blobs/sha256/<hex>`` prefix and nowhere else.
+    """
+    digest = root["artifactDigest"][7:]
+
+    def fetch(url, limit):
+        if "/source-evidence/blobs/" in url:
+            body = (evidence.artifact_dir / url.split("/source-evidence/", 1)[1]).read_bytes()
+            return body + b"changed" if changed else body
+        relative = url.split("/source-evidence/" + digest + "/", 1)[1]
+        if relative.startswith("blobs/"):
+            raise AssertionError("per-artifact blob keys are never published: " + url)
+        return (evidence.artifact_dir / relative).read_bytes()
+    return fetch
+
+
 def fixture(tmp_path, *, issue_congress="119", numbers=("1",), ids=("a",), entries=None, failure=None, package=PACKAGE):
     columns = TABLE_CONTRACTS["house_communications"].columns
     rows = [dict.fromkeys(columns) | {"communication_id":"119-ec-" + number, "congress":"119",
@@ -214,10 +233,7 @@ def test_resume_checks_declared_retained_body_and_never_recaptures(tmp_path, cha
     for name in ("record_package_id", "record_granule_id", "record_entry_text"):
         table = set_column(table, name, [None])
     pq.write_table(table, output)
-    def fetch(url, limit):
-        relative = url.split(root["artifactDigest"][7:] + "/", 1)[1]
-        body = (old.artifact_dir / relative).read_bytes()
-        return body + b"changed" if changed and relative.startswith("blobs/") else body
+    fetch = published_fetch(old, root, changed=changed)
     with patch("spicy_regs.sources.publication.load_evidence_journal", return_value=(old.artifact_dir / "journal.jsonl").read_bytes()):
         enrich_house_record(output, **args, fetch_retained=fetch)
     assert len(args["acquirer"].calls) == 1
@@ -310,10 +326,7 @@ def test_byte_bound_advances_later_packages_without_rereading_qualified_scope(tm
     pq.write_table(pa.Table.from_pylist(table, schema=pq.read_schema(output)), output)
     args["evidence"] = CaptureEvidence(tmp_path, "house-communications")
     args["evidence"]._prior_evidence = ("https://evidence.test", {"artifactDigest":next_root["artifactDigest"], "logicalId":next_root["logicalId"]})
-    def fetch(url, limit):
-        assert root["artifactDigest"][7:] in url
-        relative = url.split(root["artifactDigest"][7:] + "/", 1)[1]
-        return (old.artifact_dir / relative).read_bytes()
+    fetch = published_fetch(old, root)
     with patch("spicy_regs.sources.publication.load_evidence_journal", return_value=(current.artifact_dir / "journal.jsonl").read_bytes()):
         enrich_house_record(output, **args, max_bytes=allowance, fetch_retained=fetch)
     assert pq.read_table(output)["record_package_id"].to_pylist() == list(packages)
@@ -343,8 +356,7 @@ def test_cached_interpretation_must_equal_the_checked_body_and_rule(tmp_path, ch
     current = CaptureEvidence(tmp_path, "house-communications")
     current._prior_evidence = ("https://evidence.test", {"artifactDigest":root["artifactDigest"], "logicalId":root["logicalId"]})
     args["evidence"] = current
-    def fetch(url, limit):
-        return (old.artifact_dir / url.split(root["artifactDigest"][7:] + "/", 1)[1]).read_bytes()
+    fetch = published_fetch(old, root)
     with patch.object(current, "inherited_event", return_value=checkpoint):
         enrich_house_record(output, **args, fetch_retained=fetch)
     assert pq.read_table(output)["record_package_id"].to_pylist() == [None]

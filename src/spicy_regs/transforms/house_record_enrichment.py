@@ -83,7 +83,8 @@ def _retained_bodies(evidence, checkpoint, fetch):
         if (member.get("role") != "source-body" or member.get("sha256") != witness["sha256"]
                 or member.get("byteSize") != witness["byte_size"]):
             raise ValueError("Record retained body is not declared with its exact SHA and size")
-        body = fetch(base + "/" + prefix + "/" + key, BODY_LIMIT)
+        # Blobs are content-addressed once under the shared prefix (publish_evidence), not per artifact.
+        body = fetch(base + "/" + publication.EVIDENCE_PREFIX + "/" + key, BODY_LIMIT)
         if len(body) != witness["byte_size"] or "sha256:" + hashlib.sha256(body).hexdigest() != witness["sha256"]:
             raise ValueError("Record retained body changed")
         size += len(body)
