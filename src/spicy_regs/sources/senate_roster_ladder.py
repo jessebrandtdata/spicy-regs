@@ -6,12 +6,16 @@ the fallback.
 
 :class:`LadderCommitteeRosterAcquirer` is the chamber-file acquirer with one change: today's Senate file goes
 through ``SourceAcquirer.capture_walled``, spicy-docs' ladder (one direct attempt on this acquirer's own client,
-then one Zyte ``httpResponseBody`` call, then one Firecrawl ``rawBase64`` call; never a rendered page). Every rung is
+then one Zyte ``httpResponseBody`` call, then one Firecrawl ``rawBase64`` call, then the opt-in Zyte session rung:
+Zyte's browser opens ``https://www.senate.gov/`` and fetches the file same-origin, returning the captured response
+bytes; never a rendered page). The session rung is the one that served the file when measured on 2026-11-09; the
+others answered 403, 520 and 500. It is the fourth request, so the budget must allow four (``ROSTER_BUDGET`` does)
+or the ladder refuses before any paid call. Every rung is
 charged and paced on the same ``CommitteeRosterBudget`` as a direct capture, and each answer is held to the budget's
 byte bound, the exact locator (``check_final_url``), the file's media types (``text/xml``/``application/xml``) and
 the reader's own validation. A 2xx error or interstitial page (spicy-docs' one classifier, plus
-:func:`is_senate_xml`) escalates to the next rung; the file under a wrong media type or locator stops the ladder. The timeout is the budget's, per rung: the worst case is three timeouts in a row
-(3 x 120 s with the rollup's ``ROSTER_BUDGET``). When every rung fails, ``CommitteeRosterRefusedError`` carries the
+:func:`is_senate_xml`) escalates to the next rung; the file under a wrong media type or locator stops the ladder. The timeout is the budget's, per rung: the worst case is four timeouts in a row
+(4 x 120 s with the rollup's ``ROSTER_BUDGET``). When every rung fails, ``CommitteeRosterRefusedError`` carries the
 ladder's ``rung_outcomes`` and the run stops, as a direct refusal always has. The House file, and any archived
 capture (``archived_at``), are read exactly as before.
 
@@ -74,6 +78,7 @@ class LadderCommitteeRosterAcquirer(CommitteeRosterAcquirer):
             context={"operation": "senate-cvc", "url": SENATE_CVC_URL},
             publisher_page=is_senate_xml,
             refusal=CommitteeRosterRefusedError,
+            session_rung=True,
         )
         rung = answer.transport.value
         if self.evidence is not None:

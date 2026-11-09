@@ -34,10 +34,17 @@ BUDGET = CommitteeRosterBudget(max_requests=4, max_bytes=4 << 20, timeout_second
 class Fetcher:
     """One provider rung: answers ``body`` (or raises ``error``) and counts its calls."""
 
-    def __init__(self, body=None, error=None, content_type="text/xml", resolved_url=None):
+    def __init__(self, body=None, error=None, content_type="text/xml", resolved_url=None, session=None):
         self.body, self.error, self.content_type, self.resolved_url, self.calls = (
             body, error, content_type, resolved_url, 0,
         )  # fmt: skip
+        self.session = session  # Zyte's browser-session answer; None fails as the provider has (HTTP 520)
+
+    def fetch_in_session(self, url, *, session_url, timeout_seconds, max_bytes):
+        assert session_url == "https://www.senate.gov/"  # the origin root, then the file fetched same-origin
+        if self.session is None:
+            raise ZyteTransportError("Zyte acquisition failed with HTTP 520 (/download/temporary-error)")
+        return self.session.fetch(url, timeout_seconds=timeout_seconds, max_bytes=max_bytes)
 
     def fetch(self, url, *, timeout_seconds, max_bytes, mode=None):
         self.calls += 1
@@ -65,8 +72,8 @@ def publisher(request: httpx.Request) -> httpx.Response:
     return httpx.Response(403, headers={"content-type": "text/html"}, stream=httpx.ByteStream(b"Forbidden"))
 
 
-def acquirer(zyte, firecrawl, evidence=None) -> LadderCommitteeRosterAcquirer:
-    source = LadderCommitteeRosterAcquirer(budget=BUDGET, transport=httpx.MockTransport(publisher), evidence=evidence)
+def acquirer(zyte, firecrawl, evidence=None, budget=BUDGET) -> LadderCommitteeRosterAcquirer:
+    source = LadderCommitteeRosterAcquirer(budget=budget, transport=httpx.MockTransport(publisher), evidence=evidence)
     source._proxies = ProxyFetchers(cast(Any, zyte), cast(Any, firecrawl))
     return source
 
@@ -95,7 +102,35 @@ def test_every_rung_failing_stops_the_run_with_each_rungs_outcome():
     outcomes = refused.value.__dict__["rung_outcomes"]
     assert [(o.transport.value, o.kind) for o in outcomes] == [
         ("direct", "publisher-refused"), ("zyte_http", "transport-error"), ("firecrawl_raw", "transport-error"),
+        ("zyte_session", "transport-error"),
     ]  # fmt: skip
+
+
+def test_the_session_rung_serves_when_the_other_three_fail():
+    """As measured 2026-11-09: direct 403, Zyte HTTP 520, Firecrawl 500; Zyte's same-origin session served the file."""
+    session = Fetcher(XML)
+    zyte = Fetcher(error=ZyteTransportError("Zyte acquisition failed with HTTP 520"), session=session)
+    firecrawl, evidence = (
+        Fetcher(error=FirecrawlTransportError("Firecrawl acquisition failed with HTTP 500")),
+        Evidence(),
+    )
+    got = acquirer(zyte, firecrawl, evidence).acquire_senate()
+    assert got.capture.body == XML and (zyte.calls, firecrawl.calls, session.calls) == (1, 1, 1)
+    assert [stage for stage, _ in evidence.captures] == ["senate-cvc:zyte_session"]
+    assert evidence.events[0][1]["rung"] == "zyte_session"
+
+
+def test_a_budget_short_of_the_session_rung_is_refused_before_any_paid_call():
+    session = Fetcher(XML)
+    zyte, firecrawl = Fetcher(XML, session=session), Fetcher(XML)
+    short = CommitteeRosterBudget(max_requests=3, max_bytes=4 << 20, timeout_seconds=30, min_request_interval_seconds=0)
+    source = acquirer(zyte, firecrawl, budget=short)
+    with pytest.raises(CommitteeRosterRefusedError) as refused:
+        source.acquire_senate()
+    assert "stops before the session rung, which is attempt 4" in str(refused.value.__cause__)
+    assert source.request_count == 0
+    assert (zyte.calls, firecrawl.calls, session.calls) == (0, 0, 0)
+    assert bcr.ROSTER_BUDGET.max_requests >= 4
 
 
 @pytest.mark.parametrize("content_type", ["text/html", "text/xml"])
@@ -114,6 +149,7 @@ def test_error_pages_on_every_rung_stop_the_run_unread():
         acquirer(zyte, firecrawl, evidence).acquire_senate()
     assert [(o.transport.value, o.kind) for o in refused.value.__dict__["rung_outcomes"]] == [
         ("direct", "publisher-refused"), ("zyte_http", "error-page"), ("firecrawl_raw", "error-page"),
+        ("zyte_session", "transport-error"),
     ]  # fmt: skip
     assert evidence.captures == []
 

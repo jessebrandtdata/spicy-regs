@@ -36,7 +36,7 @@ its last capture. A chamber whose file was not established this run keeps its
 prior rows; a keyless ``401``/``403`` (``CommitteeRosterRefusedError``) aborts.
 ``senate_paid_ladder`` (the rollup's ``--senate-paid-ladder``) builds the
 acquirer that reads today's Senate file through the shared walled-fetch ladder
-(:mod:`spicy_regs.sources.senate_roster_ladder`; up to three rungs, each with the
+(:mod:`spicy_regs.sources.senate_roster_ladder`; up to four rungs, each with the
 budget's timeout), which aborts the same way when every rung fails.
 
 **Earlier Congresses come from the Congressional Directory** (ss-ehci): one
