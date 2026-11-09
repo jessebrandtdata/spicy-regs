@@ -291,14 +291,14 @@ class SelectedInputs:
             if len(receipts) != 1:
                 raise ValueError(f"{dataset}: ambiguous selected receipt member")
             specification = owners[0]["etlReceipts"]
-            indexes = publication.receipt_key_members(self.index, dataset=dataset)
-            # A key index describes the whole member, so a member that has one is fetched whole.
+            # A published key index serves lookups by row key (the MCP server and local_data read it from local
+            # selections). Pipelines select by dataset and never read it, so a remote selection neither fetches
+            # nor checks it: bill-family's would add 1.08 GB to every reader of its receipts.
             receipt_path = (self._ranged_receipts(receipts[0], dataset, directory / "receipts.parquet")
-                            if ranged and len(receipts) == 1 and not indexes else None)
+                            if ranged and len(receipts) == 1 else None)
             if receipt_path is not None:
                 self.ranged[dataset] = {"sha256": receipts[0].sha256, "byteSize": receipts[0].byte_size}
-            result = SelectedDataset(dataset, subjects, receipt_path or fetch(receipts[0]), specification["generationId"],
-                                     fetch(indexes[0]) if indexes else None, specification.get("keyIndex"))
+            result = SelectedDataset(dataset, subjects, receipt_path or fetch(receipts[0]), specification["generationId"])
         if (result.key_index is None) != (result.key_index_descriptor is None):
             raise ValueError("Selected receipt key index declaration is incomplete")
         if result.key_index is not None:

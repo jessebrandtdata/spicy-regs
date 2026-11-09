@@ -26,7 +26,7 @@ def receipts(path, *, row_group_size=5, **options):
     return path
 
 
-def reader(tmp_path, monkeypatch, *, count=None, share=1.0):
+def reader(tmp_path, monkeypatch, *, count=None, share=1.0, key_index=False):
     monkeypatch.setattr(selected_generations, 'RANGED_MAX_SHARE', share)
     member = receipts(tmp_path / 'member.parquet')
     subject = tmp_path / 'subject.parquet'
@@ -40,7 +40,10 @@ def reader(tmp_path, monkeypatch, *, count=None, share=1.0):
     index['families']['bills'] = {
         'prefix': PREFIX, 'tables': {f'{d}.parquet': pin(subject_bytes, 1) for d in DATASETS},
         'etlReceipts': {'key': 'etl_receipts.parquet', **pin(data, len(DATASETS) * 5 if count is None else count),
-                        'generationId': 'g1', 'datasets': list(DATASETS)},
+                        'generationId': 'g1', 'datasets': list(DATASETS),
+                        **({'keyIndex': {'key': 'etl_receipts.keys.parquet', 'format': 'spicy-receipt-keys/1',
+                                         **pin(b'keys', 1), 'receiptSha256': pin(data, 1)['sha256']}}
+                           if key_index else {})},
     }
     log = {'whole': [], 'opened': [], 'read': []}
 
@@ -237,3 +240,12 @@ def test_published_ranges_refuse_a_full_answer_before_reading_its_body():
     client = httpx.Client(transport=httpx.MockTransport(handle))
     with pytest.raises(ValueError, match='answered 200 to a range request'):
         _PublishedRanges(client, 'https://fixture.invalid/m', byte_size=64).read(8)
+
+
+@pytest.mark.parametrize('ranged', [True, False])
+def test_pipeline_selection_never_fetches_or_checks_a_published_key_index(tmp_path, monkeypatch, ranged):
+    selected, _, log, _ = reader(tmp_path, monkeypatch, key_index=True)
+    selection = selected.select('bill_vote_references', ranged=ranged)
+    assert not any(path.endswith('etl_receipts.keys.parquet') for path in log['whole'])
+    assert selection.key_index is None and selection.key_index_descriptor is None
+    assert ('bill_vote_references' in selected.ranged) == ranged and bool(log['opened']) == ranged
