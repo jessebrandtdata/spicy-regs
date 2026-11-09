@@ -47,5 +47,8 @@ jobs:
       # Eighteen family outputs, including cbo_cost_estimates, from one pass: eight bulk archives, up to
       # the selected number of GovInfo packages, the diff
       # engine over consecutive printings, and the model calls when a key is
-      # set. The per-run caps bound the work; this bounds the job.
-      timeout_minutes: 180
+      # set. The per-run caps bound the work; this bounds the job. A dispatch
+      # that names Congresses (the one-time 108-119 CRS summary replay, ss-aj7t,
+      # re-reads all 96 BILLSTATUS zips and every bill) gets the GitHub-hosted
+      # maximum; the scheduled current-Congress run keeps its 180-minute bound.
+      timeout_minutes: ${{ (github.event_name == 'workflow_dispatch' && inputs.congresses != '') && 360 || 180 }}

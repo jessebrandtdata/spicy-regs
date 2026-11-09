@@ -113,3 +113,13 @@ def test_rollup_retains_the_replaced_pair_then_writes_fresh_summary_receipts_onl
     assert new and not old & {r["receipt_id"] for r in new}
     assert all("prior_receipt" not in r["diagnostic_json"] for r in new)
     assert rows(tmp_path / "replay" / f"{SUMMARIES}.parquet") == rows(first_dir / f"{SUMMARIES}.parquet")
+
+
+def test_only_a_congress_scoped_dispatch_gets_the_hosted_maximum_timeout():
+    from pathlib import Path
+
+    import yaml
+
+    workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/rollup-bill-family.yml").read_text())
+    assert workflow["jobs"]["run"]["with"]["timeout_minutes"] == (
+        "${{ (github.event_name == 'workflow_dispatch' && inputs.congresses != '') && 360 || 180 }}")
