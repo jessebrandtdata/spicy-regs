@@ -232,6 +232,11 @@ class BillSubjectsFetcher:
             total = (payload.get("pagination") or {}).get("count")
             if not isinstance(total, int) or seen >= total:
                 return assignment(policy_area, names, CARRIER_API)
+            if total > _MAX_SUBJECT_PAGES * _SUBJECTS_PER_PAGE:
+                # Every later page would be read only to refuse the bill; slow pages cost minutes each.
+                raise _PageCapExceeded(
+                    f"{total} subjects stated, {_MAX_SUBJECT_PAGES} pages of {_SUBJECTS_PER_PAGE} allowed"
+                )
             if not listed:
                 raise _PageCapExceeded(f"page {page + 1} is empty with {seen} of {total} subjects read")
         raise _PageCapExceeded(f"{total} subjects stated, {_MAX_SUBJECT_PAGES} pages of {_SUBJECTS_PER_PAGE} allowed")

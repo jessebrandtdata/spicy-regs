@@ -40,7 +40,8 @@ or a bill missing from the current or previous Congress's zip (a folder that
 may simply lag) writes nothing, so the bill is asked again next run. A bill an
 older Congress's zip does not list, or the API answers 404 for, gets a row with
 a null ``policy_area`` and its carrier, so it is not asked again. Prior and new
-rows merge on ``bill_id``, preferring the fresh one.
+rows merge on ``bill_id``, preferring the fresh one. A bill in
+:data:`RECORDED_REFUSALS` is asked once a week, last, and named in every run's log.
 """
 
 from __future__ import annotations
@@ -97,6 +98,21 @@ DEADLINE_SECONDS = 20 * 60
 #: folders is four Congresses, about a minute; the 108th-117th backfill is three
 #: runs.
 MAX_FOLDERS_PER_RUN = 32
+
+#: Bills Congress.gov answers every night with a list the fetcher refuses, so they
+#: never get a row and would be asked first on every run. Observed in runs
+#: 42111825704 through 42524722104 (2026-11-05..08): with the API slow, timeouts
+#: on these three alone took ~13 of the 20-minute budget. They are asked only on
+#: :data:`REFUSAL_RETRY_WEEKDAY`, after every other API bill, and each run logs
+#: them. Remove an entry when its refusal reason no longer holds.
+RECORDED_REFUSALS: dict[str, str] = {
+    "107-s-2127": "page 1 is empty with 0 of 1 subjects read",
+    "106-hr-3194": "1497 subjects stated, more than the 4 pages of 250 the walk reads",
+    "106-hr-4577": "1407 subjects stated, more than the 4 pages of 250 the walk reads",
+}
+
+#: UTC weekday (Monday is 0) on which recorded refusals are asked again.
+REFUSAL_RETRY_WEEKDAY = 6
 
 #: The published schema: all VARCHAR, keyed by ``bill_id``, joinable straight to
 #: ``congress_bills``. The subject list is a JSON string so the table stays flat
@@ -445,7 +461,20 @@ def enrich_bill_subjects(
         refused += refused_in_zip
     if refused:
         logger.info("Bill subjects: {:,} bills whose BILLSTATUS file was refused go to the API", len(refused))
-    api = (refused + api)[:max_bills]
+    api = refused + api
+    recorded = [bill for bill in api if bill.bill_id in RECORDED_REFUSALS]
+    if recorded:
+        api = [bill for bill in api if bill.bill_id not in RECORDED_REFUSALS]
+        retry = datetime.fromisoformat(now).weekday() == REFUSAL_RETRY_WEEKDAY
+        logger.info(
+            "Bill subjects: {:,} recorded refusals {}: {}",
+            len(recorded),
+            "asked after every other API bill" if retry else f"wait for weekday {REFUSAL_RETRY_WEEKDAY} (UTC)",
+            ", ".join(f"{bill.bill_id} ({RECORDED_REFUSALS[bill.bill_id]})" for bill in recorded),
+        )
+        if retry:
+            api += recorded
+    api = api[:max_bills]
     if api and fetcher is None and not _resolve_api_key():
         logger.warning("Bill subjects: {:,} bills wait for an api.data.gov key", len(api))
         api = []
@@ -478,6 +507,7 @@ def enrich_bill_subjects(
     if evidence is not None:
         evidence.event("bill-subject-selection", max_bills=max_bills, max_folders=max_folders,
                        deadline_seconds=deadline_seconds, answered=len(rows), waiting=waiting,
+                       recorded_refusals=len(recorded),
                        folders_past_cap=len(folders) - len(read))
 
     # 4. Merge prior + new, dedup on bill_id preferring the fresh row.

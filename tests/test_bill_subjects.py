@@ -12,6 +12,7 @@ from __future__ import annotations
 import importlib
 import io
 import json
+from datetime import datetime
 import zipfile
 
 import httpx
@@ -399,6 +400,30 @@ def test_a_capped_api_run_resumes_where_it_stopped(tmp_path):
     assert pq.ParquetFile(out).schema_arrow.names == list(COLUMNS)
 
 
+@pytest.mark.parametrize(("day", "asked"), [(5, ["100-hr-1"]), (6, ["100-hr-1", "100-hr-2"])])
+def test_a_recorded_refusal_is_asked_weekly_and_last(tmp_path, monkeypatch, day, asked):
+    import spicy_regs.transforms.enrich_bill_subjects as module
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 11, 2 + day, 21, tzinfo=tz)  # 2026-11-02 is a Monday
+
+    monkeypatch.setattr(module, "datetime", Clock)
+    monkeypatch.setitem(module.RECORDED_REFUSALS, "100-hr-2", "fixture refusal")
+    _write_bills(tmp_path / "congress_bills.parquet", [_bill("100-hr-2"), _bill("100-hr-1")])
+    fetcher = _StubFetcher({"100-hr-1": BillSubjects("Health", (), CARRIER_API)})
+    messages: list[str] = []
+    sink = logger.add(messages.append, level="INFO", format="{message}")
+    try:
+        out = enrich_bill_subjects(tmp_path, fetcher=fetcher)
+    finally:
+        logger.remove(sink)
+    assert fetcher.asked == asked
+    assert set(_rows(out)) == {"100-hr-1"}  # a refusal never becomes a row
+    assert any("1 recorded refusals" in m and "100-hr-2 (fixture refusal)" in m for m in messages)
+
+
 def test_a_failed_fetch_leaves_the_bill_un_enriched_for_the_next_run(tmp_path):
     _write_bills(tmp_path / "congress_bills.parquet", [_bill("100-hr-1"), _bill("100-hr-2")])
     out = enrich_bill_subjects(tmp_path, fetcher=_StubFetcher({"100-hr-1": BillSubjects("Health", (), CARRIER_API)}))
@@ -643,8 +668,16 @@ def test_the_page_cap_is_a_refusal_not_a_silent_stop(monkeypatch):
         assert fetcher.subjects_for("100", "hr", "1") is None
     finally:
         logger.remove(sink)
-    assert calls == [0, 250, 500, 750]
+    assert calls == [0]  # the first page's stated count already decides the refusal
     assert any("100-hr-1" in m and "1001 subjects stated" in m for m in messages)
+
+
+def test_a_list_that_fits_the_page_cap_is_walked_to_its_end(monkeypatch):
+    pages = {offset: _page(1_000, [f"S{offset + n}" for n in range(250)]) for offset in (0, 250, 500, 750)}
+    fetcher, calls = _api_fetcher(monkeypatch, pages)
+    result = fetcher.subjects_for("100", "hr", "1")
+    assert result is not None and len(result.subjects) == 1_000
+    assert calls == [0, 250, 500, 750]
 
 
 def test_an_empty_page_before_the_count_is_met_is_a_refusal(monkeypatch):
