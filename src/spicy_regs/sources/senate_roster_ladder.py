@@ -10,7 +10,7 @@ then one Zyte ``httpResponseBody`` call, then one Firecrawl ``rawBase64`` call; 
 charged and paced on the same ``CommitteeRosterBudget`` as a direct capture, and each answer is held to the budget's
 byte bound, the exact locator (``check_final_url``), the file's media types (``text/xml``/``application/xml``) and
 the reader's own validation. A 2xx error or interstitial page (spicy-docs' one classifier, plus
-:func:`is_cvc_xml`) escalates to the next rung; the file under a wrong media type or locator stops the ladder. The timeout is the budget's, per rung: the worst case is three timeouts in a row
+:func:`is_senate_xml`) escalates to the next rung; the file under a wrong media type or locator stops the ladder. The timeout is the budget's, per rung: the worst case is three timeouts in a row
 (3 x 120 s with the rollup's ``ROSTER_BUDGET``). When every rung fails, ``CommitteeRosterRefusedError`` carries the
 ladder's ``rung_outcomes`` and the run stops, as a direct refusal always has. The House file, and any archived
 capture (``archived_at``), are read exactly as before.
@@ -32,15 +32,17 @@ from spicy_docs.sources.congress.committee_rosters import (
     SenateRosterAcquisition,
     parse_senate_cvc,
 )
+from spicy_docs.reading.error_pages import sniff
 from spicy_docs.transport.source_acquirer import narrow_byte_limit
 
-_BOM = b"\xef\xbb\xbf"
 
+def is_senate_xml(body: bytes) -> bool:
+    """Whether a 2xx body is an XML file, not an (X)HTML page about it: the ``publisher_page`` of every senate.gov
+    file read through the ladder, this committee file and the roll-call files (``senate_vote_ladder``) alike.
 
-def is_cvc_xml(body: bytes) -> bool:
-    """Whether a 2xx body is the Senate's XML file (a leading UTF-8 byte-order mark allowed), not a page about it."""
-    head = body.removeprefix(_BOM).lstrip()[:512].lower()
-    return (head.startswith(b"<?xml") or head.startswith(b"<senators")) and b"<html" not in head
+    spicy-docs' :func:`sniff` looks past a byte-order mark, an XML declaration, comments and a DOCTYPE to the root.
+    """
+    return sniff(body[:512]) == "xml"
 
 
 class LadderCommitteeRosterAcquirer(CommitteeRosterAcquirer):
@@ -57,7 +59,7 @@ class LadderCommitteeRosterAcquirer(CommitteeRosterAcquirer):
             return super().acquire_senate(max_bytes=max_bytes, archived_at=archived_at)
 
         def parse(response, _limit):
-            if not is_cvc_xml(response.body):
+            if not is_senate_xml(response.body):
                 raise CommitteeRosterRefusedError(SENATE_CVC_URL) from ValueError(
                     "the ladder's answer is not the Senate's XML file"
                 )
@@ -70,7 +72,7 @@ class LadderCommitteeRosterAcquirer(CommitteeRosterAcquirer):
             max_bytes=narrow_byte_limit(self.budget.max_bytes, max_bytes),
             unavailable=CommitteeRosterUnavailableError,
             context={"operation": "senate-cvc", "url": SENATE_CVC_URL},
-            publisher_page=is_cvc_xml,
+            publisher_page=is_senate_xml,
             refusal=CommitteeRosterRefusedError,
         )
         rung = answer.transport.value

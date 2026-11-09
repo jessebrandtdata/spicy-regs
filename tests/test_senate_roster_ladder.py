@@ -19,7 +19,7 @@ from spicy_docs.sources.firecrawl import FirecrawlTransportError
 from spicy_docs.sources.walled_fetch import ProxyFetchers
 from spicy_docs.sources.zyte import ZyteTransportError
 
-from spicy_regs.sources.senate_roster_ladder import LadderCommitteeRosterAcquirer, is_cvc_xml
+from spicy_regs.sources.senate_roster_ladder import LadderCommitteeRosterAcquirer, is_senate_xml
 from spicy_regs.transforms import build_committee_rosters as bcr
 from tests.test_committee_rosters import StubListingReader
 from tests.test_incremental_rollups import no_download
@@ -135,7 +135,7 @@ def test_the_file_with_a_wrong_label_stops_the_ladder_unread(content_type, resol
 
 
 def test_a_byte_order_mark_before_the_xml_is_the_file():
-    assert is_cvc_xml(b"\xef\xbb\xbf" + XML) and not is_cvc_xml(b"\xef\xbb\xbf" + HTML)
+    assert is_senate_xml(b"\xef\xbb\xbf" + XML) and not is_senate_xml(b"\xef\xbb\xbf" + HTML)
     got = acquirer(Fetcher(b"\xef\xbb\xbf" + XML), Fetcher(XML)).acquire_senate()
     assert got.roster.senators
 
