@@ -343,13 +343,8 @@ def test_committee_increment_requires_exact_prior_receipts_before_producer(tmp_p
     subject = pq.read_table(output / "fec_committees.parquet").to_pylist()[0]
     assert subject["cycles"] == [2024, 2024]
     assert subject["candidate_ids"] is None
-    from spicy_regs.etl_receipts import resolve_receipt_witness
-
-    [before] = pq.read_table(prior / "etl_receipts.parquet").to_pylist()
-    [after] = pq.read_table(output / "etl_receipts.parquet").to_pylist()
-    assert after["witnesses"][: len(before["witnesses"])] == before["witnesses"]
-    reference = next(w for w in after["witnesses"] if w["body_version"] == before["receipt_id"])
-    assert resolve_receipt_witness(after, reference)
+    # An unchanged committee keeps its selected receipt exactly; history does not grow with each refresh.
+    assert pq.read_table(output / "etl_receipts.parquet").to_pylist() == pq.read_table(prior / "etl_receipts.parquet").to_pylist()
 
 
 def _stub_producer(monkeypatch, table, *, fail=False):
@@ -574,3 +569,26 @@ def test_registration_statements_publish_the_source_namespace_that_tells_form_1_
     pq.write_table(pa.Table.from_pylist(changed, schema=stored.schema), output / (table + ".parquet"))
     with pytest.raises(ValueError, match="subject receipt"):
         list(read_identity_rows(output, table, generation_id="g1"))
+
+
+def test_a_changed_committee_references_its_predecessor_without_copying_its_history(tmp_path):
+    from spicy_regs.etl_receipts import decode_exact_json
+    from spicy_regs.transforms.build_fec_committees import _shape
+
+    table = "fec_committees"
+    first = {"committee_id": "C00000001", "cycles": [2024], "candidate_ids": None, "first_file_date": "2024-01-02"}
+    with IdentityReceiptWriter(tmp_path / "g1", generation_id="g1", tables=[table]) as writer:
+        writer.emit(table, _shape(first), input_witness=WITNESS)
+    previous = tmp_path / "g1"
+    for generation in ("g2", "g3", "g4"):
+        changed = _shape({**first, "first_file_date": "2024-02-0" + generation[-1]})
+        with IdentityReceiptWriter(tmp_path / generation, generation_id=generation, tables=[table],
+                                   prior_receipts=[previous / "etl_receipts.parquet"]) as writer:
+            writer.emit(table, changed, input_witness=WITNESS)
+        [prior] = pq.read_table(previous / "etl_receipts.parquet").to_pylist()
+        [current] = pq.read_table(tmp_path / generation / "etl_receipts.parquet").to_pylist()
+        diagnostics = decode_exact_json(current["diagnostic_json"])
+        assert diagnostics["prior_receipt"]["receipt_id"] == prior["receipt_id"]
+        assert "prior_receipts" not in diagnostics and "retained_processing" not in diagnostics
+        assert current["witnesses"] == [WITNESS]  # a refresh does not accumulate earlier witnesses
+        previous = tmp_path / generation

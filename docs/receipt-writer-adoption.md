@@ -31,15 +31,19 @@ writer decision, carry is active in these maintained paths:
 - The Congress row writer (`congress_receipts.write_congress_dataset`), batch
   writer (`votes_batch_receipts`) and `legislative_receipts.write_legislative_outputs`.
 - Regulatory row and bulk writers for `transforms/regulations_receipts.CARRY_DATASETS`:
-  `dockets`, `documents`, `comment_attributes`, `docket_attributes` and
-  `document_attributes`. This does not include the `comments` dataset.
+  every regulatory dataset except `comments` (2026-11-09).
+- The FEC identity writer (`transforms/fec_identity_receipts.IdentityReceiptWriter`
+  with `prior_receipts`), used by `build_fec_identity_rollup` (2026-11-09).
 
 These paths retain unchanged receipts' original generation identities;
 `coverage_reader.current_receipts` accepts them in the newly admitted selection.
-FEC identity, scorecard and regulatory datasets outside `CARRY_DATASETS` keep
-their existing history behavior. Regulatory correction retains both prior and
-fresh receipt inputs, in that order. This caller list does not activate carry
-for another dataset or change the Comments rules below.
+Before 2026-11-09 the FEC identity and remaining regulatory writers inherited
+every matched prior receipt even when nothing changed, so each refresh added
+witnesses and prior references to every row (fec-committees averaged 55
+witnesses and 27 prior receipts per row). Their published rows keep that
+history until they change. Scorecard history is unchanged. Regulatory correction
+retains both prior and fresh receipt inputs, in that order. This caller list does
+not change the Comments rules below.
 
 Legislative carry runs after combining every partition. It preserves unresolved
 refusals and resolves one only when a current accepted row supplies the same

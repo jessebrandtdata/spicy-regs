@@ -17,8 +17,9 @@ visible files. Public convenience copies are outputs, not incremental inputs. Su
 remain empty directories with receipt-only file state; they do not gain invented
 partition keys.
 
-`ReceiptLineage` performs a disk-backed lookup of accepted prior subjects and
-unchanged processing observations. `inherit_receipt` retains ordered witnesses,
+Maintained writers carry history with `carry_receipt_history`: an unchanged
+attempt keeps its prior receipt and a changed row references its predecessor
+(see `receipt-writer-adoption.md`). `inherit_receipt` retains ordered witnesses,
 prior receipt identities and digest-keyed exact source/processing values inside
 the new receipt. These payloads are flat and deduplicated; repeated carries do
 not nest prior receipt bodies. `resolve_receipt_witness` verifies and resolves

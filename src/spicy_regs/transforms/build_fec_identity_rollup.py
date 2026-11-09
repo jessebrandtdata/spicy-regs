@@ -23,7 +23,6 @@ import pyarrow.parquet as pq
 
 from .fec_identity_receipts import IdentityReceiptWriter, read_identity_rows
 from .fec_master_history import write_json
-from spicy_regs.etl_receipts import ReceiptLineage
 
 BUILDERS = {
     "fec_committees": ("build_fec_committees", "build_fec_committees"),
@@ -134,14 +133,11 @@ def build_fec_identity_rollup(
         retained = evidence_dir / built.name
         shutil.copyfile(built, retained)
         witness = dict(source_id=table, source_uri=None, sha256=digest, locator=None, body_version=None)
-        with (
-            ReceiptLineage(
-                () if prior_bundle is None else (Path(prior_bundle) / "etl_receipts.parquet",), dataset=table
-            ) as lineage,
-            IdentityReceiptWriter(output_dir, generation_id=generation_id, tables=[table]) as writer,
-        ):
+        prior_receipts = () if prior_bundle is None else (Path(prior_bundle) / "etl_receipts.parquet",)
+        with IdentityReceiptWriter(output_dir, generation_id=generation_id, tables=[table],
+                                   prior_receipts=prior_receipts) as writer:
             with pq.ParquetFile(built) as source:
                 for batch in source.iter_batches(batch_size=512, use_threads=False):
                     for row in batch.to_pylist():
-                        writer.emit(table, row, input_witness=witness, lineage=lineage)
+                        writer.emit(table, row, input_witness=witness)
     return output_dir

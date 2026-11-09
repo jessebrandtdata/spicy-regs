@@ -1235,53 +1235,6 @@ def resolve_receipt_witness(receipt: Mapping, witness: Mapping) -> bytes:
     raise ValueError("Receipt witness has no retained payload")
 
 
-class ReceiptLineage:
-    """Disk-backed accepted-prior lookup shared by family writers."""
-
-    def __init__(self, paths, *, dataset):
-        self._temporary = TemporaryDirectory(prefix="receipt-lineage-")
-        self.connection = sqlite3.connect(str(Path(self._temporary.name) / "prior.db"))
-        self.connection.execute("CREATE TABLE prior (record_id TEXT PRIMARY KEY, receipt TEXT)")
-        self.connection.execute(
-            "CREATE TABLE observations (processing TEXT, receipt_id TEXT PRIMARY KEY, receipt TEXT)"
-        )
-        for path in paths:
-            for receipt in _rows(path):
-                if receipt["dataset"] == dataset and receipt["outcome"] == "observed":
-                    self.connection.execute(
-                        "INSERT OR IGNORE INTO observations VALUES (?, ?, ?)",
-                        [receipt["processing_json"], receipt["receipt_id"], exact_json(receipt)],
-                    )
-                if receipt["dataset"] == dataset and receipt["outcome"] == "accepted":
-                    encoded = exact_json(receipt)
-                    existing = self.connection.execute(
-                        "SELECT receipt FROM prior WHERE record_id=?", [receipt["record_id"]]
-                    ).fetchone()
-                    if existing is not None and existing[0] != encoded:
-                        raise ValueError("Conflicting selected prior receipts")
-                    self.connection.execute(
-                        "INSERT OR IGNORE INTO prior VALUES (?, ?)", [receipt["record_id"], encoded]
-                    )
-
-    def inherit(self, context, policy, subject):
-        identity = subject_identity(policy, subject)[0]
-        row = self.connection.execute("SELECT receipt FROM prior WHERE record_id=?", [identity]).fetchone()
-        return inherit_receipt(context, None if row is None else _unpack(json.loads(row[0])))
-
-    def inherit_processing(self, context, processing):
-        rows = self.connection.execute("SELECT receipt FROM observations WHERE processing=?", [exact_json(processing)])
-        for row in rows:
-            context = inherit_receipt(context, _unpack(json.loads(row[0])))
-        return context
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        self.connection.close()
-        self._temporary.cleanup()
-
-
 def retire_receipt(receipt: Mapping, *, generation_id: str, reason: str) -> dict:
     """Retain a removed subject's evidence as an observed historical attempt."""
     context = inherit_receipt(

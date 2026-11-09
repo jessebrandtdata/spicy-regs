@@ -82,14 +82,20 @@ def _buffer_size(value):
 
 
 class IdentityReceiptWriter:
-    """Bounded family build; failed admission never replaces an existing output."""
+    """Bounded family build; failed admission never replaces an existing output.
 
-    def __init__(self, output_dir, *, generation_id, tables, batch_size=512, attempt_offset=0):
+    With ``prior_receipts`` (the selected bundle's receipt members), an attempt whose input and subject
+    are unchanged keeps its prior receipt exactly, and a changed row references its direct predecessor
+    (``carry_receipt_history``), so receipt history does not grow with every refresh.
+    """
+
+    def __init__(self, output_dir, *, generation_id, tables, batch_size=512, attempt_offset=0, prior_receipts=()):
         if type(batch_size) is not int or batch_size < 1:
             raise ValueError("batch_size must be a positive integer")
         if type(attempt_offset) is not int or attempt_offset < 0:
             raise ValueError("attempt_offset must be a nonnegative integer")
         self.attempt_offset = attempt_offset
+        self.prior_receipts = tuple(Path(path) for path in prior_receipts)
         self.output_dir = Path(output_dir)
         self.generation_id = generation_id
         self.policies = {name: dataset_policy(name) for name in tables}
@@ -125,7 +131,7 @@ class IdentityReceiptWriter:
         return self
 
     def _prepare_emit(
-        self, table, row, *, input_witness, evidence=(), source_input=None, outcome=None, diagnostic=None, lineage=None,
+        self, table, row, *, input_witness, evidence=(), source_input=None, outcome=None, diagnostic=None,
         observation_ordinal=None, native_filing_subject=None, native_link_subject=None,
     ):
         if table not in self.policies:
@@ -170,8 +176,6 @@ class IdentityReceiptWriter:
             witnesses_for(mapped, evidence, input_witness),
             diagnostics,
         )
-        if lineage is not None and not policy.receipt_only:
-            context = lineage.inherit(context, policy, mapped)
         return mapped, context, outcome
 
     def emit(self, table, row, **kwargs):
@@ -244,6 +248,7 @@ class IdentityReceiptWriter:
                 for writer in self.subject_writers.values():
                     writer.close()
                 self.receipt_writer.close()
+                self._carry_history()
                 subjects = {
                     name: [] if policy.receipt_only else [self.stage / (name + ".parquet")]
                     for name, policy in self.policies.items()
@@ -260,7 +265,7 @@ class IdentityReceiptWriter:
                             "generation_id": self.generation_id,
                             "policies": [p.descriptor() for p in self.policies.values()],
                             "subject_rows": self.counts,
-                            "receipt_rows": self.attempts,
+                            "receipt_rows": pq.ParquetFile(self.stage / "etl_receipts.parquet").metadata.num_rows,
                         },
                         indent=2,
                     )
@@ -272,6 +277,21 @@ class IdentityReceiptWriter:
         finally:
             self._stack.close()
         return False
+
+
+    def _carry_history(self):
+        if not self.prior_receipts:
+            return
+        from spicy_regs.receipt_history import carry_receipt_history
+
+        # Scoped priors live beside the stage, never in the published directory.
+        scoped = [
+            select_receipts(path, self.stage.parent / f"prior-{index}-{name}.parquet", dataset=name)
+            for index, path in enumerate(self.prior_receipts)
+            for name in self.policies
+        ]
+        receipts = self.stage / "etl_receipts.parquet"
+        carry_receipt_history(receipts, scoped, receipts)
 
 
 def read_identity_rows(directory, table, *, generation_id):

@@ -10,7 +10,7 @@ def inherit_current_receipts(current: Path, priors: Sequence[Path], destination:
 
     Callers admit both input bundles first. Matching accepted identity inherits
     regardless of whether values changed. Matching observations inherit in prior
-    file order, with repeated receipt identities ignored as ReceiptLineage does.
+    file order, with repeated receipt identities ignored.
     Failed attempts remain fresh. No prior row replaces a current receipt.
     ``require_unique_prior`` leaves any identity with more than one accepted prior to the row writer, as
     :class:`NotBulkEligible`; without it, differing receipts for one identity are a ``ValueError``.

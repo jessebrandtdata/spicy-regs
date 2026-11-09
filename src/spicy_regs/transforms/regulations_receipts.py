@@ -9,7 +9,6 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import cache
-from contextlib import ExitStack
 from hashlib import file_digest, sha256
 import json
 from pathlib import Path
@@ -21,7 +20,6 @@ import pyarrow.parquet as pq
 from spicy_regs.etl_receipts import (
     DatasetPolicy,
     ReceiptContext,
-    ReceiptLineage,
     RECEIPT_SCHEMA,
     combine_receipts,
     failure_receipt,
@@ -49,7 +47,9 @@ ATTRIBUTE_DATASETS = frozenset({"comment_attributes", "docket_attributes", "docu
 SOURCE_SCHEMA_DATASETS = RESTORE_DATASETS | ATTRIBUTE_DATASETS
 #: Datasets the private batch reader restores: the retained-input ones and the typed attribute tables.
 BATCH_RESTORE_DATASETS = RESTORE_DATASETS | ATTRIBUTE_DATASETS
-CARRY_DATASETS = frozenset({"dockets", "documents"}) | ATTRIBUTE_DATASETS
+#: Datasets whose writer keeps unchanged prior receipts exactly and gives a changed row only a predecessor
+#: reference (``carry_receipt_history``). Comments keeps its own catalog rules and inherits nothing.
+CARRY_DATASETS = frozenset(IDENTITIES) - {"comments"}
 
 NULLABLE_IDENTITIES = {
     "agency_lifecycle_stats": ("agency_code",),
@@ -412,12 +412,7 @@ def write_records(
     carry = dataset in CARRY_DATASETS and bool(prior_receipts)
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with TemporaryDirectory(prefix="regulations-refusals-", dir=destination.parent) as temp, ExitStack() as stack:
-        # Comments retains its current original input once. Earlier catalog
-        # snapshots/selected generations hold earlier inputs; do not copy them
-        # into each new receipt's diagnostics.
-        lineages = ([] if dataset == "comments" or carry else
-                    [stack.enter_context(ReceiptLineage([path], dataset=dataset)) for path in prior_receipts])
+    with TemporaryDirectory(prefix="regulations-refusals-", dir=destination.parent) as temp:
         refusal_path = Path(temp) / "refused.parquet"
         writer = pq.ParquetWriter(refusal_path, RECEIPT_SCHEMA, compression="zstd")
         refused = []
@@ -437,8 +432,6 @@ def write_records(
                         if len(refused) >= 2000:
                             flush()
                         continue
-                    for lineage in lineages:
-                        context = lineage.inherit(context, declared, shaped)
                     yield shaped, context
             finally:
                 flush()

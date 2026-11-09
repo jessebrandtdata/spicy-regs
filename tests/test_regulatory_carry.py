@@ -135,3 +135,35 @@ def test_restore_order_fault_refuses_without_retry_or_output(tmp_path, monkeypat
     with pytest.raises(etl_bulk.BulkValidationError, match='source order or population'):
         materialize_internal(ReceiptInput(dataset, (pair[0],), pair[1], 'g'), destination, bulk=True)
     assert not destination.exists()
+
+
+def test_a_formerly_inheriting_dataset_carries_instead_of_growing_history(tmp_path):
+    """fr_docket_links once inherited every matched prior; refreshes now keep unchanged rows and do not accumulate."""
+    from spicy_regs.transforms.regulations_shape import SOURCE_COLUMNS
+
+    def row(number, title):
+        values = dict.fromkeys(name for name, _ in SOURCE_COLUMNS['fr_docket_links'])
+        return values | {'docket_id': f'EPA-HQ-OAR-2020-000{number}', 'docket_source_ordinal': 0,
+                         'document_number': f'2020-0000{number}', 'publication_date': '2020-01-02', 'title': title}
+
+    witness = {'source_id': 'retained', 'source_uri': None, 'sha256': 'a' * 64, 'locator': 'row', 'body_version': None}
+
+    def write(name, generation, rows, priors=()):
+        records = [(r, ReceiptContext(generation, str(i), 'test', [witness])) for i, r in enumerate(rows)]
+        return write_records('fr_docket_links', records, tmp_path / name, prior_receipts=priors)
+
+    def accepted(receipts):
+        return {decode_exact_json(r['processing_json'])['raw_conversion_inputs']['title']: r
+                for r in pq.read_table(receipts).to_pylist() if r['outcome'] == 'accepted'}
+
+    receipts = write('v1', 'g1', [row(1, 'same'), row(2, 'v1')])[1]
+    first = accepted(receipts)
+    predecessor = first['v1']
+    for version in ('v2', 'v3', 'v4'):
+        receipts = write(version, version, [row(1, 'same'), row(2, version)], [receipts])[1]
+        current = accepted(receipts)
+        assert current['same'] == first['same']
+        changed = decode_exact_json(current[version]['diagnostic_json'])
+        assert changed['prior_receipt']['receipt_id'] == predecessor['receipt_id']
+        assert current[version]['witnesses'] == [witness]
+        predecessor = current[version]
