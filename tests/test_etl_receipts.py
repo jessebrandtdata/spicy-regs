@@ -955,7 +955,8 @@ def test_combine_keeps_receipt_groups_bounded_across_shards(tmp_path):
 
 
 @pytest.mark.parametrize("uri", ["/home/runner/work/x/.builds/a/input.parquet", "/Users/someone/Work/input.parquet",
-                                 "relative/input.parquet", "file:///tmp/input.parquet", r"C:\private\input.parquet"])
+                                 "./relative/input.parquet", "~/input.parquet", "file:///tmp/input.parquet",
+                                 r"C:\private\input.parquet", "FILE:///x"])
 def test_a_new_receipt_refuses_a_local_witness_path(policy, row, context, uri):
     from spicy_regs.etl_receipts import local_witness_uri
 
@@ -967,7 +968,8 @@ def test_a_new_receipt_refuses_a_local_witness_path(policy, row, context, uri):
         failure_receipt(policy, local, outcome="error", raw_fields={})
 
 
-@pytest.mark.parametrize("uri", [None, "https://example.test/a", "receipt-processing:" + "b" * 64, "sha256:" + "c" * 64])
+@pytest.mark.parametrize("uri", [None, "https://example.test/a", "receipt-processing:" + "b" * 64, "sha256:" + "c" * 64,
+                                 "b" * 64, "generations/court-opinions/abc/court_opinions.parquet", "held:fixture"])
 def test_addresses_and_digests_are_not_local_paths(uri):
     from spicy_regs.etl_receipts import local_witness_uri
 

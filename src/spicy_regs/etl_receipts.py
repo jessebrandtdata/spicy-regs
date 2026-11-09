@@ -220,8 +220,8 @@ class ReceiptContext:
                 raise ValueError("Invalid witness SHA-256")
 
 
-_URI_SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]+:")  # two or more letters, so a Windows drive is a path
-_BARE_DIGEST = re.compile(r"(?:sha256:)?[0-9a-f]{64}")
+#: An absolute, home- or dot-relative POSIX path, a Windows drive or UNC path, or a file: URI.
+_LOCAL_PATH = re.compile(r"(?:/|~|\.{1,2}/|[A-Za-z]:[\\/]|\\\\|file:)", re.IGNORECASE)
 
 
 def local_witness_uri(uri: str | None) -> bool:
@@ -229,13 +229,11 @@ def local_witness_uri(uri: str | None) -> bool:
 
     Receipts are public. A build path names a runner's temporary directory or an
     owner's home folder, and the file is not kept; the witness ``sha256`` is what
-    identifies the input. Public URLs, content digests and other schemes
-    (``receipt-processing:``) are addresses; a bare or ``file:`` path is not.
+    identifies the input. Public URLs, content digests, other schemes
+    (``receipt-processing:``) and publication object keys (``generations/...``,
+    relative to the data host) are addresses.
     """
-    if uri is None or _BARE_DIGEST.fullmatch(uri):
-        return False
-    scheme = _URI_SCHEME.match(uri)
-    return scheme is None or scheme.group().lower() == "file:"
+    return uri is not None and _LOCAL_PATH.match(uri) is not None
 
 
 def refuse_local_witnesses(witnesses: Iterable[Mapping[str, Any]]) -> None:
