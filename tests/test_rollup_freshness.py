@@ -46,6 +46,14 @@ def test_date_freshness_checks_both_congress_watermarks():
     assert "latest action" in failures[0]
 
 
+def test_executive_orders_are_stale_only_past_the_longest_publisher_gap():
+    # 2009-07-06 to 2009-10-01 (87 days) is the longest the Register went without an order in 1994-2026.
+    quiet = [("executive_order_observations", "newest order", "2009-07-06", 1574)]
+    assert evaluate_date_rows(quiet, date(2009, 10, 1)) == []
+    assert evaluate_date_rows(quiet, date(2009, 10, 15)) == [
+        "executive_order_observations (newest order) is 101d old (budget 100d)"]
+
+
 def test_row_count_state_flags_a_stalled_source():
     state = {"usaspending_recipients": {"count": 100_000, "last_changed": "2026-07-01"}}
     rows = [("usaspending_recipients", "row count", None, 100_000)]
@@ -334,7 +342,7 @@ def test_family_age_is_staleness_only_where_its_cadence_says(monkeypatch, capsys
     assert "FINITE: retained-sec-comments published=2026-01-02 age=312d" in output
     assert "OK: court-citations published=2026-10-20" in output
     assert "AGE: house-disbursements published=2026-11-06 age=4d (its tables' checks above decide)" in output
-    assert "AGE: executive-orders published=2026-10-20 age=21d (no cadence declared)" in output
+    assert "AGE: executive-orders published=2026-10-20 age=21d (its tables' checks above decide)" in output
 
     # The catalog is held to the installed inventory, not to its age: a moved input is stale on any day.
     moved = [("fec_source_catalog", "input catalog_sha256", "b" * 64, 3)]
