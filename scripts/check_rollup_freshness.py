@@ -415,8 +415,9 @@ def evaluate_family_ages(families: Mapping[str, Mapping], rows: Sequence[Freshne
         line = f"{family} published={published or 'unrecorded'} age={'?' if published is None else (today - published).days}d"
         cadence = FAMILY_CADENCE.get(family)
         if cadence is None:
-            watched = any(f"{check.table}.parquet" in entry["tables"] for check in DATE_CHECKS)
-            decides = "its tables' date checks decide" if watched else "no cadence declared"
+            watched = {check.table for check in DATE_CHECKS} | set(ROW_CHANGE_BUDGETS)
+            decides = ("its tables' checks above decide" if any(f"{table}.parquet" in entry["tables"] for table in watched)
+                       else "no cadence declared")
             print(f"AGE: {line} ({decides})")
         elif cadence.input_pin is not None:
             table, column, installed = cadence.input_pin

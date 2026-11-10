@@ -333,7 +333,7 @@ def test_family_age_is_staleness_only_where_its_cadence_says(monkeypatch, capsys
     output = capsys.readouterr().out
     assert "FINITE: retained-sec-comments published=2026-01-02 age=312d" in output
     assert "OK: court-citations published=2026-10-20" in output
-    assert "AGE: house-disbursements published=2026-11-06 age=4d (its tables' date checks decide)" in output
+    assert "AGE: house-disbursements published=2026-11-06 age=4d (its tables' checks above decide)" in output
     assert "AGE: executive-orders published=2026-10-20 age=21d (no cadence declared)" in output
 
     # The catalog is held to the installed inventory, not to its age: a moved input is stale on any day.
