@@ -58,8 +58,8 @@ def test_senate_policy_history_changes_only_the_two_funding_types_and_version():
         assert schema.field(at).type == pa.int64()
         schema = schema.set(at, schema.field(at).with_type(pa.string()))
     assert replace(previous, subject_schema=schema, policy_version=current.policy_version).descriptor() == current.descriptor()
-    with pytest.raises(ValueError, match="exact declaration"):
-        receipt_policies(replace(current, identity_fields=current.identity_fields[:-1]))
+    changed = replace(current, identity_fields=current.identity_fields[:-1])
+    assert receipt_policies(changed) == (changed,)
 
 
 def make_earlier_bundle(tmp_path, monkeypatch, raw, schema):

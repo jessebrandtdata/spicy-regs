@@ -101,7 +101,7 @@ def test_ingested_values_reach_the_mirror_typed_with_null_and_zero_distinct(tmp_
 
     monkeypatch.setattr(
         iceberg, "_read_pair_snapshot",
-        lambda *_: iceberg.CatalogPairSnapshot("local", 1, 1, iceberg.CatalogSnapshot("receipts", 2, 1)),
+        lambda *_, **kw: iceberg.CatalogPairSnapshot("local", 1, 1, iceberg.CatalogSnapshot("receipts", 2, 1)),
     )
     result = iceberg.export_public_comments(tmp_path / "out", COMMENT)
     assert pl.read_parquet(result["comments"]).columns == policy("comments").subject_schema.names

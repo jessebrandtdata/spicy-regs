@@ -24,13 +24,13 @@ backfill callers use that boundary. Refused writes roll back their subjects and 
 Unselected older or duplicate source observations remain rejected receipts. Prior table and
 receipt versions remain subject to the catalog's snapshot retention policy.
 
-Exports capture native subjects and receipts together, qualify them, and retain
-both in a generation-specific sidecar. Publication uses that exact pair, including
-its receipt lineage. The comments mirror pins the identity, schema and snapshot
-of both the comments table and the shared receipt table. A receipt-only append
-requires publication even when every subject is unchanged. Publication checks
-both tables after export and allows only compaction commits to move their pins.
-Fixed public mirrors contain native subject fields.
+`export_pair` captures native subjects and receipts together and qualifies them.
+The comments mirror no longer uses it: it copies the comments table alone and
+publishes no receipts ([comments: leaving per-row receipts](comments-receipt-archive.md)).
+It pins the comments table's identity and schema, records the receipt table's
+identity beside it, and allows only compaction commits to move the comments
+table's pin; a receipt-only append publishes nothing. Fixed public mirrors
+contain native subject fields.
 Receipt-only checkpoints use selected generations before acquisition state
 advances. No registry override enables a legacy production writer.
 

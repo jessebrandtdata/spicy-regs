@@ -350,8 +350,8 @@ def test_probe_exercises_native_pair_in_separate_namespace(lake):
     assert rows(lake) == before
 
 
-def test_receipt_only_commit_moves_paired_export_pin_without_changing_subject_snapshot(lake, tmp_path):
-    """Exercise both Iceberg metadata identities and the full rejected-attempt export."""
+def test_receipt_only_commit_moves_the_receipt_pin_and_leaves_the_comments_export_current(lake, tmp_path):
+    """Both Iceberg metadata identities on a real catalog; the export reads the comments table alone (ss-juz8)."""
     from spicy_regs.duckdb_settings import ExportResources
     from spicy_regs.sources import regulatory_catalog as native
     import pyarrow.parquet as pq
@@ -368,12 +368,12 @@ def test_receipt_only_commit_moves_paired_export_pin_without_changing_subject_sn
     assert (after.table_uuid, after.snapshot_id, after.schema_id) == (
         before.table_uuid, before.snapshot_id, before.schema_id)
     assert after.receipts.snapshot_id != before.receipts.snapshot_id
-    assert not iceberg.rows_unchanged_since(COMMENT, before)
-    with pytest.raises(RuntimeError, match='changed before export'):
-        iceberg.export_public_comments(tmp_path / 'stale', COMMENT, snapshot=before)
+    assert iceberg.rows_unchanged_since(COMMENT, before)
+    stale = iceberg.export_public_comments(tmp_path / 'stale', COMMENT, snapshot=before,
+                                          resources=ExportResources('128MB', 1))
     result = iceberg.export_public_comments(tmp_path / 'export', COMMENT, snapshot=after,
                                            resources=ExportResources('128MB', 1))
-    receipts = pq.read_table(result['receipts']).to_pylist()
-    assert sum(row['outcome'] == 'rejected' for row in receipts) == 1
-    assert sum(row['outcome'] == 'accepted' for row in receipts) == 12
+    assert 'receipts' not in result
+    assert pq.read_table(result['comments']).num_rows == 12
+    assert pq.read_table(stale['comments']).equals(pq.read_table(result['comments']))
     assert iceberg.rows_unchanged_since(COMMENT, after)

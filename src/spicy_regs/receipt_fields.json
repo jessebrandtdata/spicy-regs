@@ -655,52 +655,6 @@
     "supersedes_id": "Id of a prior row this one continues; always NULL here."
    }
   },
-  "comments": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "comment_id",
-     "docket_id",
-     "comment_on_document_id",
-     "comment_on_object_id",
-     "original_document_id",
-     "comment_reference_values_json",
-     "agency_code",
-     "first_name",
-     "last_name",
-     "organization",
-     "category",
-     "title",
-     "comment",
-     "document_type",
-     "posted_date",
-     "modify_date",
-     "receive_date",
-     "attachments_json",
-     "text_content",
-     "text_extraction_status",
-     "pdf_extraction_results_json",
-     "subtype",
-     "duplicate_comments"
-    ]
-   },
-   "renamed": {
-    "attachments_json": "attachments"
-   },
-   "meanings": {
-    "attachments_json": "JSON list of attachment entries in the retained response, including restricted attachments and renditions without a URL. Entries retain `restrictReasonType`/`restrictReason` when stated. NULL means the included set was absent or unavailable in that row; [] means it contained no attachment entries. A format list can be NULL and an individual URL can be NULL. Older rows may retain the earlier filtered representation, so NULL never proves attachment absence."
-   }
-  },
-  "comments_index": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "agency_code",
-     "docket_id",
-     "year",
-     "month",
-     "row_count"
-    ]
-   }
-  },
   "committee_assignments": {
    "containers": {
     "source_fields": [

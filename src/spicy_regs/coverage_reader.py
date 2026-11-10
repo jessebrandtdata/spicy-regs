@@ -36,10 +36,8 @@ def _admission_files():
     return [Path(__file__), *(root / name for name in (
         "etl_receipts.py", "etl_bulk.py", "native_types.py", "parquet_rows.py",
         "transforms/parquet_rows.py", "local_data.py", "runtime_bounds.py",
-        "earlier_receipt_policies.py", "scorecards/historical_rating_policies.json",
-    )), *sorted(root.glob("*policy_history*.json")),
-        *sorted((root / "scorecards").glob("*policy_history*.json")),
-        *sorted((root / "etl_policies").glob("*.json"))]
+        "policy_migrations.py", "policy_migrations.json",
+    )), *sorted((root / "etl_policies").glob("*.json"))]
 
 
 RESTORATION_FILES = {

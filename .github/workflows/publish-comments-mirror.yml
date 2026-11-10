@@ -1,14 +1,12 @@
 name: Publish comments mirror
 # Manual completion/recovery path; ETL calls the same refresh after publishing.
+# The v1 promotion's inputs (promote_v1 and its retained pair) are gone: that route published
+# ETL receipts, which comments no longer do (ss-juz8).
 on:
   workflow_dispatch:
     inputs:
       skip_upload:
         description: 'Build and validate the mirror without publishing or refreshing consumers'
-        type: boolean
-        default: false
-      promote_v1:
-        description: 'Export the complete retained v1 catalog pair and publish declared v2 fields'
         type: boolean
         default: false
       comments_only:
@@ -19,26 +17,6 @@ on:
         description: 'Linux/macOS runner label for comments; select verified export storage'
         type: string
         default: ubuntu-latest
-      comments_original_pair:
-        description: 'Absolute retained v1 pair outside checkout; sealed or accompanied by a captured descriptor'
-        type: string
-        default: ''
-      comments_captured_input:
-        description: 'Absolute validation-pending descriptor for the retained pair; requires exact digest'
-        type: string
-        default: ''
-      comments_captured_input_sha256:
-        description: 'Exact SHA-256 of the captured input descriptor'
-        type: string
-        default: ''
-      comments_local_python:
-        description: 'Optional canonical existing Python executable for captured local inputs'
-        type: string
-        default: ''
-      comments_local_python_sha256:
-        description: 'Exact executable SHA-256; required with comments_local_python'
-        type: string
-        default: ''
 concurrency:
   group: comments-catalog-write
   cancel-in-progress: false
@@ -54,11 +32,5 @@ jobs:
     secrets: inherit
     with:
       skip_upload: ${{ inputs.skip_upload }}
-      promote_v1: ${{ inputs.promote_v1 }}
       comments_only: ${{ inputs.comments_only }}
       comments_runner: ${{ inputs.comments_runner }}
-      comments_original_pair: ${{ inputs.comments_original_pair }}
-      comments_captured_input: ${{ inputs.comments_captured_input }}
-      comments_captured_input_sha256: ${{ inputs.comments_captured_input_sha256 }}
-      comments_local_python: ${{ inputs.comments_local_python }}
-      comments_local_python_sha256: ${{ inputs.comments_local_python_sha256 }}

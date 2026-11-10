@@ -510,7 +510,7 @@ def test_cfr_internal_prior_restores_qualified_placement_metadata(tmp_path):
 def test_earlier_federal_register_pair_restores_and_rewrites_under_v3_with_its_receipt_fields_public(tmp_path, version):
     """ss-vse3 step 1: a pair published under either earlier policy stays readable, and rewriting it fills the
     promoted columns from what its receipts hold. v2 is the live policy; v1 predates the three 0.66.6 columns."""
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
     from spicy_regs.etl_receipts import write_dataset
     from spicy_regs.transforms.regulations_shape import PROMOTED_LAST, shape_record
 
@@ -547,7 +547,7 @@ def test_earlier_federal_register_pair_restores_and_rewrites_under_v3_with_its_r
 
 def test_v1_fr_docket_links_pair_restores_and_rewrites_under_v2_with_its_candidates_public(tmp_path):
     """ss-vse3 step 1: the live links policy stays readable; v2 only makes the normalizer's candidates public."""
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
     from spicy_regs.etl_receipts import write_dataset
     from spicy_regs.transforms.regulations_shape import shape_record
 
@@ -583,7 +583,7 @@ def test_v1_fr_docket_links_pair_restores_and_rewrites_under_v2_with_its_candida
 
 def test_v1_unified_agenda_pair_restores_and_rewrites_under_v2_with_related_rins_null(tmp_path):
     """A pair written before SpicyDocs 0.67.0 read RELATED_RIN_LIST stays readable; NULL there means never read."""
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
     from spicy_regs.etl_receipts import write_dataset
     from spicy_regs.transforms.regulations_receipts import materialize_internal
     from spicy_regs.transforms.regulations_shape import shape_record
@@ -715,7 +715,14 @@ def test_native_cfr_source_ingest_keeps_source_modified_date(tmp_path):
     assert "url" not in row
 
 
-def test_native_staging_merge_keeps_integer_counts_and_source_recency(tmp_path):
+def test_native_staging_merge_keeps_integer_counts_and_source_recency(tmp_path, monkeypatch):
+    """The receipt route's staging merge, with comments as its example table.
+
+    Comments' receipts are retired (ss-juz8), so a comments generation with receipts is refused as shipped; the merge
+    itself is checked with the marker lifted, through the one function every reader asks. No production path calls
+    ``merge_native_staging``; it leaves with the receipt route.
+    """
+    from spicy_regs import subject_catalog
     from spicy_regs.transforms.regulations_receipts import merge_native_staging, build_native_rollup
 
     prior = write(
@@ -749,6 +756,10 @@ def test_native_staging_merge_keeps_integer_counts_and_source_recency(tmp_path):
         generation="g2",
         label="fresh",
     )
+    assert "comments" in subject_catalog.retired_receipt_datasets()
+    with pytest.raises(ValueError, match=r"Receipts are retired for \['comments'\]"):
+        merge_native_staging([fresh], tmp_path / "refused", generation_id="g3", prior=prior)
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset())
     target = tmp_path / "merged"
     merge_native_staging([fresh], target, generation_id="g3", prior=prior)
     [row] = pq.read_table(target / "comments.parquet").to_pylist()
