@@ -40,12 +40,19 @@ env:
 jobs:
   publish:
     runs-on: ${{ inputs.comments_runner }}
-    # Unchanged snapshots verify object versions only. A changed snapshot exports
-    # the catalog pair, rebinds and then admits every receipt in Python, stages
-    # by agency, sorts each agency and streams the monolith. The two receipt
-    # passes alone took 37 and 29 minutes for 26.4M rows on an M4 Pro (ss-7flp)
-    # and no hosted run has finished them, so every route gets the hosted maximum.
-    timeout-minutes: 360
+    # Unchanged snapshots verify object versions only. A changed snapshot copies
+    # the comments table (no receipts since ss-juz8), stages by agency, sorts,
+    # assembles, checks every prior ID, seals and uploads. Measured at full size
+    # on an M4 Pro (3GB / 1 thread): copy 2.7 + stage 2.8 + sort 3.2 + assemble
+    # 2.3 + index 0.1 + prior-ID check 20 = 31 min; estimated: partition check
+    # 1-3, generation seal and admission 5-10 (it decoded receipts too, ~50).
+    # 37-44 local x 1.2-1.6 hosted = 44-70, plus upload and full readback of
+    # about 19 GB each way (6.4 monolith + 6.4 agency files + 6.4 generation;
+    # the 4 GB receipt member is gone) at 40-100 MB/s = 7-16, plus setup:
+    # 55-90 min. 180 is 2x that and 2.5x the last hosted mirror without
+    # receipts (72.5 min, 2026-10-03).
+    # The receipt route needed 360 (138 of its 170 measured minutes were receipts).
+    timeout-minutes: 180
 
     steps:
       - name: Check retained original pair before checkout

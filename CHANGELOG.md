@@ -142,6 +142,18 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **`comments` and `comments_index` publish without ETL receipts** (ss-juz8,
+  part of ss-vse3). The comments family's generation has no `etl_receipts.parquet`
+  and its index entry no `etlReceipts`; the two tables keep their columns, and no
+  field moves, since the live receipts held none the table lacks. The mirror
+  copies the pinned catalog table and no longer rebinds, admits or replays its
+  26.5 million receipts: 138.5 of 169.6 measured minutes at full size. A
+  receipt-only catalog commit no longer republishes. The last generation with
+  receipts is pinned in `docs/comments-receipt-archive.md`; the catalog keeps
+  writing its own receipt table. Requires the installed comments policies to
+  be marked receipts-retired first. `prepare_comments_selected_export.py
+  --publish` (the 2026-10-10 v1 promotion) now refuses.
+
 - **`federal_register` and `fr_docket_links` publish the fields their receipts
   held** (ss-vse3, step 1 of moving both tables off per-row receipts).
   `federal_register` gains, as its last columns, `html_url`, `pdf_url`,

@@ -102,7 +102,8 @@ face the existing shrink guard; an intentional destructive replacement requires
 the existing explicit override after reviewing the result.
 
 Nor can a family silently stop publishing receipts for a table. A rollup
-declares `retired_receipt_datasets`; publication then accepts the first
+declares `retired_receipt_datasets` (the comments mirror passes its
+`RETIRED_RECEIPT_DATASETS`); publication then accepts the first
 generation without them, requires each named table to stay published, and
 refuses any later generation that claims receipts for one again. Undeclared,
 the generation is refused. The prior generation's receipt file is not touched.
