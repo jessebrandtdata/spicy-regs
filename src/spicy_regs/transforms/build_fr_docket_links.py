@@ -71,10 +71,16 @@ def build_fr_docket_links(output_dir: Path) -> Path:
     # docket_id with a small row-group size so per-docket lookups prune.
     held = set(pq.read_schema(fr_file).names)
     stated = "regulations_dot_gov_docket_id" if "regulations_dot_gov_docket_id" in held else "CAST(NULL AS VARCHAR)"
+    # The published table holds each list natively; this builder's rows still state them as the receipt writer
+    # takes them, so a published table is read back into that text here (ss-vse3, until the links leave receipts).
+    published = ("" if "docket_ids_json" in held else
+                 " REPLACE (array_to_string(agency_slugs, ',') AS agency_slugs),"
+                 " CAST(to_json(docket_ids) AS VARCHAR) AS docket_ids_json,"
+                 " CAST(to_json(regulation_id_numbers) AS VARCHAR) AS regulation_id_numbers_json")
     display = ", ".join(f"fr.{column}" for column in DISPLAY_COLUMNS)
     query = f"""
     COPY (
-        WITH fr AS (SELECT *, {stated} AS _stated FROM read_parquet('{fr_file}')),
+        WITH fr AS (SELECT *{published}, {stated} AS _stated FROM read_parquet('{fr_file}')),
         printed AS (
             SELECT link.docket_id, link.ordinality - 1 AS docket_source_ordinal,
                    normalize_docket_candidates(link.docket_id) AS normalized_docket_candidates_json,

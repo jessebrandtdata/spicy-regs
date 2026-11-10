@@ -23,6 +23,7 @@ from pathlib import Path
 
 import duckdb
 import pyarrow.parquet as pq
+import pytest
 
 FIXTURE = Path(__file__).parent / "fixtures/federal_register_switch"
 MANIFEST = json.loads((FIXTURE / "manifest.json").read_text())
@@ -153,7 +154,10 @@ def test_the_receipt_route_fills_the_promoted_columns_from_an_earlier_policy_pri
     assert pq.read_schema(first / "federal_register.parquet").names[-5:] == list(PROMOTED)
     assert_edge_rows(first / "federal_register.parquet", night=1)
     assert_same_table(first / "federal_register.parquet", FIXTURE / "expected/night-1.parquet")
-    FrDocketLinksRollup(output_dir=root).run()
+    # The links read the published Register table; nothing of the Register's is restored through receipts.
+    with monkeypatch.context() as links_only:
+        links_only.setattr(SelectedPriors, "get", lambda self, dataset: pytest.fail(f"restored {dataset}"))
+        FrDocketLinksRollup(output_dir=root).run()
     first_links = published(root, before=(first,))
     assert_links(first_links / "fr_docket_links.parquet", first / "federal_register.parquet")
     assert_same_table(first_links / "fr_docket_links.parquet", FIXTURE / "expected/links-night-1.parquet")
@@ -242,3 +246,43 @@ def test_publication_accepts_the_promoted_columns_over_the_earlier_policy_prior(
     assert [name for name, _ in table["columns"][-5:]] == list(PROMOTED)
     assert (table["rows"], prior["rows"]) == (170, 164) and table["byteSize"] > prior["byteSize"]
     assert_same_table(published(tmp_path / "output") / "federal_register.parquet", FIXTURE / "expected/night-1.parquet")
+
+
+def test_the_rulemaking_stages_read_the_published_table_as_they_read_the_restored_one(tmp_path):
+    """The materializer's text shape of the published table against the rows the fixture's receipts restore.
+
+    Compared on the columns the stages declare (``source_column_requirements``), for the 146 rows the first night does
+    not re-read. The lists are compared parsed: the published table keeps an agency's five identifying fields and a
+    CFR reference's three, not the Register's ``url``, ``json_url`` or ``citation_url``, and spells a part as text.
+    """
+    from spicy_regs.pipelines.rulemaking_dataset import RulemakingDatasetPipeline, stage_text
+    from spicy_regs.transforms.regulations_receipts import ReceiptInput, read_internal
+
+    restored = {(row["document_number"], row["publication_date"]): row for row in read_internal(ReceiptInput(
+        "federal_register", (FIXTURE / "prior/federal_register.parquet",), FIXTURE / "prior/etl_receipts.parquet",
+        MANIFEST["prior"]["generationId"]))}
+    staged = tmp_path / "federal_register.parquet"
+    shutil.copyfile(FIXTURE / "expected/night-1.parquet", staged)
+    stage_text("federal_register", staged)
+    text = rows(staged)
+    columns = RulemakingDatasetPipeline(output_dir=tmp_path).source_column_requirements()["federal_register.parquet"]
+    assert set(columns) <= set(pq.read_schema(staged).names)
+    carried = [key for key, row in rows(FIXTURE / "expected/night-1.parquet").items() if row["source_sha256"] is None]
+    assert len(carried) == 146 and set(carried) <= set(restored)
+    kept = {"agencies_json": ("id", "name", "raw_name", "parent_id", "slug"),
+            "cfr_references_json": ("title", "part", "chapter")}
+
+    def stated(name, value):
+        if not name.endswith("_json") or value is None:
+            return value
+        parsed = json.loads(value)
+        if name in kept:
+            parsed = [{field: (str(item[field]) if field in ("part", "chapter") and item.get(field) is not None
+                               else item.get(field)) for field in kept[name]} for item in parsed]
+        return parsed
+
+    for key in carried:
+        assert {name: stated(name, text[key][name]) for name in columns} == {
+            name: stated(name, restored[key][name]) for name in columns}, key
+    stage_text("federal_register", staged)  # already text: left alone
+    assert rows(staged) == text

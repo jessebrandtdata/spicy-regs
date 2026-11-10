@@ -903,7 +903,6 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
         'documents': [{'document_id': 'EPA-2026-0001-0001', 'docket_id': 'EPA-2026-0001',
                        'agency_code': 'EPA', 'document_type': 'Proposed Rule', 'posted_date': '2026-01-01',
                        'modify_date': '2026-01-01', 'comment_end_date': '2026-03-01', 'title': 'Proposal'}],
-        'federal_register': [], 'fr_docket_links': [],
         'unified_agenda': [{'rin': '1000-AA00', 'agenda_edition': '202510', 'title': 'A rule',
                            'agency_code': '2000', 'rule_stage': 'Proposed Rule', 'timetable_json': '[]',
                            'legal_authority_json': '["5 U.S.C. 301"]', 'cfr_references_json': '["40 CFR 1"]',
@@ -913,6 +912,20 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
     work = tmp_path / 'scheduled'
     work.mkdir()
     remember_selection(work, [SelectedDataset(s.dataset, s.subjects, s.receipts, s.generation_id) for s in inputs])
+    # The two Register tables are read as published (ss-vse3): native lists, no receipt pair. A local run reads
+    # the tables beside it; the stages still get the Register's lists as JSON text.
+    from spicy_regs.transforms.regulations_shape import shape_record
+    published = {
+        'federal_register': {'document_number': '2026-00001', 'publication_date': '2026-01-02', 'title': 'Proposal',
+                             'document_type': 'Proposed Rule', 'docket_ids_json': '["EPA-2026-0001"]',
+                             'regulation_id_numbers_json': '["1000-AA00"]', 'agencies_json': '[]',
+                             'cfr_references_json': '[{"title": 40, "part": 60}]', 'agency_slugs': 'epa'},
+        'fr_docket_links': {'docket_id': 'EPA-2026-0001', 'docket_source_ordinal': 0, 'link_source': 'printed',
+                            'document_number': '2026-00001', 'publication_date': '2026-01-02'},
+    }
+    for name, row in published.items():
+        pq.write_table(pa.Table.from_pylist([shape_record(name, row)], schema=subject_schema(name)),
+                       work / f'{name}.parquet')
     monkeypatch.setattr(r2, 'download', lambda *_: False)
     if loose_prior:
         from spicy_regs.transforms.build_proceedings import COLUMNS
@@ -928,6 +941,14 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
     assert 'authority_refs' in native[0] and 'authority_refs_json' not in native[0]
     manifest = json.loads((work / 'rulemaking-dataset-manifest.json').read_text())
     assert manifest['inputs']['native_inputs']['unified_agenda']['generationId'] == 'g1'
+    # No receipt pair stands behind a published source; with an index its pin would name the generation read.
+    assert manifest['inputs']['native_inputs']['federal_register'] == {}
+    assert set(manifest['inputs']['native_inputs']) == {
+        'dockets', 'documents', 'unified_agenda', 'federal_register', 'fr_docket_links'}
+    staged = pq.read_table(work / 'federal_register.parquet').to_pylist()[0]
+    assert (staged['docket_ids_json'], staged['cfr_references_json'], staged['agency_slugs']) == (
+        '["EPA-2026-0001"]', '[{"title":40,"part":"60","chapter":null}]', 'epa')
+    assert native[0]['fr_document_ids'] == ['2026-00001@2026-01-02'] and native[0]['cfr_refs'] == ['40-60']
     assert manifest['etlReceipts']['generationId'] == 'rulemaking-first'
     assert manifest['artifacts']['etl_receipts.parquet']['visibility'] == 'internal'
     # Simulate the exact pinned previous materialized generation, including receipts.
