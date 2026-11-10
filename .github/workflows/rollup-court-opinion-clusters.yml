@@ -1,10 +1,17 @@
 name: Rollup — court_opinion_clusters
 on:
   schedule:
-    # 04:20 UTC Mondays — the bulk dumps are cut monthly to quarterly, so a
-    # weekly pass is enough to pick up a new one; every other week it only runs
-    # the search catch-up over the published table.
-    - cron: '20 4 * * 1'
+    # 04:20 UTC daily (owner decision 2026-11-10, ss-jran). A run does one of
+    # two things, decided before it downloads anything
+    # (docs/court-search-recovery.md): when the publisher lists a bulk export
+    # newer than the one published (they are cut quarterly), it rebuilds from
+    # that export and makes no Search request; otherwise it appends one day's
+    # share of the clusters created since, at most 105 Search requests 75
+    # seconds apart. 04:20 keeps those requests eleven hours clear of the daily
+    # docket job (18:30 UTC), which shares the account's quota of 50 an hour and
+    # 125 a rolling day. A day with no quota or no backlog publishes nothing
+    # and succeeds.
+    - cron: '20 4 * * *'
   workflow_dispatch:
     inputs:
       skip_upload:
@@ -12,6 +19,12 @@ on:
         required: false
         default: false
         type: boolean
+# A dispatch queues behind the scheduled run instead of racing it: two runs at
+# once would spend the same day's quota twice, and the later publication of
+# this family would be refused as stale after its whole search.
+concurrency:
+  group: rollup-court-opinion-clusters
+  cancel-in-progress: false
 jobs:
   run:
     uses: ./.github/workflows/_rollup.yml
@@ -19,9 +32,11 @@ jobs:
     with:
       command: run-rollup-court-opinion-clusters
       require_bulk: true
-      # The prior restore holds the 3.4 GB table, 2.2 GB receipts, a 10.4 GB
-      # admission database and a 4.0 GB restored copy at once (~20 GB,
-      # measured 2026-11-09) before the build and generation copies.
+      # A rebuild's prior restore holds the 3.4 GB table, 2.2 GB receipts, a
+      # 10.4 GB admission database and a 4.0 GB restored copy at once (~20 GB,
+      # measured 2026-11-09) before the build and generation copies. A daily
+      # catch-up restores nothing: it holds the 5.6 GB prior beside its 5.6 GB
+      # appended copy, then releases the prior before the generation copy.
       free_disk: true
       skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
       # A new export streams two bulk dumps, not one: opinion-clusters for the
@@ -30,6 +45,10 @@ jobs:
       # alone took over 120 minutes (run 35561659245 was cancelled at 120 with
       # 70.95 million of about 72 million dockets read) and the cluster stream
       # 72 minutes (run 34806660211, before the docket map existed); 120
-      # cancelled two of the three runs since 2026-09-07. The ~17-minute
-      # catch-up of the other weeks needs far less.
-      timeout_minutes: 300
+      # cancelled two of the three runs since 2026-09-07; the prior restore adds
+      # 47 (run 42727712481). A daily catch-up is mostly waiting, and no lock is
+      # held while it waits: 105 requests at 75 seconds are 131 minutes, it may
+      # first wait up to 90 for yesterday's requests to leave the rolling day
+      # and 30 on Retry-After, and the download, append, admission and upload
+      # of 5.6 GB come on top. 350 leaves both inside the hosted limit of 360.
+      timeout_minutes: 350
