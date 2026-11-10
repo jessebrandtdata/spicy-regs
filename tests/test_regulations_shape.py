@@ -237,3 +237,24 @@ def test_plain_comment_text_and_source_restrictions_are_mapped_before_receipts()
     assert shaped["attachments"] == [{"title": "Study", "formats": None, "restrict_reason_type": "Copyrighted"}]
     assert shaped["raw_source_record"] == raw
     assert "raw_conversion_inputs" not in shaped  # Comments keeps one replayable original input.
+
+
+def test_the_installed_extracts_attachment_id_lands_in_the_comments_attachments_struct():
+    """spicy-docs 0.85.0 ends each comment attachment entry with ``attachment_id``, NULL for a malformed id; the comments
+    mapper accepts the key and the native struct keeps it, so nothing is refused or dropped."""
+    import pyarrow as pa
+
+    from spicy_regs.schemas import COMMENT
+
+    record = {"data": {"id": "EPA-X-0001-0002", "attributes": {}}, "included": [
+        {"id": "09000064b8f4997d", "type": "attachments", "attributes": {"title": "Letter", "fileFormats": [
+            {"fileUrl": "https://downloads.regulations.gov/EPA-X-0001-0002/attachment_1.pdf", "format": "pdf",
+             "size": 4}]}},
+        {"id": 7, "type": "attachments", "attributes": {"title": "Study", "fileFormats": None,
+                                                        "restrictReasonType": "Copyrighted"}},
+    ]}
+    extracted = COMMENT.extract(record)
+    shaped = shape_record("comments", {"comment_id": "EPA-X-0001-0002", "attachments_json": extracted["attachments_json"]})
+    stored = pa.Table.from_pylist([shaped], schema=subject_schema("comments")).to_pylist()[0]["attachments"]
+    assert [entry["attachment_id"] for entry in stored] == ["09000064b8f4997d", None]
+    assert [entry["restrict_reason_type"] for entry in stored] == [None, "Copyrighted"]

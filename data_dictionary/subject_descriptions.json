@@ -3886,7 +3886,10 @@
       "current_term_state": "State of the latest term.",
       "current_term_party": "Party of the latest term, as the crosswalk states it for that term.",
       "current_term_district": "District of the latest term; absent for a Senate term.",
-      "name_nickname": "The crosswalk's own name.nickname for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      "name_nickname": "The crosswalk's own name.nickname for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
+      "name_middle": "The crosswalk's own name.middle for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
+      "name_suffix": "The crosswalk's own name.suffix for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
+      "name_official_full": "The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
     }
   },
   "native_legal_references": {

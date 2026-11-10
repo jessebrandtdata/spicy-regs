@@ -30271,12 +30271,32 @@
         "column_name": "name_nickname",
         "column_type": "VARCHAR",
         "description": "The crosswalk's own name.nickname for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_middle",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.middle for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_suffix",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.suffix for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_official_full",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
       }
     ],
     "subject": "congress",
     "grain": "One row per legislator in one capture of the community crosswalk.",
     "identity_columns": [
       "bioguide_id"
+    ],
+    "later_policy_columns": [
+      "name_middle",
+      "name_suffix",
+      "name_official_full"
     ]
   },
   "member_terms": {
@@ -41252,7 +41272,7 @@
       {
         "dataset": "members",
         "receipt_only": false,
-        "policy_version": "congress-subjects/1",
+        "policy_version": "congress-subjects/2",
         "identity_columns": [
           "bioguide_id"
         ],

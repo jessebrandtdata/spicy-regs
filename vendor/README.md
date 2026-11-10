@@ -1,6 +1,15 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.84.0` leaves script, CSS, `<noscript>` and `<template>` content out
+- **Selected provider** `spicy_docs-0.85.0` (ss-mbia, ss-i1gm, ss-348x). `members` appends
+  `name_middle`, `name_suffix` and `name_official_full`, the legislators crosswalk's own name parts;
+  `congress_subjects.INPUT_COLUMNS` classifies them and `members` moves to `congress-subjects/2`, whose
+  ledger entry carries `/1` rows. On the two pinned roster files all 12,770 rows read, the 22 earlier
+  columns are unchanged and each new column equals its source key. A presidential FRDOC marker split
+  across `FRDOC` and `FILED` is read in the three shapes ten refused executive orders serve. A comment's
+  attachment entry ends with `attachment_id`, which the comments struct already holds;
+  `comment_fields_write.downloadable_attachments` takes it back out. Built from spicy-docs `14143003`
+  (main `9597e195`, same tree), twice, byte-identical. See [the build receipt](spicy_docs-0.85.0.json).
+- **Earlier provider** `spicy_docs-0.84.0` leaves script, CSS, `<noscript>` and `<template>` content out
   of an HTML body's text and breaks the line where a block element would glue two texts (ss-uxon). Its
   `BODY_TEXT_DERIVATION_VERSION` is `004`. Only the `htm` branch changed, so a held print read from PDF is
   not read again: `transforms/build_print_citations.DERIVATION_READS_AS` records that `004` reads `pdf`,
