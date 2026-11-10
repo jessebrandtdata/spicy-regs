@@ -54,8 +54,12 @@ policy changes; no producer-written success field supplies admission.
 
 ## Publication and failure
 
-All shrink guards run before any upload. Objects are created conditionally under
-`generations/<family>/<artifact-digest>/`. The publisher rereads and verifies all
+All shrink guards run before any upload. A table that records its prior's
+columns and at least its prior's rows in every partition is not compared by
+size, since a writer's row-group layout can halve the bytes with no row lost;
+the comparison reads counts, names and types, never values. Objects are created
+conditionally under `generations/<family>/<artifact-digest>/`. The publisher
+rereads and verifies all
 remote bytes before conditionally replacing the small publication index. A
 concurrent change refuses the update; rebuild from a fresh index before retrying.
 A crash before the pointer update can leave unreferenced immutable objects but

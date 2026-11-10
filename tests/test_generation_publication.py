@@ -17,13 +17,14 @@ from spicy_regs.sources import publication as pub, r2
 from tests.generation_fakes import Store, error
 
 
-def build(tmp_path, name="one", family="test", keys=("a.parquet", "b.parquet"), value="one"):
+def build(tmp_path, name="one", family="test", keys=("a.parquet", "b.parquet"), value="one", table=None, **layout):
+    """A generation holding ``table`` (by default one ``id`` row of ``value``) at each key, written with ``layout``."""
     source = tmp_path / (name + "-source")
     source.mkdir()
     files = []
     for key in keys:
         path = source / key
-        pq.write_table(pa.table({"id": [value]}), path, store_schema=False)
+        pq.write_table(pa.table({"id": [value]}) if table is None else table, path, store_schema=False, **layout)
         files.append(path)
     target = tmp_path / name
     artifact = build_generation(target, family=family, files=files, expected_keys=keys)
@@ -761,11 +762,15 @@ def test_a_generation_scoped_outcome_table_may_shrink_but_a_data_table_may_not(t
     ("a.parquet", True),
 ])
 def test_a_smaller_generation_over_a_published_prior_is_guarded_only_for_data_tables(tmp_path, monkeypatch, key, shrinks):
-    """The live failure path: the prior generation's recorded size, not a probe of the remote object, is the comparison."""
+    """The live failure path: the prior generation's recorded size, not a probe of the remote object, is the comparison.
+
+    The smaller generation also holds one row fewer. An outcome table's rows follow its generation's producer members,
+    so it may lose rows and bytes; a data table that lost a row is compared by size.
+    """
     from spicy_regs import etl_policy_registry
 
     monkeypatch.setattr(etl_policy_registry, "require_registered_receipts", lambda *_: None)
-    large, _ = build(tmp_path, keys=(key,), value=os.urandom(50_000).hex())
+    large, _ = build(tmp_path, keys=(key,), table=pa.table({"id": [os.urandom(50_000).hex(), "kept"]}))
     store = Store()
     prior = publish(store, large)
     small, _ = build(tmp_path, "two", keys=(key,), value="two")
@@ -774,3 +779,95 @@ def test_a_smaller_generation_over_a_published_prior_is_guarded_only_for_data_ta
             publish(store, small, prior)
     else:
         assert key in publish(store, small, prior)["families"]["test"]["tables"]
+
+
+def _ids(rows: int) -> list[str]:
+    return [f"C{number:08d}" for number in range(rows)]
+
+
+def _smaller_over_prior(tmp_path, old: pa.Table, new: pa.Table):
+    """Publish ``old`` at one row per row group, then build ``new`` in one group: the store, prior index and candidate.
+
+    The fec_committees refusal in small: the writer's row-group count, not the data, sets most of the size (1,767
+    groups became 176 and 10.2 MB became 4.0 MB with all 89,974 rows). The candidate is asserted under half the prior's
+    bytes, so no caller passes or refuses for want of a real shrink past the 0.5 threshold.
+    """
+    large, _ = build(tmp_path, keys=("a.parquet",), table=old, row_group_size=1)
+    small, artifact = build(tmp_path, "two", keys=("a.parquet",), table=new)
+    assert (small / "a.parquet").stat().st_size * 2 < (large / "a.parquet").stat().st_size
+    store = Store()
+    return store, publish(store, large), small, artifact
+
+
+@pytest.mark.parametrize("rows, publishes", [(400, True), (401, True), (399, False)])
+def test_a_table_under_half_its_prior_bytes_publishes_only_if_it_kept_its_row_count(tmp_path, rows, publishes):
+    """Ticket ss-kqzz. Equal or more rows with the same columns publish; one row fewer is the loss the guard is for."""
+    store, prior, small, _ = _smaller_over_prior(tmp_path, pa.table({"id": _ids(400)}), pa.table({"id": _ids(rows)}))
+    held = pub.table_descriptor(prior, "a.parquet")
+    assert held is not None and (held["rows"], held["columns"]) == (400, [["id", "VARCHAR"]])
+    if publishes:
+        table = pub.table_descriptor(publish(store, small, prior), "a.parquet")
+        assert table is not None and (table["rows"], table["columns"]) == (rows, [["id", "VARCHAR"]])
+        assert table["byteSize"] == (small / "a.parquet").stat().st_size
+        return
+    writes = list(store.writes)
+    with pytest.raises(RuntimeError, match=r"Refusing to upload a\.parquet: new file would shrink remote"):
+        publish(store, small, prior)
+    assert store.writes == writes
+
+
+@pytest.mark.parametrize("columns, recorded", [
+    ({"id": _ids(400)}, [["id", "VARCHAR"]]),  # removed
+    ({"id": _ids(400), "n": [str(n) for n in range(400)]}, [["id", "VARCHAR"], ["n", "VARCHAR"]]),  # retyped
+    ({"id": _ids(400), "m": list(range(400))}, [["id", "VARCHAR"], ["m", "BIGINT"]]),  # renamed: same width and types
+])
+def test_a_table_that_kept_its_rows_but_not_its_columns_is_still_compared_by_size(tmp_path, columns, recorded):
+    """No earlier publication check compares an unregistered table's columns with its prior's; this guard owns them."""
+    old = pa.table({"id": _ids(400), "n": list(range(400))})
+    store, prior, small, artifact = _smaller_over_prior(tmp_path, old, pa.table(columns))
+    held = pub.table_descriptor(prior, "a.parquet")
+    assert held is not None and (held["rows"], held["columns"]) == (400, [["id", "VARCHAR"], ["n", "BIGINT"]])
+    assert artifact.root["spec"]["tables"]["a.parquet"] == {"rows": 400, "columns": recorded}
+    with pytest.raises(RuntimeError, match="shrink"):
+        publish(store, small, prior)
+
+
+@pytest.mark.parametrize("absent", [None, "rows", "columns"])
+def test_a_prior_descriptor_recording_no_rows_or_columns_is_compared_by_size(tmp_path, absent):
+    """``parse_index`` admits no such descriptor, so the index is edited by hand: the byte check applies, no KeyError.
+
+    With nothing removed the same call stages, so the refusals come from the missing field alone.
+    """
+    from rulespec_artifacts import LocalMemberSource, iter_member_descriptors
+
+    table = pa.table({"id": _ids(400)})
+    store, prior, small, artifact = _smaller_over_prior(tmp_path, table, table)
+    index = json.loads(json.dumps(prior))
+    if absent is not None:
+        del index["families"]["test"]["tables"]["a.parquet"][absent]
+    source = LocalMemberSource(small)
+
+    def stage():
+        return pub._stage_verified_generation(
+            artifact, source, client=store, bucket="test", index=index,
+            members=tuple(iter_member_descriptors(artifact, source)),
+            upload_member=lambda prefix, member: pub._put_immutable(
+                store, "test", prefix + "/" + member, small / member),
+        )
+
+    if absent is None:
+        assert stage()["tables"]["a.parquet"]["rows"] == 400
+    else:
+        with pytest.raises(RuntimeError, match="shrink"):
+            stage()
+
+
+def test_the_guard_cannot_see_values_emptied_in_rows_that_were_kept(tmp_path):
+    """The stated limit of the rule: descriptors record counts, names and types, never values.
+
+    Before ss-kqzz the size comparison refused this only because the bytes halved. If a check that reads values is
+    added to publication, this expectation should flip.
+    """
+    store, prior, small, _ = _smaller_over_prior(tmp_path, pa.table({"id": _ids(400)}), pa.table({"id": [""] * 400}))
+    table = pub.table_descriptor(publish(store, small, prior), "a.parquet")
+    assert table is not None and (table["rows"], table["columns"]) == (400, [["id", "VARCHAR"]])

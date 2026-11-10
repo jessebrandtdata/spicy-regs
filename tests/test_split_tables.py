@@ -158,13 +158,13 @@ SPLIT = {"fixture_bill_sections.parquet": ["congress"]}
 KEYS = ["fixture_bill_sections.parquet", "fixture_congress_bills.parquet"]
 
 
-def _sections(directory, by_congress: dict[str, list[str]]) -> None:
+def _sections(directory, by_congress: dict[str, list[str]], **layout) -> None:
     """Write one ``congress=<N>/part-000000.parquet`` member per congress, its rows holding that congress."""
     for congress, bills in by_congress.items():
         path = directory / "fixture_bill_sections" / f"congress={congress}" / "part-000000.parquet"
         path.parent.mkdir(parents=True, exist_ok=True)
         pq.write_table(pa.table({"bill_id": bills, "congress": [congress] * len(bills),
-                                 "body": [f"text of {bill}" for bill in bills]}), path)
+                                 "body": [f"text of {bill}" for bill in bills]}), path, **layout)
 
 
 def _outputs(directory, by_congress=None, *, bills=("119-s5",)) -> list:
@@ -289,6 +289,35 @@ def test_the_shrink_guard_sums_a_split_tables_members(tmp_path):
     with pytest.raises(RuntimeError, match="shrink"):
         _publish(tmp_path, store, "second", _outputs(tmp_path / "out2", {"118": ["118-hr1"], "119": ["119-hr1"]}),
                  prior=first)
+
+
+@pytest.mark.parametrize("rows, publishes", [
+    ({"118": 1, "119": 300}, True),
+    ({"118": 301, "119": 1}, False),  # the table holds more rows than before; congress 119 lost 299 of its 300
+    ({"118": 1, "119": 299}, False),
+])
+def test_a_smaller_split_table_publishes_only_if_every_partition_kept_its_row_count(tmp_path, rows, publishes):
+    """Ticket ss-kqzz. Rows are counted per partition: the table's total can hold while one partition empties.
+
+    The prior is written one row per row group and the candidate in one group, so the candidate is under half the
+    prior's bytes whatever its rows (asserted), as when a writer's layout changed and no data did.
+    """
+    store = Store()
+    old, new = tmp_path / "out1", tmp_path / "out2"
+    _sections(old, {"118": ["118-hr0"], "119": [f"119-hr{n}" for n in range(300)]}, row_group_size=1)
+    first = _publish(tmp_path, store, "first", _outputs(old))
+    held = first["families"]["bills"]["tables"]["fixture_bill_sections.parquet"]
+    assert [(m["partition"], m["rows"]) for m in held["members"]] == [
+        ({"congress": "118"}, 1), ({"congress": "119"}, 300)]
+    _sections(new, {congress: [f"{congress}-hr{n}" for n in range(count)] for congress, count in rows.items()})
+    assert sum(path.stat().st_size for path in new.rglob("part-*.parquet")) * 2 < held["byteSize"]
+    if publishes:
+        second = _publish(tmp_path, store, "second", _outputs(new), prior=first)
+        table = second["families"]["bills"]["tables"]["fixture_bill_sections.parquet"]
+        assert (table["rows"], [m["rows"] for m in table["members"]]) == (301, [1, 300])
+        return
+    with pytest.raises(RuntimeError, match="shrink"):
+        _publish(tmp_path, store, "second", _outputs(new), prior=first)
 
 
 def test_a_split_table_keeps_every_partition_its_prior_generation_holds(tmp_path):

@@ -9,6 +9,16 @@ Entries link to the pull request that introduced the change.
 
 ### Fixed
 
+- **A table that kept its rows and columns is not refused for its size** (ss-kqzz).
+  The `fec_committees` nightly was refused on 2026-11-09 for shrinking from
+  10.2 MB to 4.0 MB (ratio 0.392) with the same 89,974 rows and 16 columns: a
+  writer change cut its row groups from 1,767 to 176 and its footer from 3.03 MB
+  to 0.31 MB. Publication now compares size only when the index cannot show that
+  the table kept its prior's columns and at least its prior's rows in every
+  partition. A lost row or a changed column still faces the size guard. The rule
+  reads counts, names and types, so it cannot see values emptied in rows that
+  were kept.
+
 - **A new reading of an unchanged print replaces the old one** (ss-fmxo). When a
   derivation changed a print's text digest but its PDF bytes had not changed,
   `document_citations` and `bill_committee_actions` kept every finding under both

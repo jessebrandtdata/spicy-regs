@@ -1621,12 +1621,14 @@ def _stage_verified_generation(
     exempt = converted | _verified_replacement_tables | _generation_scoped_tables()
     # The guards run per table: a partition of a split table may legitimately shrink, but none may vanish,
     # since a build that forgot a partition would otherwise pass whenever the rest outweighs the shrink ratio.
+    # Bytes follow the writer's layout as well as the data, so size is compared only where the index cannot show
+    # every partition kept its rows and the table its columns (:func:`_keeps_rows_and_columns`, and what it cannot see).
     for key, table in tables.items():
         prior = table_descriptor(index, key)
         if missing := _partitions(prior) - _partitions(table):
             raise PublicationError(f"{key} lacks partitions its prior generation holds: "
                                    + ", ".join("/".join(f"{c}={v}" for c, v in p) for p in sorted(missing)))
-        if key not in exempt:
+        if key not in exempt and not (prior and _keeps_rows_and_columns(table, prior)):
             old_size = prior["byteSize"] if prior else _get_remote_size(client, bucket, key)
             _assert_upload_safe(table["byteSize"], old_size, key)
     old_family = index["families"].get(family)
@@ -1908,6 +1910,35 @@ def restore_family(client, bucket: str, family: str, entry: Mapping | None, *, e
 def _partitions(table: Mapping | None) -> set[tuple[tuple[str, str], ...]]:
     """The partitions a split table's members hold, as ``(column, value)`` tuples; none for a single file."""
     return {tuple(member["partition"].items()) for member in (table or {}).get("members", ())}
+
+
+def _partition_rows(table: Mapping) -> dict[tuple[tuple[str, str], ...], int] | None:
+    """Rows per partition, by its sorted ``(column, value)`` pairs, a single file being the one partition ``()``.
+
+    ``None`` when a file records no row count.
+    """
+    rows: dict[tuple[tuple[str, str], ...], int] = {}
+    for member in table.get("members", (table,)):
+        if type(member.get("rows")) is not int:
+            return None
+        partition = tuple(sorted(member.get("partition", {}).items()))
+        rows[partition] = rows.get(partition, 0) + member["rows"]
+    return rows
+
+
+def _keeps_rows_and_columns(table: Mapping, prior: Mapping) -> bool:
+    """Whether ``table`` records exactly ``prior``'s columns and at least its rows in every partition ``prior`` holds.
+
+    Such a table is not compared with its prior by size: its bytes can halve with nothing lost, as when
+    ``fec_committees`` went from 1,767 row groups to 176 on 2026-11-09 (10.2 MB to 4.0 MB, ratio 0.392, all 89,974
+    rows and 16 columns kept). A lost row, a changed column or a descriptor recording neither leaves the size
+    comparison in force. These are counts, names and types: rows kept with their values emptied, or exchanged for
+    as many others, look the same, and nothing at publication compares values with the prior generation.
+    """
+    held, kept = _partition_rows(prior), _partition_rows(table)
+    return (held is not None and kept is not None
+            and "columns" in prior and table.get("columns") == prior["columns"]
+            and all(kept.get(partition, -1) >= rows for partition, rows in held.items()))
 
 
 def _instant(seconds: float | None = None) -> str:
