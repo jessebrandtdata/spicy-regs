@@ -37,9 +37,6 @@ from spicy_regs.transforms.build_federal_register import FR_EPOCH
 FAMILY = "executive-orders"
 LISTING_STAGE = "executive-order-listing"
 BODY_STAGE = "executive-order-body"
-#: The limits the published 2025 bodies were captured under, so a reused body result and a new one state one budget.
-BODY_BUDGET = {"max_requests": 4, "max_body_bytes": 8 * 1024 * 1024, "max_mods_bytes": 16 * 1024 * 1024,
-               "timeout_seconds": 30, "min_request_interval_seconds": 0.4}
 
 
 def query_scope(through: date) -> dict:
@@ -138,7 +135,9 @@ def capture_bodies(evidence, reader, prior: dict, results: Path, *, transport=No
     )
     from spicy_docs.sources.federal_register.body_captures import capture_body
 
-    budget = FederalRegisterBodyBudget(**BODY_BUDGET)
+    # The limits the published 2025 bodies were captured under, so a reused result and a new one state one budget.
+    budget = FederalRegisterBodyBudget(max_requests=4, max_body_bytes=8 * 1024 * 1024, max_mods_bytes=16 * 1024 * 1024,
+                                       timeout_seconds=30, min_request_interval_seconds=0.4)
     pin = {"logicalId": reader.pin.logical_id, "artifactDigest": reader.pin.artifact_digest}
     retained = evidence.transport(transport, stage=BODY_STAGE,
                                   max_bytes=max(budget.max_body_bytes, budget.max_mods_bytes))
