@@ -22,7 +22,6 @@ import shutil
 from contextlib import contextmanager
 from pathlib import Path
 
-import duckdb
 import pyarrow.parquet as pq
 import pytest
 
@@ -80,21 +79,38 @@ def rows(path):
     return {(row["document_number"], row["publication_date"]): row for row in pq.read_table(path).to_pylist()}
 
 
+#: A Register row's key, and the links' (each link row at its position, as the receipt route wrote them).
+KEY = ("document_number", "publication_date")
+LINK_KEY = ("docket_id", *KEY)
+
+
 def assert_same_table(actual, expected):
-    """Schema, row count, row order on the key, and every value both ways."""
-    assert pq.read_schema(actual).equals(pq.read_schema(expected))
-    order = "a.docket_id" if "docket_id" in pq.read_schema(expected).names else "NULL"
-    one, other = (f"read_parquet('{path}', file_row_number=true)" for path in (actual, expected))
-    names = ", ".join(f'"{name}"' for name in pq.read_schema(expected).names)
-    counts = duckdb.sql(f"SELECT (SELECT count(*) FROM {one}), (SELECT count(*) FROM {other})").fetchone()
-    assert counts is not None and counts[0] == counts[1]
-    for left, right in ((one, other), (other, one)):
-        assert duckdb.sql(f"SELECT count(*) FROM (SELECT {names} FROM {left} EXCEPT ALL SELECT {names} FROM {right})"
-                          ).fetchone() == (0,)
-    assert duckdb.sql(f"""SELECT count(*) FROM {one} a FULL JOIN {other} b USING (file_row_number)
-                          WHERE a.document_number IS DISTINCT FROM b.document_number
-                             OR a.publication_date IS DISTINCT FROM b.publication_date
-                             OR {order} IS DISTINCT FROM {order.replace("a.", "b.")}""").fetchone() == (0,)
+    """Schema, row count, every value both ways and the key at every position (``receipt_switch``)."""
+    from spicy_regs.receipt_switch import table_differences
+
+    key = LINK_KEY if "docket_id" in pq.read_schema(expected).names else KEY
+    assert table_differences(actual, expected, key=key) == []
+
+
+def prior_receipt_copies(table, *, reread):
+    """``table``'s promoted values against the 2026-10-30 receipts' copies, for the prior rows ``reread`` misses."""
+    import operator
+
+    from spicy_regs.etl_receipts import receipt_policies
+    from spicy_regs.receipt_switch import promoted_differences
+    from spicy_regs.transforms.regulations_receipts import policy
+
+    prior = FIXTURE / "prior/federal_register.parquet"
+    [earlier] = [p for p in receipt_policies(policy("federal_register"))
+                 if p.subject_schema.equals(pq.read_schema(prior))]
+    read = {(d["document_number"], d["publication_date"])
+            for name in reread for d in json.loads((FIXTURE / f"pages/{name}.json").read_bytes())["results"]}
+    carried = set(rows(prior)) - read
+    assert len(carried) > 100
+    copies = {name: operator.itemgetter(name) for name in (
+        "html_url", "pdf_url", "body_html_url", "regulations_dot_gov_info_json")}
+    return promoted_differences(table, prior, FIXTURE / "prior/etl_receipts.parquet", earlier,
+                                generation_id=MANIFEST["prior"]["generationId"], key=KEY, copies=copies, among=carried)
 
 
 def assert_edge_rows(table, *, night):
@@ -160,6 +176,8 @@ def test_the_receipt_route_fills_the_promoted_columns_from_an_earlier_policy_pri
     assert pq.read_schema(first / "federal_register.parquet").names[-5:] == list(PROMOTED)
     assert_edge_rows(first / "federal_register.parquet", night=1)
     assert_same_table(first / "federal_register.parquet", FIXTURE / "expected/night-1.parquet")
+    # Every row night 1 did not re-read holds the values its receipt held, read through admission.
+    assert prior_receipt_copies(first / "federal_register.parquet", reread=("night-1",)) == []
     # The links read the published Register table; nothing of the Register's is restored through receipts.
     with monkeypatch.context() as links_only:
         links_only.setattr(SelectedPriors, "get", lambda self, dataset: pytest.fail(f"restored {dataset}"))
@@ -178,6 +196,7 @@ def test_the_receipt_route_fills_the_promoted_columns_from_an_earlier_policy_pri
     second = published(root, before=(first, first_links))
     assert_edge_rows(second / "federal_register.parquet", night=2)
     assert_same_table(second / "federal_register.parquet", FIXTURE / "expected/night-2.parquet")
+    assert prior_receipt_copies(second / "federal_register.parquet", reread=("night-1", "night-2")) == []
     FrDocketLinksRollup(output_dir=root).run()
     second_links = published(root, before=(first, first_links, second))
     assert_links(second_links / "fr_docket_links.parquet", second / "federal_register.parquet")
