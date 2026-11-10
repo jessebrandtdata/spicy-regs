@@ -26,8 +26,10 @@ Rule 1 (2026-09-23) grouped identical captions only, took the lowest numeric id 
 object's, and called a wide id spread ``refiled``, which a key of court and number cannot observe: 54 of its 55
 ``refiled`` groups had one filing date, and 11 parents lay outside their court's sequence (round-6 audit, M5).
 
-Membership and neighbour ids come from one filtered scan of the native edition with Python-side set logic, the pattern
-the enrichment used after a DuckDB parallel-join anomaly.
+Membership and neighbour ids come from one scan of the native edition with Python-side set logic, the pattern the
+enrichment used after a DuckDB parallel-join anomaly. The edition is CourtListener's own ``dockets-<date>.csv.bz2``,
+read by SpicyDocs' ``CourtListenerLocalDump`` (about 5 GB compressed; every record is decoded, seven columns are
+kept, and only the published keys' courts reach Python), so the raw archive's copy is the only input it needs.
 """
 
 from __future__ import annotations
@@ -40,7 +42,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pyarrow as pa
-import pyarrow.dataset as ds
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from loguru import logger
 from spicy_regs.court_subjects import SUBJECT_SCHEMAS
@@ -137,7 +139,7 @@ def _neighbour_numbers(number: str) -> list[str]:
 
 
 def build_court_docket_groups(output_dir: Path, *, dockets_file: Path, native_file: Path, edition: str) -> Path:
-    """Write the side table for the published ``dockets_file`` from one native bulk edition."""
+    """Write the side table for the published ``dockets_file`` from one native bulk edition's ``.csv.bz2``."""
     published = pq.read_table(dockets_file, columns=["cl_docket_id", "court_id", "docket_number"]).to_pylist()
     published_ids = {row["cl_docket_id"] for row in published}
     per_key: dict[tuple[str, str], int] = defaultdict(int)
@@ -152,10 +154,14 @@ def build_court_docket_groups(output_dir: Path, *, dockets_file: Path, native_fi
 
     candidates: dict[tuple[str, str], list[dict]] = defaultdict(list)
     neighbour_ids: dict[tuple[str, str], list[int]] = defaultdict(list)
+    from spicy_docs.sources.courtlistener.local import CourtListenerLocalDump
+
     scanned = 0
-    dataset = ds.dataset(native_file, format="parquet")
-    courts = sorted({court for court, _ in keys})
-    for batch in dataset.to_batches(columns=_NATIVE_COLUMNS, filter=ds.field("court_id").isin(courts)):
+    output_dir.mkdir(parents=True, exist_ok=True)
+    dump = CourtListenerLocalDump(native_file, columns=_NATIVE_COLUMNS, work_dir=output_dir)
+    courts = pa.array(sorted({court for court, _ in keys}), pa.string())
+    for batch in dump.iter_batches():
+        batch = batch.filter(pc.is_in(batch.column("court_id"), value_set=courts))
         scanned += batch.num_rows
         for row in batch.to_pylist():
             key = (row["court_id"], row["docket_number"])
@@ -165,6 +171,9 @@ def build_court_docket_groups(output_dir: Path, *, dockets_file: Path, native_fi
             if key in wanted and pacer.isdigit() and len(pacer) <= MAX_CASE_ID_DIGITS:
                 for owner in wanted[key]:
                     neighbour_ids[owner].append(int(pacer))
+
+    if not dump.completed:
+        raise RuntimeError(f"CourtListener dockets: {native_file.name} was not read to its end")
 
     rows, stats = [], {"groups": 0, PER_DEFENDANT_DOCKETS: 0, DUPLICATE_RECORDS: 0, SAME_CAPTION: 0,
                        SAME_DATE_CONTAINED_CAPTION: 0, "ungrouped": 0}
@@ -190,7 +199,8 @@ def build_court_docket_groups(output_dir: Path, *, dockets_file: Path, native_fi
     out_file = write_court_rows('court_docket_groups', rows, output_dir,
                                 witnesses=[file_witness(dockets_file), file_witness(native_file)])
     receipt = {"edition": edition, "rule_version": RULE_VERSION, "dockets_file": str(dockets_file),
-               "native_file": str(native_file), "published_rows": len(published), "native_rows_scanned": scanned,
+               "native_file": str(native_file), "published_rows": len(published), "native_rows_read": dump.rows,
+               "native_rows_scanned": scanned,
                "keys_with_neighbours": sum(1 for key in keys if neighbour_ids.get(key)),
                "grouped_rows": len(rows), **stats}
     (output_dir / "court_docket_groups.parquet.receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
