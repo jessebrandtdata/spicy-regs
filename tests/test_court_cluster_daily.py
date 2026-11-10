@@ -405,6 +405,28 @@ def test_a_publisher_fault_after_a_whole_window_is_published_and_still_reported(
     assert hosted.published() == ["2", "1", "6", "4", "10", "9", "8", "7"]
 
 
+def test_the_dispatch_cap_reaches_the_catch_up_and_a_bad_one_spends_nothing(hosted, monkeypatch):
+    monkeypatch.setenv("COURT_CLUSTERS_MAX_REQUESTS", "ten")
+    search = Search(range(4, 17))
+    with pytest.raises(ValueError, match="COURT_CLUSTERS_MAX_REQUESTS must be a whole number"):
+        hosted.day(search)
+    assert search.asked == []
+    monkeypatch.setenv("COURT_CLUSTERS_MAX_REQUESTS", "2")
+    assert hosted.day(search) == ["cluster_id:[7 TO *]", "cluster_id:[7 TO 8]"]
+    assert hosted.published() == ["2", "1", "6", "4", "8", "7"]
+
+
+def test_a_run_that_cannot_publish_spends_no_quota(hosted, monkeypatch):
+    from spicy_regs.pipelines.rollups.court_opinion_clusters import CourtOpinionClustersRollup
+
+    monkeypatch.delenv("R2_ACCESS_KEY_ID", raising=False)
+    monkeypatch.setattr(courtlistener_resume, "read_usage", lambda *args: pytest.fail("usage read without credentials"))
+    search = hosted.serve(Search(range(4, 17)))
+    with pytest.raises(RuntimeError, match="Court catch-up publication requires R2 credentials"):
+        CourtOpinionClustersRollup(output_dir=hosted.work, skip_upload=False).run()
+    assert search.asked == [] and hosted.fetched == []
+
+
 def test_a_newer_export_is_rebuilt_from_bulk_and_spends_no_quota(hosted, monkeypatch):
     from spicy_regs.pipelines.rollups import court_opinion_clusters as rollup
 

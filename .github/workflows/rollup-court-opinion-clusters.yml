@@ -2,23 +2,27 @@ name: Rollup — court_opinion_clusters
 on:
   schedule:
     # 04:20 UTC daily (owner decision 2026-11-10, ss-jran). A run does one of
-    # two things, decided before it downloads anything
-    # (docs/court-search-recovery.md): when the publisher lists a bulk export
-    # newer than the one published (they are cut quarterly), it rebuilds from
-    # that export and makes no Search request; otherwise it appends one day's
-    # share of the clusters created since, at most 105 Search requests 75
-    # seconds apart. 04:20 keeps those requests eleven hours clear of the daily
-    # docket job (18:30 UTC), which shares the account's quota of 50 an hour and
-    # 125 a rolling day. A day with no quota or no backlog publishes nothing
-    # and succeeds.
+    # two things, decided before it downloads anything: when the publisher
+    # lists a bulk export newer than the one published (they are cut
+    # quarterly), it rebuilds from that export and makes no Search request;
+    # otherwise it appends one day's share of the clusters created since. The
+    # account's quota and this job's share of it are stated once, in "Quota" in
+    # docs/court-search-recovery.md. 04:20 keeps its requests eleven hours
+    # clear of the daily docket job (18:30 UTC), which shares that quota. A day
+    # with no quota or no readable backlog publishes nothing and succeeds.
     - cron: '20 4 * * *'
   workflow_dispatch:
     inputs:
       skip_upload:
-        description: 'Skip R2 upload (dry run)'
+        description: 'Skip R2 upload (dry run). A catch-up still spends its Search requests and saves nothing.'
         required: false
         default: false
         type: boolean
+      max_requests:
+        description: 'Search requests for this catch-up, 2 to 105; blank is the normal day. 10 proves the route cheaply.'
+        required: false
+        default: ''
+        type: string
 # A dispatch queues behind the scheduled run instead of racing it: two runs at
 # once would spend the same day's quota twice, and the later publication of
 # this family would be refused as stale after its whole search.
@@ -39,6 +43,7 @@ jobs:
       # appended copy, then releases the prior before the generation copy.
       free_disk: true
       skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
+      court_clusters_max_requests: ${{ inputs.max_requests || '' }}
       # A new export streams two bulk dumps, not one: opinion-clusters for the
       # decisions and dockets for the court each was decided in, because the
       # cluster dump carries no court_id. On a hosted runner the docket map
@@ -47,8 +52,8 @@ jobs:
       # 72 minutes (run 34806660211, before the docket map existed); 120
       # cancelled two of the three runs since 2026-09-07; the prior restore adds
       # 47 (run 42727712481). A daily catch-up is mostly waiting, and no lock is
-      # held while it waits: 105 requests at 75 seconds are 131 minutes, it may
-      # first wait up to 90 for yesterday's requests to leave the rolling day
-      # and 30 on Retry-After, and the download, append, admission and upload
-      # of 5.6 GB come on top. 350 leaves both inside the hosted limit of 360.
+      # held while it waits: at most 251 minutes ("Quota" in
+      # docs/court-search-recovery.md), which leaves 99 for the download,
+      # append, admission and upload of 5.6 GB. 350 keeps both kinds of run
+      # inside the hosted limit of 360.
       timeout_minutes: 350
