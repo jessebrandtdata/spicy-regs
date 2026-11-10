@@ -243,6 +243,10 @@ jobs:
           ARGS+=(--scratch-originals)
           echo "Running: uv run run-pipeline ${ARGS[*]}"
           uv run run-pipeline "${ARGS[@]}"
+          # A sweep that stopped at its time budget concludes "success"; say so on the run page.
+          if [ -f output/sweep-stopped.txt ]; then
+            echo "::warning title=Sweep stopped at its time budget::Stopped before batch $(tr -d '[:space:]' < output/sweep-stopped.txt) (0-indexed) of $BATCH_COUNT. Earlier batches are committed and will be published; the next scheduled sweep begins at that batch."
+          fi
 
       # The sweep writes this file only when it stopped at its time budget. The
       # 18:25 retry reads the artifact's presence as "batches remain", and the

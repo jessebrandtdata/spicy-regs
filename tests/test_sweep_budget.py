@@ -187,6 +187,29 @@ def test_a_stopped_sweep_leaves_an_artifact_and_still_lets_the_consumers_publish
     assert workflow["jobs"]["refresh-consumers"]["needs"] == ["setup", "etl-new"]
 
 
+@pytest.mark.parametrize("stopped_before", ["2", None])
+def test_a_stopped_sweep_is_a_warning_on_the_run_page(tmp_path, stopped_before):
+    """A budget stop concludes "success"; the lines after the pipeline command, run as written, announce it."""
+    import subprocess
+
+    workflow = yaml.safe_load(WORKFLOW.read_text())
+    run = next(step for step in workflow["jobs"]["etl-new"]["steps"] if step.get("name") == "Run new pipeline")
+    command = 'uv run run-pipeline "${ARGS[@]}"\n'
+    assert run["run"].count(command) == 1
+    after = "set -euo pipefail\n" + run["run"].split(command)[1]
+    (tmp_path / "output").mkdir()
+    if stopped_before is not None:
+        (tmp_path / "output" / regulations.SWEEP_STOPPED_NAME).write_text(f"{stopped_before}\n")
+    result = subprocess.run(["bash", "-c", after], cwd=tmp_path, capture_output=True, text=True,
+                            env={"PATH": "/usr/bin:/bin", "BATCH_COUNT": "15"})
+    assert result.returncode == 0, result.stderr
+    if stopped_before is None:
+        assert result.stdout == ""
+    else:
+        assert result.stdout.startswith("::warning title=Sweep stopped at its time budget::Stopped before batch 2 ")
+        assert "(0-indexed) of 15" in result.stdout and result.stdout.count("\n") == 1
+
+
 @pytest.mark.parametrize(
     ("schedule", "succeeded", "stopped", "run"),
     [
