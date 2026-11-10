@@ -117,6 +117,7 @@ run-rollup-treasury-fiscal = "spicy_regs.pipelines.rollups.source_refreshes:trea
 run-rollup-administration-policy = "spicy_regs.pipelines.rollups.source_refreshes:administration_policy_app"
 run-rollup-ofac-sanctions = "spicy_regs.pipelines.rollups.source_refreshes:ofac_sanctions_app"
 run-rollup-grants-opportunities = "spicy_regs.pipelines.rollups.source_refreshes:grants_opportunities_app"
+run-rollup-house-disbursements = "spicy_regs.pipelines.rollups.source_refreshes:house_disbursements_app"
 run-rollup-bill-family = "spicy_regs.pipelines.rollups.bill_family:app"
 run-rollup-press-releases = "spicy_regs.pipelines.rollups.press_releases:app"
 run-rollup-amendments = "spicy_regs.pipelines.rollups.amendments:app"

@@ -19,90 +19,134 @@ from spicy_regs.transforms.build_house_disbursements import build_house_disburse
 
 #: Selection IDs as the published generation names them: ``house-2026-q2-detail``.
 _ID = "house-{year}-q{quarter}-{kind}"
+#: The keys a ``congressional-disbursement-selection/1`` file declares.
+_SELECTED = ("id", "chamber", "format", "kind", "url", "period_start", "period_end")
 
 
-def published_selection(generation: Path, store) -> tuple[list[dict], dict]:
-    """The selected files behind a published generation's rows, and the reuse map of their originals in ``store``.
+def published_files(generation: Path) -> list[dict]:
+    """The selection entry of each source file behind a published generation's rows, with its digest and encoding.
 
     Every row names its source file, URL, digest, report period and the encoding its normalization read, so the
-    generation rebuilds from this and the raw archive alone. An original absent from ``store`` raises.
+    generation rebuilds from these and the raw archive alone.
     """
     import pyarrow.dataset as ds
 
-    files, reuse = [], {}
+    files = []
     columns = ["source_file_id", "source_url", "source_sha256", "report_period_start", "report_period_end",
                "source_encoding"]
     for kind, table in TABLES.items():
         rows = ds.dataset(generation / table, format="parquet").to_table(columns=columns)
         for identity, url, sha256, start, end, encoding in sorted({tuple(row.values()) for row in rows.to_pylist()}):
             files.append({"id": identity, "chamber": "house", "format": "csv", "kind": kind, "url": url,
-                          "period_start": start.isoformat(), "period_end": end.isoformat()})
-            original = raw_original(store, sha256, None)
-            if url in reuse:
-                raise ValueError(f"Published rows name {url} twice")
-            reuse[url] = {"path": str(original), "sha256": sha256, "byte_size": original.stat().st_size,
-                          "encoding": encoding}
-    if len({item["id"] for item in files}) != len(files):
-        raise ValueError("Published rows give one source file ID two URLs or periods")
-    return files, reuse
+                          "period_start": start.isoformat(), "period_end": end.isoformat(),
+                          "source_sha256": sha256, "encoding": encoding})
+    if len({item["id"] for item in files}) != len(files) or len({item["url"] for item in files}) != len(files):
+        raise ValueError("Published rows give one source file two URLs, periods or encodings")
+    return files
 
 
-def listed_additions(evidence, published: list[dict], *, transport=None) -> list[dict]:
-    """Each CSV the House's current and archive pages list that ``published`` lacks, as selection entries.
+def reuse_map(files: list[dict], store) -> dict:
+    """``acquire --reuse``: each published original read from ``store`` instead of downloaded again; absent raises."""
+    reuse = {}
+    for item in files:
+        original = raw_original(store, item["source_sha256"], None)
+        reuse[item["url"]] = {"path": str(original), "sha256": item["source_sha256"],
+                              "byte_size": original.stat().st_size, "encoding": item["encoding"]}
+    return reuse
 
-    Both pages are captured through ``evidence`` into the raw archive before they are read. A listed revision of
-    a published quarter refuses: which original replaces which is a reviewed decision, not a selection rule.
+
+def listed_links(evidence, *, transport=None) -> list[tuple]:
+    """``(page, index, link)`` for every CSV link the House's current and archive pages list.
+
+    Both pages are captured through ``evidence`` into the raw archive before they are read.
     """
     from spicy_docs.sources.house_disbursements_index import (
         HouseDisbursementsIndexAcquirer, HouseDisbursementsIndexBudget,
     )
 
     budget = HouseDisbursementsIndexBudget()
+    retained = evidence.transport(transport, stage="house-disbursements-index", max_bytes=budget.max_bytes)
+    with HouseDisbursementsIndexAcquirer(budget=budget, transport=retained) as acquirer:
+        pages = [(page, acquirer.acquire_index(selection=page)[0]) for page in ("current", "archive")]
+    return [(page, index, link) for page, index in pages for link in index.links if link.duplicate_of is None]
+
+
+def additions(listed: list[tuple], published: list[dict]) -> list[dict]:
+    """Each ``listed`` CSV that ``published`` lacks, as a selection entry.
+
+    A listed revision of a published quarter refuses: which original replaces which is a reviewed decision, not a
+    selection rule.
+    """
     known = {item["url"] for item in published}
     ids = {item["id"]: item["url"] for item in published}
     added = []
-    retained = evidence.transport(transport, stage="house-disbursements-index", max_bytes=budget.max_bytes)
-    with HouseDisbursementsIndexAcquirer(budget=budget, transport=retained) as acquirer:
-        for page in ("current", "archive"):
-            index, _capture = acquirer.acquire_index(selection=page)
-            for link in index.links:
-                if link.url in known or link.duplicate_of is not None:
-                    continue
-                if not link.period_start or not link.period_end or link.period_issues:
-                    raise ValueError(f"The House lists {link.url} without a clean quarter: {link.period_issues}")
-                start = link.period_start
-                identity = _ID.format(year=start[:4], quarter=(int(start[5:7]) - 1) // 3 + 1, kind=link.kind)
-                if identity in ids:
-                    raise ValueError(f"The House lists {link.url} for {identity}, which is published from "
-                                     f"{ids[identity]}; select the revision by hand")
-                ids[identity] = link.url
-                known.add(link.url)
-                added.append({
-                    "id": identity, "chamber": "house", "format": "csv", "kind": link.kind, "url": link.url,
-                    "period_start": link.period_start, "period_end": link.period_end,
-                    "publisher": "House Chief Administrative Officer", "listing_url": index.index_url,
-                    "listing_sha256": index.source_sha256,
-                    "listing_occurrence": {"page": page, "link_number": link.link_number,
-                                           "group_number": link.group_number, "report_label": link.report_label,
-                                           "listing_text": link.listing_text},
-                })
+    for page, index, link in listed:
+        if link.url in known:
+            continue
+        if not link.period_start or not link.period_end or link.period_issues:
+            raise ValueError(f"The House lists {link.url} without a clean quarter: {link.period_issues}")
+        start = link.period_start
+        identity = _ID.format(year=start[:4], quarter=(int(start[5:7]) - 1) // 3 + 1, kind=link.kind)
+        if identity in ids:
+            raise ValueError(f"The House lists {link.url} for {identity}, which is published from "
+                             f"{ids[identity]}; select the revision by hand")
+        ids[identity] = link.url
+        known.add(link.url)
+        added.append({
+            "id": identity, "chamber": "house", "format": "csv", "kind": link.kind, "url": link.url,
+            "period_start": link.period_start, "period_end": link.period_end,
+            "publisher": "House Chief Administrative Officer", "listing_url": index.index_url,
+            "listing_sha256": index.source_sha256,
+            "listing_occurrence": {"page": page, "link_number": link.link_number, "group_number": link.group_number,
+                                   "report_label": link.report_label, "listing_text": link.listing_text},
+        })
     return added
+
+
+def write_selection(files: list[dict], added: list[dict], reuse: dict, output_dir: Path) -> Path:
+    """Write ``selection.json`` (published files, then the added ones) and ``reuse.json``; returns the selection."""
+    from spicy_regs.pipelines.congressional_disbursements import SCHEMA
+
+    selected = [{key: item[key] for key in _SELECTED} for item in files] + added
+    selection = output_dir / "selection.json"
+    selection.write_text(json.dumps({"schema": SCHEMA, "files": selected, "scope": (
+        "The published generation's files and each CSV the House lists beside them")}, indent=2, ensure_ascii=False))
+    (output_dir / "reuse.json").write_text(json.dumps(reuse, indent=2, sort_keys=True) + "\n")
+    return selection
 
 
 def select(generation: Path, output_dir: Path, *, archive_root: Path | None = None, transport=None) -> dict:
     """Write ``selection.json`` and ``reuse.json`` for the next build into ``output_dir``; return what was added."""
-    from spicy_regs.pipelines.congressional_disbursements import SCHEMA
     from spicy_regs.source_evidence import acquisition_evidence
 
     output_dir.mkdir(parents=True, exist_ok=False)
-    published, reuse = published_selection(generation, open_raw(archive_root))
+    files = published_files(generation)
+    reuse = reuse_map(files, open_raw(archive_root))
     with acquisition_evidence(FAMILY, output_dir=output_dir) as evidence:
-        added = listed_additions(evidence, published, transport=transport)
-    selection = {"schema": SCHEMA, "scope": "The published generation's files and each CSV the House lists beside them",
-                 "files": published + added}
-    (output_dir / "selection.json").write_text(json.dumps(selection, indent=2, ensure_ascii=False) + "\n")
-    (output_dir / "reuse.json").write_text(json.dumps(reuse, indent=2, sort_keys=True) + "\n")
-    return {"published": len(published), "added": [item["id"] for item in added]}
+        added = additions(listed_links(evidence, transport=transport), files)
+    write_selection(files, added, reuse, output_dir)
+    return {"published": len(files), "added": [item["id"] for item in added]}
+
+
+def refresh(files: list[dict], added: list[dict], output_dir: Path, *, store, evidence,
+            transport=None) -> tuple[Path, ...]:
+    """Acquire, normalize and convert ``files`` plus ``added`` into ``output_dir``; returns the table directories.
+
+    The hosted refresh's whole path, the hand one's three commands. The acquisition's own journal, which holds the
+    new files' HTTP receipts, is retained in ``evidence`` so a runner's scratch archive does not take it along.
+    """
+    from spicy_regs.pipelines.congressional_disbursements import acquire_selection, normalize_selection
+    from spicy_regs.source_evidence import JOURNAL
+
+    (output_dir / "select").mkdir(parents=True)
+    reuse = reuse_map(files, store)
+    selection = write_selection(files, added, reuse, output_dir / "select")
+    acquired = acquire_selection(selection, output_dir / "acquired", reuse=reuse, archive_root=store.root,
+                                 transport=transport)
+    evidence.retain_file(Path(acquired["last_evidence_directory"]) / "artifact" / JOURNAL,
+                         stage="house-acquisition-journal")
+    normalize_selection(output_dir / "acquired" / "acquisition.json", output_dir / "normalized")
+    return build_house_disbursements(output_dir / "normalized" / "manifest.json", output_dir, evidence=evidence)
 
 
 def build(manifest: Path, output_dir: Path, *, read_index: Path | None = None):

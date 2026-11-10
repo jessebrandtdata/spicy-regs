@@ -166,6 +166,40 @@ The published table then holds these two snapshots only. Their ZIPs stay in
 the raw archive and in R2 source evidence, which retention never deletes. What
 happens to the replaced generation's tables is under "After a publish".
 
+## house-disbursements
+
+The House posts each quarter's statement about two months after it ends
+(July-September in November). Measured on a loaded workstation on 2026-11-10,
+rebuilding the published 84 files: `select` 25 seconds, `acquire` 32 seconds
+(0.92 GB read from the raw archive, nothing downloaded), `normalize` 4 minutes
+and under 1 GB of memory, `build` 4.5 minutes, the dry run 31 seconds; about
+4.3 GB of scratch.
+
+```sh
+SPICY_REGS_R2_URL=https://data.spicygov.ai $UV spicy-regs mirror "$WORK/live" --family house-disbursements
+$UV python -m spicy_regs.pipelines.house_disbursements select --generation "$LIVE_HOUSE" \
+  --output-dir "$WORK/house-select"
+$UV python -m spicy_regs.pipelines.congressional_disbursements acquire \
+  --selection "$WORK/house-select/selection.json" --reuse "$WORK/house-select/reuse.json" \
+  --output "$WORK/house-acquire"
+$UV python -m spicy_regs.pipelines.congressional_disbursements normalize \
+  --acquisition "$WORK/house-acquire/acquisition.json" --output "$WORK/house-normalized"
+$UV python -m spicy_regs.pipelines.house_disbursements build \
+  --normalization "$WORK/house-normalized/manifest.json" --read-index "$LIVE_INDEX" --output "$WORK/house-build"
+```
+
+`select` writes the selection behind the published rows plus each CSV the
+House's current and archive pages list beside them (both pages are captured
+into the raw archive first), and the `--reuse` map that reads the published
+originals from the raw archive. It prints what it added: nothing added means
+nothing to publish. A listed revision of a published quarter refuses; select
+it by hand. A new file the normalizer cannot read stays `parse-failed` and the
+build refuses; review its bytes and pass `--source-options`
+([congressional-disbursements.md](congressional-disbursements.md)). The build
+prints `directory` and `source_evidence`, the `$GENERATION` and `$EVIDENCE` of
+the publish steps. Every quarter is normalized again and every partition is
+rewritten, because each row names its run's normalization receipt.
+
 ## grants-opportunities
 
 Acquire takes about 15 seconds (78 MB). The build takes about 6 minutes, nearly
@@ -248,6 +282,7 @@ receive them.
 | `treasury-fiscal` | Reads the published generation's captures from its rows, restores their bytes from R2 evidence, adds each Debt to the Penny day listed after the newest published one | No later day is listed |
 | `administration-policy` | Reads every published administration's file at the archive's current commit | No file's bytes differ |
 | `ofac-sanctions` | Downloads the SDN and consolidated exports and publishes them as the two snapshots | Both ZIPs are the published ones |
+| `house-disbursements` | Captures the House's two listing pages; when they list a CSV the published evidence did not use, restores the published originals from R2 evidence, downloads the new ones and rebuilds every quarter | The pages list no new CSV |
 | `grants-opportunities` | Finds the newest daily export of the last seven days and publishes it as the one snapshot | That export date is published |
 
 The Treasury run needs the three-table generation, so it can start only after
@@ -266,6 +301,9 @@ Schedules to add once the rehearsals pass, each beside `workflow_dispatch`:
 # rollup-ofac-sanctions.yml
   schedule:
     - cron: '17 22 * * *'
+# rollup-house-disbursements.yml: weekly; a quarter posts about two months after it ends
+  schedule:
+    - cron: '29 13 * * 1'
 # rollup-administration-policy.yml
   schedule:
     - cron: '13 23 * * *'
