@@ -353,7 +353,8 @@ def command(live, published, state, monkeypatch, tmp_path):
     monkeypatch.setenv('R2_PUBLIC_URL', 'https://example.invalid')
     monkeypatch.setattr(iceberg, 'is_configured', lambda: True)
     monkeypatch.setattr(publication, 'load_index', lambda base: {})
-    monkeypatch.setattr(publication, 'table_owner', lambda index, key: ('comments', {'artifactDigest': digest}))
+    monkeypatch.setattr(publication, 'table_owner', lambda index, key: ('comments', {
+        'artifactDigest': digest, 'etlReceipts': {'datasets': ['comments', 'comments_index']}}))
     monkeypatch.setattr(publication, 'single_member', lambda index, key: member(published.subjects[0]))
     monkeypatch.setattr(publication, 'receipt_members', lambda index, dataset: (member(published.receipts),))
     monkeypatch.setattr(publication, 'fetch_member', lambda base, m, destination, label=None: shutil.copyfile(
@@ -389,6 +390,21 @@ def test_command_refuses_other_generations_and_conflicting_flags(command, live):
     from scripts import rebuild_native_catalog as script
     with pytest.raises(SystemExit, match='is not'):
         script.main(['--work', 'unused', '--expect-artifact-digest', 'ffffffffffff'])
+
+
+@pytest.mark.parametrize('expected', ['08e42ccc0000', 'ffffffffffff'], ids=['archive-digest', 'live-digest'])
+def test_command_refuses_a_receipts_free_live_generation_and_names_the_archive(command, live, monkeypatch, expected):
+    """After the first receipts-free comments publication the live family has no receipt member to copy (ss-juz8)."""
+    from scripts import rebuild_native_catalog as script
+    monkeypatch.setattr(publication, 'table_owner', lambda index, key: ('comments', {'artifactDigest': 'sha256:' + 'f' * 64}))
+    monkeypatch.setattr(publication, 'receipt_members', lambda *a, **kw: pytest.fail('read receipts it does not have'))
+    before = untouched(live)
+    with pytest.raises(SystemExit) as refusal:
+        script.main(['--work', 'unused', '--expect-artifact-digest', expected])
+    message = str(refusal.value)
+    assert 'has no receipts' in message and script.LAST_RECEIPT_GENERATION in message
+    assert 'docs/comments-receipt-archive.md' in message and 'is not built' in message
+    assert untouched(live) == before
 
 
 def test_command_reuses_verified_inputs_on_rerun_and_refuses_changed_bytes(command, monkeypatch, tmp_path):

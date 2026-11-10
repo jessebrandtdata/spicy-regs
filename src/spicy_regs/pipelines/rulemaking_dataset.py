@@ -36,26 +36,14 @@ def stage_text(dataset: str, path: Path) -> None:
     publisher's spelling: an agency entry keeps ``id``, ``name``, ``raw_name``, ``parent_id`` and ``slug``, and a CFR
     part reads as text whether the Register wrote ``60`` or ``"60"``, which the stages' parsers take alike.
     """
-    import duckdb
     import pyarrow.parquet as pq
 
-    from spicy_regs.transforms.regulations_shape import NATIVE_FIELDS, SOURCE_COLUMNS
+    from spicy_regs.transforms.regulations_shape import NATIVE_FIELDS, published_as_source
 
-    held = set(pq.read_schema(path).names)
-    native = {source: target for source, (target, _) in NATIVE_FIELDS[dataset].items() if source != target}
-    if not held & set(native.values()):
+    native = {target for source, (target, _) in NATIVE_FIELDS[dataset].items() if source != target}
+    if not set(pq.read_schema(path).names) & native:
         return
-    columns = []
-    for name, _ in SOURCE_COLUMNS[dataset]:
-        target = native.get(name, name)
-        if target not in held:
-            continue
-        columns.append(f"array_to_string({target}, ',') AS {name}" if name == "agency_slugs" else
-                       f"CAST(to_json({target}) AS VARCHAR) AS {name}" if name in native else
-                       f"CAST({target} AS VARCHAR) AS {name}")
-    text = path.with_name(path.name + ".text")
-    duckdb.sql(f"COPY (SELECT {', '.join(columns)} FROM read_parquet('{path}')) "
-               f"TO '{text}' (FORMAT PARQUET, COMPRESSION ZSTD)")
+    text = published_as_source(dataset, path, path.with_name(path.name + ".text"))
     text.replace(path)
 
 
@@ -219,7 +207,8 @@ class RulemakingDatasetPipeline(MaterializedDatasetPipeline):
         snapshot = super()._input_snapshot(output_dir, previous_manifest)
         snapshot["native_inputs"] = {
             name: {"generationId": generation, "subjects": [file_witness(p) for p in subjects],
-                   "receipts": file_witness(receipts)}
+                   # A retired input is its published table alone; its pin below names the generation read.
+                   **({"receipts": file_witness(receipts)} if receipts is not None else {})}
             for name, (subjects, receipts, generation) in self._selected_priors.selections.items()
         }
         # A published source has no receipt pair to witness: its pin below names the generation read.

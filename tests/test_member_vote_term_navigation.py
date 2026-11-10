@@ -1,7 +1,6 @@
 """The maintained service-term key bridges exact native index spellings."""
 from dataclasses import replace
 from decimal import Decimal
-import json
 
 import duckdb
 import pyarrow as pa
@@ -10,7 +9,7 @@ import pytest
 
 from spicy_regs import congress_receipts
 from spicy_regs.congress_subjects import subject_schema
-from spicy_regs.etl_receipts import DatasetPolicy, receipt_policies, validate_receipt_bundle, validate_receipt_row
+from spicy_regs.etl_receipts import receipt_policies, validate_receipt_bundle, validate_receipt_row
 from spicy_regs.explorer_navigation import declarations, published_navigation, target_keys
 from spicy_regs.navigation_measurement_runner import canonical_routes
 from spicy_regs.navigation_measurements import MeasurementCache
@@ -137,8 +136,8 @@ def test_old_exact_native_policy_and_receipts_remain_readable_without_main_statu
     raw = {'vote_id': 'v1', 'member_key': 'one', 'bioguide_id': 'X', 'term_index': '0', 'term_match': HALF_OPEN}
     source = tmp_path / 'processing.parquet'
     pq.write_table(pa.Table.from_pylist([raw]), source)
-    history = json.loads(congress_receipts.Path(congress_receipts.__file__).with_name('navigation_policy_history.json').read_text())
-    earlier = DatasetPolicy.from_descriptor(history['member_vote_terms'])
+    from spicy_regs.policy_migrations import earlier_policy
+    earlier = earlier_policy('member_vote_terms', 'congress-subjects/1')
     current_map = congress_receipts.map_record
     def old_map(dataset, row):
         mapped = current_map(dataset, row)

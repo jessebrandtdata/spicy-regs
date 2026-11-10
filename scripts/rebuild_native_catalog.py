@@ -32,6 +32,8 @@ from spicy_regs.sources import regulatory_catalog as native
 from spicy_regs.transforms.regulations_receipts import ReceiptInput
 
 GIB = 2**30
+#: The last comments generation published with receipts, pinned in docs/comments-receipt-archive.md (ss-juz8).
+LAST_RECEIPT_GENERATION = "sha256:08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1"
 
 
 def verified_local_member(member, path):
@@ -85,6 +87,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     record_type = RECORD_TYPES["comments"]
     index = publication.load_index(base)
     owner = publication.table_owner(index, "comments.parquet")
+    if owner is not None and "comments" not in owner[1].get("etlReceipts", {}).get("datasets", ()):
+        raise SystemExit(
+            f"The published comments generation {owner[1]['artifactDigest']} has no receipts: comments publish "
+            "receipts-free since ss-juz8. This rebuild copies the live family's subjects and receipts and cannot read "
+            f"another generation. The last generation with receipts is the pinned archive {LAST_RECEIPT_GENERATION} "
+            "(docs/comments-receipt-archive.md), older than the live table; a seeding mode that writes one receipt "
+            "per row of a receipts-free generation is not built.")
     if owner is None or not owner[1]["artifactDigest"].removeprefix("sha256:").startswith(prefix):
         raise SystemExit(f"The published comments generation is not {args.expect_artifact_digest}: "
                          f"{owner[1]['artifactDigest'] if owner else 'no family publishes comments.parquet'}")

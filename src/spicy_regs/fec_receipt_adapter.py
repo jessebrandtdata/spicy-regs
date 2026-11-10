@@ -30,6 +30,14 @@ def qualified_views(scope, *, legacy_associations=False):
         for spec in specs)
 
 
+def published_without_receipts(index, table) -> bool:
+    """Whether ``table``'s receipts are retired and the index publishes the table itself."""
+    from .sources.publication import table_owner
+    from .subject_catalog import retired_receipt_datasets
+
+    return table in retired_receipt_datasets() and table_owner(index, table + ".parquet") is not None
+
+
 def receipt_owner(index, table):
     owners = [(name, entry) for name, entry in index.get("families", {}).items()
               if table in entry.get("etlReceipts", {}).get("datasets", ())]
@@ -85,7 +93,8 @@ class ReceiptAdapter:
 
     def require_selected(self, tables):
         missing = sorted(table for table in tables
-                         if table not in self.local_native and receipt_owner(self.index, table) is None)
+                         if table not in self.local_native and receipt_owner(self.index, table) is None
+                         and not published_without_receipts(self.index, table))
         if missing:
             raise ValueError("FEC dependencies require selected native receipts: " + ", ".join(missing))
 
@@ -103,6 +112,19 @@ class ReceiptAdapter:
         self.require_selected((table,))
         policy = DatasetPolicy.from_descriptor(descriptors()[table])
         owner, native = receipt_owner(self.index, table), self.local_native.get(table)
+        if native is None and owner is None:
+            # Retired receipts: the published table is the whole record (``published_without_receipts``).
+            import pyarrow.parquet as pq
+
+            with TemporaryDirectory(prefix="selected-published-table-") as directory:
+                for ordinal, member in enumerate(table_members(self.index, table + ".parquet")):
+                    path = Path(directory) / f"subject-{ordinal}.parquet"
+                    self._fetch(member, path)
+                    with pq.ParquetFile(path) as parquet:
+                        for batch in parquet.iter_batches(batch_size=2000):
+                            checkpoint()
+                            yield from ((row, policy) for row in batch.to_pylist())
+            return
         with TemporaryDirectory(prefix="selected-processing-receipts-") as directory:
             directory = Path(directory)
             if native is not None:

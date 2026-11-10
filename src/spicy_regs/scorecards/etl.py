@@ -14,7 +14,7 @@ from uuid import uuid4
 
 import pyarrow.parquet as pq
 
-from spicy_regs.earlier_receipt_policies import earlier_policies
+from spicy_regs.policy_migrations import earlier_policies
 from spicy_regs.etl_receipts import (
     DatasetPolicy,
     ReceiptContext,

@@ -142,6 +142,27 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **`comments` and `comments_index` publish without ETL receipts** (ss-juz8,
+  part of ss-vse3). The comments family's generation has no `etl_receipts.parquet`
+  and its index entry no `etlReceipts`; the generation's two tables keep their
+  columns, and no field moves, since the live receipts held none the table lacks.
+  The mirror copies the pinned catalog table, checks the copy holds every row
+  the snapshot does, and no longer rebinds, admits or replays its 26.5 million
+  receipts: 138.5 of 169.6 measured minutes at full size. A receipt-only catalog
+  commit no longer republishes. The last generation with receipts, the
+  2026-10-10 one, is pinned in `docs/comments-receipt-archive.md`; the catalog
+  keeps writing its own receipt table. Both installed policies carry
+  `"receipts_retired": true` (ss-ag1j), which `receipt_fields.json`, the catalog
+  and `table_metadata.json` now reflect: the two tables state no receipt fields.
+  `prepare_comments_selected_export.py --publish` (the 2026-10-10 v1 promotion)
+  now refuses.
+  **The fixed files change shape.** The first receipts-free publication is the
+  first since 2026-10-03 to rewrite the bucket-root `comments.parquet` and its
+  180 agency files, which still hold `attachments_json`, the attachment list as
+  JSON text. They take the generation's shape: `attachments`, a list of
+  structs, in the same position, every other column unchanged. A reader of
+  those files that parses `attachments_json` must read `attachments` instead.
+
 - **`federal_register` and `fr_docket_links` publish the fields their receipts
   held** (ss-vse3, step 1 of moving both tables off per-row receipts).
   `federal_register` gains, as its last columns, `html_url`, `pdf_url`,
@@ -174,10 +195,15 @@ Entries link to the pull request that introduced the change.
   the Register job has published its promoted columns, the links workflow
   refuses with a message saying so.
 
-- **A rollup can declare that a published table no longer has receipts**
-  (ss-vse3). `retired_receipt_datasets` on a rollup lets exactly those
-  datasets leave the family's receipt ownership once, each keeping its table,
-  and refuses receipts for them afterwards. Nothing declares one yet.
+- **A table's receipts can be retired, once and for good** (ss-vse3,
+  ss-ag1j). Its installed policy file gains `"receipts_retired": true` beside
+  the descriptor (no policy version or ledger entry moves). From then on every
+  path that builds or publishes a generation lets the table leave its family's
+  receipt ownership, keeping the table, and refuses receipts for it again; the
+  receipt lookup, dictionary and MCP server say its fields are columns, and a
+  consumer still on receipts reads it as its pinned public table.
+  `docs/pins/receipt-archive.json` keeps its last receipts generation. Nothing
+  is marked yet.
 
 - Prepared native conversions publish by an operator-named receipt digest.
   `--publish-prepared` now requires `--expect-receipt-digest`, the

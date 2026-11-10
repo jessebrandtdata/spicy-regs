@@ -409,19 +409,18 @@ def test_export_public_comments_rebuilds_mirror(tmp_path, local_catalog, monkeyp
     monkeypatch.setattr(iceberg, "_connect", lambda: con)
 
     out = tmp_path / "output"
-    monkeypatch.setattr(iceberg, "_read_pair_snapshot", lambda *_: iceberg.CatalogPairSnapshot("local", 1, 0, iceberg.CatalogSnapshot("receipts", 2, 0)))
+    monkeypatch.setattr(iceberg, "_read_pair_snapshot", lambda *_, **kw: iceberg.CatalogPairSnapshot("local", 1, 0, iceberg.CatalogSnapshot("receipts", 2, 0)))
+    catalog = con.execute(f"SELECT * FROM {iceberg._qualified(COMMENT)}").pl()
     result = iceberg.export_public_comments(out, COMMENT, **options)
 
+    assert result.keys() == {"comments", "index", "partitions"}  # no receipts beside them (ss-juz8)
     assert result["comments"] == out / "comments.parquet"
     assert result["index"] == out / "comments_index.parquet"
     monolith = pl.read_parquet(result["comments"])
     assert monolith.height == 3
     assert set(monolith["agency_code"].to_list()) == {"EPA", "OMB"}
-    from spicy_regs.etl_receipts import validate_receipt_bundle
-    import json
-    generation = json.loads(result['generation'].read_text())['generation_id']
-    validate_receipt_bundle({'comments': [result['comments']]}, [result['receipts']],
-                           [native.policy('comments')], generation_id=generation)
+    assert monolith.sort("comment_id").equals(catalog.sort("comment_id"))
+    assert not list(out.rglob("etl_receipts.parquet")) and not (out / ".catalog-pairs").exists()
 
     # The monolith drives the coarse per-agency tree the UI reads for scoped queries.
     partition_dir = partition_comments(out)
@@ -689,11 +688,15 @@ def test_merge_refuses_unclassified_or_lossy_source_before_casting(tmp_path, loc
     assert con.execute(f'SELECT count(*) FROM {iceberg._qualified(COMMENT)}').fetchone() == (0,)
 
 
-@pytest.mark.parametrize('operation,unchanged', [('replace', True), ('append', False), ('overwrite', False)])
-def test_paired_export_checks_receipt_history_even_when_subject_snapshot_is_unchanged(monkeypatch, operation, unchanged):
+@pytest.mark.parametrize('operation', ['replace', 'append', 'overwrite'])
+def test_a_receipt_table_commit_leaves_the_published_comments_rows_unchanged(monkeypatch, operation):
+    """The mirror publishes no receipts since ss-juz8; only a comments-table commit other than compaction counts."""
     snapshot = iceberg.CatalogPairSnapshot('subjects', 1, 0, iceberg.CatalogSnapshot('receipts', 2, 0))
     monkeypatch.setattr(iceberg, '_connect', duckdb.connect)
     monkeypatch.setattr(iceberg, '_table_metadata', lambda *_, **__: _metadata((1, None, 'append'), uuid='subjects'))
     monkeypatch.setattr(iceberg, '_receipt_metadata', lambda *_, **__: _metadata(
         (2, None, 'append'), (3, 2, operation), uuid='receipts'))
-    assert iceberg.rows_unchanged_since(COMMENT, snapshot) is unchanged
+    assert iceberg.rows_unchanged_since(COMMENT, snapshot) is True
+    monkeypatch.setattr(iceberg, '_table_metadata', lambda *_, **__: _metadata(
+        (1, None, 'append'), (4, 1, operation), uuid='subjects'))
+    assert iceberg.rows_unchanged_since(COMMENT, snapshot) is (operation == 'replace')

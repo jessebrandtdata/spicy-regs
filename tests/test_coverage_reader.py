@@ -5,7 +5,6 @@ import copy
 import hashlib
 import json
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
@@ -360,29 +359,21 @@ def test_existing_destination_is_refused_before_hashing(tmp_path):
             bridge.restore(request)
 
 
-def test_identity_covers_every_policy_file_the_earlier_receipt_chains_read():
-    """current_receipts admits what the chains declare, so each file they read must be part of the packaged identity."""
+def test_identity_covers_the_ledger_of_earlier_policies_and_every_installed_policy():
+    """current_receipts admits what the ledger declares, so the ledger and its reader are part of the packaged identity."""
+    from spicy_regs import policy_migrations
+
     root = bridge.PACKAGE_ROOT
-    source = (root / "earlier_receipt_policies.py").read_text()
-    reads = re.findall(r'files\("([\w.]+)"\)\s*\.joinpath\(\s*"([^"]+)"', source)
-    assert reads and len(reads) == source.count(".joinpath(")
     covered = set(bridge._identity_files())
-    assert root / "earlier_receipt_policies.py" in covered
-    for package, name in reads:
-        folder = root.joinpath(*package.split(".")[1:])
-        # "etl_policies/" + dataset + ".json" names the directory: every policy file in it is read by some chain.
-        files = sorted((folder / name).glob("*.json")) if name.endswith("/") else [folder / name]
-        assert files and all(file.is_file() for file in files)
-        assert set(files) <= covered, name
+    assert {root / "policy_migrations.py", root / policy_migrations.LEDGER} <= covered
+    assert set((root / "etl_policies").glob("*.json")) <= covered
 
 
 @pytest.mark.parametrize(
     "changed",
     [
-        "earlier_receipt_policies.py",
-        "navigation_policy_history.json",
-        "fec_policy_history.json",
-        "scorecards/historical_rating_policies.json",
+        "policy_migrations.py",
+        "policy_migrations.json",
         "etl_policies/gao_reports.json",
     ],
 )

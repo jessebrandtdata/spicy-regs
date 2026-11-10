@@ -21,8 +21,9 @@ def test_history_differs_only_by_the_two_appended_nullable_columns():
     assert (current.policy_version, previous.policy_version) == ("legislative-documents/2", "legislative-documents/1")
     assert previous.subject_schema.names == [n for n in current.subject_schema.names if n not in APPENDED]
     assert all(current.subject_schema.field(name).nullable for name in APPENDED)
-    with pytest.raises(ValueError, match="exact declaration"):
-        receipt_policies(replace(current, identity_fields=current.identity_fields[:-1]))
+    # Only the exact recorded descriptor reads its predecessor.
+    changed = replace(current, identity_fields=current.identity_fields[:-1])
+    assert receipt_policies(changed) == (changed,)
 
 
 def source_rows():

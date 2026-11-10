@@ -97,18 +97,15 @@ def has_unmatched_failures(receipts: Path, priors: Mapping[str, Sequence[Path]] 
 def input_policy(dataset: str, subjects: Path | tuple[Path, ...] | None) -> DatasetPolicy:
     """Admit only a current or explicitly retained historical subject schema."""
     from spicy_regs.etl_receipts import receipt_policies
+    from spicy_regs.policy_migrations import earlier_policies
+    from spicy_regs.subject_catalog import policies
 
     selected = policy(dataset)
     paths = () if subjects is None else (subjects,) if isinstance(subjects, Path) else subjects
-    for candidate in receipt_policies(selected):
+    # The recorded earlier policies also when ``policy`` is not the installed one (a test's stand-in).
+    for candidate in (*receipt_policies(selected), *earlier_policies(policies()[dataset])):
         if not paths or all(pq.read_schema(path).equals(candidate.subject_schema, check_metadata=False) for path in paths):
             return candidate
-    history = json.loads(Path(__file__).with_name("navigation_policy_history.json").read_text())
-    for key in (f"{dataset}_v2", dataset):
-        if key in history:
-            earlier = DatasetPolicy.from_descriptor(history[key])
-            if all(pq.read_schema(path).equals(earlier.subject_schema, check_metadata=False) for path in paths):
-                return earlier
     raise ValueError(f"{dataset}: subject schema has no supported receipt policy")
 
 

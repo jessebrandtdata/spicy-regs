@@ -76,7 +76,7 @@ def test_reviewed_comments_survive_ingestion_and_public_mirror(tmp_path, monkeyp
         stored = [{k: row[k] for k in policy("comments").subject_schema.names} for row in stored]
         assert got.sort("comment_id").to_dicts() == stored
     monkeypatch.setattr(iceberg, "_connect", lambda: connect(COMMENT))
-    monkeypatch.setattr(iceberg, "_read_pair_snapshot", lambda *a: iceberg.CatalogPairSnapshot(
+    monkeypatch.setattr(iceberg, "_read_pair_snapshot", lambda *a, **kw: iceberg.CatalogPairSnapshot(
         "local", 1, 0, receipts=iceberg.CatalogSnapshot("local-receipts", 1, 0)))
     monkeypatch.setattr(iceberg, "_snapshot_query", lambda rt, _: f"SELECT * FROM {iceberg._qualified(rt)}")
     result = iceberg.export_public_comments(output, COMMENT)
