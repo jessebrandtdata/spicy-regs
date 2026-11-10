@@ -174,10 +174,15 @@ Entries link to the pull request that introduced the change.
   the Register job has published its promoted columns, the links workflow
   refuses with a message saying so.
 
-- **A rollup can declare that a published table no longer has receipts**
-  (ss-vse3). `retired_receipt_datasets` on a rollup lets exactly those
-  datasets leave the family's receipt ownership once, each keeping its table,
-  and refuses receipts for them afterwards. Nothing declares one yet.
+- **A table's receipts can be retired, once and for good** (ss-vse3,
+  ss-ag1j). Its installed policy file gains `"receipts_retired": true` beside
+  the descriptor (no policy version or ledger entry moves). From then on every
+  path that builds or publishes a generation lets the table leave its family's
+  receipt ownership, keeping the table, and refuses receipts for it again; the
+  receipt lookup, dictionary and MCP server say its fields are columns, and a
+  consumer still on receipts reads it as its pinned public table.
+  `docs/pins/receipt-archive.json` keeps its last receipts generation. Nothing
+  is marked yet.
 
 - Prepared native conversions publish by an operator-named receipt digest.
   `--publish-prepared` now requires `--expect-receipt-digest`, the

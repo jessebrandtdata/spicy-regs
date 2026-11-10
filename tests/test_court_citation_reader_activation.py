@@ -1,6 +1,5 @@
 """Historical and current court keys retain exact receipt-bound identity."""
 from collections import Counter
-from importlib.resources import files
 import json
 from pathlib import Path
 
@@ -13,8 +12,8 @@ from mcp.server.mcpserver.exceptions import ToolError
 from spicy_regs import legislative_receipts, mcp_server
 from spicy_regs.court_receipts import local_receipt_selection, write_court_rows
 from spicy_regs.court_subjects import SUBJECT_SCHEMAS, normalize_court_row
-from spicy_regs.etl_receipts import DatasetPolicy
 from spicy_regs.legislative_documents import map_subject, native_document_key
+from spicy_regs.policy_migrations import earlier_policy
 from spicy_regs.selected_generations import SelectedDataset, remember_selection
 from spicy_regs.transforms.held_citations import NAMESPACE, Selection, build_held_citations, write_citation_reads
 from spicy_regs.transforms.read_checkpoints import checkpoint_metadata, read_checkpoints
@@ -49,8 +48,7 @@ def selected_cohort(root, monkeypatch, *, body_keys, damage=None, mixed_keys=Fal
         pq.write_table(mixed.set_column(mixed.schema.get_field_index("document_key"), "document_key",
                                        pa.array(keys)), findings)
     reads = write_citation_reads(findings.parent, findings)
-    historical_policy = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs").joinpath(
-        "citation_navigation_policy_history.json").read_text())["document_citations"])
+    historical_policy = earlier_policy("document_citations", "legislative-documents/1")
 
     def captured_mapper(dataset, raw):
         mapped = map_subject(dataset, raw)

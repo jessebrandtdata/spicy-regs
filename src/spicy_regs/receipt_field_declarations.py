@@ -257,8 +257,11 @@ def record(policies: Mapping | None = None) -> dict:
     govern nothing and say so nowhere.
     """
     from spicy_regs.etl_policy_registry import installed_policies
+    from spicy_regs.subject_catalog import retired_receipt_datasets
 
     policies = installed_policies() if policies is None else policies
+    # A table whose receipts are retired has none to read: its fields are columns.
+    policies = {name: policy for name, policy in policies.items() if name not in retired_receipt_datasets()}
     prose = _prose()
     markers: dict[str, list[ReadMarker]] = {}
     for marker in read_markers():
@@ -289,7 +292,7 @@ def record(policies: Mapping | None = None) -> dict:
             })
         tables[table] = entry
     if markers:
-        raise ValueError(f"Read markers name tables with no installed row identity: {sorted(markers)}")
+        raise ValueError(f"Read markers name tables with no receipts to read: {sorted(markers)}")
     return {
         "basis": "Derived by spicy_regs.receipt_field_declarations from the installed policies, each family's field "
                  "registry, the builders' read rules and the dictionary; regenerate with spicy-regs-dict generate.",

@@ -10,7 +10,7 @@ The main tables carry the fields needed to understand a record and follow its de
 
 ## Reader and data release order
 
-Release the reader before new data. Exact earlier declarations remain available in `source_context_policy_history.json`, `fec_policy_history.json`, and the existing navigation history. A selected historical file is read under its original schema and receipts. New writers use the new policy; they never relabel old bytes. A historical receipt-only dataset stays unavailable as a main table until a real main member is published. A real current empty main file remains a visible empty table.
+Release the reader before new data. Exact earlier declarations remain recorded in `src/spicy_regs/policy_migrations.json`, the ledger of every policy each dataset was published under. A selected historical file is read under its original schema and receipts. New writers use the new policy; they never relabel old bytes. A historical receipt-only dataset stays unavailable as a main table until a real main member is published. A real current empty main file remains a visible empty table.
 
 The changed policies are `regulations-native-v2` for eight affected regulation datasets, `courts/2` for opinions and PDF extractions, `government-sources/3` for GAO reports and decisions, and `scorecards-etl-v2` / `scorecards-etl-ratings-v4` for scorecards. Unchanged Court and bill prepared families retain their selected producer and publication pins.
 

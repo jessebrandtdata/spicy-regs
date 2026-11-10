@@ -10,7 +10,7 @@ from contextlib import contextmanager
 
 from spicy_regs.runtime_bounds import bounded_connection, checkpoint
 
-from spicy_regs.fec_receipt_adapter import receipt_owner
+from spicy_regs.fec_receipt_adapter import published_without_receipts, receipt_owner
 
 INPUT_RECORD = "_spicy_citation_inputs"
 PROCESSING_PREFIX = "_spicy_citation_processing_"
@@ -117,7 +117,8 @@ def install_citation_inputs(connection, adapter, available):
     from spicy_regs.citation_resolution import SOURCE_TABLES
 
     def selected(table):
-        return table in adapter.local_native or receipt_owner(adapter.index, table) is not None
+        return (table in adapter.local_native or receipt_owner(adapter.index, table) is not None
+                or published_without_receipts(adapter.index, table))
 
     if "document_citations" not in available or not selected("document_citations"):
         return

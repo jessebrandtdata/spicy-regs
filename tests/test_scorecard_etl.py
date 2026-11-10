@@ -502,7 +502,7 @@ def test_unchanged_scorecard_refresh_preserves_complete_receipts(tmp_path):
 @pytest.mark.parametrize("change", ["schema", "classification", "identity"])
 @pytest.mark.parametrize("version", ["v2", "v3"])
 def test_shared_historical_admission_requires_exact_current_descriptor(change, version):
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
     from spicy_regs.scorecards import etl
 
     current = etl.POLICIES["scorecard_member_ratings"] if version == "v3" else etl.LEGACY_RATING_POLICY_V2
@@ -518,8 +518,7 @@ def test_shared_historical_admission_requires_exact_current_descriptor(change, v
         changed = replace(current, receipt_fields=tuple(f for f in current.receipt_fields if f != "raw_source"))
     else:
         changed = replace(current, identity_fields=tuple(reversed(current.identity_fields)))
-    with pytest.raises(ValueError, match="exact declared policy"):
-        earlier_policies(changed)
+    assert earlier_policies(current) and earlier_policies(changed) == ()
 
 
 @pytest.mark.parametrize("change", ["subject", "processing"])

@@ -11,6 +11,7 @@ import hashlib
 import json
 from functools import cache
 from collections.abc import Mapping
+from pathlib import Path
 
 import pyarrow as pa
 
@@ -481,3 +482,33 @@ def shape_records(dataset, rows):
     except (ValueError, TypeError, OverflowError, RecursionError, pa.ArrowException):
         return [shape_record(dataset, row) for row in rows]
     return shaped
+
+
+def published_as_source(dataset: str, published, destination: Path) -> Path:
+    """A published native table read back into the text shape the regulations builders read (``SOURCE_COLUMNS``).
+
+    Each native list becomes the JSON text of its source column (``docket_ids`` as ``docket_ids_json``) and every
+    other column its text; columns the table lacks are left out. It is the published value, not the publisher's
+    spelling: an agency entry keeps ``id``, ``name``, ``raw_name``, ``parent_id`` and ``slug``, and a CFR part reads as
+    text whether the Register wrote ``60`` or ``"60"``, which the regulations parsers take alike. ``published`` is one
+    file or a table's members.
+    """
+    import duckdb
+    import pyarrow.parquet as pq
+
+    paths = [Path(published)] if isinstance(published, (str, Path)) else [Path(path) for path in published]
+    held = set(pq.read_schema(paths[0]).names)
+    native = {source: target for source, (target, _) in NATIVE_FIELDS[dataset].items() if source != target}
+    columns = []
+    for name, _ in SOURCE_COLUMNS[dataset]:
+        target = native.get(name, name)
+        if target not in held:
+            continue
+        columns.append(f"array_to_string({target}, ',') AS {name}" if name == "agency_slugs" else
+                       f"CAST(to_json({target}) AS VARCHAR) AS {name}" if name in native else
+                       f"CAST({target} AS VARCHAR) AS {name}")
+    listed = ", ".join("'" + str(path).replace("'", "''") + "'" for path in paths)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    duckdb.sql(f"COPY (SELECT {', '.join(columns)} FROM read_parquet([{listed}])) "
+               f"TO '{destination}' (FORMAT PARQUET, COMPRESSION ZSTD)")
+    return destination

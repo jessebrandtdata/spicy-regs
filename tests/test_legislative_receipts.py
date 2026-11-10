@@ -643,11 +643,10 @@ def _committee_reports_v1_registry():
 
 def test_greenfield_report_build_refuses_prior_policy_but_preserves_original_source(tmp_path, monkeypatch):
     """A fresh dated build keeps source evidence and refuses automatic old-policy migration."""
-    import json
-    from importlib.resources import files
 
     from spicy_regs import legislative_documents, legislative_receipts
     from spicy_regs.etl_receipts import DatasetPolicy
+    from spicy_regs.policy_migrations import earlier_policy
 
     current = policy("committee_reports")
     assert current.policy_version == "legislative-documents/3"
@@ -663,8 +662,7 @@ def test_greenfield_report_build_refuses_prior_policy_but_preserves_original_sou
             DatasetPolicy("committee_reports", legislative_documents.subject_schema(name), ("package_id", "part_id"),
                           current.receipt_fields, policy_version="legislative-documents/1")
             if name == "committee_reports" else _p(name)))
-        recorded = DatasetPolicy.from_descriptor(json.loads(
-            files("spicy_regs").joinpath("legislative_policy_history.json").read_text())["committee_reports"])
+        recorded = earlier_policy("committee_reports", "legislative-documents/1")
         assert legislative_documents.subject_schema("committee_reports").equals(recorded.subject_schema)
         source = {f["name"]: None for f in old_registry["committee_reports"]["fields"]} | dict(
             package_id="CRPT-105hrpt149", part_id="CRPT-105hrpt149", last_modified="2026-09-18T12:00:00Z", report_states_estimate="true",

@@ -101,12 +101,14 @@ table. Those changes need an explicit migration. Successful empty tables still
 face the existing shrink guard; an intentional destructive replacement requires
 the existing explicit override after reviewing the result.
 
-Nor can a family silently stop publishing receipts for a table. A rollup
-declares `retired_receipt_datasets`; publication then accepts the first
-generation without them, requires each named table to stay published, and
-refuses any later generation that claims receipts for one again. Undeclared,
-the generation is refused. The prior generation's receipt file is not touched.
-A receipt file must still classify every table beside it, so the tables of one
+Nor can a family silently stop publishing receipts for a table. The table's
+installed policy file (`src/spicy_regs/etl_policies/<table>.json`) carries
+`"receipts_retired": true` beside its descriptor; every publishing path then
+accepts the first generation without them, requires the table to stay
+published, and refuses any generation that claims receipts for it again, as
+admission does. Unmarked, the generation is refused. The prior generation's
+receipt file is not touched; `docs/pins/receipt-archive.json` keeps it. A
+receipt file must still classify every table beside it, so the tables of one
 family leave receipts together.
 
 The Congress.gov archive walker is a partial writer of `bill-family`. Its bill

@@ -15,7 +15,6 @@ import re
 import shutil
 from contextvars import ContextVar
 from collections.abc import Mapping
-from dataclasses import replace
 from functools import wraps
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -27,7 +26,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from spicy_regs import etl_bulk, government_bulk
-from spicy_regs.earlier_receipt_policies import earlier_policies
+from spicy_regs.policy_migrations import earlier_policies
 from spicy_regs.etl_receipts import (
     RECEIPT_KEY,
     RECEIPT_SCHEMA, open_receipt_writer,
@@ -96,32 +95,13 @@ def _row_route(route: str, error: etl_bulk.NotBulkEligible, *, dataset: str, row
         etl_bulk.log_row_eligibility(route, dataset=dataset, rows=rows, reason=str(error))
 
 
-def _without(dataset: str, *columns: str) -> DatasetPolicy:
-    """The dataset's ``government-sources/1`` policy: today's subject schema less the columns returned or added since."""
-    schema = POLICIES[dataset].subject_schema
-    for column in columns:
-        schema = schema.remove(schema.get_field_index(column))
-    return replace(POLICIES[dataset], subject_schema=schema, policy_version="government-sources/1")
-
-
-#: Exact policies a published prior may still carry. A prior is read under one only to restore its receipts' whole
-#: original rows; every write uses POLICIES. On 2026-10-04 gao-reports published gao_decisions without
-#: ``b_numbers_truncated`` and gao-recommendations published without ``first_seen`` and ``last_seen``; gao-reports
-#: published gao_reports to 2026-10-05 without the three major-rule letter columns, which no receipt held either.
-#: fcc-proceedings published fcc_proceedings to 2026-10-30 without its three ECFS NPRM/order/rule-section columns and
-#: with the four always-NULL comment-window columns.
-EARLIER_POLICIES: dict[str, tuple[DatasetPolicy, ...]] = {
-    "gao_decisions": (_without("gao_decisions", "b_numbers_truncated"),),
-    "gao_recommendations": (_without("gao_recommendations", "first_seen", "last_seen"),),
-    "gao_reports": (_without("gao_reports", "major_rule_agency", "major_rule_rins", "major_rule_fr_citations", "citation_product_id"),),
-}
-# Exact earlier policies restore private source rows without relabeling them.
-for _name in ("crs_reports", "gao_decisions", "gao_reports", "fcc_proceedings", "lobbying_filings"):
-    EARLIER_POLICIES[_name] = earlier_policies(POLICIES[_name])
-_FCC_HISTORY = json.loads(Path(__file__).parents[1].joinpath("navigation_policy_history.json").read_text())
-EARLIER_POLICIES["fcc_filings"] = tuple(
-    DatasetPolicy.from_descriptor(_FCC_HISTORY[key]) for key in ("fcc_filings", "fcc_filings_v2")
-)
+#: Exact policies a published prior may still carry (``policy_migrations``). A prior is read under one only to
+#: restore its receipts' whole original rows; every write uses POLICIES. On 2026-10-04 gao-reports published
+#: gao_decisions without ``b_numbers_truncated`` and gao-recommendations published without ``first_seen`` and
+#: ``last_seen``; gao-reports published gao_reports to 2026-10-05 without the three major-rule letter columns, which
+#: no receipt held either. fcc-proceedings published fcc_proceedings to 2026-10-30 without its three ECFS
+#: NPRM/order/rule-section columns and with the four always-NULL comment-window columns.
+EARLIER_POLICIES: dict[str, tuple[DatasetPolicy, ...]] = {name: earlier_policies(p) for name, p in POLICIES.items()}
 _ACTIVE: ContextVar[bool] = ContextVar("government_receipt_build", default=False)
 _INHERITED: ContextVar[dict[str, Path] | None] = ContextVar("government_prior_receipts", default=None)
 _NATIVE_PRIORS: ContextVar[dict[str, tuple[Path, Path]] | None] = ContextVar("government_native_priors", default=None)
@@ -221,6 +201,9 @@ def internal_prior(
             held[0].check()
             if scoped.subjects != (path,):
                 raise ValueError("Government prior differs from the shared native selection")
+            if scoped.receipts is None:
+                raise ValueError(f"{dataset}: its receipts are retired and the government family reads its prior "
+                                 "through receipts; switch this family before reading it here")
             selected, receipt_path, generation_id = scoped.receipts, scoped.receipts, scoped.generation_id
         elif receipt_path is None:
             local = path.parent / BUILD_METADATA
