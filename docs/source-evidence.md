@@ -305,6 +305,18 @@ replace an owner-set receipt field, and such a field is dropped. Full-policy
 refusal records validate any claimed body identity. An unavailable response
 remains a current observation with metadata and no invented body claim.
 
+Journals, retained build inputs and input proofs are public, so none may name
+the build machine's folders (ss-81bv). A local file is journaled by its name,
+the default `original_location`; pass the URL its bytes came from when there is
+one. The journal refuses any other string naming a home, temporary, system or
+volume folder or a runner workspace, alone or in a `file:` URL, and says
+which family, event, stage and field; a diagnostic (`message`, `error`,
+`reason`) keeps only the file name. A retained derived JSON input that names one
+is refused too: `retain_control` keeps a copy cut to file names, with the local
+file's `local_sha256`. Used inputs match on bytes, publisher URL and native
+identity. Publisher originals and binary inputs such as Parquet are not read
+for paths.
+
 Federal Register scheduled builds retain each exact API response before the
 SpicyDocs reader parses it. Successful reads declare the used page hashes; the
 incremental selection stays incomplete and inherits earlier source uncertainty.

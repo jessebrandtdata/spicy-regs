@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import tempfile
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
@@ -69,6 +70,46 @@ _OWNER_FIELDS = frozenset(
     }
 )
 ARCHIVE_REFERENCE = "source-archive.json"
+#: A path on a machine that builds: a Mac or Linux home, a temporary, system or mounted-volume directory, a GitHub
+#: runner workspace or a home-relative path, alone or in a file: URL. Journals are published (ss-81bv, 2026-11-10:
+#: owner home paths in five families). URLs, object keys and XPaths do not match, nor Windows drive paths: no build
+#: runs on Windows, and publishers print them (a House PDF names G:\GSDD\SOD\...).
+_LOCAL_ROOT = (r"(?:(?<![\w.:/~-])|(?<=file://))(?:/Users|/home|/root|/private|/var|/tmp|/Volumes|/mnt|/opt|/usr|/srv"
+               r"|/__w|/github)/|(?<![\w.:/~-])~/")
+_LOCAL_PATH = re.compile(_LOCAL_ROOT)
+_LOCAL_PATH_BYTES = re.compile(_LOCAL_ROOT.encode())
+#: Derived inputs a build writes as JSON text for itself (by file suffix, or bytes that open an object or array); a
+#: retained one is published, so it may not name a local path. Binary inputs such as Parquet are not read for paths.
+_JSON_CONTROLS = frozenset({".json", ".jsonl"})
+_JSON_TEXT = re.compile(rb"\s*[\[{]")
+#: The same path to its end, in free text such as an exception message.
+_LOCAL_SPAN = re.compile(rf"(?:{_LOCAL_ROOT})[^\s'\"`<>|,;)\]}}]*")
+#: Free-text diagnostics: a path inside one is cut to its file name rather than refused, so an unexpected exception
+#: message never fails a run. Every other journaled string naming a local path is refused.
+_DIAGNOSTICS = frozenset({"message", "error", "reason"})
+
+
+def local_path_name(text: str) -> str:
+    """``text`` with each local path cut to ``<local>/`` and its file name: what a published diagnostic may say."""
+    return _LOCAL_SPAN.sub(lambda match: "<local>/" + re.split(r"[\\/]", match[0].rstrip("\\/"))[-1], text)
+
+
+def without_local_paths(value):
+    """A JSON value with every string (key or value) that holds a local path cut to its file name.
+
+    For control files a build writes for itself, such as a selection or normalization manifest, whose published copy
+    must not name the build machine's directories. Digests and URLs in it are unchanged.
+    """
+    if isinstance(value, str):
+        return local_path_name(value)
+    if isinstance(value, dict):
+        result = {local_path_name(key): without_local_paths(item) for key, item in value.items()}
+        if len(result) != len(value):
+            raise ValueError("Two local paths with one file name cannot be told apart once cut")
+        return result
+    if isinstance(value, list):
+        return [without_local_paths(item) for item in value]
+    return value
 
 
 class SourceEvidenceError(RuntimeError):
@@ -150,13 +191,15 @@ class _StreamCheck:
     """One pass over streamed bytes: byte bound, credential scan across chunk boundaries and SHA-256.
 
     Only the last ``len(secret) - 1`` bytes carry over between chunks, so no
-    chunk is copied whole and nothing grows with the stream.
+    chunk is copied whole and nothing grows with the stream. ``scan_paths`` also
+    notes, in the same pass, whether the bytes name a local path (``local_path``).
     """
 
-    def __init__(self, evidence: CaptureEvidence, max_bytes: int):
+    def __init__(self, evidence: CaptureEvidence, max_bytes: int, *, scan_paths: bool = False):
         self.evidence, self.max_bytes = evidence, max_bytes
         self.secret = evidence.credential.encode()
         self.digest, self.size, self.tail = hashlib.sha256(), 0, b""
+        self.scan_paths, self.local_path, self.path_tail = scan_paths, False, b""
 
     def update(self, chunk: bytes) -> None:
         self.size += len(chunk)
@@ -172,6 +215,11 @@ class _StreamCheck:
 
                 raise CredentialRefusedError("Source response refused; credential-bearing bytes were not retained")
             self.tail = (self.tail + chunk[-keep:])[-keep:] if keep else b""
+        if self.scan_paths and not self.local_path:
+            # A root and its lookbehind ("file://") span at most 17 bytes, so 24 carried bytes see one a chunk splits.
+            window = self.path_tail + chunk[:24]
+            self.local_path = bool(_LOCAL_PATH_BYTES.search(chunk) or _LOCAL_PATH_BYTES.search(window))
+            self.path_tail = (self.path_tail + chunk[-24:])[-24:]
         self.digest.update(chunk)
 
     @property
@@ -259,19 +307,35 @@ class CaptureEvidence:
                 result["blob_store"] = "central-raw"
         return result
 
-    def _safe(self, value):
-        """Recursively redact the run's credential from a value before it is journaled."""
+    def _safe(self, value, field: str = ""):
+        """Redact the run's credential, and refuse a local path, in ``value`` (at ``field``) before it is journaled.
+
+        The journal is published. A diagnostic (``_DIAGNOSTICS``) keeps only a local path's file name; any other
+        string naming one raises, so its caller records a URL, a logical name or a content digest instead.
+        """
         if isinstance(value, str):
             from spicy_docs.transport.credentials import scrub_credential
 
             # The owner scrubber handles named query credentials. The literal
             # replacement also covers short injected test credentials.
             result = scrub_credential(value, self.credential)
-            return result.replace(self.credential, "<redacted>") if self.credential else result
+            result = result.replace(self.credential, "<redacted>") if self.credential else result
+            if field.rsplit(".", 1)[-1] in _DIAGNOSTICS:
+                return local_path_name(result)
+            if _LOCAL_PATH.search(result):
+                raise self._failure(
+                    f"{self.family}: {field or 'a journaled value'} names a local path, and the journal is published; "
+                    "record a URL, a logical name or a content digest"
+                )
+            return result
         if isinstance(value, dict):
-            return {key: self._safe(item) for key, item in value.items()}
+            for key in value:
+                if isinstance(key, str) and _LOCAL_PATH.search(key):
+                    raise self._failure(f"{self.family}: a key of {field or 'a journaled value'} names a local path, "
+                                        "and the journal is published")
+            return {key: self._safe(item, f"{field}.{key}" if field else key) for key, item in value.items()}
         if isinstance(value, (tuple, list)):
-            return [self._safe(item) for item in value]
+            return [self._safe(item, field + "[]") for item in value]
         return value
 
     def _failure(self, message: str) -> SourceEvidenceError:
@@ -288,10 +352,11 @@ class CaptureEvidence:
             fields.setdefault("parser_version", version("spicy-docs"))
             fields.setdefault("policy_decision_id", _DEFAULT_POLICY_DECISION)
             fields.setdefault("publisher_id", None)
+        # Outside the try below: a refused local path names its event, stage and field, not a storage failure.
+        record = self._safe({"event": event, "recorded_at": datetime.now(UTC).isoformat(), **fields},
+                            f"{event}({fields['stage']})" if fields.get("stage") else event)
         try:
-            raw = canonical_json_bytes(
-                self._safe({"event": event, "recorded_at": datetime.now(UTC).isoformat(), **fields})
-            )
+            raw = canonical_json_bytes(record)
             # ``senate-archive-capture`` dates the Internet Archive copy a Senate roll call rests on (ss-bruk).
             if event in {"capture", "refusal", "capture-incomplete", "build-outcome", "senate-archive-capture"} or (
                 event == "retained-file" and fields.get("blob_store") == "central-raw"
@@ -529,7 +594,27 @@ class CaptureEvidence:
             from spicy_docs.transport.credentials import CredentialRefusedError
 
             raise CredentialRefusedError("Source input refused; credential-bearing bytes were not retained")
+        if not raw_source and _JSON_TEXT.match(body) and _LOCAL_PATH_BYTES.search(body):
+            raise self._local_control(stage)
         return self._retained(self._body(body, raw_source=raw_source), stage=stage, fields=fields)
+
+    def retain_control(self, path: Path, *, stage: str, **fields) -> dict:
+        """Retain a JSON control file the build wrote for itself, such as a selection or a manifest, cut of local paths.
+
+        Its local copy names this machine's directories, and retained inputs are published (ss-81bv). The cut copy
+        keeps what was selected and pinned, digests and URLs unchanged; ``local_sha256`` binds it to the exact local
+        bytes, which stay where the build read them.
+        """
+        raw = path.read_bytes()
+        body = json.dumps(without_local_paths(json.loads(raw)), sort_keys=True, separators=(",", ":")).encode()
+        return self.retain_bytes(body, stage=stage, original_location=path.name,
+                                 local_sha256="sha256:" + hashlib.sha256(raw).hexdigest(), **fields)
+
+    def _local_control(self, stage: str, name: str | None = None) -> SourceEvidenceError:
+        return self._failure(
+            f"{self.family}: derived JSON input {name or ''}({stage}) names a local path, and retained inputs are "
+            "published; retain a copy cut by without_local_paths, or record a URL or digest"
+        )
 
     def _retained(self, blob: dict, *, stage: str, fields: dict, name: str | None = None) -> dict:
         """Journal one local retained input; caller metadata cannot replace an owner-set field."""
@@ -548,6 +633,9 @@ class CaptureEvidence:
         them again while retaining them. A changed file cannot be journaled as a successful retention.
         ``raw_source=True`` sends an explicit publisher original to the central
         archive; converted tables and other generated inputs remain run-local.
+
+        ``original_location`` defaults to the file's name: its directory is the build machine's, and the journal is
+        published (ss-81bv). Pass the URL the bytes came from, or a logical name, when one exists.
         """
         if self.artifact is not None:
             raise SourceEvidenceError("Cannot append to sealed source evidence")
@@ -559,7 +647,7 @@ class CaptureEvidence:
         try:
             with path.open("rb") as stream:
                 before = identity(os.fstat(stream.fileno()))
-                check = _StreamCheck(self, before[2])
+                check = _StreamCheck(self, before[2], scan_paths=not raw_source and path.suffix in _JSON_CONTROLS)
                 for chunk in iter(lambda: stream.read(_CHUNK), b""):
                     check.update(chunk)
                 if (
@@ -568,6 +656,8 @@ class CaptureEvidence:
                     or identity(path.stat()) != before
                 ):
                     raise self._failure("Source file changed during retention")
+                if check.local_path:
+                    raise self._local_control(stage, path.name)
                 blob = self._file_blob(stream, sha256=check.sha256, byte_size=check.size, raw_source=raw_source)
                 if identity(os.fstat(stream.fileno())) != before or identity(path.stat()) != before:
                     raise self._failure("Source file changed during retention")
@@ -577,7 +667,7 @@ class CaptureEvidence:
             raise self._failure("Cannot retain source file bytes") from error
         # Arbitrary caller fields and paths may contain excerpts; non-retaining
         # contexts publish only the bounded receipt, never local extraction names.
-        return self._retained(blob, stage=stage, fields={"original_location": str(path.resolve()), **fields}, name=path.name)
+        return self._retained(blob, stage=stage, fields={"original_location": path.name, **fields}, name=path.name)
 
     def transport(self, transport=None, *, stage: str, max_bytes: int, response_header_names: tuple[str, ...] = ()):
         """Observe streamed HTTP responses before owner parsing, including retries.
@@ -804,7 +894,7 @@ class CaptureEvidence:
             stage=stage,
             error_type=type(error).__name__,
             evidence_policy=self.policy,
-            message=self._safe(str(error))[:2000] if self.policy == "full" and not restricted_root else None,
+            message=self._safe(str(error), "message")[:2000] if self.policy == "full" and not restricted_root else None,
             reason_code="source_refused",
             source_validation="refused",
             response=retained,
@@ -997,7 +1087,7 @@ class CaptureEvidence:
                         or any(not isinstance(item[key], str) or not item[key].strip()
                                for key in ("location", "asset_kind"))):
                     raise ValueError("Invalid used-input descriptor")
-                normalized.append({**item, "location": self._safe(item["location"]),
+                normalized.append({**item, "location": self._safe(item["location"], "used input location"),
                                    "sha256": sha(item["sha256"]), "bytes": count(item["bytes"])})
         except (ValueError, TypeError, KeyError) as error:
             raise self._failure("Invalid used-input descriptor") from error
@@ -1125,7 +1215,7 @@ class CaptureEvidence:
             "outcome": "failed" if error else "complete",
             "artifact": self.artifact.pin.as_dict() if self.artifact is not None else None,
             "error_type": type(error).__name__ if error else None,
-            "message": self._safe(str(error))[:2000] if error and not self._restricted_diagnostics else None,
+            "message": self._safe(str(error), "message")[:2000] if error and not self._restricted_diagnostics else None,
         })
         try:
             self._archive_receipt(outcome)
@@ -1169,6 +1259,10 @@ class SourceEvidenceContext:
     def _restricted_diagnostics(self):
         return self.root._restricted_diagnostics
 
+    @property
+    def family(self):
+        return self.root.family
+
     def event(self, event: str, **fields) -> None:
         fields.update(
             publisher_id=self.publisher_id,
@@ -1181,8 +1275,8 @@ class SourceEvidenceContext:
     def _failure(self, message: str):
         return self.root._failure(message)
 
-    def _safe(self, value):
-        return self.root._safe(value)
+    def _safe(self, value, field: str = ""):
+        return self.root._safe(value, field)
 
     def _put_body(self, *args, **kwargs):
         return self.root._put_body(*args, **kwargs)
@@ -1192,10 +1286,12 @@ class SourceEvidenceContext:
     _record_capture = CaptureEvidence._record_capture
     _file_blob = CaptureEvidence._file_blob
     _retained = CaptureEvidence._retained
+    _local_control = CaptureEvidence._local_control
     _retain_file = CaptureEvidence._retain_file
     capture = CaptureEvidence.capture
     retain_file = CaptureEvidence.retain_file
     retain_bytes = CaptureEvidence.retain_bytes
+    retain_control = CaptureEvidence.retain_control
     transport = CaptureEvidence.transport
     refusal = CaptureEvidence.refusal
 
