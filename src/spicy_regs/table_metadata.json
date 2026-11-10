@@ -22392,7 +22392,7 @@
       {
         "column_name": "executive_order_number",
         "column_type": "VARCHAR",
-        "description": "Exact publisher EO number used for lookup."
+        "description": "Exact publisher EO number used for lookup; null where the publisher states none, as for corrections, designations and a few orders the API files under executive orders."
       },
       {
         "column_name": "document_number",

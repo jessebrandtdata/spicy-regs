@@ -16,7 +16,7 @@ Every executive order the Federal Register API serves, with retained text, publi
 | Column | Type | Description |
 | --- | --- | --- |
 | `publication_year` | `INTEGER` | Calendar year of Federal Register publication, not the signing year and not a completeness marker. |
-| `executive_order_number` | `VARCHAR` | Exact publisher EO number used for lookup. |
+| `executive_order_number` | `VARCHAR` | Exact publisher EO number used for lookup; null where the publisher states none, as for corrections, designations and a few orders the API files under executive orders. |
 | `document_number` | `VARCHAR` | Exact Federal Register document number; pair with publication_date for source identity. |
 | `publication_date` | `DATE` | Federal Register publication date. |
 | `signing_date` | `DATE` | Publisher signing date, which may precede the publication year. |

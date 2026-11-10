@@ -202,9 +202,9 @@ def build_executive_orders(reader, output_dir: Path, *, body_paths, load_body, e
                 or published is None
                 or record.get("type") != "Presidential Document"
                 or record.get("subtype") != "Executive Order"
-                or not isinstance(number, str)
-                or not number.isascii()
-                or not number.isdecimal()
+                # The API files corrections, designations and a few orders here without a number: kept, as stated.
+                or (number is not None and (not isinstance(number, str) or not number.isascii()
+                                            or not number.isdecimal()))
             ):
                 raise ValueError("Executive-order record differs from the selected identity or type")
             seen.add(identity)

@@ -86,18 +86,22 @@ def built_rows(selection, directory, prior=None):
     return table, {row["source_record_id"]: row for row in pq.read_table(table).to_pylist()}
 
 
-ORDERS = [record("94-290", "12890", "1994-01-05"), record("95-1001", "12945", "1995-01-20")]
+ORDERS = [record("94-290", "12890", "1994-01-05"), record("95-1001", "12945", "1995-01-20"),
+          # The API lists corrections under executive orders without a number (C1-2010-27668, 2026-11-10).
+          record("C1-1995-500", None, "1995-03-01", title="Correction")]
 
 
 def test_every_year_is_built_and_an_untouched_order_keeps_its_published_row(tmp_path):
     publisher = Publisher(ORDERS)
     first = publisher.acquire(tmp_path / "acquire-1")
     # 1994-01-01 through 1995-06-30 is seven 90-day windows, read twice; one body each.
-    assert len(publisher.listed) == 14 and sorted(publisher.bodies) == ["94-290", "95-1001"]
-    assert first["changes"] == {"added": ["94-290@1994-01-05", "95-1001@1995-01-20"], "changed": [], "removed": []}
+    assert len(publisher.listed) == 14 and sorted(publisher.bodies) == ["94-290", "95-1001", "C1-1995-500"]
+    assert first["changes"] == {"added": ["94-290@1994-01-05", "95-1001@1995-01-20", "C1-1995-500@1995-03-01"],
+                                "changed": [], "removed": []}
     table, rows = built_rows(first, tmp_path / "build-1")
     assert {key: (row["publication_year"], row["executive_order_number"]) for key, row in rows.items()} == {
-        "94-290@1994-01-05": (1994, "12890"), "95-1001@1995-01-20": (1995, "12945")}
+        "94-290@1994-01-05": (1994, "12890"), "95-1001@1995-01-20": (1995, "12945"),
+        "C1-1995-500@1995-03-01": (1995, None)}
     assert json.loads(pq.read_schema(table).metadata[module.COVERAGE_KEY.encode()]) == {
         "publishedFrom": "1994-01-01", "publishedThrough": "1995-06-30", "presidentialDocumentType": "executive_order",
         "sourceReleaseDigest": rows["94-290@1994-01-05"]["source_release_digest"]}
@@ -107,13 +111,14 @@ def test_every_year_is_built_and_an_untouched_order_keeps_its_published_row(tmp_
 
     # The publisher adds a 1995 order and adds a history note to the 1994 one.
     publisher.records = [record("94-290", "12890", "1994-01-05", disposition_notes="Revoked by: EO 13000"),
-                         ORDERS[1], record("95-3000", "12950", "1995-02-07")]
+                         *ORDERS[1:], record("95-3000", "12950", "1995-02-07")]
     publisher.listed, publisher.bodies = [], []
     second = publisher.acquire(tmp_path / "acquire-2", prior=rows)
     assert second["changes"] == {"added": ["95-3000@1995-02-07"], "changed": ["94-290@1994-01-05"], "removed": []}
     assert publisher.bodies == ["95-3000"]  # published bodies are reused, never fetched again
     _, again = built_rows(second, tmp_path / "build-2", prior=rows)
     assert again["95-1001@1995-01-20"] == rows["95-1001@1995-01-20"]
+    assert again["C1-1995-500@1995-03-01"] == rows["C1-1995-500@1995-03-01"]
     corrected, before = again["94-290@1994-01-05"], rows["94-290@1994-01-05"]
     assert corrected["disposition_notes"] == "Revoked by: EO 13000"
     assert corrected["source_release_digest"] != before["source_release_digest"]
@@ -144,7 +149,7 @@ def test_a_withdrawn_order_leaves_and_a_missing_body_result_refuses(tmp_path):
     selection = publisher.acquire(tmp_path / "acquire-2", prior=rows)
     assert selection["changes"] == {"added": [], "changed": [], "removed": ["94-290@1994-01-05"]}
     _, kept = built_rows(selection, tmp_path / "build-2", prior=rows)
-    assert kept == {"95-1001@1995-01-20": rows["95-1001@1995-01-20"]}
+    assert kept == {key: rows[key] for key in ("95-1001@1995-01-20", "C1-1995-500@1995-03-01")}
     del selection["bodies"]["95-1001@1995-01-20"]
     with pytest.raises(ValueError, match="body result is missing"):
         built_rows(selection, tmp_path / "build-3", prior=rows)
@@ -198,7 +203,7 @@ def test_hosted_run_reuses_published_bodies_and_ends_green_when_nothing_is_new(t
     source_refreshes.ExecutiveOrdersRollup(output_dir=tmp_path / "first").run()
     (generation,) = (tmp_path / "first" / "generations").iterdir()
     rows = pq.read_table(generation / module.OUTPUT).to_pylist()
-    assert sorted(row["executive_order_number"] for row in rows) == ["12890", "12945", "12950"]
+    assert sorted(row["document_number"] for row in rows) == ["94-290", "95-1001", "95-3000", "C1-1995-500"]
     assert publisher.bodies == ["95-3000"]
 
     first.write_bytes((generation / module.OUTPUT).read_bytes())
