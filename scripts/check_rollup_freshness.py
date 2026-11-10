@@ -16,16 +16,22 @@ Tables outside the index keep the legacy remote column-read path.
 The comment corpus gets a coverage check instead of a date watermark: per-agency
 row counts from ``comments_index.parquet``, compared with the last known-good
 counts in the state file (see :func:`evaluate_comment_coverage`).
+
+Every family's age since its last publication is printed beside its declared
+cadence (:data:`FAMILY_CADENCE`), so a finite or slow-moving family is not read
+as stale, and one that missed its publisher's release is.
 """
 
 from __future__ import annotations
 
 import argparse
+import calendar
+import hashlib
 import json
 import sys
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import duckdb
@@ -88,6 +94,9 @@ EXTERNAL_DATE_CHECKS = (
     # 2004-01-20), election-year October recesses run 46-55, August recesses
     # 30-47. 60 days rides out every one of them.
     DateCheck("roll_call_votes", "vote_day", 60, "senate vote day", where="chamber = 'senate'"),
+    # Quarterly: each quarter's statement, and the House posted July-September in November in 2022-2025. The
+    # newest quarter held may be one quarter (92 days) plus that posting (61) plus two weeks to refresh old.
+    DateCheck("house_disbursements", "report_period_end", 167, "quarter end"),
 )
 
 DATE_CHECKS = BASE_TABLE_CHECKS + EXTERNAL_DATE_CHECKS
@@ -120,6 +129,83 @@ SKIPPED = {
 }
 
 
+def _installed_fec_catalog() -> str:
+    from spicy_regs.transforms.build_fec_source_catalog import official_sources
+
+    return hashlib.sha256(official_sources()).hexdigest()
+
+
+@dataclass(frozen=True)
+class Cadence:
+    """When a family's age since its last publication (the index's ``publishedAt``) is staleness.
+
+    Finite (neither ``months`` nor ``input_pin``): never, whatever its age. Periodic: the publisher releases
+    once per ``months``-month period ending with a calendar quarter (3) or year (12), ``release_lag`` days
+    after the period ends, and the release is due here ``grace`` days later. Once the newest release is due,
+    the family must have been published on or after its release day. Input-pinned: stale when the table's one
+    ``column`` value differs from the installed input's digest, whatever its age.
+
+    ``publishedAt`` is a pointer move, not a source version: a republish of older data (a conversion, a
+    repair) after the release day reads as current. Only a source-version comparison would see that.
+    """
+
+    reason: str
+    months: int | None = None
+    release_lag: int = 0
+    grace: int = 0
+    #: (table, column, installed digest): the input the family is rebuilt from, and nothing else.
+    input_pin: tuple[str, str, Callable[[], str]] | None = None
+
+
+_RETAINED = Cadence("finite native selection of retained captures; no acquisition (docs/retained-collections.md)")
+#: CMS dated the 2024 benefit-year release 2026-06-25.
+_CMS = Cadence("one CMS drug spending release a year, about June (docs/cms-part-d.md)", months=12,
+               release_lag=170, grace=70)
+
+#: Family age that is not staleness, and when it becomes staleness. A family absent here has no family-level
+#: rule: its tables' date checks above, if it has any, decide; a source period in the rows (house-disbursements'
+#: quarter end) sees what ``publishedAt`` cannot, so it is checked there. uscode-editions and executive-orders
+#: are left out on purpose: both are meant to carry what their publisher serves, so their age is a real gap.
+FAMILY_CADENCE: dict[str, Cadence] = {
+    **dict.fromkeys(
+        ("retained-sec-comments", "retained-ferc-originals", "retained-cftc-comments", "retained-edis-filings",
+         "retained-supreme-court", "retained-inspectors-general"),
+        _RETAINED,
+    ),
+    "native-legal-references": Cadence("a pinned sample of retained U.S. Code and eCFR XML; no acquisition "
+                                       "(docs/native-legal-references.md)"),
+    "court-opinion-pdf-extractions": Cadence("one sampled cohort of captured opinion PDFs"),
+    "fec-source-catalog": Cadence("rebuilt only when the installed spicy-docs FEC inventory moves",
+                                  input_pin=("fec_source_catalog", "catalog_sha256", _installed_fec_catalog)),
+    "cms-part-d": _CMS,
+    "cms-medicaid": _CMS,
+    "cms-part-b": _CMS,
+    # CourtListener cuts each bulk export on a quarter's last day and finishes it the next; the scheduled
+    # court-citations run is on the 9th and 16th after.
+    "court-citations": Cadence("quarterly export, scheduled run", months=3, release_lag=1, grace=22),
+    "court-opinions": Cadence("quarterly export, run by hand where a copy is retained", months=3, release_lag=1,
+                              grace=30),
+}
+
+
+def newest_release(cadence: Cadence, today: date) -> tuple[date, date]:
+    """``(release day, due day)`` of the newest release due on or before ``today``."""
+    assert cadence.months is not None
+    year, month = today.year, today.month - today.month % cadence.months
+    while True:
+        if month <= 0:
+            year, month = year - 1, month + 12
+        released = date(year, month, calendar.monthrange(year, month)[1]) + timedelta(days=cadence.release_lag)
+        if released + timedelta(days=cadence.grace) <= today:
+            return released, released + timedelta(days=cadence.grace)
+        month -= cadence.months
+
+
+def _pinned_inputs() -> dict[str, str]:
+    """Table to the input-digest column an input-pinned family is held to."""
+    return {cadence.input_pin[0]: cadence.input_pin[1] for cadence in FAMILY_CADENCE.values() if cadence.input_pin}
+
+
 def _query(sources: Mapping[str, list[str]]) -> str:
     branches = []
     for check in DATE_CHECKS:
@@ -144,11 +230,16 @@ def _query(sources: Mapping[str, list[str]]) -> str:
                 FROM {target}"""
         )
     dated = {check.table for check in DATE_CHECKS}
+    pinned = _pinned_inputs()
     for table in sorted(set(sources) - dated - set(ROW_CHANGE_BUDGETS)):
         target = publication.parquet_scan(sources[table])
+        # An input-pinned table's one input digest is read in the same scan as its row count.
+        latest = (f"CASE WHEN COUNT(DISTINCT {pinned[table]}) = 1 THEN CAST(MIN({pinned[table]}) AS VARCHAR) END"
+                  if table in pinned else "NULL::VARCHAR")
+        metric = f"input {pinned[table]}" if table in pinned else "publication rows"
         branches.append(
-            f"SELECT '{table}' AS table_name, 'publication rows' AS metric, "
-            f"NULL::VARCHAR AS latest, COUNT(*)::BIGINT AS row_count FROM {target}"
+            f"SELECT '{table}' AS table_name, '{metric}' AS metric, "
+            f"{latest} AS latest, COUNT(*)::BIGINT AS row_count FROM {target}"
         )
     return "\nUNION ALL\n".join(branches)
 
@@ -311,6 +402,41 @@ def evaluate_row_changes(
     return failures
 
 
+def evaluate_family_ages(families: Mapping[str, Mapping], rows: Sequence[FreshnessRow], today: date) -> list[str]:
+    """Print every family's age beside its declared cadence; return failures for declared families behind it.
+
+    Age comes from ``publishedAt``, a pointer move: a republish of unchanged data resets it, so a periodic
+    family reads current after any publication since its due date. An undeclared family is reported, not judged.
+    """
+    measured = {(table, metric): latest for table, metric, latest, _count in rows}
+    failures: list[str] = []
+    for family, entry in sorted(families.items()):
+        published = _parse_latest(entry.get("publishedAt"))
+        line = f"{family} published={published or 'unrecorded'} age={'?' if published is None else (today - published).days}d"
+        cadence = FAMILY_CADENCE.get(family)
+        if cadence is None:
+            watched = any(f"{check.table}.parquet" in entry["tables"] for check in DATE_CHECKS)
+            decides = "its tables' date checks decide" if watched else "no cadence declared"
+            print(f"AGE: {line} ({decides})")
+        elif cadence.input_pin is not None:
+            table, column, installed = cadence.input_pin
+            live, wanted = measured.get((table, f"input {column}")), installed()
+            print(f"{'OK' if live == wanted else 'STALE'}: {line} {column}={live} installed={wanted} — {cadence.reason}")
+            if live != wanted:
+                failures.append(f"{family}: {table}.{column} is {live or 'not one value'}, the installed input is "
+                                f"{wanted}; rebuild it")
+        elif cadence.months is None:
+            print(f"FINITE: {line} — {cadence.reason}")
+        else:
+            released, due = newest_release(cadence, today)
+            current = published is not None and published >= released
+            print(f"{'OK' if current else 'STALE'}: {line} release of {released} due {due} — {cadence.reason}")
+            if not current:
+                failures.append(f"{family} was last published {published or 'at an unrecorded time'}, before the "
+                                f"release of {released} that fell due {due}")
+    return failures
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url")
@@ -338,7 +464,9 @@ def main() -> int:
         state = {}
 
     try:
-        rows = read_freshness_rows(args.base_url, args.table)
+        # The family ages read the same pointer observation the table measurements are bound to.
+        with publication.snapshot(args.base_url) as index:
+            rows = read_freshness_rows(args.base_url, args.table)
         comment_counts = read_comment_counts(args.base_url) if args.table is None else None
     except (duckdb.Error, httpx.HTTPError, publication.PublicationError) as exc:
         print(f"Freshness inputs could not be verified: {exc}", file=sys.stderr)
@@ -349,6 +477,8 @@ def main() -> int:
     if comment_counts is not None:
         failures.extend(evaluate_comment_coverage(comment_counts, state, args.today, args.accept_comment_coverage))
     args.state_file.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+    if args.table is None:
+        failures.extend(evaluate_family_ages(index["families"], rows, args.today))
 
     if args.table is None:
         for table, reason in SKIPPED.items():

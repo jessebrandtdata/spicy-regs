@@ -293,3 +293,85 @@ def test_senate_vote_freshness_is_held_apart_from_the_house(tmp_path):
     assert evaluate_date_rows(rows, date(2026, 11, 9)), "100 days without a Senate vote is stale"
     # The election-year October recess (2024-09-25 to 2024-11-12, 48 days) is not.
     assert evaluate_date_rows([("roll_call_votes", "senate vote day", "2024-09-25", 1)], date(2024, 11, 11)) == []
+
+
+@pytest.mark.parametrize("family,today,expected", [
+    # CourtListener's 2026-09-30 export finished 2026-10-01; the scheduled run has until the 23rd.
+    ("court-citations", date(2026, 11, 10), (date(2026, 10, 1), date(2026, 10, 23))),
+    ("court-citations", date(2026, 10, 22), (date(2026, 7, 1), date(2026, 7, 23))),
+    # 2025-12-31 + 170 days is 2026-06-19 (CMS dated its 2024 release 2026-06-25), due 70 days later.
+    ("cms-part-d", date(2026, 11, 10), (date(2026, 6, 19), date(2026, 8, 28))),
+    ("cms-part-d", date(2026, 8, 27), (date(2025, 6, 19), date(2025, 8, 28))),
+])
+def test_a_periodic_release_falls_due_after_its_period_lag_and_grace(family, today, expected):
+    assert freshness.newest_release(freshness.FAMILY_CADENCE[family], today) == expected
+
+
+def _family(published_at, *tables):
+    return {"publishedAt": published_at, "tables": {f"{table}.parquet": {} for table in tables}}
+
+
+def test_family_age_is_staleness_only_where_its_cadence_says(monkeypatch, capsys):
+    monkeypatch.setattr(freshness, "_installed_fec_catalog", lambda: "a" * 64)
+    monkeypatch.setitem(freshness.FAMILY_CADENCE, "fec-source-catalog", freshness.Cadence(
+        "pinned", input_pin=("fec_source_catalog", "catalog_sha256", freshness._installed_fec_catalog)))
+    families = {
+        "retained-sec-comments": _family("2026-01-02T00:00:00Z"),  # ten months old and finite
+        "court-citations": _family("2026-10-20T00:00:00Z"),  # published after the 09-30 export
+        "court-opinions": _family("2026-09-29T00:00:00Z"),  # not since the 09-30 export, now due
+        "cms-part-b": _family(None),  # no recorded publication
+        "fec-source-catalog": _family("2026-01-02T00:00:00Z", "fec_source_catalog"),
+        "house-disbursements": _family("2026-11-06T10:23:07Z", "house_disbursements"),
+        "executive-orders": _family("2026-10-20T12:18:22Z", "executive_order_observations"),
+    }
+    rows = [("fec_source_catalog", "input catalog_sha256", "a" * 64, 3)]
+    failures = freshness.evaluate_family_ages(families, rows, date(2026, 11, 10))
+    assert failures == [
+        "cms-part-b was last published at an unrecorded time, before the release of 2026-06-19 that fell due 2026-08-28",
+        "court-opinions was last published 2026-09-29, before the release of 2026-10-01 that fell due 2026-10-31",
+    ]
+    output = capsys.readouterr().out
+    assert "FINITE: retained-sec-comments published=2026-01-02 age=312d" in output
+    assert "OK: court-citations published=2026-10-20" in output
+    assert "AGE: house-disbursements published=2026-11-06 age=4d (its tables' date checks decide)" in output
+    assert "AGE: executive-orders published=2026-10-20 age=21d (no cadence declared)" in output
+
+    # The catalog is held to the installed inventory, not to its age: a moved input is stale on any day.
+    moved = [("fec_source_catalog", "input catalog_sha256", "b" * 64, 3)]
+    families = {"fec-source-catalog": families["fec-source-catalog"]}
+    assert freshness.evaluate_family_ages(families, moved, date(2026, 1, 3)) == [
+        f"fec-source-catalog: fec_source_catalog.catalog_sha256 is {'b' * 64}, the installed input is {'a' * 64}; "
+        "rebuild it"]
+    two_values = [("fec_source_catalog", "input catalog_sha256", None, 3)]
+    assert "is not one value" in freshness.evaluate_family_ages(families, two_values, date(2026, 1, 3))[0]
+
+
+def test_the_catalog_input_digest_is_read_in_its_row_count_scan(tmp_path):
+    member = tmp_path / "fec_source_catalog.parquet"
+    pq.write_table(pa.table({"catalog_sha256": ["a" * 64, "a" * 64]}), member)
+    assert duckdb.sql(freshness._query({"fec_source_catalog": [str(member)]})).fetchall() == [
+        ("fec_source_catalog", "input catalog_sha256", "a" * 64, 2)]
+    pq.write_table(pa.table({"catalog_sha256": ["a" * 64, "b" * 64]}), member)
+    assert duckdb.sql(freshness._query({"fec_source_catalog": [str(member)]})).fetchall() == [
+        ("fec_source_catalog", "input catalog_sha256", None, 2)]
+    # The installed digest is the builder's: the file each row's catalog_sha256 hashes.
+    from spicy_regs.transforms.build_fec_source_catalog import build_fec_source_catalog
+
+    built = pq.read_table(build_fec_source_catalog(tmp_path / "built"), columns=["catalog_sha256"])
+    assert set(built.column(0).to_pylist()) == {freshness._installed_fec_catalog()}
+
+
+def test_declared_families_are_the_verified_ones():
+    """Finite families are declared from their docs; families meant to track their publisher are not."""
+    finite = {name for name, cadence in freshness.FAMILY_CADENCE.items()
+              if cadence.months is None and cadence.input_pin is None}
+    assert finite == {"retained-sec-comments", "retained-ferc-originals", "retained-cftc-comments",
+                      "retained-edis-filings", "retained-supreme-court", "retained-inspectors-general",
+                      "native-legal-references", "court-opinion-pdf-extractions"}
+    assert not {"uscode-editions", "executive-orders"} & freshness.FAMILY_CADENCE.keys()
+
+
+def test_house_quarters_are_held_by_the_quarter_end_in_their_rows():
+    rows = [("house_disbursements", "quarter end", "2026-06-30 00:00:00", 10)]
+    assert evaluate_date_rows(rows, date(2026, 12, 14)) == []
+    assert evaluate_date_rows(rows, date(2026, 12, 15)), "July-September not published by mid-December is stale"
