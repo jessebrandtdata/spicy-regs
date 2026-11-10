@@ -250,7 +250,10 @@ rehearsal fetched 1,335 bodies in 1,593 requests (the 257 orders from before
 differ from the live rows only in `text_derivation_version` (002 to 004; SpicyDocs
 derives byte-identical text) and the new `source_sha256` column. Ten orders
 from 2015 to 2021 build as `source_failed`: SpicyDocs' XML validator refuses
-their FRDOC marker.
+their FRDOC marker. SpicyDocs 0.85.0 reads that split marker. A held failed
+order is fetched again by the next `acquire` (or hosted run) that finds any
+order added, changed or removed, into a fresh `--output-dir`; one that finds
+nothing new fetches no body, so the failed ones stay failed until then.
 
 The hosted `rollup-executive-orders.yml` runs on weekdays; it restores the
 published bodies from R2 source evidence and publishes nothing when nothing is
