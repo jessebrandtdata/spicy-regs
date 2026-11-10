@@ -226,3 +226,72 @@ def test_a_retired_parent_without_a_reader_for_its_mapper_refuses_by_name(tmp_pa
     retire("bill_cosponsors")
     with pytest.raises(ValueError, match="bill_cosponsors: its receipts are retired and its mapper declares no reader"):
         SelectedPriors(tmp_path / "probe", root=root, public_url="").get("bill_cosponsors")
+
+
+def pin_archive(monkeypatch, tmp_path, archives):
+    """Serve ``archives`` as docs/pins/receipt-archive.json to retention's reader, for one test."""
+    from spicy_regs import generation_retention
+
+    path = tmp_path / "receipt-archive.json"
+    path.write_text(json.dumps({"format": generation_retention.RECEIPT_ARCHIVE_FORMAT, "version": 1,
+                                "archives": archives}))
+    monkeypatch.setattr(generation_retention, "RECEIPT_ARCHIVE", path)
+
+
+def _pin(family, digest):
+    hexd = digest.removeprefix("sha256:")
+    return {"family": family, "artifactDigest": digest, "publishedAt": "2026-10-10T15:45:23Z",
+            "receipts": f"generations/{family}/{hexd}/etl_receipts.parquet"}
+
+
+@pytest.mark.parametrize("stale", [False, True], ids=["live-generation-pinned", "stale-pin"])
+def test_the_first_receipts_free_publish_needs_the_live_generation_pinned(tmp_path, monkeypatch, retire, stale):
+    """Shaped like comments on 2026-11-10: one family, two tables, both retired together, both pinned to the family's
+    live generation (the last with receipts). A pin of any other generation is refused, naming table and both
+    digests, and nothing is published."""
+    from spicy_regs import etl_policy_registry
+    from spicy_regs.etl_receipts import DatasetPolicy, ReceiptContext, combine_receipts, write_dataset
+    from spicy_regs.generations import build_generation
+    from spicy_regs.sources.publication import PublicationError, empty_index, publish_generation
+    from tests.generation_fakes import Store
+
+    retire()  # as main published it: with receipts
+    store, schema = Store(), pa.schema([("id", pa.string())])
+    policies = [DatasetPolicy(name, schema, ("id",), ("held",)) for name in ("comments", "comments_index")]
+    monkeypatch.setattr(etl_policy_registry, "installed_policies", lambda: {p.dataset: p for p in policies})
+    held = ReceiptContext("build-1", "row", "test", [{"source_id": "s", "body_version": "1"}])
+    pairs = [write_dataset([({"id": "1", "held": "x"}, held)], tmp_path / p.dataset, p) for p in policies]
+    receipts = combine_receipts([receipt for _, receipt in pairs], tmp_path / "etl_receipts.parquet")
+    tables = [subject for subject, _ in pairs if subject is not None]
+    keys = [p.dataset + ".parquet" for p in policies]
+    build_generation(tmp_path / "with-receipts", family="comments", files=tables, expected_keys=keys,
+                     receipt_path=receipts, receipt_policies=policies, receipt_generation_id="build-1")
+    index = publish_generation(tmp_path / "with-receipts", client=store, bucket="b", prior_index=empty_index())
+    live = index["families"]["comments"]["artifactDigest"]
+    pinned = "sha256:" + "ab" * 32 if stale else live
+    pin_archive(monkeypatch, tmp_path, {"comments": _pin("comments", live), "comments_index": _pin("comments", pinned)})
+    retire("comments", "comments_index")
+    build_generation(tmp_path / "receipts-free", family="comments", files=tables, expected_keys=keys)
+    if stale:
+        with pytest.raises(PublicationError, match=f"comments_index leaves its receipts in comments generation {live}, "
+                                                   f"but docs/pins/receipt-archive.json pins comments {pinned}"):
+            publish_generation(tmp_path / "receipts-free", client=store, bucket="b", prior_index=index)
+        assert "etlReceipts" in store_index(store)["families"]["comments"]
+    else:
+        published = publish_generation(tmp_path / "receipts-free", client=store, bucket="b", prior_index=index)
+        assert "etlReceipts" not in published["families"]["comments"]
+
+
+def store_index(store):
+    from spicy_regs.sources import publication
+
+    return publication.parse_index(store.objects[publication.INDEX_V2_KEY])
+
+
+def test_a_retirement_cannot_be_checked_without_the_pin_file(tmp_path, monkeypatch):
+    from spicy_regs import generation_retention
+    from spicy_regs.sources.publication import PublicationError, _require_receipt_archive_pins
+
+    monkeypatch.setattr(generation_retention, "RECEIPT_ARCHIVE", tmp_path / "missing.json")
+    with pytest.raises(PublicationError, match="publish a retirement from a spicy-regs checkout"):
+        _require_receipt_archive_pins("comments", "sha256:" + "ab" * 32, {"comments"})

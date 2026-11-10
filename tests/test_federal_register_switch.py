@@ -347,6 +347,9 @@ def test_receipts_leave_a_published_table_only_by_its_retired_marker_and_never_r
     assert index()["families"]["federal-register"] == before
 
     monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset({"federal_register"}))
+    from tests.test_receipts_retired import _pin, pin_archive
+
+    pin_archive(monkeypatch, tmp_path, {"federal_register": _pin("federal-register", before["artifactDigest"])})
     publish("retired", FIXTURE / "expected/night-1.parquet")
     after = index()["families"]["federal-register"]
     assert "etlReceipts" not in after and after["tables"]["federal_register.parquet"]["rows"] == 170
@@ -390,6 +393,9 @@ def test_a_retirement_covers_only_the_tables_it_marks(tmp_path, monkeypatch):
                      receipt_policies=policies, receipt_generation_id="build-1")
     index = publish_generation(tmp_path / "first", client=store, bucket="b", prior_index=empty_index())
     monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset({"retired_table"}))
+    from tests.test_receipts_retired import _pin, pin_archive
+
+    pin_archive(monkeypatch, tmp_path, {"retired_table": _pin("two", index["families"]["two"]["artifactDigest"])})
     monkeypatch.setattr(etl_policy_registry, "installed_policies", lambda: {"retired_table": policies[1]})
     build_generation(tmp_path / "second", family="two", files=tables, expected_keys=keys)
     with pytest.raises(PublicationError, match="drops required ETL receipts"):
