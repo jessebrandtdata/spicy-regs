@@ -165,19 +165,18 @@ record changed.
 Weekly retention keeps a family's last three generations and any generation a
 file under `docs/` cites by eight or more hex digits of its digest. The last
 generation each family publishes **with receipts** holds the only complete copy
-of those receipts, so it is pinned here before step 3 merges. Existing receipt
-files are never deleted by this change; the pin is what keeps retention from
-removing them later.
+of those receipts, so step 3 pins it in `docs/pins/receipt-archive.json`, one
+entry per table, in the same change that marks the table's receipts retired.
+`tests/test_receipt_archive_pins.py` fails while a retired table has no entry
+or retention's docs scan cannot find one. Existing receipt files are never
+deleted by this change; the pin is what keeps retention from removing them.
 
-| Family | Last generation published with receipts | Published |
-| --- | --- | --- |
-| `federal-register` | **TO FILL before step 3: the full artifact digest** | |
-| `fr-docket-links` | **TO FILL before step 3: the full artifact digest** | |
-
-To fill: on the last night before step 3 merges, read
-`families."federal-register".artifactDigest` and
-`families."fr-docket-links".artifactDigest` from `publication.v2.json` (query 1
-above, with `artifactDigest` and `publishedAt` in place of `prefix`), confirm
-each still lists `etlReceipts`, and write the 64 hex digits and the
-`publishedAt` instant into the table. Do not write any other generation's
-digest on this page: every digest cited here is kept indefinitely.
+To fill, on the last night before step 3 merges: read
+`families."federal-register"` and `families."fr-docket-links"` from
+`publication.v2.json` (query 1 above, with `artifactDigest` and `publishedAt`
+in place of `prefix`), confirm each still lists `etlReceipts`, and write each
+table's entry: `family`, `artifactDigest` (`sha256:` and the 64 hex digits),
+`publishedAt`, and `receipts`, the key
+`generations/<family>/<64 hex>/etl_receipts.parquet`. Do not write any other
+generation's digest under `docs/`: every digest cited there is kept
+indefinitely.
