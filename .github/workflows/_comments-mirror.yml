@@ -213,12 +213,10 @@ jobs:
           # Cloudflare edge-cache purge after publish (best-effort; no-op if unset).
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          # Bypass r2's byte-size shrink guard: re-exporting from the catalog
-          # re-sorts + re-compresses the data, so a partition can be several times
-          # smaller on disk while holding *more* rows (verified: ACF 19.7 MB -> 6.0 MB
-          # with more rows + fresher dates). The script checks retained IDs,
-          # uniqueness, index and partition coverage, plus a row-count floor.
-          R2_ALLOW_SHRINK: '1'
+          # No R2_ALLOW_SHRINK here: the mirror lifts r2's byte-size shrink guard
+          # for the fixed agency files alone (re-sorted they can shrink while
+          # holding more rows, ACF 19.7 MB -> 6.0 MB; a moved agency's is emptied).
+          # The monolith and the generation's members keep the guard (ss-juz8).
           R2_CATALOG_URI: ${{ secrets.R2_CATALOG_URI }}
           R2_CATALOG_WAREHOUSE: ${{ secrets.R2_CATALOG_WAREHOUSE }}
           R2_CATALOG_TOKEN: ${{ secrets.R2_CATALOG_TOKEN }}

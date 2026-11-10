@@ -415,6 +415,47 @@ def test_a_receipt_whose_agency_rows_do_not_sum_to_the_monolith_is_refused(tmp_p
         mirror.check_receipt_rows(tmp_path, files, 3)
 
 
+def test_only_the_agency_files_may_shrink(publication, monkeypatch):
+    """The workflow no longer lifts r2's shrink guard; the mirror lifts it around the agency files alone."""
+    import os
+
+    state, root = publication
+    monkeypatch.delenv("R2_ALLOW_SHRINK", raising=False)
+    seen = []
+    upload, partitions = mirror.r2.upload_file, mirror.r2.upload_comment_partitions
+    publish = mirror.publication.publish_generation
+
+    def note(step, what):
+        seen.append((step, what, os.environ.get("R2_ALLOW_SHRINK")))
+
+    def preflight(output_dir, files):
+        note("preflight", sorted(path.relative_to(output_dir).as_posix() for path in files))
+
+    def upload_file(path, remote_key=None, **kw):
+        note("upload", remote_key or path.name)
+        return upload(path, remote_key, **kw)
+
+    def upload_agency_files(output_dir, files):
+        note("agency files", len(files))
+        return partitions(output_dir, files)
+
+    def publish_generation(directory, **kw):
+        note("generation", None)
+        return publish(directory, **kw)
+
+    monkeypatch.setattr(mirror.r2, "preflight_uploads", preflight)
+    monkeypatch.setattr(mirror.r2, "upload_file", upload_file)
+    monkeypatch.setattr(mirror.r2, "upload_comment_partitions", upload_agency_files)
+    monkeypatch.setattr(mirror.publication, "publish_generation", publish_generation)
+    assert mirror.publish_comments_mirror(root)
+    assert seen[:3] == [("preflight", ["comments.parquet"], None),
+                        ("preflight", ["comments/agency/agency_code=EPA/part-0.parquet", "comments_index.parquet"], "1"),
+                        ("upload", "comments.parquet", None)]
+    assert ("agency files", 1, "1") in seen and ("generation", None, None) in seen
+    assert ("upload", "comments-publication.json", None) in seen
+    assert "R2_ALLOW_SHRINK" not in os.environ
+
+
 def test_a_refused_receipt_uploads_nothing(publication, monkeypatch):
     """The row check runs on the local files before any upload, so a refusal leaves the public files untouched."""
     state, root = publication

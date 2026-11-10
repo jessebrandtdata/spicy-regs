@@ -1,9 +1,10 @@
 """Publish the compatible comments mirror once per verified catalog snapshot."""
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 import json
-from os import getenv
+from os import environ, getenv
 from pathlib import Path
 import re
 from tempfile import TemporaryDirectory
@@ -145,6 +146,27 @@ def _retain_empty_agencies(result: dict[str, Path], predecessor: PublicPredecess
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
             pq.write_table(pa.Table.from_batches([], schema=schema), path, compression="zstd")
+
+
+@contextmanager
+def _agency_files_may_shrink():
+    """Lift ``r2``'s shrink guard for the fixed agency files alone, restoring the caller's setting after.
+
+    An agency file may legitimately shrink: re-sorted and re-compressed it can be several times smaller while
+    holding more rows (ACF 19.7 MB to 6.0 MB), and one whose last row moved agency is emptied. The monolith and
+    the generation's members are not exempt, so the bypass is no longer the workflow's environment (ss-juz8). The
+    guard reads only ``R2_ALLOW_SHRINK``; an ``allow_shrink`` argument on ``upload_file``, ``preflight_uploads``
+    and ``upload_comment_partitions`` would replace this.
+    """
+    held = environ.get("R2_ALLOW_SHRINK")
+    environ["R2_ALLOW_SHRINK"] = "1"
+    try:
+        yield
+    finally:
+        if held is None:
+            environ.pop("R2_ALLOW_SHRINK", None)
+        else:
+            environ["R2_ALLOW_SHRINK"] = held
 
 
 def check_receipt_rows(output_dir: Path, files: dict[str, dict], exported_rows: int) -> None:
@@ -304,9 +326,14 @@ def publish_comments_mirror(output_dir: Path, *, resources: ExportResources | No
     files = [result["comments"], *agency_files, result["index"]]
     rows = {path.relative_to(output_dir).as_posix(): {"rows": pq.ParquetFile(path).metadata.num_rows} for path in files}
     check_receipt_rows(output_dir, rows, n_rows)
-    r2.preflight_uploads(output_dir, files)
+    # Every planned file is guarded before the first byte lands; only the agency files (and the index uploaded
+    # with them) may shrink, the monolith here and the generation's members at publication may not.
+    r2.preflight_uploads(output_dir, [result["comments"]])
+    with _agency_files_may_shrink():
+        r2.preflight_uploads(output_dir, [*agency_files, result["index"]])
     r2.upload_file(result["comments"], remote_key="comments.parquet")
-    r2.upload_comment_partitions(output_dir, agency_files)
+    with _agency_files_may_shrink():
+        r2.upload_comment_partitions(output_dir, agency_files)
 
     def verify(path: Path) -> tuple[str, dict]:
         key = path.relative_to(output_dir).as_posix()
