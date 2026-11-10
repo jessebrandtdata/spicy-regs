@@ -241,3 +241,41 @@ def test_ordinary_generation_publication_identity_and_sql(tmp_path, monkeypatch)
     changed["families"]["fec-query"]["artifactDigest"] = "sha256:" + "f" * 64
     with pytest.raises(ValueError, match="selected managed"):
         module.build_profiles(selection, changed, tmp_path / "refused.parquet")
+
+
+def test_acquire_saves_both_summary_csvs_into_the_raw_archive_and_can_publish_them(tmp_path, monkeypatch):
+    """FEC rewrites both files daily under one URL, so each day's bytes are kept before anything reads them."""
+    import httpx
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+
+    from spicy_regs.sources import r2
+
+    bodies = {pipeline.summary_url(kind, 2026): f"{kind} summary row\n".encode() for kind in ("candidate", "committee")}
+    transport = httpx.MockTransport(lambda request: httpx.Response(
+        200, content=bodies[str(request.url)], headers={"Content-Type": "text/csv", "ETag": '"fixture"'}))
+    record = pipeline.acquire([2026], tmp_path / "acquire", transport=transport)
+    captures = {item["collection_id"]: item for item in record["captures"]}
+    assert sorted(captures) == ["bulk-candidate_summary_2026-csv", "bulk-committee_summary_2026-csv"]
+    archive = CentralRawArchiveStore(tmp_path / "central-raw", create=False)  # conftest's SPICYGOV_RAW_ROOT
+    for item in captures.values():
+        assert item["request_url"] == pipeline.summary_url(item["entity_kind"], 2026)
+        body = bodies[item["request_url"]]
+        assert (item["response_sha256"], item["byte_size"]) == ("sha256:" + hashlib.sha256(body).hexdigest(), len(body))
+        with archive.open(item["response_sha256"]) as stream:
+            assert stream.read() == body
+    assert "published" not in record
+
+    # A hosted run's raw archive is scratch: it sends the sealed evidence and an index of the captures to R2.
+    store = Store()
+    monkeypatch.setattr(r2, "verified_target_client", lambda: (store, "fixture"))
+    monkeypatch.setattr(r2, "require_credentials", lambda _: None)
+    published = pipeline.acquire([2026], tmp_path / "hosted", transport=transport, publish=True)["published"]
+    for body in bodies.values():
+        assert store.objects["source-evidence/blobs/sha256/" + hashlib.sha256(body).hexdigest()] == body
+    assert published["index"].startswith("source-evidence/indexes/fec-summaries/")
+    index = pq.read_table(pa.BufferReader(store.objects[published["index"]])).to_pylist()
+    assert {row["collection_id"] for row in index} == set(captures)
+    assert {row["artifact_digest"] for row in index} == {published["evidence"]}
+
+    with pytest.raises(ValueError, match="even election cycle"):
+        pipeline.summary_url("committee", 2025)
