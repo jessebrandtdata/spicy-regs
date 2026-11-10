@@ -3274,7 +3274,7 @@ def _tools() -> list[Tool]:
         text; a UTC timestamp field takes ISO text with an offset. An unknown table or field, a
         key that does not fit the identity and more than 100 keys are refused,
         saying what is valid. A table whose receipts are retired is refused too:
-        what they held is in its own columns, for query_sql. Values come back decoded. keys answers in request
+        its mapped values are its own columns, for query_sql. Values come back decoded. keys answers in request
         order; receipt is found, ambiguous (several accepted receipts, none
         chosen), receipt_missing (the table holds the key, no receipt does) or
         not_in_table. Each field of a found receipt has a state: stated,

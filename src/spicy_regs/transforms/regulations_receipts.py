@@ -756,7 +756,6 @@ def build_native_rollup(name: str, inputs: Sequence[ReceiptInput], destination: 
     from spicy_regs.transforms.build_agency_monthly_volume import build_agency_monthly_volume
     from spicy_regs.transforms.build_discovery_signals import build_discovery_signals
     from spicy_regs.transforms.build_feed_summary import build_feed_summary
-    from spicy_regs.transforms.build_fr_docket_links import build_fr_docket_links
 
     def comment_index(work):
         import duckdb
@@ -773,7 +772,6 @@ def build_native_rollup(name: str, inputs: Sequence[ReceiptInput], destination: 
         "agency_monthly_volume": (build_agency_monthly_volume, {"documents"}, {"documents"}),
         "discovery_signals": (build_discovery_signals, {"documents"}, {"documents"}),
         "feed_summary": (build_feed_summary, {"dockets"}, {"dockets", "documents", "comments", "comments_index"}),
-        "fr_docket_links": (build_fr_docket_links, {"federal_register"}, {"federal_register"}),
     }
     operation, required, allowed = operations[name]
     present = {i.dataset for i in inputs}
