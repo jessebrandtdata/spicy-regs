@@ -184,3 +184,16 @@ def test_retry_sweep_is_skipped_only_after_a_sweep_that_covered_every_batch(
     covered = next((index for index, run_id in enumerate(succeeded) if stopped[run_id] == 0), len(succeeded))
     asked = [run_id for run_id in succeeded if f"repos/owner/repo/actions/runs/{run_id}/artifacts" in calls]
     assert asked == succeeded[: covered + 1]  # each success is asked until one covered every batch
+
+
+def test_only_the_comment_attributes_family_gets_more_than_thirty_minutes():
+    """Its per-row receipt rewrite is estimated at about 121 minutes on 26.4M rows; the other four are small."""
+    refresh = yaml.safe_load((WORKFLOW.parent / "_regulations-refresh.yml").read_text())
+    families = refresh["jobs"]["base-families"]
+    assert "run-rollup-comment-attributes" in families["strategy"]["matrix"]["command"]
+    assert families["with"]["timeout_minutes"] == (
+        "${{ matrix.command == 'run-rollup-comment-attributes' && 180 || 30 }}"
+    )
+    rollup = yaml.safe_load((WORKFLOW.parent / "_rollup.yml").read_text())
+    assert rollup[True]["workflow_call"]["inputs"]["timeout_minutes"]["type"] == "number"
+    assert rollup["jobs"]["rollup"]["timeout-minutes"] == "${{ inputs.timeout_minutes }}"

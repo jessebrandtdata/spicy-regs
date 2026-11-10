@@ -86,7 +86,12 @@ jobs:
       command: ${{ matrix.command }}
       require_bulk: true
       skip_upload: ${{ inputs.skip_upload }}
-      timeout_minutes: 30
+      # comment-attributes rewrites one receipt per row in Python on every refresh: 131 us a row for the
+      # rewrite and 16 for the selection on 10,000 published rows (2026-11-09), about 99 minutes for today's
+      # 26.4M on a hosted runner, which ran the manifest's per-row load 1.53 times slower than that machine.
+      # Run 42674437011 then spent 10.6 minutes admitting and 9.2 publishing the same generation: about 121
+      # in all, never yet run hosted at this size, so 180. The other four stay within 30 (ss-ag8i).
+      timeout_minutes: ${{ matrix.command == 'run-rollup-comment-attributes' && 180 || 30 }}
   mirror:
     needs: base-families
     if: ${{ !cancelled() && (needs.base-families.result == 'success' || inputs.promote_v1 || inputs.comments_only) }}
