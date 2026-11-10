@@ -1581,6 +1581,12 @@ def _clone_into(source: Path, target: Path, size: int | None) -> None:
         raise
 
 
+#: Byte floor for a table that kept its rows and columns, as a fraction of its prior. Measured on fec_committees:
+#: a writer's layout change alone left 0.392 (0.295 had it been one row group); within one layout, every value
+#: but the key nulled leaves 0.163, and every string but the key emptied leaves 0.371, above this floor.
+_KEPT_ROWS_MIN_RATIO = 0.2
+
+
 def _generation_scoped_tables() -> frozenset[str]:
     """Tables that describe only the generation holding them: its producer members, their footers and conversions.
 
@@ -1621,16 +1627,17 @@ def _stage_verified_generation(
     exempt = converted | _verified_replacement_tables | _generation_scoped_tables()
     # The guards run per table: a partition of a split table may legitimately shrink, but none may vanish,
     # since a build that forgot a partition would otherwise pass whenever the rest outweighs the shrink ratio.
-    # Bytes follow the writer's layout as well as the data, so size is compared only where the index cannot show
-    # every partition kept its rows and the table its columns (:func:`_keeps_rows_and_columns`, and what it cannot see).
+    # Bytes follow the writer's layout as well as the data, so a table whose index shows every partition kept its
+    # rows and the table its columns faces only the lower floor (:func:`_keeps_rows_and_columns`, and its limits).
     for key, table in tables.items():
         prior = table_descriptor(index, key)
         if prior and (missing := _partitions(prior) - _partitions(table)):
             raise PublicationError(f"{key} lacks partitions its prior generation holds: " + ", ".join(sorted(
                 "/".join(f"{c}={dict(p)[c]}" for c in prior["partitionColumns"]) for p in missing)))
-        if key not in exempt and not (prior and _keeps_rows_and_columns(table, prior)):
+        if key not in exempt:
             old_size = prior["byteSize"] if prior else _get_remote_size(client, bucket, key)
-            _assert_upload_safe(table["byteSize"], old_size, key)
+            kept = prior is not None and _keeps_rows_and_columns(table, prior)
+            _assert_upload_safe(table["byteSize"], old_size, key, floor=_KEPT_ROWS_MIN_RATIO if kept else None)
     old_family = index["families"].get(family)
     # The table set may change only by an explicit migration: exactly the declared added tables join, none leave.
     # A union, so the declaration is inert once those tables are published.
@@ -1921,15 +1928,10 @@ def _partitions(table: Mapping) -> set[tuple[tuple[str, str], ...]]:
     return {_partition(member) for member in table.get("members", ())}
 
 
-def _partition_rows(table: Mapping) -> dict[tuple[tuple[str, str], ...], int] | None:
-    """Rows per partition, each as :func:`_partition` keys it, a single file being the one partition ``()``.
-
-    ``None`` when a file records no row count.
-    """
+def _partition_rows(table: Mapping) -> dict[tuple[tuple[str, str], ...], int]:
+    """Rows per partition, each as :func:`_partition` keys it, a single file being the one partition ``()``."""
     rows: dict[tuple[tuple[str, str], ...], int] = {}
     for member in table.get("members", (table,)):
-        if type(member.get("rows")) is not int:
-            return None
         partition = _partition(member)
         rows[partition] = rows.get(partition, 0) + member["rows"]
     return rows
@@ -1938,16 +1940,17 @@ def _partition_rows(table: Mapping) -> dict[tuple[tuple[str, str], ...], int] | 
 def _keeps_rows_and_columns(table: Mapping, prior: Mapping) -> bool:
     """Whether ``table`` records exactly ``prior``'s columns and at least its rows in every partition ``prior`` holds.
 
-    Such a table is not compared with its prior by size: its bytes can halve with nothing lost, as when
-    ``fec_committees`` went from 1,767 row groups to 176 on 2026-11-09 (10.2 MB to 4.0 MB, ratio 0.392, all 89,974
-    rows and 16 columns kept). A lost row, a changed column or a descriptor recording neither leaves the size
-    comparison in force. These are counts, names and types: rows kept with their values emptied, or exchanged for
-    as many others, look the same, and nothing at publication compares values with the prior generation.
+    Such a table may shrink to :data:`_KEPT_ROWS_MIN_RATIO` of its prior's bytes, not only to the ordinary ratio:
+    its bytes can halve with nothing lost, as when ``fec_committees`` went from 1,767 row groups to 176 on
+    2026-11-09 (10.2 MB to 4.0 MB, ratio 0.392, all 89,974 rows and 16 columns kept). A lost row or a changed
+    column leaves the ordinary ratio in force, as does a single file rebuilt as a split table, which holds no
+    partition its prior holds. These are counts, names and types: rows kept with their values emptied, or exchanged
+    for as many others, look the same, and nothing at publication compares values with the prior generation. The
+    floor refuses only a wipe that takes most of the bytes.
     """
-    held, kept = _partition_rows(prior), _partition_rows(table)
-    return (held is not None and kept is not None
-            and "columns" in prior and table.get("columns") == prior["columns"]
-            and all(kept.get(partition, -1) >= rows for partition, rows in held.items()))
+    kept = _partition_rows(table)
+    return (table["columns"] == prior["columns"]
+            and all(kept.get(partition, -1) >= rows for partition, rows in _partition_rows(prior).items()))
 
 
 def _instant(seconds: float | None = None) -> str:

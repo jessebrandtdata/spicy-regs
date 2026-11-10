@@ -195,12 +195,17 @@ def _assert_upload_safe(
     local_size: int,
     remote_size: int | None,
     remote_key: str,
+    *,
+    floor: float | None = None,
 ) -> None:
     """Abort if the new upload would catastrophically shrink the remote.
 
     Controlled by ``R2_MIN_SIZE_RATIO`` (default ``0.5``) — the new file
-    must be at least that fraction of the existing remote file. Set
-    ``R2_ALLOW_SHRINK=1`` to bypass (used by recovery scripts).
+    must be at least that fraction of the existing remote file. ``floor`` is
+    the publisher's lower fraction for a table whose index shows it kept its
+    rows and columns; the lower of the two applies, so an operator's ratio
+    below the floor still decides and one above it does not tighten such a
+    table. Set ``R2_ALLOW_SHRINK=1`` to bypass (used by recovery scripts).
     """
     # Retry state must shrink to zero when the last unresolved key recovers.
     # Dataset size guards still apply to every data table and the manifest.
@@ -218,13 +223,16 @@ def _assert_upload_safe(
     except ValueError:
         raise RuntimeError(f"Invalid R2_MIN_SIZE_RATIO={ratio_env!r}; expected a float")
 
+    compared = ""
+    if floor is not None and floor < min_ratio:
+        min_ratio, compared = floor, ", the floor for a table that kept its rows and columns"
     ratio = local_size / remote_size
     if ratio < min_ratio:
         raise RuntimeError(
             f"Refusing to upload {remote_key}: new file would shrink remote "
             f"from {remote_size / 1024 / 1024:.1f} MB to "
             f"{local_size / 1024 / 1024:.1f} MB (ratio {ratio:.3f} < "
-            f"threshold {min_ratio}). Set R2_ALLOW_SHRINK=1 to override."
+            f"threshold {min_ratio}{compared}). Set R2_ALLOW_SHRINK=1 to override."
         )
 
 

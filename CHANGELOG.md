@@ -9,15 +9,16 @@ Entries link to the pull request that introduced the change.
 
 ### Fixed
 
-- **A table that kept its rows and columns is not refused for its size** (ss-kqzz).
-  The `fec_committees` nightly was refused on 2026-11-09 for shrinking from
-  10.2 MB to 4.0 MB (ratio 0.392) with the same 89,974 rows and 16 columns: a
-  writer change cut its row groups from 1,767 to 176 and its footer from 3.03 MB
-  to 0.31 MB. Publication now compares size only when the index cannot show that
-  the table kept its prior's columns and at least its prior's rows in every
-  partition. A lost row or a changed column still faces the size guard. The rule
-  reads counts, names and types, so it cannot see values emptied in rows that
-  were kept.
+- **A table that kept its rows and columns is not refused for halving in size**
+  (ss-kqzz). The `fec_committees` nightly was refused on 2026-11-09 for shrinking
+  from 10.2 MB to 4.0 MB (ratio 0.392) with the same 89,974 rows and 16 columns:
+  a writer change cut its row groups from 1,767 to 176 and its footer from
+  3.03 MB to 0.31 MB. A table whose index shows it kept its prior's columns and
+  at least its prior's rows in every partition may now shrink to 0.2 of its
+  prior's bytes; a lost row or a changed column still faces the ordinary 0.5.
+  The rule reads counts, names and types, never values. The 0.2 floor refuses
+  rows kept with nearly all their values lost (that table with every value but
+  its key nulled is 0.163 of itself), and one emptied column still publishes.
 
 - **A split table's partitions are matched whatever order their columns are
   listed in** (ss-biqd). The stored index sorts each partition's columns and a
