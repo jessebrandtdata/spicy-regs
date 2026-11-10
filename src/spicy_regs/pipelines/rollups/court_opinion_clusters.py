@@ -17,6 +17,7 @@ from typing import ClassVar
 
 from spicy_regs.pipelines.rollups.base import make_rollup_app
 from spicy_regs.pipelines.rollups.court_receipts import CourtReceiptRollup as RollupPipeline
+from spicy_regs.sources.courtlistener import DEFAULT_MAX_REQUESTS, DEFAULT_MAX_WAIT_SECONDS
 from spicy_regs.transforms.build_court_opinion_clusters import build_court_opinion_clusters
 
 
@@ -48,8 +49,8 @@ def catch_up(
     courts_sha256: str,
     search_through: int,
     retained_search_directory: Path,
-    max_requests: int = 50,
-    max_wait_seconds: float = 600,
+    max_requests: int = DEFAULT_MAX_REQUESTS,
+    max_wait_seconds: float = DEFAULT_MAX_WAIT_SECONDS,
     skip_upload: bool = True,
 ) -> None:
     """Resume a bounded same-edition Search addition; see docs/court-search-recovery.md.
