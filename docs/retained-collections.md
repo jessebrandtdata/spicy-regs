@@ -85,9 +85,10 @@ python -m spicy_regs.pipelines.administration_policy build \
 `build` writes the builder manifest over the raw originals, builds the
 candidate in `$POLICY_OUTPUT/candidate` and admits its tables and receipts as
 `$POLICY_OUTPUT/generation`. The generation pins a source-evidence artifact
-that names each selected file's commit, URL, digest and observation time. That
-evidence carries no file body: the archive states no licence, so the bodies
-stay in the raw archive. The refresh sequence through publication is in
+that names each selected file's commit, URL, digest and observation time and
+holds its bytes, as the other source families' evidence does. The archive
+states no licence; the October 2026 generation's evidence carried digests
+only. The refresh sequence through publication is in
 [local-family-refresh.md](local-family-refresh.md).
 
 ## Qualification and release

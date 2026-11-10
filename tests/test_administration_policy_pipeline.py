@@ -86,16 +86,17 @@ def test_refresh_keeps_unchanged_observations_and_binds_the_generation_to_its_so
     assert {table: output["rows"] for table, output in built["outputs"].items()} == {
         "administration_policy_statements": 3, "administration_policy_bill_links": 4}
 
-    # The generation pins its evidence, and the evidence names each selected file without carrying a body.
+    # The generation pins its evidence, and the evidence names and holds each selected file under its URL.
     (pinned,) = [item for item in artifact.root["inputs"] if item["role"] == INPUT_ROLE]
     assert pinned["artifactDigest"] == json.loads((evidence / "artifact.json").read_bytes())["artifactDigest"]
     events = [json.loads(line) for line in (evidence / "journal.jsonl").read_text().splitlines()]
-    assert [(event["administration"], event["url"], event["sha256"], event["evidence_policy"])
+    assert [(event["administration"], event["url"], event["sha256"])
             for event in events if event["event"] == "administration-policy-source"] == [
-        ("46-Biden", biden["url"], biden["sha256"], "hash_only"), ("47-Trump", trump["url"], trump["sha256"], "hash_only")]
-    assert [event["sha256"] for event in events if event["event"] == "retained-file"] == [biden["sha256"], trump["sha256"]]
-    assert sorted(path.name for path in evidence.rglob("*") if path.is_file()) == [
-        "artifact.json", "journal.jsonl", "members.json"]
+        ("46-Biden", biden["url"], biden["sha256"]), ("47-Trump", trump["url"], trump["sha256"])]
+    assert [(event["original_location"], event["sha256"], event["body_retained"])
+            for event in events if event["event"] == "retained-file"] == [
+        (biden["url"], biden["sha256"], True), (trump["url"], trump["sha256"], True)]
+    assert (evidence / "blobs" / "sha256" / trump["sha256"].removeprefix("sha256:")).read_bytes() == TRUMP_LATER
     assert local_paths(tmp_path / "november" / "generation", evidence, also=(str(tmp_path),)) == []
     index = publication.publish_generation(
         tmp_path / "november" / "generation", client=store, bucket="fixture", prior_index=live,
