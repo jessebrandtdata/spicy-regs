@@ -105,9 +105,9 @@ jobs:
             # A sweep that stopped at its time budget succeeds, so its consumers publish, and
             # leaves a sweep-stopped artifact: batches remain, and the retry is still needed.
             SUCCEEDED=$(gh run list --workflow etl-new-pipeline.yml --event schedule --status success \
-              --created ">=$(date -u +%F)" --json databaseId --jq '.[].databaseId')
+              --created ">=$(date -u +%F)" --json databaseId --jq '.[].databaseId' || true)
             for RUN_ID in $SUCCEEDED; do
-              # An unanswered question counts as "stopped": the retry runs.
+              # An unanswered question, this one or the list above, counts as "stopped": the retry runs.
               STOPPED=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/artifacts?name=sweep-stopped" --jq .total_count || true)
               if [ "$STOPPED" = "0" ]; then
                 echo "Scheduled sweep $RUN_ID covered every batch today; the retry sweep is not needed."
@@ -121,10 +121,11 @@ jobs:
           SWEEP_START=
           if [ "$EVENT" = "schedule" ] && [ "$RUN" = "true" ]; then
             # Begin where the latest scheduled sweep stopped at its budget and wrap to the first
-            # batch. A batch with new comment rows costs an hour, so sweeps that always began at
-            # the first batch would never reach the later ones. This lookup must never stop the
-            # sweep: a list or download that fails, a sweep that left no sweep-stopped artifact
-            # (the download then exits 1) and an artifact without the file all begin at 0.
+            # batch. A batch that merges new comment rows took 79.4 minutes (run 42674437011), so
+            # sweeps that always began at the first batch would never reach the later ones. This
+            # lookup must never stop the sweep: a list or download that fails, a sweep that left
+            # no sweep-stopped artifact (the download then exits 1) and an artifact without the
+            # file all begin at 0.
             SWEEP_START=0
             LAST=$(gh run list --workflow etl-new-pipeline.yml --event schedule --status completed --limit 1 \
               --json databaseId --jq '.[].databaseId' || true)

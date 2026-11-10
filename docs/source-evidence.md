@@ -147,6 +147,8 @@ Until November 2026 the read-back ran inside admission, one blob at a time,
 after every blob of the artifact had been sent: 104 of the 130 minutes that
 each 20,000 new Mirrulations originals took in run 42674437011, with up to
 20,000 blobs unread if the run died. Read-backs now leave at most eight unread.
+A blob PUT by a run that died before its read-back (at most eight per crash)
+is already stored to the next run, which admits it on size and ETag alone.
 
 The shared prefix must be written only by this publisher. The generation audit
 (`spicy_regs.generation_audit`) reads and admits the evidence a table generation

@@ -120,10 +120,10 @@ def setup_outputs(tmp_path, *, event, schedule="", batch="", timeout="", succeed
                   stopped_before="", artifact_file="sweep-stopped.txt"):
     """Run the setup step's shell as written against a stub ``gh``; its outputs and the calls it made.
 
-    ``succeeded``: today's successful scheduled runs. ``stopped``: sweep-stopped artifacts per run id, or
-    ``"fail"`` for a question ``gh`` cannot answer. ``latest``: the latest completed scheduled run, or ``"fail"``
-    for a list that fails. Its sweep-stopped artifact holds ``artifact_file`` naming batch ``stopped_before``;
-    with none, the download exits 1 as ``gh`` does.
+    ``succeeded``: today's successful scheduled runs, or ``"fail"`` for a list that fails. ``stopped``:
+    sweep-stopped artifacts per run id, or ``"fail"`` for a question ``gh`` cannot answer. ``latest``: the latest
+    completed scheduled run, or ``"fail"`` for a list that fails. Its sweep-stopped artifact holds
+    ``artifact_file`` naming batch ``stopped_before``; with none, the download exits 1 as ``gh`` does.
     """
     import subprocess
 
@@ -132,11 +132,12 @@ def setup_outputs(tmp_path, *, event, schedule="", batch="", timeout="", succeed
     bin_dir.mkdir()
     artifacts = " ".join(f"*runs/{run_id}/artifacts*) {'exit 1' if count == 'fail' else f'echo {count}'};;"
                          for run_id, count in (stopped or {}).items())
-    listed = "".join(f"{run_id}\\n" for run_id in succeeded)
+    listed = ("echo partial; exit 1" if succeeded == "fail"
+              else 'printf "' + "".join(f"{run_id}\\n" for run_id in succeeded) + '"')
     (bin_dir / "gh").write_text(f"""#!/bin/sh
 echo "$*" >> "{calls}"
 case "$*" in
-  *"--status success"*) printf "{listed}";;
+  *"--status success"*) {listed};;
   *"--status completed"*) {'echo partial; exit 1' if latest == "fail" else f'echo "{latest}"'};;
   {artifacts}
   "run download"*) [ -n "{stopped_before}" ] || exit 1
@@ -241,6 +242,13 @@ def test_retry_sweep_is_skipped_only_after_a_sweep_that_covered_every_batch(
     assert outputs["sweep_start_batch"] == ("0" if run == "true" else "")
     asked = [run_id for run_id in succeeded if f"repos/owner/repo/actions/runs/{run_id}/artifacts" in calls]
     assert asked == succeeded[: covered + 1]  # each success is asked until one covered every batch
+
+
+def test_a_failed_list_of_todays_sweeps_does_not_cancel_the_retry(tmp_path):
+    """An API error on the list exited the setup step, so the 18:25 retry never started (ss-ag8i)."""
+    outputs, calls = setup_outputs(tmp_path, event="schedule", schedule="25 18 * * *", succeeded="fail")
+    assert (outputs["run"], outputs["sweep_start_batch"]) == ("true", "0")
+    assert "--event schedule --status success" in calls
 
 
 def test_only_the_comment_attributes_family_gets_more_than_thirty_minutes():
