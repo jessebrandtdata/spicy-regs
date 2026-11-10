@@ -24,7 +24,13 @@ from spicy_regs.sources import publication, r2
 from spicy_regs.sources.publication import PublicationError
 
 #: Families refreshed by hand. A family with a hosted workflow is published by that workflow, never from here.
-LOCAL_FAMILIES = frozenset({"administration-policy", "grants-opportunities", "ofac-sanctions", "treasury-fiscal"})
+LOCAL_FAMILIES = frozenset({
+    "administration-policy",
+    "grants-opportunities",
+    "house-disbursements",
+    "ofac-sanctions",
+    "treasury-fiscal",
+})
 RAW_ROOT_ENV = "SPICYGOV_RAW_ROOT"
 #: Either one loosens the publisher's shrink guard (``r2._assert_upload_safe``).
 SHRINK_OVERRIDES = ("R2_ALLOW_SHRINK", "R2_MIN_SIZE_RATIO")
@@ -33,7 +39,7 @@ SHRINK_OVERRIDES = ("R2_ALLOW_SHRINK", "R2_MIN_SIZE_RATIO")
 def _candidate(directory: Path, family: str, evidence: tuple[Path, ...]) -> dict:
     """The generation's root, refused unless it is the expected family and pins source evidence.
 
-    All four families build with evidence, so a root without it is not one of their builds. Publication
+    Every family here builds with evidence, so a root without it is not one of their builds. Publication
     admits the members and holds ``evidence`` to the root's pins later.
     """
     root = json.loads((directory / "artifact.json").read_bytes())
