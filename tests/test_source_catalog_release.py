@@ -27,7 +27,9 @@ REGISTERED_RELEASE_DATASETS = (
 
 def test_declaration_refresh_preserves_installed_policies_and_shared_log_markers():
     from spicy_regs.etl_policy_registry import installed_policies
-    from spicy_regs.subject_catalog import SHARED_LOG, descriptor_of, shared_receipt_logs
+    from spicy_regs.subject_catalog import (
+        RECEIPTS_RETIRED, SHARED_LOG, descriptor_of, retired_receipt_datasets, shared_receipt_logs,
+    )
 
     path = Path(__file__).parents[1] / "scripts/update_etl_policy_declarations.py"
     module_spec = importlib.util.spec_from_file_location("release_policy_declarations", path)
@@ -36,8 +38,13 @@ def test_declaration_refresh_preserves_installed_policies_and_shared_log_markers
     module_spec.loader.exec_module(module)
     declared = module.declarations()
     for name, policy in installed_policies().items():
-        assert descriptor_of(declared[name]) == policy.descriptor()  # markers checked and left out
+        assert descriptor_of(declared[name]) == policy.descriptor()
+        # A declaration is its policy's descriptor plus exactly the markers it carries, which the generator keeps.
+        markers = {SHARED_LOG} & {k for k, v in declared[name].items() if v is True} | (
+            {RECEIPTS_RETIRED} if name in retired_receipt_datasets() else set())
+        assert declared[name].keys() - policy.descriptor().keys() == markers
     assert {name for name, policy in declared.items() if policy.get(SHARED_LOG)} == set(shared_receipt_logs())
+    assert {name for name, policy in declared.items() if policy.get(RECEIPTS_RETIRED)} == retired_receipt_datasets()
     assert "uscode_edition_sections" in declared
 
 

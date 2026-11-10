@@ -715,7 +715,14 @@ def test_native_cfr_source_ingest_keeps_source_modified_date(tmp_path):
     assert "url" not in row
 
 
-def test_native_staging_merge_keeps_integer_counts_and_source_recency(tmp_path):
+def test_native_staging_merge_keeps_integer_counts_and_source_recency(tmp_path, monkeypatch):
+    """The receipt route's staging merge, with comments as its example table.
+
+    Comments' receipts are retired (ss-juz8), so a comments generation with receipts is refused as shipped; the merge
+    itself is checked with the marker lifted, through the one function every reader asks. No production path calls
+    ``merge_native_staging``; it leaves with the receipt route.
+    """
+    from spicy_regs import subject_catalog
     from spicy_regs.transforms.regulations_receipts import merge_native_staging, build_native_rollup
 
     prior = write(
@@ -749,6 +756,10 @@ def test_native_staging_merge_keeps_integer_counts_and_source_recency(tmp_path):
         generation="g2",
         label="fresh",
     )
+    assert "comments" in subject_catalog.retired_receipt_datasets()
+    with pytest.raises(ValueError, match=r"Receipts are retired for \['comments'\]"):
+        merge_native_staging([fresh], tmp_path / "refused", generation_id="g3", prior=prior)
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset())
     target = tmp_path / "merged"
     merge_native_staging([fresh], target, generation_id="g3", prior=prior)
     [row] = pq.read_table(target / "comments.parquet").to_pylist()
