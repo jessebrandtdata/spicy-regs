@@ -944,8 +944,13 @@ def test_the_bundled_declaration_is_a_fresh_build_of_the_registries():
 
 def test_every_installed_policy_family_has_a_field_registry_and_declared_mappings_are_receipt_fields():
     bundled = json.loads(declarations.RECORD.read_text(encoding="utf-8"))["tables"]
-    keyed = {name for name, policy in POLICIES.items() if not policy.receipt_only and policy.identity_fields}
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    keyed = {name for name, policy in POLICIES.items()
+             if not policy.receipt_only and policy.identity_fields and name not in retired_receipt_datasets()}
     assert set(bundled) == keyed
+    # A table whose receipts are retired has no field registry: nothing reads fields from receipts it no longer has.
+    assert not set(bundled) & retired_receipt_datasets()
     for table, entry in bundled.items():
         policy = POLICIES[table]
         assert set(entry.get("containers", {})) <= set(policy.receipt_fields), table
