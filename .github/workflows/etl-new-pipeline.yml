@@ -5,9 +5,12 @@ name: ETL (new pipeline)
 # pass; the batches then read comments only (run_sweep says why).
 # Each pass commits its retry checkpoints and manifest before the next starts.
 # A failure stops the sweep and blocks final publication; a fresh runner resumes
-# from the durable checkpoint. A scheduled sweep stops starting batches at its
-# time budget and exits cleanly, so the consumers publish the batches it
-# finished; the next scheduled sweep begins at the batch it stopped before.
+# from the durable checkpoint. A dockets and documents pass that fails before
+# recording a key is an error annotation instead: the comment batches still run,
+# then the job fails, so the consumers do not publish. A scheduled sweep stops
+# starting batches at its time budget and exits cleanly, so the consumers publish
+# the batches it finished; the next scheduled sweep begins at the batch it
+# stopped before.
 # Manual single-batch dispatch remains supported.
 # Callers retain comments-catalog-write through mirror/consumer finalization.
 on:
@@ -30,7 +33,7 @@ on:
         default: ''
         type: string
       batch_number:
-        description: 'Batch number (0-indexed), or all for every batch; leave empty to run one job over all agencies'
+        description: 'Batch number (0-indexed); or all for the dockets and documents pass, then every comment batch, with no time budget (give it timeout_minutes 360); leave empty to run one job over all agencies'
         required: false
         default: ''
         type: string
@@ -50,7 +53,7 @@ on:
         default: false
         type: boolean
       timeout_minutes:
-        description: 'Job timeout in minutes for this dispatch (default 120, at most 360)'
+        description: 'Job timeout in minutes for this dispatch (default 120, at most 360). A manual all sweep has no budget: at 120 it is killed in its first comment batch'
         required: false
         default: '120'
         type: string
@@ -146,9 +149,10 @@ jobs:
           fi
           if [ "$EVENT" = "schedule" ]; then
             TIMEOUT=360
-            # The sweep starts no batch it does not expect to finish by this minute. Its estimate
-            # for a batch is at least 80 minutes (the one merging batch measured took 79.4), so
-            # the last batch starts by minute 270 - 80 = 190. The job is killed at 360; with 10
+            # The sweep starts no comment batch it does not expect to finish by this minute; the
+            # dockets and documents pass before them counts toward it. Its estimate for a batch
+            # is at least the 80-minute floor (SWEEP_BATCH_FLOOR_SECONDS), so the last batch
+            # starts by minute 270 - 80 = 190. The job is killed at 360; with 10
             # kept for its other steps, that batch may run 350 - 190 = 160 minutes, twice the
             # floor, and still finish. Run 42674437011 was killed inside its second batch and
             # published nothing.
@@ -247,17 +251,23 @@ jobs:
           # is scratch, deleted once R2 admits it; the failure artifact keeps any not yet sent.
           ARGS+=(--scratch-originals)
           echo "Running: uv run run-pipeline ${ARGS[*]}"
-          uv run run-pipeline "${ARGS[@]}"
+          # A failed dockets and documents pass exits non-zero after the comment batches, which may
+          # still have stopped at the budget: report the stop either way, then exit with the status.
+          status=0
+          uv run run-pipeline "${ARGS[@]}" || status=$?
           # A sweep that stopped at its time budget concludes "success"; say so on the run page.
           if [ -f output/sweep-stopped.txt ]; then
             echo "::warning title=Sweep stopped at its time budget::Stopped before batch $(tr -d '[:space:]' < output/sweep-stopped.txt) (0-indexed) of $BATCH_COUNT. Earlier batches are committed and will be published; the next scheduled sweep begins at that batch."
           fi
+          exit "$status"
 
       # The sweep writes this file only when it stopped at its time budget. The
       # 18:25 retry reads the artifact's presence as "batches remain", and the
-      # next scheduled sweep begins at the batch the file names.
+      # next scheduled sweep begins at the batch the file names. It is kept when the
+      # job failed too: a failed dockets and documents pass fails the job after the
+      # comment batches, and the next sweep must still resume them.
       - name: Record a sweep that stopped at its budget
-        if: hashFiles('output/sweep-stopped.txt') != ''
+        if: ${{ !cancelled() && hashFiles('output/sweep-stopped.txt') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: sweep-stopped
