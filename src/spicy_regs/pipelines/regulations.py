@@ -15,6 +15,7 @@ reusable pieces live elsewhere — connection details and the reader factory in
 the wiring.
 """
 
+import json
 from contextlib import ExitStack
 from os import getenv
 from pathlib import Path
@@ -32,6 +33,7 @@ from spicy_regs.manifest import Manifest
 from spicy_regs.pipelines.regulations_state import UnresolvedKeys, source_record_type
 from spicy_regs.pipelines.base import Pipeline
 from spicy_regs.pipelines.mirrulations_originals import MirrulationsOriginals
+from spicy_regs.source_evidence import SourceEvidenceError
 from spicy_regs.pipelines.staging import stage_agencies
 from spicy_regs.schemas import RECORD_TYPES, RecordType
 from spicy_regs.sources import iceberg, r2
@@ -53,12 +55,64 @@ from spicy_regs.transforms.write_staging import write_staging
 # returned 335 agencies (2026-09-24). The ceiling makes a jump in the mirror's
 # agency list a refusal to act on (raise BATCH_COUNT) instead of quietly longer jobs.
 MAX_DERIVED_BATCH_SIZE = 25
-#: The least a sweep assumes one more batch needs: the one whole batch measured that merged comment rows took
-#: 79.4 minutes ("ETL batch completed in 4762.7s", run 42674437011, 2026-11-09), 60.4 of them after its reads,
-#: republishing the base families. A batch with nothing new takes about 5.
+#: The least a sweep assumes one more comment batch needs: the one whole batch measured that merged comment rows
+#: took 79.4 minutes ("ETL batch completed in 4762.7s", run 42674437011, 2026-11-09), 60.4 of them after its reads,
+#: republishing the base families. Comment batches no longer republish dockets and documents (about 20 of those
+#: minutes in run 42769233858); the floor stays until a hosted comment batch is measured. A batch with nothing new
+#: merges nothing and takes a few minutes.
 SWEEP_BATCH_FLOOR_SECONDS = 80 * 60
 #: Written to the output directory by a sweep that stopped at its budget: the batch (0-indexed) it stopped before.
 SWEEP_STOPPED_NAME = "sweep-stopped.txt"
+#: The sweep's own resume point on R2, beside ``manifest.parquet``. A run killed by the hosted time limit runs none of
+#: its later job steps, so no artifact can carry the batch it was in; the process writes this as it goes instead.
+SWEEP_STATE_KEY = "sweep-state.json"
+#: A batch started by this many runs in a row without finishing is skipped once, with an ``::error::`` line (owner
+#: decision 2026-11-10): one batch that never fits cannot hold back the others, nor be skipped unseen.
+SWEEP_POISON_STARTS = 2
+
+
+class SweepState:
+    """The sweep's resume point on R2: the batch to start next, and how many runs in a row started it unfinished.
+
+    Advisory: it only chooses where a sweep begins, so a read that fails falls back to the caller's start and a
+    write that fails is logged and the sweep goes on.
+    """
+
+    def __init__(self, batch_count: int) -> None:
+        self.batch_count = batch_count
+        self.next: int | None = None
+        self.starts = 0
+
+    def load(self) -> bool:
+        """Read the state; False (with a log line) when there is none yet, or it is unreadable or for other batches."""
+        try:
+            raw = r2.get_r2_client().get_object(Bucket=getenv("R2_BUCKET_NAME", "spicy-regs"), Key=SWEEP_STATE_KEY)
+            held = json.loads(raw["Body"].read())
+            next_batch, starts = held["next"], held["starts"]
+            if held["batch_count"] != self.batch_count or not 0 <= next_batch < self.batch_count or starts < 0:
+                raise ValueError(f"names batch {next_batch} of {held['batch_count']}, not of {self.batch_count}")
+        except Exception as error:
+            logger.warning("No usable sweep state ({}: {}); the sweep begins at its given batch",
+                           type(error).__name__, error)
+            return False
+        self.next, self.starts = next_batch, starts
+        return True
+
+    def save(self, next_batch: int, starts: int) -> None:
+        self.next, self.starts = next_batch, starts
+        body = json.dumps({"batch_count": self.batch_count, "next": next_batch, "starts": starts}).encode()
+        try:
+            r2.get_r2_client().put_object(Bucket=getenv("R2_BUCKET_NAME", "spicy-regs"), Key=SWEEP_STATE_KEY,
+                                          Body=body, ContentType="application/json")
+        except Exception as error:
+            logger.warning("Sweep state not saved ({}: {}); a killed run would resume from the last one saved",
+                           type(error).__name__, error)
+
+
+def _annotate_error(title: str, error: Exception) -> None:
+    """Print a GitHub Actions ``::error::`` line, so a failure the run continues past shows on its page."""
+    message = f"{type(error).__name__}: {error}".replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    print(f"::error title={title}::{message}", flush=True)
 
 
 class RegulationsPipeline(Pipeline):
@@ -89,6 +143,8 @@ class RegulationsPipeline(Pipeline):
         allow_unbounded_originals: bool = False,
         verbose: bool = False,
     ) -> None:
+        if skip_comments and only_comments:
+            raise ValueError("skip_comments and only_comments exclude each other")
         self.agency = agency
         self.output_dir = output_dir
         self.since_year = since_year
@@ -123,9 +179,10 @@ class RegulationsPipeline(Pipeline):
         if not self.skip_comments and not self.use_iceberg:
             raise ValueError("Comments ingest only through the catalog: pass --use-iceberg, or --skip-comments")
 
-    def run(self, *, manifest: Manifest | None = None) -> None:
-        """Run one batch; local batches sharing output_dir may reuse their manifest."""
+    def run(self, *, manifest: Manifest | None = None, record_types: list[RecordType] | None = None) -> None:
+        """Run one batch of ``record_types`` (default: the configured ones); local batches may reuse a manifest."""
         self._refuse_comments_without_catalog()
+        record_types = self._record_types() if record_types is None else record_types
         if manifest is not None and self.full_refresh:
             raise ValueError("A reused manifest cannot be combined with full_refresh")
         output_dir = self.output_dir or (Path.cwd() / "output")
@@ -150,7 +207,7 @@ class RegulationsPipeline(Pipeline):
         with ExitStack() as resources:
             # Exits last: an uncommitted artifact finishes after the pool has stopped reading.
             originals = self._run_originals = resources.enter_context(self._retention(output_dir))
-            if self.enrich_text and not self.skip_comments:
+            if self.enrich_text and any(record_type.name == "comments" for record_type in record_types):
                 self._pending_text = PendingCommentText(output_dir, index=self._publication_index)
                 self._text_pool = resources.enter_context(
                     DerivedTextPool(
@@ -159,7 +216,7 @@ class RegulationsPipeline(Pipeline):
                         on_fill=originals.expect_fill,
                     )
                 )
-            self._run(manifest)
+            self._run(manifest, record_types)
         logger.info("ETL batch completed in {:.1f}s", monotonic() - started)
 
     def _refuse_unbounded_retention(self, manifest: Manifest) -> None:
@@ -178,32 +235,62 @@ class RegulationsPipeline(Pipeline):
                 "bundled back-fill planned in ticket ss-te3x, or pass --allow-unbounded-originals."
             )
 
-    def run_sweep(self, *, budget_minutes: float | None = None, start_batch: int = 0) -> int | None:
-        """Reuse membership and agency discovery; commit every batch before the next.
+    def run_sweep(self, *, budget_minutes: float | None = None, start_batch: int = 0, resume: bool = False
+                  ) -> int | None:
+        """Reuse membership and agency discovery; commit every pass before the next.
 
-        Stop on failure: continuing with uncommitted in-memory keys could retire
-        a failed batch when a later batch publishes its manifest. A fresh runner
-        resumes from the last durable checkpoint; final publication is separate.
+        Every agency's dockets and documents come first, in one pass that publishes
+        them once; the batches then read comments only. The documents rode in the
+        comment batches, which take about 74 minutes even with 10 new keys (run
+        42769233858), so a sweep reached two or three of the 15 and on 2026-11-10
+        twelve batches' documents still ended on 10-03. The pass lists every agency's
+        whole prefix (42 minutes for all 15 batches on 2026-10-03, run 37147050861)
+        and each comment batch lists its agencies again, so a sweep of k batches
+        makes 1 + k/15 full listings; handing the pass's comment keys to the batches
+        would save the second. With ``only_comments`` the first pass is skipped;
+        with ``skip_comments`` it is the whole sweep.
+
+        A failure stops the sweep: continuing with uncommitted in-memory keys could
+        retire a failed batch when a later batch publishes its manifest. A fresh
+        runner resumes from the last durable checkpoint; final publication is separate.
+        One exception: a dockets and documents pass that fails before recording any
+        key is reported as an ``::error::`` annotation, the comment batches still run
+        under the budget, and the sweep then raises so the run fails. Nothing of that
+        pass is half-recorded: ``_run`` records keys only after their tables and retry
+        state are published, the next pass builds in a new directory with new
+        originals, and a hosted run restores retry state from the publication index.
+        Evidence failures are never caught: a retention halt (``RetentionHalted``) or
+        a refused commit of originals (``SourceEvidenceError``) stops the sweep.
 
         With ``budget_minutes``, a batch starts only while the time since the sweep
-        began plus an estimate for one more batch fits the budget. The estimate is
-        the longest batch this process has completed, and at least
-        ``SWEEP_BATCH_FLOOR_SECONDS``. A sweep that stops there returns the batch
-        (0-indexed) it stopped before and writes it to ``SWEEP_STOPPED_NAME``; every
-        batch before it is already committed, so the caller can exit cleanly and
-        publish. ``None`` means every batch ran. The hosted limit killed run
+        began (the first pass included) plus an estimate for one more batch fits the
+        budget. The estimate is the longest comment batch this process has completed,
+        and at least ``SWEEP_BATCH_FLOOR_SECONDS``. A sweep that stops there returns
+        the batch (0-indexed) it stopped before and writes it to ``SWEEP_STOPPED_NAME``;
+        every batch before it is already committed, so the caller can exit cleanly
+        and publish. ``None`` means every batch ran. The hosted limit killed run
         42674437011 (2026-11-09) inside its second batch and nothing was published.
 
         ``start_batch`` begins the round at that batch and wraps to the first, so a
         sweep that resumes where the last one stopped still visits every batch once.
-        Sweeps that always began at the first batch would never reach the later ones
-        while a batch that merges new comment rows takes 79.4 minutes (run 42674437011).
+        Sweeps that always began at the first batch would never reach the later ones.
+        With ``resume``, the R2 ``SweepState`` overrides ``start_batch`` when it has
+        one: each comment batch's start and finish are written there, so a run killed
+        by the hosted limit or failed mid-batch resumes at that batch, not at 0. A
+        batch started ``SWEEP_POISON_STARTS`` times in a row without finishing is
+        skipped once, with an ``::error::`` line, and runs again at the end of the round.
         """
-        if self.batch_number is not None or not self.batch_count or self.batch_count < 1 or self.full_refresh:
-            raise ValueError("A sweep requires positive batch_count, no batch_number, and no full_refresh")
+        if (self.batch_number is not None or not self.batch_count or self.batch_count < 1 or self.full_refresh
+                or self.chunk_size):
+            raise ValueError("A sweep requires positive batch_count, no batch_number, chunk_size or full_refresh")
         if not 0 <= start_batch < self.batch_count:
             raise ValueError(f"start_batch {start_batch} is outside 0..{self.batch_count - 1}")
+        if resume and self.skip_upload:
+            raise ValueError("A sweep resumes from its R2 state only when it publishes: drop --skip-upload")
         self._refuse_comments_without_catalog()
+        configured = self._record_types()
+        first = [record_type for record_type in configured if record_type.name != "comments"]
+        comments = [record_type for record_type in configured if record_type.name == "comments"]
         started = monotonic()
         output_dir = self.output_dir or Path.cwd() / "output"
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -213,8 +300,35 @@ class RegulationsPipeline(Pipeline):
             self.batch_number = 0
             self._agencies()  # Refuse an oversized batch before hashing the manifest.
             manifest = Manifest.load(output_dir, allow_fresh_start=self.allow_fresh_start)
+            state = SweepState(self.batch_count) if resume and comments else None
+            if state is not None and state.load():
+                assert state.next is not None
+                start_batch = state.next
+                if state.starts >= SWEEP_POISON_STARTS:
+                    _annotate_error(
+                        "Sweep batch skipped once",
+                        RuntimeError(f"batch {start_batch} (0-indexed) was started by {state.starts} runs in a row "
+                                     "without finishing; this sweep begins after it, and it runs again at the end "
+                                     "of the round"),
+                    )
+                    start_batch = (start_batch + 1) % self.batch_count
+                    state.save(start_batch, 0)
+            first_failure: Exception | None = None
+            if first:
+                self.batch_number = None
+                logger.info("ETL sweep: dockets and documents of all {} agencies", len(self._sweep_agencies))
+                recorded = manifest.recorded
+                try:
+                    self.run(manifest=manifest, record_types=first)
+                except Exception as error:
+                    if not comments or isinstance(error, SourceEvidenceError) or manifest.recorded != recorded:
+                        raise
+                    first_failure = error
+                    logger.opt(exception=error).error("ETL sweep: the dockets and documents pass failed")
+                    _annotate_error("Dockets and documents pass failed; the comment batches still run", error)
+            stopped = None
             longest = 0.0
-            for batch in (*range(start_batch, self.batch_count), *range(start_batch)):
+            for batch in (*range(start_batch, self.batch_count), *range(start_batch)) if comments else ():
                 self.batch_number = batch
                 if not self._agencies():
                     continue
@@ -227,16 +341,24 @@ class RegulationsPipeline(Pipeline):
                         batch + 1, self.batch_count, (batch_started - started) / 60, budget_minutes, estimate / 60,
                     )
                     (output_dir / SWEEP_STOPPED_NAME).write_text(f"{batch}\n")
-                    return batch
+                    stopped = batch
+                    break
                 logger.info("ETL sweep batch {}/{}", batch + 1, self.batch_count)
-                self.run(manifest=manifest)
+                if state is not None:
+                    state.save(batch, state.starts + 1 if state.next == batch else 1)
+                self.run(manifest=manifest, record_types=comments)
+                if state is not None:
+                    state.save((batch + 1) % self.batch_count, 0)
                 longest = max(longest, monotonic() - batch_started)
-            return None
+            if first_failure is not None:
+                raise RuntimeError("The dockets and documents pass failed; the comment batches after it ran") \
+                    from first_failure
+            return stopped
         finally:
             self.batch_number = None
             self._sweep_agencies = None
 
-    def _run(self, manifest: Manifest) -> None:
+    def _run(self, manifest: Manifest, record_types: list[RecordType]) -> None:
         state_dir = self.output_dir or (Path.cwd() / "output")
         from spicy_regs.selected_generations import unique_build_directory
         build_dir = self._selected_inputs.directory if self._selected_inputs is not None else unique_build_directory(state_dir)
@@ -245,8 +367,6 @@ class RegulationsPipeline(Pipeline):
         staging_dir = output_dir / "staging"
         staging_dir.mkdir(parents=True, exist_ok=True)
         self._staging_dir = staging_dir
-
-        record_types = self._record_types()
         agencies = self._agencies()
 
         # Chunked comments path (see _ingest_comments_chunked). Only the Iceberg
@@ -618,7 +738,11 @@ def main(
         int | None,
         Parameter(help="Split the agencies into this many batches, deriving each batch's size (overrides batch-size)"),
     ] = None,
-    sweep: Annotated[bool, Parameter(help="Run every batch with one manifest; requires --batch-count")] = False,
+    sweep: Annotated[
+        bool,
+        Parameter(help="With one manifest, read every agency's dockets and documents, then each batch's comments; "
+                       "requires --batch-count"),
+    ] = False,
     sweep_budget_minutes: Annotated[
         float | None,
         Parameter(help="With --sweep: start no batch that is not expected to finish within this many minutes of "
@@ -629,6 +753,11 @@ def main(
         Parameter(help="With --sweep: begin at this batch (0-indexed) and wrap to the first, to resume a sweep "
                        "that stopped at its budget"),
     ] = 0,
+    sweep_resume: Annotated[
+        bool,
+        Parameter(help="With --sweep: begin where the sweep's R2 state says, when it has one (a killed run "
+                       "resumes at the batch it was in), else at --sweep-start-batch; refused with --skip-upload"),
+    ] = False,
     defer_comments_publication: Annotated[
         bool,
         Parameter(help="Caller will finalize the comments mirror after ingestion (workflow use)"),
@@ -689,10 +818,10 @@ def main(
         allow_unbounded_originals=allow_unbounded_originals,
         verbose=verbose,
     )
-    if (sweep_budget_minutes is not None or sweep_start_batch) and not sweep:
-        raise ValueError("--sweep-budget-minutes and --sweep-start-batch apply only to --sweep")
+    if (sweep_budget_minutes is not None or sweep_start_batch or sweep_resume) and not sweep:
+        raise ValueError("--sweep-budget-minutes, --sweep-start-batch and --sweep-resume apply only to --sweep")
     if sweep:
-        pipeline.run_sweep(budget_minutes=sweep_budget_minutes, start_batch=sweep_start_batch)
+        pipeline.run_sweep(budget_minutes=sweep_budget_minutes, start_batch=sweep_start_batch, resume=sweep_resume)
     else:
         pipeline.run()
     if use_iceberg and not skip_upload and not skip_comments and not defer_comments_publication:

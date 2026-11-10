@@ -409,7 +409,7 @@
       {
         "column_name": "attachments",
         "column_type": "STRUCT(title VARCHAR, formats STRUCT(url VARCHAR, format VARCHAR, size BIGINT)[], attachment_id VARCHAR, restrict_reason VARCHAR, restrict_reason_type VARCHAR)[]",
-        "description": "Native ordered list of attachment entries, including restricted attachments and renditions without a URL. `restrict_reason_type` and `restrict_reason` retain the stated restriction. NULL means the included set was absent or unavailable in that row; [] means it contained no attachment entries. A format list or rendition URL can be NULL. Older rows may retain the earlier filtered representation; NULL never proves attachment absence."
+        "description": "Native ordered list of attachment entries, including restricted attachments and renditions without a URL. `restrict_reason_type` and `restrict_reason` retain the stated restriction. `attachment_id` is the attachment's own id, NULL on a row read before SpicyDocs 0.85.0 and where the record states none or a malformed one. NULL means the included set was absent or unavailable in that row; [] means it contained no attachment entries. A format list or rendition URL can be NULL. Older rows may retain the earlier filtered representation; NULL never proves attachment absence."
       },
       {
         "column_name": "text_content",
@@ -30361,12 +30361,32 @@
         "column_name": "name_nickname",
         "column_type": "VARCHAR",
         "description": "The crosswalk's own name.nickname for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_middle",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.middle for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_suffix",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.suffix for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_official_full",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
       }
     ],
     "subject": "congress",
     "grain": "One row per legislator in one capture of the community crosswalk.",
     "identity_columns": [
       "bioguide_id"
+    ],
+    "later_policy_columns": [
+      "name_middle",
+      "name_suffix",
+      "name_official_full"
     ]
   },
   "member_terms": {
@@ -41279,7 +41299,7 @@
       {
         "dataset": "members",
         "receipt_only": false,
-        "policy_version": "congress-subjects/1",
+        "policy_version": "congress-subjects/2",
         "identity_columns": [
           "bioguide_id"
         ],

@@ -250,7 +250,10 @@ rehearsal fetched 1,335 bodies in 1,593 requests (the 257 orders from before
 differ from the live rows only in `text_derivation_version` (002 to 004; SpicyDocs
 derives byte-identical text) and the new `source_sha256` column. Ten orders
 from 2015 to 2021 build as `source_failed`: SpicyDocs' XML validator refuses
-their FRDOC marker.
+their FRDOC marker. SpicyDocs 0.85.0 reads that split marker. A held failed
+order is fetched again by the next `acquire` (or hosted run) that finds any
+order added, changed or removed, into a fresh `--output-dir`; one that finds
+nothing new fetches no body, so the failed ones stay failed until then.
 
 The hosted `rollup-executive-orders.yml` runs on weekdays; it restores the
 published bodies from R2 source evidence and publishes nothing when nothing is
@@ -309,6 +312,8 @@ Each family also has a hosted workflow, `rollup-<family>.yml`, that runs
 `run-rollup-<family>` through the shared `_rollup.yml`. They are dispatch-only
 until one hosted run with `skip_upload` (the default when dispatched) has
 passed for each; a schedule starts running the day it reaches main.
+`treasury-fiscal` passed its rehearsal on 2026-11-10 (it built and admitted the
+generation with the newly listed debt day) and has run daily at 22:43 UTC since.
 
 A hosted runner has no shared raw archive. Each run downloads through its
 generation's source evidence, and publication uploads every evidence blob to
@@ -335,9 +340,6 @@ Schedules to add once the rehearsals pass, each beside `workflow_dispatch`:
 # rollup-grants-opportunities.yml: two hours after the 2026-11-09 export was written (09:41 UTC)
   schedule:
     - cron: '47 11 * * *'
-# rollup-treasury-fiscal.yml: after the US business day
-  schedule:
-    - cron: '43 21 * * *'
 # rollup-ofac-sanctions.yml
   schedule:
     - cron: '17 22 * * *'

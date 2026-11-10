@@ -3558,7 +3558,10 @@
      "current_term_district",
      "roster",
      "observed_at",
-     "name_nickname"
+     "name_nickname",
+     "name_middle",
+     "name_suffix",
+     "name_official_full"
     ]
    },
    "renamed": {

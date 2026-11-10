@@ -36,6 +36,23 @@ def test_member_nickname_preserves_exact_source_value_through_native_restore(tmp
     assert pq.read_table(restored).equals(pq.read_table(source), check_metadata=True)
 
 
+@pytest.mark.parametrize("names", [
+    # French Hill (H001072): a first initial, the middle name he goes by, and the House's full name.
+    {"name_middle": "French", "name_suffix": None, "name_official_full": "French Hill"},
+    {"name_middle": "T.", "name_suffix": "Jr.", "name_official_full": None},
+    {"name_middle": None, "name_suffix": "III", "name_official_full": "  Literal  "},
+])
+def test_member_name_parts_are_classified_and_kept_exactly_through_native_restore(tmp_path, names):
+    """spicy-docs 0.85.0's three name columns are subject columns of ``members``, as stated, never refused or dropped."""
+    source = shaped(tmp_path / "source.parquet", [{"bioguide_id": "X", "name_first": "J.", **names}])
+    subject, receipts = write_congress_dataset(source, tmp_path / "bundle", dataset="members", generation_id="g")
+    assert pq.read_table(subject).select(list(names)).to_pylist() == [names]
+    restored = restore_processing_input(
+        subject, receipts, tmp_path / "restored.parquet", dataset="members", generation_id="g"
+    )
+    assert pq.read_table(restored).equals(pq.read_table(source), check_metadata=True)
+
+
 @pytest.mark.parametrize("name", INDEX_SPECS)
 def test_real_index_producer_admits_native_subjects_and_resumes_from_receipts(tmp_path, name):
     first = CongressBuild("first")

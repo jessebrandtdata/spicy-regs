@@ -193,6 +193,12 @@ class Manifest:
             self._new_keys.update(key for key in keys if key not in self)
 
     @property
+    def recorded(self) -> int:
+        """Keys recorded since load, saved or not: unchanged across a pass means it retired nothing."""
+        with self._lock:
+            return len(self._new_keys) + len(self._committed_keys)
+
+    @property
     def new_keys(self) -> set[str]:
         """Keys awaiting commit (a copy, safe to iterate)."""
         with self._lock:

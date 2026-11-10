@@ -21,13 +21,14 @@ def legacy_publication(monkeypatch):
     # real index requests are exercised by test_generation_publication.
     from spicy_regs.sources import publication
     monkeypatch.setattr(publication, "load_index", lambda url: publication.empty_index())
+    monkeypatch.setattr(publication.time, "sleep", lambda seconds: None)  # transport retries back off
 
 
 def _fake_stream(*, status_code: int = 200, body: bytes = b"", raise_exc: Exception | None = None):
     """Build a callable that mimics ``httpx.stream(...)`` as a context manager."""
 
     @contextmanager
-    def fake_stream(method, url, follow_redirects=True):
+    def fake_stream(method, url, follow_redirects=True, **request):
         if raise_exc is not None:
             raise raise_exc
         resp = MagicMock()
@@ -72,6 +73,7 @@ class TestDownloadFromR2:
         assert not target.exists()
 
     def test_raises_on_connection_error(self, tmp_path, monkeypatch):
+        """A connection error that outlasts the bounded retries raises, never "absent"."""
         monkeypatch.setenv("R2_PUBLIC_URL", "https://fake.r2.dev")
         monkeypatch.setattr(
             download_r2.httpx,
@@ -80,8 +82,9 @@ class TestDownloadFromR2:
         )
 
         target = tmp_path / "foo.parquet"
-        with pytest.raises(httpx.ConnectError):
+        with pytest.raises(RuntimeError, match="without progress") as raised:
             download_from_r2("foo.parquet", target)
+        assert isinstance(raised.value.__cause__, httpx.ConnectError)
         assert not target.exists()
 
     def test_writes_file_on_success(self, tmp_path, monkeypatch):
@@ -102,7 +105,7 @@ class TestDownloadFromR2:
         monkeypatch.setenv("R2_PUBLIC_URL", "https://fake.r2.dev")
 
         @contextmanager
-        def dying_stream(method, url, follow_redirects=True):
+        def dying_stream(method, url, follow_redirects=True, **request):
             resp = MagicMock()
             resp.status_code = 200
 
@@ -116,8 +119,9 @@ class TestDownloadFromR2:
         monkeypatch.setattr(download_r2.httpx, "stream", dying_stream)
 
         target = tmp_path / "foo.parquet"
-        with pytest.raises(httpx.ReadError):
+        with pytest.raises(RuntimeError, match="no ETag to resume on") as raised:  # restarted to the cap
             download_from_r2("foo.parquet", target)
+        assert isinstance(raised.value.__cause__, httpx.ReadError)
         assert not target.exists()
 
     def test_preserves_existing_file_on_failure(self, tmp_path, monkeypatch):
@@ -140,7 +144,7 @@ class TestDownloadFromR2:
         monkeypatch.setenv("R2_PUBLIC_URL", "https://fake.r2.dev")
 
         @contextmanager
-        def dying_stream(method, url, follow_redirects=True):
+        def dying_stream(method, url, follow_redirects=True, **request):
             resp = MagicMock()
             resp.status_code = 200
 
@@ -154,7 +158,7 @@ class TestDownloadFromR2:
         monkeypatch.setattr(download_r2.httpx, "stream", dying_stream)
 
         target = tmp_path / "foo.parquet"
-        with pytest.raises(httpx.ReadError):
+        with pytest.raises(RuntimeError, match="no ETag to resume on"):
             download_from_r2("foo.parquet", target)
 
         # No lingering .tmp file either
