@@ -536,3 +536,21 @@ def test_a_receipt_only_write_during_export_still_publishes(publication, monkeyp
     monkeypatch.setattr(iceberg, 'export_public_comments', changed)
     assert mirror.publish_comments_mirror(root)
     assert state['receipt']['source']['receipts']['snapshot_id'] == 51  # the pair as exported
+
+
+def test_the_mirror_workflow_refuses_the_retired_v1_promotion_before_checkout():
+    """promote_v1 published receipts; the shared refresh still passes its inputs, so the mirror refuses them first."""
+    from pathlib import Path
+
+    import yaml
+
+    workflows = Path(__file__).parents[1] / ".github/workflows"
+    mirror_job = yaml.safe_load((workflows / "_comments-mirror.yml").read_text())["jobs"]["publish"]
+    first = mirror_job["steps"][0]
+    retired = ("promote_v1", "comments_original_pair", "comments_captured_input", "comments_captured_input_sha256",
+               "comments_local_python", "comments_local_python_sha256")
+    assert first["name"] == "Refuse the retired v1 promotion"
+    assert all(f"inputs.{name}" in first["if"] for name in retired) and first["run"].rstrip().endswith("exit 1")
+    assert not any("prepare_comments_selected_export" in str(step) for step in mirror_job["steps"])
+    dispatch = yaml.safe_load((workflows / "publish-comments-mirror.yml").read_text())
+    assert set(dispatch[True]["workflow_dispatch"]["inputs"]) == {"skip_upload", "comments_only", "comments_runner"}
