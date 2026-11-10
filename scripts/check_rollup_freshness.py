@@ -406,16 +406,16 @@ def evaluate_family_ages(families: Mapping[str, Mapping], rows: Sequence[Freshne
     """Print every family's age beside its declared cadence; return failures for declared families behind it.
 
     Age comes from ``publishedAt``, a pointer move: a republish of unchanged data resets it, so a periodic
-    family reads current after any publication since its due date. An undeclared family is reported, not judged.
+    family reads current after any publication since its release day. An undeclared family is reported, not judged.
     """
     measured = {(table, metric): latest for table, metric, latest, _count in rows}
+    watched = {check.table for check in DATE_CHECKS} | set(ROW_CHANGE_BUDGETS)
     failures: list[str] = []
     for family, entry in sorted(families.items()):
         published = _parse_latest(entry.get("publishedAt"))
         line = f"{family} published={published or 'unrecorded'} age={'?' if published is None else (today - published).days}d"
         cadence = FAMILY_CADENCE.get(family)
         if cadence is None:
-            watched = {check.table for check in DATE_CHECKS} | set(ROW_CHANGE_BUDGETS)
             decides = ("its tables' checks above decide" if any(f"{table}.parquet" in entry["tables"] for table in watched)
                        else "no cadence declared")
             print(f"AGE: {line} ({decides})")
