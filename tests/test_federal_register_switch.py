@@ -56,7 +56,7 @@ def published(root, before=()):
 def assert_links(table, register):
     """The link rows a Register table states, checked on rows read by hand from the fixture."""
     links = pq.read_table(table).to_pylist()
-    assert pq.read_schema(table).names[-2:] == ["link_source", "normalized_docket_candidates_json"]
+    assert pq.read_schema(table).names[-2:] == ["link_source", "normalized_docket_candidates"]
     assert [row["docket_id"] for row in links] == sorted(row["docket_id"] for row in links)
     documents = {(row["document_number"], row["publication_date"]): row for row in pq.read_table(register).to_pylist()}
     printed = sum(len([label for label in row["docket_ids"] or [] if label and label.strip()])
@@ -68,7 +68,12 @@ def assert_links(table, register):
     [link] = [row for row in links if row["document_number"] == "2026-22078"]
     assert (link["docket_id"], link["docket_source_ordinal"], link["link_source"]) == (
         "Docket Number USCG-2026-1075", 0, "both")
-    assert json.loads(link["normalized_docket_candidates_json"]) == ["USCG-2026-1075"]
+    assert link["normalized_docket_candidates"] == ["USCG-2026-1075"]
+    # A label the normalizer reads no regulations.gov docket from holds an empty list, never NULL: 2026-22032
+    # prints the antidumping case number A-570-893.
+    [case] = [row for row in links if row["document_number"] == "2026-22032" and row["docket_id"] == "A-570-893"]
+    assert case["normalized_docket_candidates"] == [] and case["link_source"] == "printed"
+    assert all(row["normalized_docket_candidates"] is not None for row in links)
 
 
 def rows(path):

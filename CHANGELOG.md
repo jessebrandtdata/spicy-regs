@@ -146,7 +146,8 @@ Entries link to the pull request that introduced the change.
   held** (ss-vse3, step 1 of moving both tables off per-row receipts).
   `federal_register` gains, as its last columns, `html_url`, `pdf_url`,
   `body_html_url`, `source_sha256` and `regulations_dot_gov_info_json`;
-  `fr_docket_links` gains `normalized_docket_candidates_json`. The first
+  `fr_docket_links` gains `normalized_docket_candidates`, a native list like
+  its others (the receipts held it as JSON text). The first
   scheduled run fills them for every row from the prior generation's receipts,
   the only copy for the 99% of rows whose API response was never retained.
   `source_sha256` names the retained API page a row was last read from and is

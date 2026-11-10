@@ -2843,12 +2843,14 @@
    },
    "renamed": {
     "docket_ids_json": "docket_ids",
+    "normalized_docket_candidates_json": "normalized_docket_candidates",
     "regulation_id_numbers_json": "regulation_id_numbers"
    },
    "meanings": {
     "docket_ids_json": "The full original docket-ID array, retained so consumers can see the other IDs this FR document links to.",
     "docket_normalization_rule": "Digest-pinned owner identifier-normalization rule used to produce candidates.",
     "html_url": "federalregister.gov HTML permalink.",
+    "normalized_docket_candidates_json": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket.",
     "pdf_url": "Federal Register PDF URL.",
     "regulation_id_numbers_json": "RINs (JSON array) claimed by the FR document — the RIN-side join key for a rulemaking."
    }

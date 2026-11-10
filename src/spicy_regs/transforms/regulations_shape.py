@@ -86,6 +86,8 @@ NATIVE_FIELDS = {
         "agency_slugs": ("agency_slugs", STRINGS),
     },
     "fr_docket_links": {
+        # The normalizer's readings of one printed label: a list like the table's others, never public as text.
+        "normalized_docket_candidates_json": ("normalized_docket_candidates", STRINGS),
         "agency_slugs": ("agency_slugs", STRINGS),
         "docket_ids_json": ("docket_ids", STRINGS),
         "regulation_id_numbers_json": ("regulation_id_numbers", STRINGS),
@@ -131,7 +133,7 @@ TYPE_OVERRIDES = {
 #: page a row was last read from, NULL on a row not read since.
 PROMOTED_LAST = {
     "federal_register": ("html_url", "pdf_url", "body_html_url", "source_sha256", "regulations_dot_gov_info_json"),
-    "fr_docket_links": ("normalized_docket_candidates_json",),
+    "fr_docket_links": ("normalized_docket_candidates",),
 }
 IDENTITIES = {
     "agency_lifecycle_stats": ("agency_code", "stratum"),
