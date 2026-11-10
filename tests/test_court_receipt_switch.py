@@ -18,6 +18,7 @@ import json
 from datetime import date
 from pathlib import Path
 
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
@@ -142,3 +143,27 @@ def test_a_download_with_evidence_goes_once_into_the_raw_archive_and_is_read_the
     stale = BulkObject(listed.key, listed.size, '"etag-2"', listed.last_modified)
     with pytest.raises(RuntimeError, match="not the listed"):
         module.export_file(stale, tmp_path / "work", evidence, transport=httpx.MockTransport(serve))
+
+
+@pytest.mark.parametrize("table,export,edition,version,copies", CASES, ids=lambda case: getattr(case, "dataset", None))
+def test_the_full_size_check_reads_the_same_copies_in_sql_and_sees_a_change(
+        tmp_path, table, export, edition, version, copies):
+    """The check docs/court-receipt-archive.md runs on the whole published receipts, by range, before a publish."""
+    from scripts.check_court_receipt_switch import COPIES as SQL_COPIES
+    from spicy_regs.receipt_switch import receipt_copy_differences
+
+    name = table.output.removesuffix(".parquet")
+    built = build_court_bulk_table(table, tmp_path / "out", local_file=FIXTURE / "exports" / f"{export}.csv.bz2",
+                                   dump_date=date.fromisoformat(edition))
+    receipts = FIXTURE / "expected" / f"{name}.receipts.parquet"
+    key = list(earlier_policy(name, version).identity_fields)
+    found = receipt_copy_differences(built, receipts, dataset=name, key=key, columns=SQL_COPIES[name])
+    assert found == {"receipts": pq.read_metadata(FIXTURE / "expected" / table.output).num_rows, "without_row": 0,
+                     **dict.fromkeys(SQL_COPIES[name], 0)}
+    rows = pq.read_table(built).to_pylist()
+    rows[0]["dump_date"] = "2000-01-01"
+    damaged = tmp_path / "damaged.parquet"
+    pq.write_table(pa.Table.from_pylist(rows[1:] if name == "court_citation_map" else rows,
+                                        schema=pq.read_schema(built)), damaged)
+    changed = receipt_copy_differences(damaged, receipts, dataset=name, key=key, columns=SQL_COPIES[name])
+    assert (changed["without_row"], changed["dump_date"]) == ((1, 1) if name == "court_citation_map" else (0, 1))

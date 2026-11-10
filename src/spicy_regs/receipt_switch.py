@@ -139,6 +139,49 @@ def promoted_differences(table: Path, receipt_table: Path, receipts: Path, polic
     return problems
 
 
+def receipt_copy_differences(table: Path | str, receipts: Path | str, *, dataset: str, key: Sequence[str],
+                             columns: Mapping[str, str]) -> dict[str, int]:
+    """Counts of rows whose promoted column differs from its copy in the receipts, in DuckDB alone.
+
+    The full-size form of :func:`promoted_differences`, for receipts too large to read row by row in Python (the
+    court citations' 103 million). Only accepted receipts are read, and only their ``dataset``, ``outcome``,
+    ``identity_json`` and ``processing_json``, so a remote receipts file is read by range. ``key`` names the identity in its policy's order, each a text value;
+    ``columns`` maps each promoted column to a SQL expression over ``{v}``, the copy as the receipt tags it
+    (``["str","..."]``, ``["null",null]``): ``{v}->>'$[1]'`` is a text copy. Returns the receipts read, the receipts
+    with no row of their key in ``table``, and per column the rows that differ (``IS DISTINCT FROM``).
+
+    What it cannot see: a row of ``table`` with no receipt (compare the tables for that), or a key repeated in the
+    receipts (each repetition is joined and counted).
+    """
+    import duckdb
+
+    keys = ", ".join(f"json_extract_string(identity_json, '$[1][{at}][1][1][1]') AS {_quoted(name)}"
+                     for at, name in enumerate(key))
+    counts = ", ".join(f"count(*) FILTER (WHERE ({expression.replace('{v}', 'f[' + _sql_text(name) + ']')}) "
+                       f"IS DISTINCT FROM t.{_quoted(name)}) AS {_quoted(name)}"
+                       for name, expression in columns.items())
+    sql = f"""
+        WITH r AS (
+          SELECT {keys}, map_from_entries(list_transform(CAST(json_extract(processing_json, '$[1]') AS JSON[]),
+                                                         e -> {{'k': e->>'$[0]', 'v': e->'$[1]'}})) AS f
+          FROM read_parquet($receipts) WHERE dataset = $dataset AND outcome = 'accepted')
+        SELECT count(*) AS receipts, count(*) FILTER (WHERE t._held IS NULL) AS without_row, {counts}
+        FROM r LEFT JOIN (SELECT *, true AS _held FROM read_parquet($table)) t USING ({', '.join(map(_quoted, key))})"""
+    with duckdb.connect() as con:
+        if any(str(path).startswith("https://") for path in (table, receipts)):
+            from spicy_regs.duckdb_settings import load_public_http
+
+            load_public_http(con)
+        cursor = con.execute(sql, {"receipts": str(receipts), "table": str(table), "dataset": dataset})
+        names = [column[0] for column in cursor.description]
+        [row] = cursor.fetchall()
+    return dict(zip(names, row, strict=True))
+
+
+def _sql_text(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
 def receipt_free_prior(prior: Path, destination: Path) -> Path:
     """Copy a published generation's tables into ``destination`` without its receipts member.
 

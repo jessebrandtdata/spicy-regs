@@ -7,6 +7,24 @@ Entries link to the pull request that introduced the change.
 
 ## [Unreleased]
 
+### Changed
+
+- **Court opinions and the three citation tables publish without per-row
+  receipts** (ss-vse3). `court_opinions`, `court_citations`,
+  `court_citation_map` and `court_parentheticals` are rebuilt whole from one
+  CourtListener export each, and their receipts (4.2 GB and 12.0 GB, every one
+  `accepted`) held only the publisher's record fields, now columns at the end:
+  `date_created`, `date_modified`, `local_path`, `extracted_by_ocr`,
+  `dump_date`, and `source_sha256`, the export file each row was read from. A
+  download goes once into the raw archive with its capture receipt and is kept
+  as source evidence; a row the mapping refuses or that the publisher spelled
+  other than canonically is recorded in the table's exceptions file with its
+  source row. The last generations with receipts are pinned
+  (`docs/pins/receipt-archive.json`); the switch, its equality proof and the
+  procedure for the court opinions refresh are in
+  `docs/court-receipt-archive.md`. Policies `courts/2` (citations family) and
+  `courts/3` (`court_opinions`): the new columns.
+
 ### Fixed
 
 - **A table that kept its rows and columns is not refused for halving in size**
