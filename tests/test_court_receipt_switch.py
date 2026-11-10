@@ -167,3 +167,71 @@ def test_the_full_size_check_reads_the_same_copies_in_sql_and_sees_a_change(
                                         schema=pq.read_schema(built)), damaged)
     changed = receipt_copy_differences(damaged, receipts, dataset=name, key=key, columns=SQL_COPIES[name])
     assert (changed["without_row"], changed["dump_date"]) == ((1, 1) if name == "court_citation_map" else (0, 1))
+
+
+def test_a_held_export_is_retained_as_the_runs_original_and_its_digest_is_the_pointer(tmp_path, monkeypatch):
+    """A build from COURTLISTENER_BULK_DIR names in its evidence the file every row points at (review of #167)."""
+    from spicy_docs.sources.courtlistener.listing import BulkObject
+
+    from spicy_regs.source_evidence import JOURNAL, CaptureEvidence, is_original
+    from spicy_regs.transforms import build_court_bulk_tables as module
+
+    held = tmp_path / "bulk"
+    held.mkdir()
+    export = held / "citation-map-2026-09-30.csv.bz2"
+    export.write_bytes((FIXTURE / "exports/citation-map.csv.bz2").read_bytes())
+    listed = BulkObject("bulk-data/citation-map-2026-09-30.csv.bz2", export.stat().st_size, '"etag-1"',
+                        "2026-09-30T12:00:00Z")
+    monkeypatch.setenv(module.RETAINED_DIR_ENV, str(held))
+    evidence = CaptureEvidence(tmp_path / "work", "court-citations", archive_root=tmp_path / "raw")
+    path, digest = module.export_file(listed, tmp_path / "work", evidence)
+    assert path == export and digest == _digest(export)
+    events = [json.loads(line) for line in (evidence.artifact_dir / JOURNAL).read_text().splitlines()]
+    [original] = [event for event in events if is_original(event)]
+    assert original["stage"] == module.EXPORT_STAGE and original["sha256"] == digest
+    assert original["source_url"] == listed.url
+    assert evidence.store.describe_blob(str(digest), export.stat().st_size)["encoding"] == "raw"
+
+
+def test_a_repeated_identity_or_too_many_exceptions_stops_the_build_and_keeps_the_table(tmp_path, monkeypatch):
+    import bz2
+
+    from spicy_regs import court_bulk
+
+    out = tmp_path / "out"
+    out.mkdir()
+    previous = out / CITATIONS.output
+    previous.write_bytes(b"previous generation")
+    repeated = tmp_path / "citations.csv.bz2"
+    repeated.write_bytes(bz2.compress(
+        b"id,volume,reporter,page,type,cluster_id,date_created,date_modified\n"
+        b'"7","1","U.S.","1","1","2",,\n"7","2","U.S.","2","1","3",,\n'))
+    with pytest.raises(ValueError, match="repeats an identity"):
+        build_court_bulk_table(CITATIONS, out, local_file=repeated, dump_date=date(2026, 9, 30))
+    assert previous.read_bytes() == b"previous generation"
+    # Two exception rows in the fixture map: above a cap of one, the build stops before routing them.
+    monkeypatch.setattr(court_bulk, "MAX_EXCEPTIONS", 1)
+    with pytest.raises(RuntimeError, match="more than 1 rows"):
+        build_court_bulk_table(CITATION_MAP, out, local_file=FIXTURE / "exports/citation-map.csv.bz2",
+                               dump_date=date(2026, 9, 30))
+    assert not (out / CITATION_MAP.output).exists() and not list(out.glob(".*"))
+
+
+def test_a_killed_downloads_staged_export_is_cleared_and_nothing_else(tmp_path):
+    import os
+    import time
+
+    from spicy_regs.transforms.build_court_bulk_tables import STALE_PENDING_SECONDS, clear_stale_export_downloads
+
+    pending = tmp_path / "raw/.pending"
+    pending.mkdir(parents=True)
+    stale, live, other = pending / "a", pending / "b", pending / "c"
+    stale.write_bytes(b"BZh91AY&SY partial export")
+    live.write_bytes(b"BZh91AY&SY still being written")
+    other.write_bytes(b"another writer's bytes")
+    old = time.time() - STALE_PENDING_SECONDS - 60
+    for path in (stale, other):
+        os.utime(path, (old, old))
+    assert clear_stale_export_downloads(tmp_path / "raw") == [stale]
+    assert not stale.exists() and live.exists() and other.exists()
+    assert clear_stale_export_downloads(tmp_path / "nowhere") == []

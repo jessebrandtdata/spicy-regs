@@ -38,6 +38,17 @@ def _literal(path: Path) -> str:
 BATCH_ROWS = 10_000
 
 
+def _bounded():
+    """The comparisons' DuckDB: held to 4 GB and four threads, spilling to a private directory (``etl_bulk``).
+
+    DuckDB's own default is 80% of the machine's memory; a full-size comparison (78 million citation map rows) runs on
+    a shared workstation.
+    """
+    from spicy_regs import etl_bulk
+
+    return etl_bulk.bulk_connection(threads=4, memory_limit="4GB")
+
+
 def _require_unique(con, relation: str, key: Sequence[str], label: str) -> None:
     """Refuse a key that does not name one row: rows sharing it could trade places and still compare equal."""
     columns = ", ".join(_quoted(name) for name in key)
@@ -54,7 +65,6 @@ def table_differences(actual: Path, expected: Path, *, key: Sequence[str]) -> li
     position (the order a reader paging the file sees). ``key`` must name one row in each table, or the comparison
     refuses: two rows sharing a key could swap places unseen.
     """
-    import duckdb
     import pyarrow.parquet as pq
 
     problems = []
@@ -65,7 +75,7 @@ def table_differences(actual: Path, expected: Path, *, key: Sequence[str]) -> li
     names = [name for name in right.names if name in left.names]
     columns = ", ".join(_quoted(name) for name in names)
     one, other = (f"read_parquet({_literal(path)}, file_row_number=true)" for path in (actual, expected))
-    with duckdb.connect() as con:
+    with _bounded() as (con, _):
         _require_unique(con, one, key, str(actual))
         _require_unique(con, other, key, str(expected))
         counts = con.sql(f"SELECT (SELECT count(*) FROM {one}), (SELECT count(*) FROM {other})").fetchone()
@@ -99,7 +109,6 @@ def promoted_differences(table: Path, receipt_table: Path, receipts: Path, polic
     """
     import tempfile
 
-    import duckdb
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -120,7 +129,7 @@ def promoted_differences(table: Path, receipt_table: Path, receipts: Path, polic
                     batch.clear()
             if batch:
                 writer.write_table(pa.Table.from_pylist(batch, schema=copy_schema))
-        with duckdb.connect() as con:
+        with _bounded() as (con, _):
             rows, copy = f"read_parquet({_literal(table)})", f"read_parquet({_literal(held)})"
             _require_unique(con, rows, key, str(table))
             _require_unique(con, copy, key, "the receipt copies")
@@ -153,7 +162,6 @@ def receipt_copy_differences(table: Path | str, receipts: Path | str, *, dataset
     What it cannot see: a row of ``table`` with no receipt (compare the tables for that), or a key repeated in the
     receipts (each repetition is joined and counted).
     """
-    import duckdb
 
     keys = ", ".join(f"json_extract_string(identity_json, '$[1][{at}][1][1][1]') AS {_quoted(name)}"
                      for at, name in enumerate(key))
@@ -167,7 +175,7 @@ def receipt_copy_differences(table: Path | str, receipts: Path | str, *, dataset
           FROM read_parquet($receipts) WHERE dataset = $dataset AND outcome = 'accepted')
         SELECT count(*) AS receipts, count(*) FILTER (WHERE t._held IS NULL) AS without_row, {counts}
         FROM r LEFT JOIN (SELECT *, true AS _held FROM read_parquet($table)) t USING ({', '.join(map(_quoted, key))})"""
-    with duckdb.connect() as con:
+    with _bounded() as (con, _):
         if any(str(path).startswith("https://") for path in (table, receipts)):
             from spicy_regs.duckdb_settings import load_public_http
 

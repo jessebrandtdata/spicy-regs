@@ -182,11 +182,12 @@ def export_file(published: BulkObject, work_dir: Path, evidence: CaptureEvidence
     """A local copy of one listed export, and its SHA-256 when this call learned it without another read.
 
     A retained copy (``COURTLISTENER_BULK_DIR``) must match the listed size; the bytes themselves are checked as they
-    decode, by bzip2's block checksums. With ``evidence``, a download goes once into the shared raw archive through
-    the run's evidence transport (the per-download receipt) and is read there in place: the archive object is the only
-    copy. Without it, a download is bound to the listed ETag and size in the work directory. Either download is
-    refused when it would take the volume below the disk floor. ``transport`` is the HTTP transport the evidence
-    wraps (a test's).
+    decode, by bzip2's block checksums. With ``evidence`` it is retained as the run's original (into the shared raw
+    archive, where a clone of the archive's own object adds no copy), so the rows' ``source_sha256`` names a file the
+    evidence holds. With ``evidence``, a download goes once into the shared raw archive through the run's evidence
+    transport (the per-download receipt) and is read there in place: the archive object is the only copy. Without it,
+    a download is bound to the listed ETag and size in the work directory. A download is refused when it would take
+    the volume it writes to below the disk floor. ``transport`` is the HTTP transport the evidence wraps (a test's).
     """
     retained_dir = os.environ.get(RETAINED_DIR_ENV)
     if retained_dir:
@@ -198,11 +199,16 @@ def export_file(published: BulkObject, work_dir: Path, evidence: CaptureEvidence
                     f"not the listed {published.size}"
                 )
             logger.info("CourtListener bulk: using retained {}", retained)
-            return retained, None
-    check_headroom(published.size, path=work_dir)
+            if evidence is None:
+                return retained, None
+            held = evidence.retain_file(retained, stage=EXPORT_STAGE, raw_source=True,
+                                        original_location=published.url, source_url=published.url,
+                                        etag=published.etag)
+            return retained, held["sha256"]
     logger.info("CourtListener bulk: downloading {} ({:.2f} GiB)", published.filename, published.size / 2**30)
     if evidence is not None:
         return _retain_export(published, evidence, transport=transport)
+    check_headroom(published.size, path=work_dir)
     from spicy_docs.transport.download import BoundedAcquirer
 
     store = work_dir / "courtlistener-exports"
@@ -217,12 +223,47 @@ def export_file(published: BulkObject, work_dir: Path, evidence: CaptureEvidence
     return store / receipt["blob_path"], None
 
 
+#: A staged raw-archive write untouched this long has no live writer: a download rewrites its file continuously.
+STALE_PENDING_SECONDS = 6 * 3600
+_BZIP2 = b"BZh"
+
+
+def clear_stale_export_downloads(raw_root: Path, *, now: float | None = None) -> list[Path]:
+    """Remove the archive's staged writes a killed export download left (bzip2 bytes, untouched for six hours).
+
+    The archive's writer removes its own staged file on any exception, but not when the process is killed; then up
+    to 51.5 GiB stays in ``.pending`` with no receipt. Only files that begin as a bzip2 stream, as every CourtListener
+    export does, and that nothing has written for ``STALE_PENDING_SECONDS`` are removed, so another writer's file is
+    left alone. Returns what it removed.
+    """
+    import time
+
+    pending = raw_root / ".pending"
+    if not pending.is_dir():
+        return []
+    cutoff = (time.time() if now is None else now) - STALE_PENDING_SECONDS
+    removed = []
+    for entry in os.scandir(pending):
+        if not entry.is_file(follow_symlinks=False) or entry.stat(follow_symlinks=False).st_mtime > cutoff:
+            continue
+        with open(entry.path, "rb") as stream:
+            if stream.read(len(_BZIP2)) != _BZIP2:
+                continue
+        logger.warning("CourtListener bulk: removing a stale staged export download {} ({:.2f} GiB)",
+                       entry.name, entry.stat(follow_symlinks=False).st_size / 2**30)
+        os.unlink(entry.path)
+        removed.append(Path(entry.path))
+    return removed
+
+
 def _retain_export(published: BulkObject, evidence: CaptureEvidence, *, transport=None) -> tuple[Path, str]:
     """Stream one export into the raw archive (one write, with its capture receipt); return the archive copy."""
     import httpx
 
     from spicy_regs.pipelines.raw_releases import raw_original
 
+    clear_stale_export_downloads(evidence.store.root)
+    check_headroom(published.size, path=evidence.store.root)
     retained = evidence.transport(transport, stage=EXPORT_STAGE, max_bytes=published.size,
                                   response_header_names=("etag",))
     with httpx.Client(transport=retained, timeout=120, follow_redirects=False) as client:

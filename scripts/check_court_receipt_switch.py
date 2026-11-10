@@ -6,8 +6,9 @@
 For each table: the receipt route's columns must be the live table (schema, rows both ways, key at every position;
 ``receipt_switch.table_differences``), and every promoted column must equal its copy in the live receipts
 (``receipt_switch.receipt_copy_differences``, read by range from the public bucket). The live tables are downloaded
-into ``--scratch`` (1.0 GB for court-citations, 0.41 GB for court-opinions); the receipts are not. Exits 1 on any
-difference. Only meaningful when the build read the same edition the live generation holds.
+into ``--scratch`` (1.0 GB for court-citations, 0.41 GB for court-opinions) and checked against their pins (an
+interrupted download is never reused); the receipts are read by range, not downloaded. DuckDB is held to 4 GB.
+Exits 1 on any difference. Only meaningful when the build read the same edition the live generation holds.
 """
 
 from __future__ import annotations
@@ -28,9 +29,38 @@ COPIES = {
 }
 
 
-def main(argv=None) -> int:
+def _live_table(entry, dataset: str, scratch: Path) -> Path:
+    """The live table in ``scratch``, checked against its pin; an interrupted download is never reused."""
+    import hashlib
+
     import httpx
-    import pyarrow.parquet as pq
+
+    (member,) = [m for m in entry["tables"].items() if m[0] == f"{dataset}.parquet"]
+    pin = member[1]
+    live = scratch / f"{dataset}.parquet"
+
+    def pinned(path: Path) -> bool:
+        if not path.is_file() or path.stat().st_size != pin["byteSize"]:
+            return False
+        with path.open("rb") as stream:
+            return "sha256:" + hashlib.file_digest(stream, "sha256").hexdigest() == pin["sha256"]
+
+    if pinned(live):
+        return live
+    partial = scratch / f".{dataset}.parquet.partial"
+    with httpx.stream("GET", f"{LIVE}/{entry['prefix']}/{dataset}.parquet", timeout=120) as response:
+        response.raise_for_status()
+        with partial.open("wb") as out:
+            for chunk in response.iter_bytes(1 << 20):
+                out.write(chunk)
+    if not pinned(partial):
+        raise SystemExit(f"{dataset}: the downloaded live table differs from its pin")
+    partial.replace(live)
+    return live
+
+
+def main(argv=None) -> int:
+    import duckdb
 
     from spicy_regs.etl_receipts import DatasetPolicy
     from spicy_regs.receipt_switch import receipt_copy_differences, table_differences
@@ -52,16 +82,14 @@ def main(argv=None) -> int:
     args.scratch.mkdir(parents=True, exist_ok=True)
     report, failed = {"live": entry["artifactDigest"]}, False
     for dataset, policy in sorted(policies.items()):
-        live = args.scratch / f"{dataset}.parquet"
-        if not live.exists():
-            with httpx.stream("GET", f"{LIVE}/{entry['prefix']}/{dataset}.parquet", timeout=120) as response:
-                response.raise_for_status()
-                with live.open("wb") as out:
-                    for chunk in response.iter_bytes(1 << 20):
-                        out.write(chunk)
+        live = _live_table(entry, dataset, args.scratch)
         built = args.generation / f"{dataset}.parquet"
         projected = args.scratch / f"{dataset}.projected.parquet"
-        pq.write_table(pq.read_table(built, columns=policy.subject_schema.names), projected)
+        # Streamed, not read whole: the citation map is 78 million rows.
+        names = ", ".join('"' + name.replace('"', '""') + '"' for name in policy.subject_schema.names)
+        with duckdb.connect(config={"memory_limit": "2GB", "threads": "4"}) as con:
+            con.execute(f"COPY (SELECT {names} FROM read_parquet('{built}')) TO '{projected}' "
+                        "(FORMAT PARQUET, COMPRESSION ZSTD)")
         key = list(policy.identity_fields)
         tables = table_differences(projected, live, key=key)
         copies = receipt_copy_differences(built, receipts, dataset=dataset, key=key, columns=COPIES[dataset])

@@ -130,6 +130,12 @@ EXCEPTION_SCHEMA = pa.schema([
 ])
 
 
+#: Exception rows one table may record before its build stops. Every live receipt of the 2026 exports held the
+#: canonical spelling (all 10.8M opinions and 85M map and parenthetical rows read on review), so more than this means
+#: the export's spelling changed wholesale: refuse rather than send every row through Python, and review it.
+MAX_EXCEPTIONS = 1000
+
+
 def _canonical_sql(column: str, dtype: pa.DataType) -> str | None:
     """Whether a source text is the one spelling of its typed value that the published table implies.
 
@@ -163,7 +169,9 @@ def write_table(dataset: str, source: Path, path: Path, *, constants: Mapping[st
     flags goes to ``attempt`` (``court_subjects.normalize_court_row``), which may refuse it. ``constants`` are columns
     every row carries (``source_sha256``: the export file the rows came from). Rows keep the source's order, in
     row groups of the receipt route's batch. Every refused or respelled row is written to ``exceptions``
-    (:data:`EXCEPTION_SCHEMA`), which exists only when it holds a row.
+    (:data:`EXCEPTION_SCHEMA`), which exists only when it holds a row; more than :data:`MAX_EXCEPTIONS` stop the build
+    before their batch reaches Python. The written table must hold each identity once (the receipt route's admission
+    refused a repeat), or the build stops; the caller keeps the previous table.
     """
     subject = SUBJECT_SCHEMAS[dataset]
     batch_rows = _BATCH.get(dataset, _DEFAULT_BATCH)
@@ -211,9 +219,13 @@ def write_table(dataset: str, source: Path, path: Path, *, constants: Mapping[st
                     raise RuntimeError(f"{dataset}: the court writer read {result.num_rows} of {table.num_rows} rows")
                 bad = result["_bad"]
                 decided: dict[int, dict | None] = {}
-                # Only flagged rows are visited in Python (none in the sampled 2026 exports); the rest stay in Arrow.
+                # Only flagged rows are visited in Python (none in the 2026 exports); the rest stay in Arrow.
                 flagged = pc.call_function("or", [bad, result["_respelled"]])
-                for index in pc.call_function("indices_nonzero", [flagged]).to_pylist():
+                routed = pc.call_function("indices_nonzero", [flagged]).to_pylist()
+                if recorded + len(exception_rows) + len(routed) > MAX_EXCEPTIONS:
+                    raise RuntimeError(f"{dataset}: more than {MAX_EXCEPTIONS:,} rows the mapping refuses or the "
+                                       "publisher spelled other than canonically; review the export before building it")
+                for index in routed:
                     flag = bad[index].as_py()
                     raw = table.slice(index, 1).to_pylist()[0]
                     record = {"dataset": dataset, "ordinal": ordinal + index,
@@ -247,6 +259,14 @@ def write_table(dataset: str, source: Path, path: Path, *, constants: Mapping[st
                 flush()
             if ordinal != parquet.metadata.num_rows:
                 raise RuntimeError(f"{dataset}: the court writer read {ordinal:,} of {parquet.metadata.num_rows:,} rows")
+            writer.close()
+            keys = ", ".join(_q(name) for name in IDENTITIES[dataset])
+            repeated = con.execute(
+                f"SELECT {keys}, count(*) FROM read_parquet({etl_bulk._literal(str(path))}) GROUP BY ALL "
+                f"HAVING count(*) > 1 ORDER BY ALL LIMIT 5").fetchall()
+            if repeated:
+                raise ValueError(f"{dataset}: the export repeats an identity ({', '.join(IDENTITIES[dataset])}), "
+                                 f"for example {repeated}")
     return written, recorded
 
 

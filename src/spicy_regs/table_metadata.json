@@ -20821,7 +20821,7 @@
       {
         "column_name": "depth",
         "column_type": "BIGINT",
-        "description": "Number of times the citing opinion cites the cited one, as text."
+        "description": "Number of times the citing opinion cites the cited one."
       },
       {
         "column_name": "dump_date",
@@ -20877,7 +20877,7 @@
       {
         "column_name": "score",
         "column_type": "DOUBLE",
-        "description": "Publisher's 0-to-1 estimate of how descriptive the text is, as text."
+        "description": "Publisher's 0-to-1 estimate of how descriptive the text is."
       },
       {
         "column_name": "group_id",
@@ -20952,7 +20952,7 @@
       {
         "column_name": "page_count",
         "column_type": "BIGINT",
-        "description": "Page count of the original document when known, as text."
+        "description": "Page count of the original document when known."
       },
       {
         "column_name": "sha1",

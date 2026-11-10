@@ -241,8 +241,12 @@ def test_the_rollups_have_console_scripts_and_only_the_citations_rollup_is_sched
         assert f"run-rollup-{rollup.name}" in scripts
     workflow = yaml.safe_load((REPO_ROOT / ".github/workflows/rollup-court-citations.yml").read_text())
     assert workflow["jobs"]["run"]["with"]["command"] == "run-rollup-court-citations"
-    # The opinions export takes ~8.6 hours to download, past a hosted runner's six.
+    # The opinions export takes ~8.6 hours to download, past a hosted runner's six: it is built and published by
+    # hand, and the citations only by their workflow.
     assert not (REPO_ROOT / ".github/workflows/rollup-court-opinions.yml").exists()
+    from spicy_regs.local_publication import LOCAL_FAMILIES
+
+    assert "court-opinions" in LOCAL_FAMILIES and "court-citations" not in LOCAL_FAMILIES
 
 
 def test_a_machine_can_state_its_own_disk_floor(tmp_path, monkeypatch):
