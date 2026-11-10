@@ -23,3 +23,7 @@ Every reporter citation CourtListener records for a decision, such as "410 U.S. 
 | `reporter` | `VARCHAR` | Reporter abbreviation, such as `U.S.`, `F.3d` or `WL`, as the publisher records it. |
 | `page` | `VARCHAR` | Starting page or equivalent locator in the reporter, as text. |
 | `citation_type` | `VARCHAR` | Publisher citation type code: 1 federal reporter, 2 state, 3 state regional, 4 specialty, 5 early U.S. Supreme Court, 6 Lexis, 7 WestLaw, 8 vendor-neutral, 9 law journal. |
+| `date_created` | `VARCHAR` | Timestamp the publisher created the citation record. |
+| `date_modified` | `VARCHAR` | Timestamp the publisher last modified the citation record. |
+| `dump_date` | `VARCHAR` | The CourtListener bulk export the row was copied from (ISO date). |
+| `source_sha256` | `VARCHAR` | SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence. |

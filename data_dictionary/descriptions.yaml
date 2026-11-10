@@ -2026,6 +2026,7 @@ tables:
       date_created: "Timestamp the publisher created the citation record."
       date_modified: "Timestamp the publisher last modified the citation record."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_citation_map:
     label: "Court opinion citation map"
     subject: courts
@@ -2063,6 +2064,7 @@ tables:
       cited_opinion_id: "CourtListener opinion ID of the opinion cited. Joins court_opinions.opinion_id."
       depth: "Number of times the citing opinion cites the cited one, as text."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_parentheticals:
     label: "Court opinion parentheticals"
     subject: courts
@@ -2100,6 +2102,7 @@ tables:
       score: "Publisher's 0-to-1 estimate of how descriptive the text is, as text."
       group_id: "Publisher's group label for parentheticals making the same point; NULL when ungrouped. Compare within this table only: the publisher declares but never exports its group table."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_opinions:
     label: "Court opinions (index, no text)"
     subject: courts
@@ -2139,10 +2142,11 @@ tables:
       sha1: "Publisher's SHA-1 of the original document; not a SpicyRegs capture digest."
       download_url: "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number."
       local_path: "Path of the original document in CourtListener's storage, not a SpicyRegs file."
-      extracted_by_ocr: "Publisher flag for text extracted by OCR (`t` or `f`)."
+      extracted_by_ocr: "Publisher flag: true when the opinion's text was extracted by OCR (the export spells it `t` or `f`)."
       date_created: "Timestamp the publisher created the opinion record."
       date_modified: "Timestamp the publisher last modified the opinion record."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_opinion_texts:
     label: "Court opinion texts (Markdown)"
     subject: courts

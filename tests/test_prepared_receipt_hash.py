@@ -148,13 +148,13 @@ def _family_rows(family):
     if family == "documents":
         from tests.test_regulatory_prepared_conversion import rows
         return "documents", rows("documents")
-    if family == "court-opinions":
-        from tests.test_court_opinions_prepared_conversion import opinions
-        return "court_opinions", opinions()
+    if family == "court-opinion-clusters":
+        from tests.test_court_prepared_conversion import clusters
+        return "court_opinion_clusters", clusters()
     return "cfr_sections", CFR
 
 
-@pytest.mark.parametrize("family", ["cfr-sections", "documents", "court-opinions"])
+@pytest.mark.parametrize("family", ["cfr-sections", "documents", "court-opinion-clusters"])
 def test_sealed_and_full_paths_reach_identical_entries_and_proofs(tmp_path, monkeypatch, bucket, family):
     table, rows = _family_rows(family)
     old = publish_old(bucket, monkeypatch, tmp_path, family, {table: rows})

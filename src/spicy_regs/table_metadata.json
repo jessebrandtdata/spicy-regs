@@ -20765,12 +20765,38 @@
         "column_name": "citation_type",
         "column_type": "VARCHAR",
         "description": "Publisher citation type code: 1 federal reporter, 2 state, 3 state regional, 4 specialty, 5 early U.S. Supreme Court, 6 Lexis, 7 WestLaw, 8 vendor-neutral, 9 law journal."
+      },
+      {
+        "column_name": "date_created",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher created the citation record."
+      },
+      {
+        "column_name": "date_modified",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher last modified the citation record."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
     "grain": "One reporter citation of one CourtListener decision (cluster); a decision can have several.",
     "identity_columns": [
       "citation_id"
+    ],
+    "later_policy_columns": [
+      "date_created",
+      "date_modified",
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_citation_map": {
@@ -20796,6 +20822,16 @@
         "column_name": "depth",
         "column_type": "BIGINT",
         "description": "Number of times the citing opinion cites the cited one, as text."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
@@ -20803,6 +20839,10 @@
     "identity_columns": [
       "citing_opinion_id",
       "cited_opinion_id"
+    ],
+    "later_policy_columns": [
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_parentheticals": {
@@ -20843,12 +20883,26 @@
         "column_name": "group_id",
         "column_type": "VARCHAR",
         "description": "Publisher's group of parentheticals making the same point; NULL when ungrouped."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
     "grain": "One parenthetical summary one opinion wrote about another.",
     "identity_columns": [
       "parenthetical_id"
+    ],
+    "later_policy_columns": [
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_opinions": {
@@ -20909,6 +20963,36 @@
         "column_name": "download_url",
         "column_type": "VARCHAR",
         "description": "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number."
+      },
+      {
+        "column_name": "local_path",
+        "column_type": "VARCHAR",
+        "description": "Path of the original document in CourtListener's storage, not a SpicyRegs file."
+      },
+      {
+        "column_name": "extracted_by_ocr",
+        "column_type": "BOOLEAN",
+        "description": "Publisher flag: true when the opinion's text was extracted by OCR (the export spells it `t` or `f`)."
+      },
+      {
+        "column_name": "date_created",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher created the opinion record."
+      },
+      {
+        "column_name": "date_modified",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher last modified the opinion record."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
@@ -20918,7 +21002,13 @@
     ],
     "later_policy_columns": [
       "sha1",
-      "download_url"
+      "download_url",
+      "local_path",
+      "extracted_by_ocr",
+      "date_created",
+      "date_modified",
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_opinion_pdf_extractions": {
@@ -39665,37 +39755,6 @@
         ]
       },
       {
-        "dataset": "court_citation_map",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citing_opinion_id",
-          "cited_opinion_id"
-        ],
-        "processing_fields": [
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_citations",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citation_id"
-        ],
-        "processing_fields": [
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
         "dataset": "court_docket_groups",
         "receipt_only": false,
         "policy_version": "courts/1",
@@ -39771,38 +39830,6 @@
         "processing_fields": [
           "source_column",
           "source_sha256",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_opinions",
-        "receipt_only": false,
-        "policy_version": "courts/2",
-        "identity_columns": [
-          "opinion_id"
-        ],
-        "processing_fields": [
-          "local_path",
-          "extracted_by_ocr",
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_parentheticals",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "parenthetical_id"
-        ],
-        "processing_fields": [
           "dump_date",
           "conversion_inputs",
           "raw_source_record",

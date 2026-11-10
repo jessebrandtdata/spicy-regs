@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import bz2
+import hashlib
 import importlib
 import tomllib
 from datetime import date
@@ -14,7 +15,6 @@ import yaml
 from spicy_docs.sources.courtlistener.listing import BulkObject
 
 from spicy_regs import data_dictionary as dd
-from spicy_regs.court_receipts import read_court_rows
 from spicy_regs import mcp_server
 from spicy_regs.pipelines.rollups.court_citations import CourtCitationsRollup
 from spicy_regs.pipelines.rollups.court_opinions import CourtOpinionsRollup
@@ -55,8 +55,8 @@ def test_a_table_renames_selected_fields_stamps_the_edition_and_keeps_values_exa
     table = pq.read_table(out)
     assert table.schema == CITATIONS.schema
     assert table.column_names == list(CITATIONS.columns) == [c for c, _ in dd.expected_schemas()["court_citations"]]
-    restored = list(read_court_rows(out, dataset="court_citations"))
-    assert [{k: row[k] for k in CITATIONS.input_columns} for row in restored] == [
+    digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
+    assert table.to_pylist() == [
         {
             "citation_id": "7",
             "cluster_id": "108713",
@@ -67,6 +67,7 @@ def test_a_table_renames_selected_fields_stamps_the_edition_and_keeps_values_exa
             "date_created": "2014-10-30 06:37:34+00",
             "date_modified": "",
             "dump_date": "2026-06-30",
+            "source_sha256": digest,
         },
         {
             "citation_id": "8",
@@ -78,6 +79,7 @@ def test_a_table_renames_selected_fields_stamps_the_edition_and_keeps_values_exa
             "date_created": None,
             "date_modified": "2025-01-01",
             "dump_date": "2026-06-30",
+            "source_sha256": digest,
         },
     ]
     assert not list((tmp_path / "out").glob(".*partial"))
@@ -87,7 +89,8 @@ def test_the_citation_map_drops_only_its_surrogate_id(tmp_path):
     source = _export(tmp_path / "map.csv.bz2", b'id,depth,cited_opinion_id,citing_opinion_id\n"1","3","20","10"\n')
     out = build_court_bulk_table(CITATION_MAP, tmp_path, local_file=source, dump_date=EDITION)
     assert pq.read_table(out).to_pylist() == [
-        {"citing_opinion_id": "10", "cited_opinion_id": "20", "depth": 3}
+        {"citing_opinion_id": "10", "cited_opinion_id": "20", "depth": 3, "dump_date": "2026-06-30",
+         "source_sha256": "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()}
     ]
 
 
@@ -124,7 +127,7 @@ def test_a_retained_export_is_used_only_at_its_listed_size(tmp_path, monkeypatch
     copy = _export(retained / "citations-2026-06-30.csv.bz2", b'a\n"1"\n')
     monkeypatch.setenv(module.RETAINED_DIR_ENV, str(retained))
     monkeypatch.setattr(module, "check_headroom", lambda *a, **k: pytest.fail("a retained copy needs no download"))
-    assert export_file(_listed(copy, "citations"), tmp_path) == (copy, False)
+    assert export_file(_listed(copy, "citations"), tmp_path) == (copy, None)
 
     wrong = BulkObject(
         "bulk-data/citations-2026-06-30.csv.bz2", copy.stat().st_size + 1, '"etag"', "2026-06-30T12:00:00Z"
@@ -159,7 +162,7 @@ def test_a_missing_export_is_downloaded_bound_to_its_listing(tmp_path, monkeypat
     monkeypatch.setattr(download, "BoundedAcquirer", Acquirer)
     monkeypatch.setattr(module, "check_headroom", lambda needed, path: checked.append((needed, path)))
     path, downloaded = export_file(listed, tmp_path)
-    assert (path, downloaded) == (tmp_path / "courtlistener-exports" / "sha256/abc", True)
+    assert (path, downloaded) == (tmp_path / "courtlistener-exports" / "sha256/abc", None)
     assert checked == [(123, tmp_path)]
     [(url, kwargs)] = requests
     assert url == listed.url
@@ -175,78 +178,17 @@ def test_downloaded_and_preexisting_exports_remain_retained(tmp_path, monkeypatc
     import spicy_docs.sources.courtlistener.bulk as bulk
 
     monkeypatch.setattr(bulk, "list_bulk_dumps", lambda: [_listed(path, name) for name, path in files.items()])
-    monkeypatch.setattr(module, "export_file", lambda obj, work: (files[obj.dataset], obj.dataset == "citations"))
+    monkeypatch.setattr(module, "export_file", lambda obj, work, evidence=None: (files[obj.dataset], None))
     monkeypatch.setattr(module, "published_cluster_ceiling", lambda: 2)
     built = build_court_bulk_tables((CITATIONS, CITATION_MAP), tmp_path / "out")
-    assert [path.name for path in built] == [CITATIONS.output, CITATION_MAP.output]
-    assert files["citations"].exists(), "receipt witnesses retain downloaded source bytes"
-    assert files["citation-map"].exists(), "a retained export is never removed"
-    from spicy_regs.court_receipts import local_receipt_selection, parquet_rows
-
-    receipts = {local_receipt_selection(path)[0] for path in built}
-    assert len(receipts) == 1
-    import hashlib
-    # Witnesses name content, not this machine's paths; the bytes they name stay retained here.
-    retained = {'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest() for path in tmp_path.rglob('*') if path.is_file()}
-    for receipt in parquet_rows(receipts.pop()):
-        assert all(witness['source_uri'] is None and witness['sha256'] in retained for witness in receipt['witnesses'])
-    assert all(not (tmp_path / 'out' / path.name).exists() for path in built)
-
-
-@pytest.mark.parametrize('failure', ['later-table', 'close', 'descriptor'])
-def test_family_failure_preserves_previous_pairs_and_selects_no_partial_family(tmp_path, monkeypatch, failure):
-    from spicy_regs import etl_bulk
-    from spicy_regs.court_receipts import court_bulk_family, local_receipt_selection, write_court_rows
-
-    datasets = ('court_citations', 'court_citation_map')
-    records = ({'citation_id': '1'}, {'citing_opinion_id': '1', 'cited_opinion_id': '2', 'depth': '3'})
-    witness = [{'source_id': 'fixture', 'source_uri': None, 'sha256': 'a' * 64,
-                'locator': None, 'body_version': None}]
-    output = tmp_path / 'out'
-    previous = [write_court_rows(dataset, [row], output, witnesses=witness) for dataset, row in zip(datasets, records)]
-    pairs = [(path, path.read_bytes(), *local_receipt_selection(path)) for path in previous]
-    receipt_bytes = {receipt: receipt.read_bytes() for _, _, receipt, _ in pairs}
-    source = tmp_path / 'source.parquet'
-    import pyarrow as pa
-    pq.write_table(pa.table({'citation_id': ['2']}), source)
-    original = etl_bulk.new_receipt_writer
-    closes = []
-
-    def open_writer(path):
-        writer = original(path)
-        close = writer.close
-        def counted_close():
-            closes.append(path)
-            close()
-            if failure == 'close':
-                raise OSError('injected close failure')
-        monkeypatch.setattr(writer, 'close', counted_close)
-        return writer
-
-    monkeypatch.setattr(etl_bulk, 'new_receipt_writer', open_writer)
-    if failure == 'descriptor':
-        write_text = Path.write_text
-        def fail_descriptor(path, *args, **kwargs):
-            if path.name == 'court-family.json':
-                raise OSError('injected descriptor failure')
-            return write_text(path, *args, **kwargs)
-        monkeypatch.setattr(Path, 'write_text', fail_descriptor)
-    with pytest.raises((OSError, etl_bulk.NotBulkEligible), match='injected|schema'):
-        with court_bulk_family(output, datasets, generation_id='attempt') as write:
-            write(datasets[0], source, witnesses=witness)
-            if failure == 'later-table':
-                write(datasets[1], source, witnesses=witness)  # wrong source schema, after the first table finished
-            else:
-                map_source = tmp_path / 'map.parquet'
-                pq.write_table(pa.Table.from_pylist([records[1]]), map_source)
-                write(datasets[1], map_source, witnesses=witness)
-    assert len(closes) == 1
-    assert not list(output.rglob('court-family.json'))
-    for path, content, receipt, generation in pairs:
-        assert (output / path.name).resolve() == path and path.read_bytes() == content
-        assert local_receipt_selection(path) == (receipt, generation)
-        assert receipt.read_bytes() == receipt_bytes[receipt]
-    assert source.exists()
+    assert built == (tmp_path / "out" / CITATIONS.output, tmp_path / "out" / CITATION_MAP.output)
+    assert files["citations"].exists() and files["citation-map"].exists(), "an export is never removed"
+    # Each row names the export it was read from by content, not by this machine's path; no receipt is written.
+    for path, name in zip(built, ("citations", "citation-map")):
+        digest = "sha256:" + hashlib.sha256(files[name].read_bytes()).hexdigest()
+        assert set(pq.read_table(path, columns=["source_sha256"])["source_sha256"].to_pylist()) == {digest}
+    assert not list(tmp_path.rglob("etl_receipts.parquet")) and not list(tmp_path.rglob(".court-etl"))
+    assert not list((tmp_path / "out").glob(".*"))
 
 
 _CITATIONS_OF_CLUSTER_9 = (

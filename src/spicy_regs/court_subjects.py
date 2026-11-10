@@ -33,6 +33,10 @@ def _names(value: Any, *, prose: bool = False) -> list[str | None] | None:
     return value
 
 
+#: What :func:`normalize_court_row` raises for a row it refuses (any other exception is a fault, not a refusal).
+REFUSED = (ValueError, TypeError, KeyError, pa.ArrowException)
+
+
 def normalize_court_row(dataset: str, row: Mapping[str, Any]) -> dict:
     """Convert only declared domain fields; retain every conversion input in receipt fields.
 
@@ -108,10 +112,15 @@ def normalize_court_row(dataset: str, row: Mapping[str, Any]) -> dict:
 
 # Source strings remain strings unless this table explicitly declares a native value.
 SUBJECT_SCHEMAS = {
+    # The four bulk tables publish no receipts (ss-vse3): the publisher's record fields their receipts held are
+    # columns, appended after the contract's, with the export's edition and the SHA-256 of the export file each row
+    # was read from (the pointer to the retained original).
     'court_citation_map': pa.schema([
         ('citing_opinion_id', pa.string()),
         ('cited_opinion_id', pa.string()),
         ('depth', pa.int64()),
+        ('dump_date', pa.string()),
+        ('source_sha256', pa.string()),
     ]),
     'court_citations': pa.schema([
         ('citation_id', pa.string()),
@@ -120,6 +129,10 @@ SUBJECT_SCHEMAS = {
         ('reporter', pa.string()),
         ('page', pa.string()),
         ('citation_type', pa.string()),
+        ('date_created', pa.string()),
+        ('date_modified', pa.string()),
+        ('dump_date', pa.string()),
+        ('source_sha256', pa.string()),
     ]),
     'court_docket_groups': pa.schema([
         ('cl_docket_id', pa.string()),
@@ -219,6 +232,12 @@ SUBJECT_SCHEMAS = {
         ('page_count', pa.int64()),
         ('sha1', pa.string()),
         ('download_url', pa.string()),
+        ('local_path', pa.string()),
+        ('extracted_by_ocr', pa.bool_()),
+        ('date_created', pa.string()),
+        ('date_modified', pa.string()),
+        ('dump_date', pa.string()),
+        ('source_sha256', pa.string()),
     ]),
     # One opinion's body as Markdown (CommonMark + GFM tables + footnotes; citations as ``[text](opinion:ID)``),
     # converted by spicy_docs.sources.courtlistener.opinion_markdown from the first filled rendering; NULL when the
@@ -239,7 +258,23 @@ SUBJECT_SCHEMAS = {
         ('text', pa.string()),
         ('score', pa.float64()),
         ('group_id', pa.string()),
+        ('dump_date', pa.string()),
+        ('source_sha256', pa.string()),
     ]),
+}
+
+#: Each table's policy version, named by the receipts and generations written under it. The four bulk tables moved
+#: when their record fields became columns (ss-vse3); the others are unchanged.
+POLICY_VERSIONS = {
+    'court_citation_map': 'courts/2',
+    'court_citations': 'courts/2',
+    'court_docket_groups': 'courts/1',
+    'court_dockets': 'courts/1',
+    'court_opinion_clusters': 'courts/1',
+    'court_opinion_pdf_extractions': 'courts/2',
+    'court_opinions': 'courts/3',
+    'court_opinion_texts': 'courts/1',
+    'court_parentheticals': 'courts/2',
 }
 
 IDENTITIES = {
@@ -255,17 +290,17 @@ IDENTITIES = {
 }
 
 RECEIPT_FIELDS = {
-    'court_citation_map': ('dump_date', 'conversion_inputs', 'raw_source_record', 'source_observation'),
-    'court_citations': ('date_created', 'date_modified', 'dump_date', 'conversion_inputs', 'raw_source_record', 'source_observation'),
+    'court_citation_map': ('conversion_inputs', 'raw_source_record', 'source_observation'),
+    'court_citations': ('conversion_inputs', 'raw_source_record', 'source_observation'),
     'court_docket_groups': ('edition', 'rule_version', 'match_basis', 'conversion_inputs', 'raw_source_record', 'source_observation'),
     'court_dockets': ('date_created', 'absolute_url', 'parties_json', 'attorneys_json', 'firms_json', 'conversion_inputs', 'raw_source_record', 'source_observation'),
     'court_opinion_clusters': ('source', 'slug', 'absolute_url', 'date_created', 'date_modified', 'ingest_source', 'conversion_inputs', 'raw_source_record', 'source_observation'),
     'court_opinion_pdf_extractions': ('conversion_inputs', 'raw_source_record', 'source_observation'),
-    'court_opinions': ('local_path', 'extracted_by_ocr', 'date_created', 'date_modified', 'dump_date', 'conversion_inputs', 'raw_source_record', 'source_observation'),
+    'court_opinions': ('conversion_inputs', 'raw_source_record', 'source_observation'),
     # A pointer to the converted value, never a copy of it: the export is the receipt's witness, the identity the
     # opinion id, source_column the rendering converted and source_sha256 that rendering's digest (owner, 2026-10-31).
     'court_opinion_texts': ('source_column', 'source_sha256', 'dump_date', 'conversion_inputs', 'raw_source_record', 'source_observation'),
-    'court_parentheticals': ('dump_date', 'conversion_inputs', 'raw_source_record', 'source_observation'),
+    'court_parentheticals': ('conversion_inputs', 'raw_source_record', 'source_observation'),
 }
 
 LEGACY_COLUMNS = {

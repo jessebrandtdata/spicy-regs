@@ -991,18 +991,6 @@
     "url_source": "Who stated url, and so which kind of URL it is: billstatus (the BILLSTATUS legislationUrl, the congress.gov page), congress_api (the Congress.gov detail record's legislationUrl, the same page), congress_api_list (the Congress.gov list route's url, the API resource), or inherited (this observation stated none and a host merge kept an earlier observation's value; its lineage is that earlier source, not a fresh read). NULL when url is NULL or the row predates this label."
    }
   },
-  "court_citation_map": {
-   "meanings": {
-    "dump_date": "The CourtListener bulk export the row was copied from (ISO date)."
-   }
-  },
-  "court_citations": {
-   "meanings": {
-    "date_created": "Timestamp the publisher created the citation record.",
-    "date_modified": "Timestamp the publisher last modified the citation record.",
-    "dump_date": "The CourtListener bulk export the row was copied from (ISO date)."
-   }
-  },
   "court_docket_groups": {
    "meanings": {
     "edition": "The CourtListener bulk edition the grouping was computed from (`2026-06-30`).",
@@ -1036,20 +1024,6 @@
   },
   "court_opinion_pdf_extractions": {},
   "court_opinion_texts": {},
-  "court_opinions": {
-   "meanings": {
-    "date_created": "Timestamp the publisher created the opinion record.",
-    "date_modified": "Timestamp the publisher last modified the opinion record.",
-    "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
-    "extracted_by_ocr": "Publisher flag for text extracted by OCR (`t` or `f`).",
-    "local_path": "Path of the original document in CourtListener's storage, not a SpicyRegs file."
-   }
-  },
-  "court_parentheticals": {
-   "meanings": {
-    "dump_date": "The CourtListener bulk export the row was copied from (ISO date)."
-   }
-  },
   "crs_report_files": {},
   "crs_reports": {
    "containers": {
