@@ -115,11 +115,13 @@ DuckDB: the job log has no `Paired export` line; the generation's
 
 ## Catalog recovery
 
-`scripts/rebuild_native_catalog.py` seeds the catalog from a published pair
-and copies its receipts verbatim. A receipts-free generation has none, so a
-rebuild from it would first need a seeding mode that writes one
-promotion-style receipt per row. The catalog's own receipt table is untouched
-by this change; this matters only if the catalog is lost.
+`scripts/rebuild_native_catalog.py` seeds the catalog from the live
+generation's pair and copies its receipts verbatim. Once comments publish
+without receipts it refuses, naming the pinned archive generation below; it
+cannot be pointed at that generation, which is older than the live table. A
+rebuild from a receipts-free generation needs a seeding mode that writes one
+promotion-style receipt per row, which is not built. The catalog's own receipt
+table is untouched by this change; this matters only if the catalog is lost.
 
 ## Archive pin
 
