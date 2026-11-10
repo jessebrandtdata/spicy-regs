@@ -53,9 +53,10 @@ from spicy_regs.transforms.write_staging import write_staging
 # returned 335 agencies (2026-09-24). The ceiling makes a jump in the mirror's
 # agency list a refusal to act on (raise BATCH_COUNT) instead of quietly longer jobs.
 MAX_DERIVED_BATCH_SIZE = 25
-#: The least a sweep assumes one more batch needs. A batch that merged comment rows spent 60.4 minutes after
-#: its reads, republishing the base families, and one with nothing new about 5 (run 42674437011, 2026-11-09).
-SWEEP_BATCH_FLOOR_SECONDS = 60 * 60
+#: The least a sweep assumes one more batch needs: the one whole batch measured that merged comment rows took
+#: 79.4 minutes ("ETL batch completed in 4762.7s", run 42674437011, 2026-11-09), 60.4 of them after its reads,
+#: republishing the base families. A batch with nothing new takes about 5.
+SWEEP_BATCH_FLOOR_SECONDS = 80 * 60
 #: Written to the output directory by a sweep that stopped at its budget: the batch (0-indexed) it stopped before.
 SWEEP_STOPPED_NAME = "sweep-stopped.txt"
 

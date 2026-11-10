@@ -143,11 +143,13 @@ jobs:
           fi
           if [ "$EVENT" = "schedule" ]; then
             TIMEOUT=360
-            # The sweep starts no batch it does not expect to finish by this minute, an hour
-            # inside the limit, so a batch that runs an hour past its estimate still ends
-            # before the job is killed. Run 42674437011 was killed inside its second batch
-            # and published nothing.
-            SWEEP_BUDGET=300
+            # The sweep starts no batch it does not expect to finish by this minute. Its estimate
+            # for a batch is at least 80 minutes (the one merging batch measured took 79.4), so
+            # the last batch starts by minute 270 - 80 = 190. The job is killed at 360; with 10
+            # kept for its other steps, that batch may run 350 - 190 = 160 minutes, twice the
+            # floor, and still finish. Run 42674437011 was killed inside its second batch and
+            # published nothing.
+            SWEEP_BUDGET=270
             BATCH_NUMBER=all
             SKIP_UPLOAD=false
           else

@@ -53,14 +53,14 @@ def test_sweep_stops_before_the_batch_its_longest_batch_says_will_not_fit(sweep)
 
 
 def test_the_estimate_is_never_below_the_floor(sweep):
-    assert regulations.SWEEP_BATCH_FLOOR_SECONDS == 60 * MINUTE
-    # One-minute batches: the fifth would start at 9 minutes, and 9 + 60 is past 68.
-    assert sweep([1, 1, 1, 1, 1], budget=68)[:3] == (4, [0, 1, 2, 3], "4\n")
-    assert sweep([1, 1, 1, 1, 1], budget=69)[:3] == (None, [0, 1, 2, 3, 4], None)
+    assert regulations.SWEEP_BATCH_FLOOR_SECONDS == 80 * MINUTE  # the measured merging batch: 79.4 minutes
+    # One-minute batches: the fifth would start at 9 minutes, and 9 + 80 is past 88.
+    assert sweep([1, 1, 1, 1, 1], budget=88)[:3] == (4, [0, 1, 2, 3], "4\n")
+    assert sweep([1, 1, 1, 1, 1], budget=89)[:3] == (None, [0, 1, 2, 3, 4], None)
 
 
 def test_a_budget_too_small_for_one_batch_starts_none(sweep):
-    assert sweep([1, 1, 1, 1, 1], budget=64)[:3] == (0, [], "0\n")
+    assert sweep([1, 1, 1, 1, 1], budget=84)[:3] == (0, [], "0\n")
 
 
 def test_a_sweep_without_a_budget_runs_every_batch_and_clears_an_old_marker(sweep, tmp_path):
@@ -157,10 +157,13 @@ esac
     return dict(line.split("=", 1) for line in output.read_text().splitlines()), calls.read_text() if calls.exists() else ""
 
 
-def test_only_a_scheduled_sweep_gets_a_budget_and_it_ends_an_hour_inside_the_limit(tmp_path):
+def test_only_a_scheduled_sweep_gets_a_budget_and_its_last_batch_may_run_twice_the_floor(tmp_path):
     (tmp_path / "a").mkdir(), (tmp_path / "b").mkdir()
     scheduled, _ = setup_outputs(tmp_path / "a", event="schedule", schedule="25 6 * * *")
-    assert (scheduled["timeout_minutes"], scheduled["sweep_budget_minutes"], scheduled["batch"]) == ("360", "300", "all")
+    assert (scheduled["timeout_minutes"], scheduled["sweep_budget_minutes"], scheduled["batch"]) == ("360", "270", "all")
+    limit, budget, floor = 360, int(scheduled["sweep_budget_minutes"]), regulations.SWEEP_BATCH_FLOOR_SECONDS / 60
+    other_steps = 10  # setup before the sweep, the warning and uploads after it
+    assert limit - other_steps - (budget - floor) >= 2 * floor  # the last batch to start has twice the floor
     manual, calls = setup_outputs(tmp_path / "b", event="workflow_dispatch", batch="all", timeout="240")
     assert (manual["sweep_budget_minutes"], manual["sweep_start_batch"], calls) == ("", "", "")
 
