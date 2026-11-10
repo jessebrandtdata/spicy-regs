@@ -77,11 +77,14 @@ def family_policies(datasets: frozenset[str] | None = None):
 
 
 def declarations(datasets: frozenset[str] | None = None):
-    """Each installed declaration as written: the policy's descriptor, and the marker on a shared log."""
-    from spicy_regs.subject_catalog import SHARED_LOG, is_shared_log
+    """Each installed declaration as written: the policy's descriptor, the marker on a shared log, and the marker on
+    a table whose receipts are retired, kept from its installed file (its one owner; set it there by hand)."""
+    from spicy_regs.subject_catalog import RECEIPTS_RETIRED, SHARED_LOG, is_shared_log, retired_receipt_datasets
 
     shared = {policy.dataset for policy in shared_logs()}
-    result = {name: {**policy.descriptor(), **({SHARED_LOG: True} if name in shared else {})}
+    retired = retired_receipt_datasets()
+    result = {name: {**policy.descriptor(), **({SHARED_LOG: True} if name in shared else {}),
+                     **({RECEIPTS_RETIRED: True} if name in retired else {})}
               for name, policy in family_policies(datasets).items()}
     if {name for name, declared in result.items() if is_shared_log(declared)} != shared & result.keys():
         raise ValueError('A shared log has no declared policy')

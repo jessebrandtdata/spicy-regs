@@ -154,11 +154,15 @@ def unreadable_shipped_policies(installed: Mapping | None = None, migrations: Ma
     replay-required entry has no code that replays it.
     """
     from spicy_regs.etl_policy_registry import installed_policies
+    from spicy_regs.subject_catalog import retired_receipt_datasets
 
     installed = installed_policies() if installed is None else installed
     migrations = ledger() if migrations is None else migrations
     problems = []
     for name, policy in sorted(installed.items()):
+        if name in retired_receipt_datasets():
+            # No prior of a retired table is read through receipts again; its entry stays as the record of them.
+            continue
         entry = migrations.get(name, {})
         current = descriptor_digest(policy)
         if entry.get("installed") != current:
@@ -211,14 +215,14 @@ def published_policies_unrecorded(base_url: str) -> list[str]:
     """Live check: each policy a published family root declares must be a shipped descriptor in the ledger."""
     from spicy_regs.etl_receipts import DatasetPolicy
     from spicy_regs.sources import publication
-    from spicy_regs.subject_catalog import SHARED_LOG
+    from spicy_regs.subject_catalog import descriptor_of
 
     index = publication.current_index(base_url)
     problems = []
     for family, entry in sorted(index["families"].items()):
         _, root = publication.load_family_root(base_url, entry)
         for declared in root.get("spec", {}).get("etlReceipts", {}).get("policies", []):
-            policy = DatasetPolicy.from_descriptor({k: v for k, v in declared.items() if k != SHARED_LOG})
+            policy = DatasetPolicy.from_descriptor(descriptor_of(declared))
             if descriptor_digest(policy) not in shipped(policy.dataset):
                 problems.append(f"{family}: published {policy.dataset} {policy.policy_version} "
                                 f"({descriptor_digest(policy)}) is not in {LEDGER}")
