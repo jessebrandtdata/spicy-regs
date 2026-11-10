@@ -36,16 +36,15 @@ APA_NATURE_OF_SUIT = "899"
 API_TOKEN_ENV_VAR = "COURTLISTENER_API_TOKEN"
 _MAX_PAGES = 5_000
 _MAX_REQUESTS_PER_PAGE = 6
-#: CourtListener's API help page states authenticated limits of 5 requests a
-#: minute, 50 an hour and 125 a day, in rolling windows (checked 2026-11-10). A
-#: token's budget is shared by every run that uses it. 13 s stays under 5 a
-#: minute; at 12.0 s, exactly the limit, 6 of 50 attempts were refused with 429
+#: The account's limits, shared by every run that uses the token, are stated in
+#: "Quota" in docs/court-search-recovery.md. 13 s stays under the per-minute
+#: one; at 12.0 s, exactly that limit, 6 of 50 attempts were refused with 429
 #: (run 42727712481, ss-jran).
 MIN_REQUEST_INTERVAL_SECONDS = 13.0
-#: One search's default allocation: 50 attempts is the hourly limit, and their
-#: 49 pacing gaps (637 s) fit the wait allowance with 263 s left for Retry-After
-#: waits. The two numbers move together: at 600 s the waits ran out before the
-#: attempts did.
+#: One search's default allocation: 50 attempts is an hour's allowance, and
+#: their 49 pacing gaps (637 s) fit the wait allowance with 263 s left for
+#: Retry-After waits. The two numbers move together: at 600 s the waits ran out
+#: before the attempts did.
 DEFAULT_MAX_REQUESTS = 50
 DEFAULT_MAX_WAIT_SECONDS = 900.0
 #: The search API refuses (and spicy-docs' search_url refuses) a longer ``q``.

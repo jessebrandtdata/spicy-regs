@@ -24,17 +24,24 @@ is complete through (`held_selection`), then does one of two things:
 
 ### Quota
 
+This section is the one home for the quota numbers; code comments and workflows
+point here.
+
 The account's limits are 5 requests a minute, 50 an hour and 125 a day, in
 rolling windows ([rate limits](https://www.courtlistener.com/help/api/rest/),
 [usage API](https://wiki.free.law/c/courtlistener/help/api/rest/v4/api-usage),
-read 2026-11-10). The daily docket job (18:30 UTC, about 7 requests) shares
-them and has priority.
+read 2026-11-10). The daily docket job (18:30 UTC, about 7 requests: 6 answered
+pages on each of 2026-11-08 and 11-09) shares them.
 
-- A catch-up spends at most **105** requests: 125, less the docket job's 7,
-  less the docket job's 7 of the day before (still inside the rolling day when
-  it runs), less 6 spare.
-- Requests are **75 seconds** apart (48 an hour), so a full day takes 2.2
-  hours, nearly all of it waiting. No lock is held: publication is a
+- A catch-up makes at most **105** attempts (`DAILY_REQUESTS`), answered or not:
+  a refused or timed-out request counts, since the publisher may have counted
+  it. That leaves **20** of the 125 for everything else on the token: the
+  docket job's 7, its 7 of the day before (still inside the rolling day when it
+  runs), and 6 spare. The docket job is protected up to those 20 and no
+  further: if it and any requests made by hand exceed 20 in a day, its last
+  ones can be refused until the catch-up's leave the window.
+- Attempts are **75 seconds** apart (48 an hour), so a full day is 131 minutes
+  of pacing. No lock is held while a run waits: publication is a
   compare-and-swap that merges other families' writes.
 - Before any Search request the run reads the usage API, which has its own
   throttle and spends nothing. A job that spends most of a rolling day never
@@ -44,47 +51,74 @@ them and has priority.
   another hour it takes only what is free now, less 7; a blocked account or an
   unreadable reply fails the run. Fewer than 2 requests is "nothing to do":
   the run succeeds and publishes nothing.
-- A 429 is waited out by its `Retry-After` (up to 30 minutes a run in all).
-  One that asks for longer ends the day; whole windows already read are
-  published.
+- A 429 is waited out by its `Retry-After`, up to 30 minutes for the whole run,
+  the backlog request included. The worst case is therefore 251 minutes of
+  waiting (90 before the first request, 131 of pacing, 30 of `Retry-After`),
+  which leaves 99 of the job's 350 for the download, append, admission and
+  upload.
+- Running out is not a failure. A `Retry-After` the run cannot wait for, the
+  last allowed attempt, or less waiting time left than one pacing gap ends the
+  day: whole windows already read are published and the run succeeds.
+- A run that is going to upload checks its R2 credentials before the usage
+  read, so one that could not publish spends nothing. A `skip_upload` dispatch
+  still spends its requests and saves nothing.
 - Other Search readers pace at 13 seconds, under 5 a minute, with a default
   allocation of 50 attempts and 900 seconds of waits (49 pacing gaps are 637).
 
-Requests made on the same token by hand count against the same day. More than
-6 of them in the 24 hours before the docket job can leave it waiting on its own
-`Retry-After`.
+A dispatch can lower one run's attempts with `max_requests` (2 to 105; the
+`COURT_CLUSTERS_MAX_REQUESTS` variable). Ten proves the whole route, from the
+download to the upload, for a tenth of a day.
 
 ### What one catch-up does
 
-1. Reads usage (free) and decides the day's requests.
-2. One Search request for everything above the published highest id states the
-   backlog. None: nothing to do.
+1. Reads usage (free) and decides the day's attempts.
+2. One Search request for everything above the published `through` states the
+   backlog, `B`. `B` clusters above `through` prove every id up to
+   `through + B` assigned, wherever those clusters are, because ids are given
+   out in order. The run reads no id above `through + B - 20`. With 20 or
+   fewer listed there is nothing to do.
 3. Downloads the published table and receipts (5.6 GB) against their pins, and
    refuses if the table holds an id above the one its journal states.
 4. Walks **id windows** upward. Search can only be ordered by filing date, so a
    half-read range cannot be resumed by id; a window is therefore read whole or
-   not kept. A window of `W` ids holds at most `W` clusters, so one sized at 20
+   not kept. A window of `W` ids lists at most `W` clusters, so one sized at 20
    ids for each page left always fits; no window is sized for more than 30
-   pages. An empty window doubles the next (up to 8 in a row); a doubled window
-   holding more than its pages is left after one request and halved.
+   pages. A window that lists nothing doubles the next; a doubled window that
+   lists more than its pages is left after one request and halved. A count
+   larger than the window has ids is a fault.
 5. Appends the rows to the prior without restoring it (`_append_native`,
    `combine_receipts`), and the ordinary generation admission and publication
    follow.
 
 Progress lives in the published generation: the rows are the table's, and
-`through` is its highest id, in the journal that generation pins. The next run
-starts at `through + 1`, so no page is read twice and no row leaves the table.
-A day that stops early has still published every whole window; a day that
-publishes nothing leaves the previous generation current.
+`through` is the end of the last whole window, in the journal that generation
+pins. The next run starts at `through + 1`, so no page is read twice and no row
+leaves the table. A day that stops early has still published every whole
+window; a day that publishes nothing leaves the previous generation current.
+
+Staying below the proven ids does two things. No cluster created during a walk
+can fall inside a window and change its count, which would fail that window.
+And a window that lists nothing has shown that its ids, all assigned, hold
+nothing listed, so `through` moves past it once any later window that day
+lists a cluster. If every readable id lists nothing, the backlog lies wholly
+above a gap wider than itself. Only a published generation can move `through`,
+and there is no row to publish, so the run **fails** and says so, rather than
+succeeding and asking the same requests every day; it clears when the backlog
+outgrows the gap.
 
 ### What the table then claims
 
-- Complete through `through` for the clusters Search indexed when each window
-  was read, in every publisher status. A cluster indexed later, changed, merged
+- Complete through `through` for the clusters Search listed when each window
+  was read, in every publisher status. A cluster listed later, changed, merged
   or deleted below `through` is corrected only by the next export; the catch-up
   never updates or removes a row. Search omits unindexed RECAP clusters.
-- `declared_backlog` less `clusters` is how many indexed clusters remained
+- `declared_backlog` less `clusters` is how many listed clusters remained
   above `through` when the run began.
+- The newest clusters wait. Once the backlog is closed the table stays about a
+  day and a half behind the publisher. About 4 of 10 ids list nothing (2,278
+  Published clusters in the 3,777 ids read on 2026-10-19), so a day's 1,685 new
+  clusters span about 2,700 ids, and that many ids are proven assigned only
+  when about 2,700 clusters are listed above `through`.
 - Ids 10,987,421 to 10,991,197 were added on 2026-10-19 by a search that
   named no status, which the publisher reads as Published only (2,278 rows).
   Other statuses in that range arrive with the next export.
@@ -96,8 +130,8 @@ publishes nothing leaves the previous generation current.
 - On 2026-11-10 the backlog was 69,088 clusters above the 2026-09-30 export.
   At that pace it is still about 51,000 when the 2026-12-31 export arrives.
   The rebuild then resets it to the days since that export was cut, and the
-  daily runs close that in three to four weeks and hold the table within about
-  a day of the publisher until the next export.
+  daily runs close that in three to four weeks and hold the table about a day
+  and a half behind the publisher until the next export.
 - A catch-up restores nothing (the weekly walk it replaces first restored 10.2
   million rows for 47 minutes and 8 GB of memory). It rewrites the 3.4 GB
   table and 2.2 GB receipts once each, in 25,000-row batches. On a workstation

@@ -15,8 +15,11 @@ downloaded (docs/court-search-recovery.md):
 * Otherwise ``daily_catch_up`` appends one day's share of the clusters created
   since, above the id the table already reaches, without restoring the prior.
   A day with no quota or no backlog publishes nothing and succeeds.
+  ``COURT_CLUSTERS_MAX_REQUESTS`` lowers one run's Search requests (2 to 105),
+  for a dispatch that proves the route with a small spend.
 """
 
+import os
 from datetime import date
 from pathlib import Path
 from typing import ClassVar
@@ -25,8 +28,13 @@ from loguru import logger
 
 from spicy_regs.pipelines.rollups.base import make_rollup_app
 from spicy_regs.pipelines.rollups.court_receipts import CourtReceiptRollup as RollupPipeline
+from spicy_regs.sources import r2
 from spicy_regs.sources.courtlistener import DEFAULT_MAX_REQUESTS, DEFAULT_MAX_WAIT_SECONDS
 from spicy_regs.transforms.build_court_opinion_clusters import DATASET, build_court_opinion_clusters
+
+
+#: A dispatch's cap on one catch-up's Search requests; blank is the normal day (``daily_catch_up`` checks the range).
+MAX_REQUESTS_ENV = "COURT_CLUSTERS_MAX_REQUESTS"
 
 
 class CourtOpinionClustersRollup(RollupPipeline):
@@ -51,8 +59,15 @@ class CourtOpinionClustersRollup(RollupPipeline):
             return build_court_opinion_clusters(output_dir, evidence=evidence)
         edition, above = held
         logger.info("Opinion clusters: daily catch-up above id {:,}; the {} export is the newest listed", above, edition)
+        stated = os.environ.get(MAX_REQUESTS_ENV, "").strip()
+        if stated and not (stated.isascii() and stated.isdecimal()):
+            raise ValueError(f"{MAX_REQUESTS_ENV} must be a whole number of requests, got {stated!r}")
+        if not self.skip_upload:
+            # A run that could not publish would spend the day's quota for nothing.
+            r2.require_credentials("Court catch-up publication")
         candidate, self.deferred_failure = daily_catch_up(
-            output_dir, evidence=evidence, source_edition=edition, above=above)
+            output_dir, evidence=evidence, source_edition=edition, above=above,
+            max_requests=int(stated) if stated else None)
         return candidate
 
     def _run_tables(self, output_dir: Path) -> None:

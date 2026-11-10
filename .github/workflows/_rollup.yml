@@ -118,6 +118,11 @@ on:
         required: false
         default: ''
         type: string
+      court_clusters_max_requests:
+        description: 'Optional cap on one court_opinion_clusters catch-up, 2 to 105 Search requests; blank is the normal day'
+        required: false
+        default: ''
+        type: string
       committee_reports_since:
         description: 'Optional GovInfo CRPT/CHRG last-modified start (YYYY-MM-DD); blank uses a 30-day window'
         required: false
@@ -326,6 +331,7 @@ jobs:
           ROLL_CALL_CHAMBERS: ${{ inputs.roll_call_chambers }}
           ROLL_CALL_MAX_VOTES: ${{ inputs.roll_call_max_votes }}
           BILL_SUBJECTS_MAX: ${{ inputs.bill_subjects_max }}
+          COURT_CLUSTERS_MAX_REQUESTS: ${{ inputs.court_clusters_max_requests }}
           # Gemini API key for the bill-family rollup's model-backed tables
           # (section_classifications, bill_summaries, diff_summaries —
           # spicy_docs.interpretation's classify_sections/summarize_bill/
@@ -352,14 +358,11 @@ jobs:
           # daily court_opinion_clusters search catch-up (owner decisions
           # 2026-10-30, ss-3uia, and 2026-11-10, ss-jran). Both draw on one
           # account's quota, which CourtListener applies per user in rolling
-          # windows: 5 a minute, 50 an hour, 125 a day (its usage API, read
-          # 2026-11-08; the 10/100/250 measured 2026-09-22 was a promotional
-          # doubling). The docket job has priority: the catch-up reads the
-          # account's usage first, spends at most 105 requests a day, leaves 7
-          # free when the quota was spent at another hour, and publishes the
-          # whole id windows it finished, so the next day resumes above them
-          # (docs/court-search-recovery.md). Bulk downloads and verified replay
-          # need no token; every other rollup stays keyless.
+          # windows. The limits, the share the catch-up leaves the docket job
+          # and what it does when the quota runs short are stated once, in
+          # "Quota" in docs/court-search-recovery.md (the 10/100/250 measured
+          # 2026-09-22 was a promotional doubling). Bulk downloads and
+          # verified replay need no token; every other rollup stays keyless.
           COURTLISTENER_API_TOKEN: ${{ (inputs.command == 'run-rollup-courtlistener' || inputs.command == 'run-rollup-court-opinion-clusters') && secrets.COURTLISTENER_API_TOKEN || '' }}
           # Zyte is a paid proxy; only a rollup that reads a walled host through it gets the token:
           # gao-recommendations (one request a run), gao-reports only while its product-page read is on,
