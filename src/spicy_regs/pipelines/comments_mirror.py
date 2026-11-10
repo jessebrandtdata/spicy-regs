@@ -18,7 +18,7 @@ from spicy_regs.duckdb_settings import ExportResources
 from spicy_regs.public_url import resolve_r2_base_url
 from spicy_regs.schemas.regulations import RECORD_TYPES
 from spicy_regs.sources import iceberg, r2, publication
-from spicy_regs.pipelines.comments_generation import build_comments_generation
+from spicy_regs.pipelines.comments_generation import RETIRED_RECEIPT_DATASETS, build_comments_generation
 from spicy_regs.transforms.partition_comments import agency_comments
 
 FORMAT_VERSION = 1
@@ -27,6 +27,9 @@ MIN_EXPECTED_ROWS = 1_000_000
 _AGENCY_KEY = re.compile(r"comments/agency/agency_code=[A-Za-z0-9_-]+/part-0\.parquet\Z")
 
 
+# The next two check the one-shot v1 promotion's prepared pair (scripts/prepare_comments_selected_export.py and the
+# remote staging in comments_generation). That route published receipts, which the mirror no longer does (ss-juz8);
+# they leave with it once a receipts-free publication has run.
 def _check_prepared_snapshot(reader, captured_snapshot):
     """Observe live state; allow only equality or unchanged rows in both tables."""
     observed_snapshot = reader.snapshot()
@@ -91,41 +94,6 @@ def _validate_prepared_export(output_dir, result, snapshot):
     if pq.ParquetFile(canonical["comments"]).metadata.num_rows != 26_418_078:
         raise ValueError("Prepared comments population is incomplete")
     return native_only
-
-
-def _seal_prepared_empty_replacements(output_dir, result, predecessor, receipt):
-    """Seal only validated zero-row additions from the maintained predecessor rule."""
-    path = result["manifest"]
-    manifest = json.loads(path.read_text())
-    before = dict(manifest["members"])
-    files = sorted(result["partitions"].glob("agency_code=*/part-0.parquet"))
-    additions = [file for file in files if file.relative_to(output_dir).as_posix() not in before]
-    if not additions:
-        return
-    allowed = set(predecessor.agencies)
-    if isinstance(receipt, dict) and isinstance(receipt.get("files"), dict):
-        allowed.update(key.split("agency_code=", 1)[1].split("/", 1)[0]
-                       for key in receipt["files"] if _AGENCY_KEY.fullmatch(key))
-    schema = pq.ParquetFile(result["comments"]).schema_arrow
-    schema = pa.schema([field for field in schema if field.name != "agency_code"])
-    for file in additions:
-        name = file.relative_to(output_dir).as_posix()
-        if (not _AGENCY_KEY.fullmatch(name) or not file.resolve().is_relative_to(output_dir.resolve())
-                or file.parent.name.removeprefix("agency_code=") not in allowed):
-            raise ValueError("Unexpected prepared comments member addition")
-        with pq.ParquetFile(file) as parquet:
-            if parquet.metadata.num_rows or not parquet.schema_arrow.equals(schema):
-                raise ValueError("Prepared agency replacement is not the expected empty schema")
-        actual = publication.file_identity(file)
-        manifest["members"][name] = {
-            "sha256": actual["sha256"].removeprefix("sha256:"), "byteSize": actual["bytes"]
-        }
-    backup = output_dir / "comments-prepared-export-before-empty.json"
-    if backup.exists():
-        raise FileExistsError("A prior prepared manifest requires explicit recovery")
-    backup.write_text(path.read_text())
-    manifest["emptyReplacements"] = sorted(file.relative_to(output_dir).as_posix() for file in additions)
-    path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
 
 @dataclass(frozen=True)
@@ -238,10 +206,15 @@ def receipt_source(receipt: dict | None) -> iceberg.CatalogPairSnapshot | None:
 
 
 def _receipt_matches(receipt: dict | None, snapshot: iceberg.CatalogPairSnapshot, base_url: str) -> bool:
-    """A successful receipt plus unchanged public/storage versions permits a no-op."""
+    """A successful receipt plus unchanged public/storage versions permits a no-op.
+
+    The comments table's identity is compared, not the shared receipt table's: nothing of that table is published
+    (ss-juz8), so a receipt-only commit leaves the publication current.
+    """
     if not isinstance(receipt, dict) or receipt.get("format_version") != FORMAT_VERSION:
         return False
-    if receipt.get("source") != asdict(snapshot):
+    source = receipt_source(receipt)
+    if source is None or source.subject() != snapshot.subject():
         return False
     generation = receipt.get("generation")
     if not isinstance(generation, dict):
@@ -262,115 +235,69 @@ def _receipt_matches(receipt: dict | None, snapshot: iceberg.CatalogPairSnapshot
     return not publication.public_version_drift({f"{base_url}/{key}": item for key, item in files.items()})
 
 
-def _prepare_catalog(record_type) -> None:
-    """Finish or resume native pair selection before pinning a mirror read."""
-    prepared = iceberg._connect_for_table(record_type)
-    prepared.close()
-
-
 def publish_comments_mirror(output_dir: Path, *, resources: ExportResources | None = None,
-                            skip_upload: bool = False, force: bool = False,
-                            prepared_export: dict[str, Path] | None = None,
-                            prepared_reader=None,
-                            prepared_snapshot: iceberg.CatalogPairSnapshot | None = None) -> bool:
+                            skip_upload: bool = False, force: bool = False) -> bool:
     """Build/verify/publish; return False only for a verified unchanged publication.
 
     The caller holds comments-catalog-write for the whole operation. Fixed public
     keys are not an atomic generation. Advance the receipt only after all files
     upload and their public bytes match; any interruption stays retryable.
 
-    Every receipt admission inside (the paired export's, the generation's) runs under ``resources`` as explicit
-    bulk limits, which also makes it insert byte-sized slices. As one statement at the bulk default, the exported
-    subjects ran out of memory at 3.7 GiB: 2,000-row batches on four threads, one holding an 89 MiB comment whose
-    JSON encoding alone reserves 1 GiB (hosted run 42738947666, ss-7flp).
+    The generation carries no ETL receipts (ss-juz8): the family's two datasets are declared retired
+    (:data:`RETIRED_RECEIPT_DATASETS`), which publication accepts once and then holds. Before any catalog read, the
+    installed policies must let a generation of these tables go without receipts, so a build that admission would
+    refuse fails in seconds, not after the export.
     """
-    from spicy_regs.etl_bulk import bulk_limits
     resources = resources or ExportResources()
-    with bulk_limits(threads=resources.threads, memory_limit=resources.memory):
-        return _publish(output_dir, resources, skip_upload, force, prepared_export, prepared_reader, prepared_snapshot)
-
-
-def _publish(output_dir, resources, skip_upload, force, prepared_export, prepared_reader, prepared_snapshot) -> bool:
     rt = RECORD_TYPES["comments"]
-    prepared = (prepared_export, prepared_reader, prepared_snapshot)
-    native_only = False
-    if any(value is not None for value in prepared) and any(value is None for value in prepared):
-        raise ValueError("Prepared export, historical reader and captured snapshot are required together")
-    if prepared_export is not None and not skip_upload and (
-            getenv("GITHUB_ACTIONS") != "true"
-            or getenv("SPICY_REGS_CATALOG_LOCK") != "comments-catalog-write"
-            or not getenv("GITHUB_WORKFLOW_REF", "").startswith(
-                "mikewolfd/spicy-regs/.github/workflows/publish-comments-mirror.yml@")):
-        raise RuntimeError("Prepared publication requires the existing locked manual comments workflow")
+    from spicy_regs.etl_policy_registry import require_registered_receipts
+    try:
+        require_registered_receipts({name + ".parquet" for name in RETIRED_RECEIPT_DATASETS}, None)
+    except ValueError as error:
+        raise RuntimeError("The installed comments policies still require ETL receipts; mark them retired before "
+                           "publishing receipts-free comments (ss-juz8)") from error
     if not skip_upload and not getenv("R2_ACCESS_KEY_ID"):
         raise RuntimeError("R2 upload credentials are required to publish the comments mirror")
-    # Establish the selected native pair before pinning the export snapshot.
-    # This also resumes a migration interrupted after empty-table preparation.
-    if prepared_export is None:
-        _prepare_catalog(rt)
-        snapshot = iceberg.catalog_snapshot(rt)
-    else:
-        assert prepared_snapshot is not None  # The complete prepared triple was checked above.
-        snapshot = prepared_snapshot
-        observed_snapshot = _check_prepared_snapshot(prepared_reader, snapshot)
-        native_only = _validate_prepared_export(output_dir, prepared_export, snapshot)
-        if native_only and not skip_upload:
-            raise ValueError("Native-only preparation cannot replace the legacy mirrors")
+    snapshot = iceberg.catalog_snapshot(rt)
     base_url = resolve_r2_base_url().rstrip("/")
     receipt = None
     if not skip_upload:
-        if not getenv("R2_ACCESS_KEY_ID"):
-            raise RuntimeError("R2 upload credentials are required to publish the comments mirror")
         receipt = None if force else r2.read_json_object(RECEIPT_KEY)
-        if prepared_export is None and not force and _receipt_matches(receipt, snapshot, base_url):
+        if not force and _receipt_matches(receipt, snapshot, base_url):
             logger.info("Comments snapshot {} already published; verified object versions, skipping build", snapshot.snapshot_id)
             return False
 
     prior_index = publication.current_index(base_url) if not skip_upload else publication.empty_index()
-    result = (prepared_export if prepared_export is not None else
-              iceberg.export_public_comments(output_dir, rt, resources=resources, snapshot=snapshot))
+    result = iceberg.export_public_comments(output_dir, rt, resources=resources, snapshot=snapshot)
     n_rows = pq.ParquetFile(result["comments"]).metadata.num_rows
     if n_rows < MIN_EXPECTED_ROWS:
         raise RuntimeError(f"Comments export has {n_rows:,} rows, below the {MIN_EXPECTED_ROWS:,} safety floor")
     previous_url = f"{base_url}/comments.parquet"
     predecessor = validate_export(output_dir, previous_url, resources=resources)
-    agency_files = []
-    if not native_only:
-        _retain_empty_agencies(result, predecessor, receipt)
-        if prepared_export is not None:
-            _seal_prepared_empty_replacements(output_dir, result, predecessor, receipt)
-        agency_files = sorted(result["partitions"].glob("agency_code=*/part-0.parquet"))
-        with TemporaryDirectory(prefix="comments-check-", dir=output_dir) as spill, duckdb.connect() as con:
-            resources.configure(con, Path(spill))
-            agency_comments(con, agency_files).create_view("partitions")
-            con.from_parquet(str(result["index"])).create_view("candidate_index")
-            con.from_parquet(str(result["comments"])).create_view("candidate")
-            errors = check_comments(con, "SELECT * FROM partitions", "SELECT * FROM candidate_index")
-            errors += check_retained_ids(con, "SELECT * FROM candidate", "SELECT * FROM partitions")
-            if errors:
-                raise RuntimeError("Invalid comments partitions: " + "; ".join(errors))
+    _retain_empty_agencies(result, predecessor, receipt)
+    agency_files = sorted(result["partitions"].glob("agency_code=*/part-0.parquet"))
+    with TemporaryDirectory(prefix="comments-check-", dir=output_dir) as spill, duckdb.connect() as con:
+        resources.configure(con, Path(spill))
+        agency_comments(con, agency_files).create_view("partitions")
+        con.from_parquet(str(result["index"])).create_view("candidate_index")
+        con.from_parquet(str(result["comments"])).create_view("candidate")
+        errors = check_comments(con, "SELECT * FROM partitions", "SELECT * FROM candidate_index")
+        errors += check_retained_ids(con, "SELECT * FROM candidate", "SELECT * FROM partitions")
+        if errors:
+            raise RuntimeError("Invalid comments partitions: " + "; ".join(errors))
     build = {
         "format_version": FORMAT_VERSION, "source": asdict(snapshot),
         "resources": asdict(resources), "rows": n_rows, "predecessor_etag": predecessor.etag,
     }
-    if prepared_export is not None:
-        build["observed_source"] = asdict(observed_snapshot)
-    if native_only:
-        build["native_only"] = True
     (output_dir / "comments-build.json").write_text(json.dumps(build, indent=2, sort_keys=True) + "\n")
-    generation_directory = build_comments_generation(output_dir, result, snapshot)
+    generation_directory = build_comments_generation(output_dir, result)
     if skip_upload:
         logger.info("Verified local comments generation in {}", generation_directory)
         return True
 
-    # The export pins subjects and receipts together. A rejected attempt can change
-    # only receipts, so check both tables; compaction may move either without changing rows.
-    unchanged = (iceberg.rows_unchanged_since(rt, snapshot) if prepared_reader is None else
-                 prepared_reader.rows_unchanged_since(snapshot))
-    if not unchanged:
+    # Compaction may move the table past its pin without changing a row; any other commit refuses.
+    if not iceberg.rows_unchanged_since(rt, snapshot):
         raise RuntimeError("Catalog changed during export; refusing publication")
-    if prepared_export is not None:
-        _validate_prepared_export(output_dir, prepared_export, snapshot)
     current = publication.public_object_version(previous_url)
     if current is None or current["etag"] != predecessor.etag:
         raise RuntimeError("Prior comments mirror changed before publication; refusing overwrite")
@@ -389,7 +316,7 @@ def _publish(output_dir, resources, skip_upload, force, prepared_export, prepare
         descriptors = dict(pool.map(verify, files))
     published_index = publication.publish_generation(
         generation_directory, client=r2.get_r2_client(), bucket=getenv("R2_BUCKET_NAME", "spicy-regs"),
-        prior_index=prior_index)
+        prior_index=prior_index, retired_receipt_datasets=RETIRED_RECEIPT_DATASETS)
     receipt = {"format_version": FORMAT_VERSION, "source": asdict(snapshot), "files": descriptors,
                "generation": published_index["families"]["comments"]}
     receipt_path = output_dir / RECEIPT_KEY
