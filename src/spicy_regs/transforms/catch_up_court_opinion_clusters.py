@@ -16,12 +16,14 @@ import os
 import time
 from collections.abc import Generator, Iterable, Mapping
 from contextlib import closing
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
+import httpx
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from loguru import logger
@@ -47,26 +49,25 @@ OUTPUT = DATASET + ".parquet"
 FAMILY = "court-opinion-clusters"
 CATCH_UP_EVENT = "catchup-selection"
 
-#: Search requests one daily run may spend. The account's rolling day holds 125 (docs/court-search-recovery.md).
-#: The daily docket job spends about 7 (6 answered pages on each of 2026-11-08 and 11-09), and when it runs, its
-#: own 7 of the day before can still be inside the window; 6 more are left for a longer docket walk or a
-#: timed-out request the publisher still counted.
+#: Search attempts one daily run may make, answered or not, and what it leaves for the docket job's next run. The
+#: arithmetic against the account's limits has one home: "Quota" in docs/court-search-recovery.md.
 DAILY_REQUESTS = 105
 DOCKET_REQUESTS = 7
-#: 48 an hour, under the 50-an-hour limit, so a run paces itself through the hourly window without a refusal.
+#: 48 an hour, so a run paces itself through the hourly window without a refusal.
 DAILY_REQUEST_INTERVAL_SECONDS = 75.0
 #: How much later than today's run yesterday's may have started (scheduled runs start late, never early) and
 #: still be recognised as the requests now leaving the rolling day.
 LOCK_STEP_SECONDS = 5400.0
-#: Retry-After waits one run may add to its pacing before it stops and publishes what it has.
+#: Retry-After waits one run may add to its pacing, the backlog request included, before it stops and publishes
+#: what it has.
 RETRY_WAIT_SECONDS = 1800.0
 #: Results on one Search page; the publisher fixes it.
 PAGE_SIZE = 20
 #: The most pages one id window is sized for. A window is published whole or not at all, so this bounds what a
 #: failed one costs, and how long (38 minutes) its membership must hold still while it is walked.
 WINDOW_PAGES = 30
-#: Consecutive empty windows, each twice as wide as the last, before a run stops looking: 153,000 ids from 600.
-MAX_EMPTY_WINDOWS = 8
+#: Ids left unread below the newest id the backlog count proves assigned, where clusters are still being listed.
+FRONTIER_MARGIN = 20
 
 
 class NothingToCatchUp(Exception):
@@ -74,7 +75,33 @@ class NothingToCatchUp(Exception):
 
 
 class _WindowOverflow(Exception):
-    """A widened id window holds more clusters than the pages it was allotted."""
+    """An id window lists more clusters (``args[0]``) than the pages it was allotted."""
+
+
+@dataclass
+class _Spend:
+    """The live Search attempts one day's run has dispatched."""
+
+    attempts: int = 0
+
+
+def _live_transport() -> httpx.BaseTransport:
+    return httpx.HTTPTransport(trust_env=False)
+
+
+class _CountedTransport(httpx.BaseTransport):
+    """One walk's transport. An attempt is counted when it is dispatched: a refused or timed-out request is still
+    one the publisher may have counted."""
+
+    def __init__(self, spend: _Spend) -> None:
+        self.spend, self.delegate = spend, _live_transport()
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        self.spend.attempts += 1
+        return self.delegate.handle_request(request)
+
+    def close(self) -> None:
+        self.delegate.close()
 
 
 def check_catch_up_directories(prior: Path, output: Path, retained_search: Path | None) -> None:
@@ -299,80 +326,107 @@ def held_selection(evidence: CaptureEvidence | None) -> tuple[date, int] | None:
         return None
 
 
-def _quota_stop(error: BaseException) -> bool:
-    """Whether a walk stopped on the publisher's Retry-After, rather than on a fault."""
-    return (getattr(error, "traversal_allocation", None) or {}).get("retryAfterSeconds") is not None
+def _spent_stop(error: BaseException) -> bool:
+    """Whether a walk stopped because the day ran out, as designed, and not on a fault.
+
+    That is a Retry-After the run could not wait for, the last allowed attempt, or less waiting time left than
+    one pacing gap. Whole windows read before it are published and the run succeeds.
+    """
+    allocation = getattr(error, "traversal_allocation", None)
+    return bool(allocation) and (
+        allocation["retryAfterSeconds"] is not None
+        or allocation["requestCount"] >= allocation["maxRequests"]
+        or allocation["maxWaitSeconds"] - allocation["waitedSeconds"] < DAILY_REQUEST_INTERVAL_SECONDS
+    )
 
 
-def _walk(above: int, through: int | None, *, capacity: int, seconds: float, evidence: CaptureEvidence,
-          max_records: int | None = None) -> tuple[list[dict], int | None]:
-    """One whole selection's records and its declared count, within ``capacity`` pages; a fuller one overflows.
+def _walk(above: int, through: int | None, *, pages: int, attempts: int, seconds: float, spend: _Spend,
+          evidence: CaptureEvidence, max_records: int | None = None) -> tuple[list[dict], int | None]:
+    """One whole selection's records and its declared count, in at most ``attempts`` attempts.
 
-    The allocation is twice the pages: a refused attempt costs the account nothing, and one a page is the
-    most a run keeping step with yesterday's should meet.
+    A selection that lists more than ``pages`` pages overflows after its first; ``max_records`` reads a prefix.
     """
     from spicy_docs.sources.courtlistener.search import CourtListenerTraversalBudget
 
     reader = CourtListenerOpinionSearchReader(
         above=above, through=through, max_records=max_records, evidence=evidence,
-        traversal_budget=CourtListenerTraversalBudget(2 * capacity + 2, max(seconds, 0.0)),
+        transport=_CountedTransport(spend),
+        traversal_budget=CourtListenerTraversalBudget(attempts, max(seconds, 0.0)),
         min_request_interval_seconds=DAILY_REQUEST_INTERVAL_SECONDS,
     )
     records: list[dict] = []
     with closing(cast(Generator[dict, None, None], reader.iter_records())) as walk:
         for record in walk:
-            if max_records is None and (reader.declared_count or 0) > PAGE_SIZE * capacity:
-                raise _WindowOverflow
+            if max_records is None and (reader.declared_count or 0) > PAGE_SIZE * pages:
+                raise _WindowOverflow(reader.declared_count)
             records.append(record)
     return records, reader.declared_count
 
 
-def daily_catch_up(output_dir: Path, *, evidence: CaptureEvidence, source_edition: date,
-                   above: int) -> tuple[Path, BaseException | None]:
+def daily_catch_up(output_dir: Path, *, evidence: CaptureEvidence, source_edition: date, above: int,
+                   max_requests: int | None = None) -> tuple[Path, BaseException | None]:
     """Append one day's whole id windows above ``above``; return the candidate and any fault it built around.
 
-    ``above`` and ``source_edition`` are what the published generation's journal states (:func:`held_selection`).
-    The order keeps every stop cheap: the account's usage (a free read) decides how many attempts today may have;
-    one Search request then states the backlog; only then is the prior downloaded and checked against ``above``.
-    The run walks id windows upward. A window of ``W`` ids holds at most ``W`` clusters, so one sized to the pages
-    left always completes; a window that finds nothing doubles the next, and one that then holds too much is halved.
-    Search orders by filing date, so only a window walked to its end joins the table: the published table is
-    complete through its highest id for what Search indexed when each window was read, and the next run resumes
-    there. ``NothingToCatchUp`` leaves everything as published. A fault after some windows completed is returned
-    beside the candidate, so the caller publishes them and still reports it; a Retry-After stop is not a fault.
+    ``above`` and ``source_edition`` are what the published generation's journal states (:func:`held_selection`);
+    ``max_requests`` lowers the day's attempts below ``DAILY_REQUESTS``. The order keeps every stop cheap: the
+    account's usage (a free read) decides how many attempts today may have; one Search request then states the
+    backlog; only then is the prior downloaded and checked against ``above``.
+
+    The run walks id windows upward. Search orders by filing date, so only a window walked to its end joins the
+    table. A window of ``W`` ids lists at most ``W`` clusters, so one sized to the pages left always completes;
+    a window that lists nothing doubles the next, and one that then lists too much is halved. No window reaches
+    past ``above + backlog - FRONTIER_MARGIN``: that many clusters above ``above`` prove every id up to
+    ``above + backlog`` assigned, so no cluster created during the walk can join a window and change its count,
+    and a window that lists nothing has shown its ids hold nothing listed. The table is therefore complete
+    through the end of its last whole window, for what Search listed when each was read, and the next run
+    resumes there; the newest clusters wait for a later day.
+
+    ``NothingToCatchUp`` leaves everything as published. Running out of quota, attempts or waiting time ends the
+    day without a fault. A fault after some windows completed is returned beside the candidate, so the caller
+    publishes them and still reports it.
     """
     from spicy_regs.sources import courtlistener_resume as quota
 
+    wanted = DAILY_REQUESTS if max_requests is None else max_requests
+    if type(wanted) is not int or not 2 <= wanted <= DAILY_REQUESTS:
+        raise ValueError(f"Court daily catch-up takes 2 to {DAILY_REQUESTS} requests, not {wanted!r}")
     token = require_api_token("Court opinion-cluster search catch-up")
     entry, members = _published_prior(evidence)
     public_url = os.getenv("R2_PUBLIC_URL")
     if not public_url:
         raise ValueError("Court daily catch-up reads its prior from R2_PUBLIC_URL")
     allowed, not_before, usage = quota.daily_allowance(
-        quota.read_usage(token, None), DAILY_REQUESTS, request_interval=DAILY_REQUEST_INTERVAL_SECONDS,
+        quota.read_usage(token, None), wanted, request_interval=DAILY_REQUEST_INTERVAL_SECONDS,
         reserve=DOCKET_REQUESTS, lock_step_seconds=LOCK_STEP_SECONDS,
     )
-    evidence.event("quota-preflight", stage="courtlistener-quota", requested_live=DAILY_REQUESTS,
+    evidence.event("quota-preflight", stage="courtlistener-quota", requested_live=wanted,
                    allowed_live=allowed, not_before=not_before.isoformat() if not_before else None, windows=usage)
-    logger.info("Opinion clusters: quota allows {} of {} requests today{}; usage {}", allowed, DAILY_REQUESTS,
+    logger.info("Opinion clusters: quota allows {} of {} requests today{}; usage {}", allowed, wanted,
                 f", the first at {not_before.isoformat()}" if not_before else "", usage)
     if allowed < 2:  # One request states the backlog; a window needs at least one more.
         raise NothingToCatchUp(f"CourtListener quota leaves {allowed} Search requests today")
     if not_before is not None:
         time.sleep(max((not_before - quota._now()).total_seconds(), 0.0))
 
+    spend = _Spend()
+    started = time.monotonic()
     try:
-        _, backlog = _walk(above, None, capacity=1, seconds=RETRY_WAIT_SECONDS, evidence=evidence, max_records=1)
+        _, backlog = _walk(above, None, pages=1, attempts=allowed, seconds=RETRY_WAIT_SECONDS, spend=spend,
+                           evidence=evidence, max_records=1)
     except Exception as error:
-        if _quota_stop(error):
+        if _spent_stop(error):
             raise NothingToCatchUp(f"CourtListener refused the backlog request: {error}") from error
         raise
     last = time.monotonic()
+    retry_wait = max(RETRY_WAIT_SECONDS - (last - started), 0.0)
     backlog = backlog or 0
-    logger.info("Opinion clusters: {:,} indexed clusters above id {:,} ({:,} pages); {} requests left today",
-                backlog, above, -(-backlog // PAGE_SIZE), allowed - 1)
-    if not backlog:
-        raise NothingToCatchUp(f"Search lists no cluster above id {above:,}")
+    limit = above + backlog - FRONTIER_MARGIN
+    logger.info("Opinion clusters: {:,} clusters listed above id {:,} ({:,} pages), so ids to {:,} may be read; "
+                "{} requests left today", backlog, above, -(-backlog // PAGE_SIZE), max(limit, above),
+                allowed - spend.attempts)
+    if limit <= above:
+        raise NothingToCatchUp(f"Search lists {backlog:,} clusters above id {above:,}; the newest "
+                               f"{FRONTIER_MARGIN} wait for later ones")
 
     directory = output_dir / ".catchup-prior"
     directory.mkdir(parents=True, exist_ok=True)
@@ -392,61 +446,72 @@ def daily_catch_up(output_dir: Path, *, evidence: CaptureEvidence, source_editio
 
     records: list[dict] = []
     fault: BaseException | None = None
-    deadline = time.monotonic() + (allowed - 1) * DAILY_REQUEST_INTERVAL_SECONDS + RETRY_WAIT_SECONDS
-    floor, spent, empty, doubled, walked = above, 1, 0, 0, 0
-    while spent < allowed and len(records) < backlog and empty < MAX_EMPTY_WINDOWS:
-        capacity = min(allowed - spent, WINDOW_PAGES)
-        through = floor + (PAGE_SIZE * capacity << doubled)
+    deadline = time.monotonic() + (allowed - spend.attempts) * DAILY_REQUEST_INTERVAL_SECONDS + retry_wait
+    floor, widened, walked = above, 0, 0
+    while spend.attempts < allowed and floor < limit:
+        pages = min(allowed - spend.attempts, WINDOW_PAGES)
+        span = min(max(widened, PAGE_SIZE * pages), limit - floor)
         # Each walk paces its own requests; its first follows the previous walk's last by the same interval.
         time.sleep(max(DAILY_REQUEST_INTERVAL_SECONDS - (time.monotonic() - last), 0.0))
         try:
-            found, _ = _walk(floor, through, capacity=capacity, seconds=deadline - time.monotonic(), evidence=evidence)
-        except _WindowOverflow:
-            spent, doubled, last = spent + 1, doubled - 1, time.monotonic()
+            found, _ = _walk(floor, floor + span, pages=pages, attempts=allowed - spend.attempts,
+                             seconds=deadline - time.monotonic(), spend=spend, evidence=evidence)
+        except _WindowOverflow as overflow:
+            last = time.monotonic()
+            if span <= PAGE_SIZE * pages:  # More clusters than ids: the count cannot be walked or trusted.
+                fault = ValueError(f"CourtListener lists {overflow.args[0]:,} clusters in the {span:,} ids "
+                                   f"above {floor:,}")
+                break
+            widened = span // 2
             continue
         except Exception as error:
             fault = error
             break
         last = time.monotonic()
-        spent += max(1, -(-len(found) // PAGE_SIZE))
         walked += 1
         records += found
-        empty, doubled = (0, 0) if found else (empty + 1, doubled + 1)
-        floor = through
+        widened = 0 if found else 2 * span
+        floor += span
     if fault is not None:
-        logger.warning("Opinion clusters: stopped after {} whole windows ({:,} clusters): {}",
-                       walked, len(records), fault)
-        if _quota_stop(fault):
-            if not records:
-                raise NothingToCatchUp(f"CourtListener quota ran out before one window completed: {fault}") from fault
+        logger.warning("Opinion clusters: stopped after {} whole windows ({:,} clusters, {} requests): {}",
+                       walked, len(records), spend.attempts, fault)
+        if _spent_stop(fault):
             fault = None
-        elif not records:
-            raise fault
     if not records:
-        raise NothingToCatchUp(f"No indexed cluster in the {floor - above:,} ids above {above:,}")
+        if fault is not None:
+            raise fault
+        if floor == limit:
+            # Every id the count proves assigned was read and lists nothing. Saying "nothing to do" would ask
+            # the same requests every day; only a published generation can move the floor.
+            raise ValueError(
+                f"Search lists {backlog:,} clusters above id {above:,} but none in ids {above + 1:,} to {limit:,}, "
+                "which that count proves assigned. Nothing was published; the next run asks the same until the "
+                "backlog outgrows the gap"
+            )
+        raise NothingToCatchUp(f"The day's {spend.attempts} requests ended before a window above id {above:,} "
+                               "listed a cluster")
 
-    reached = max(record["cluster_id"] for record in records)
     evidence.event(
         CATCH_UP_EVENT,
         parent=entry["artifactDigest"],
         source_edition=source_edition.isoformat(),
         above=above,
-        through=reached,
+        through=floor,
         declared_backlog=backlog,
         clusters=len(records),
         windows=walked,
-        requests=spent,
+        requests=spend.attempts,
         max_requests=allowed,
         coverage=("Preserved parent plus whole all-status indexed id windows; unindexed clusters may be absent. "
                   "Complete through `through` as indexed when read; `declared_backlog` less `clusters` remained "
                   "above it. Bulk coverage inherited; maximum ID is not citation membership proof."),
     )
     logger.info("Opinion clusters: {:,} clusters in {} windows and {} requests, through id {:,}; about {:,} remain",
-                len(records), walked, spent, reached, max(backlog - len(records), 0))
+                len(records), walked, spend.attempts, floor, max(backlog - len(records), 0))
     candidate = _append_search_rows(
         output_dir, records, prior=prior, receipts=receipts, selected=selected, scope=scope,
         diagnostics={"source_edition": source_edition.isoformat(), "prior_generation": entry["artifactDigest"],
-                     "above": above, "through": reached},
+                     "above": above, "through": floor},
     )
     # The candidate holds every prior row; generation admission needs the disk more than a second copy.
     prior.unlink()
