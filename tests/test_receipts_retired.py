@@ -3,6 +3,9 @@
 The marker (``subject_catalog.RECEIPTS_RETIRED``) sits beside the table's descriptor in its installed policy file, so
 retiring moves no policy version and no ledger entry. These tests mark (or unmark) a table by patching the one
 function every reader asks (``subject_catalog.retired_receipt_datasets``).
+Which tables the installed files mark is held in one place: tests/test_receipt_archive_pins.py requires the marked
+tables to equal the pinned ones, each pin checked against its generation's own root, so a table marked by accident
+(no pin) fails there and a family's switch edits no test here.
 """
 
 import copy
@@ -23,16 +26,12 @@ REGISTER = Path(__file__).parent / "fixtures/federal_register_switch/expected/ni
 
 @pytest.fixture
 def retire(monkeypatch):
-    """Mark tables retired for one test, as their installed files would."""
+    """Start from no table retired, then mark the ones a test names, as their installed files would: a family's
+    switch changes the installed marks and none of these tests."""
     def mark(*names):
         monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset(names))
+    mark()
     return mark
-
-
-def test_the_installed_files_retire_exactly_the_switched_tables():
-    """Comments and their index left receipts first (ss-juz8): the mirror publishes the catalog table alone."""
-    subject_catalog.retired_receipt_datasets.cache_clear()
-    assert subject_catalog.retired_receipt_datasets() == frozenset({"comments", "comments_index"})
 
 
 def test_the_marker_is_a_tables_and_never_part_of_its_policy():
@@ -255,7 +254,6 @@ def test_the_first_receipts_free_publish_needs_the_live_generation_pinned(tmp_pa
     from spicy_regs.sources.publication import PublicationError, empty_index, publish_generation
     from tests.generation_fakes import Store
 
-    retire()  # as main published it: with receipts
     store, schema = Store(), pa.schema([("id", pa.string())])
     policies = [DatasetPolicy(name, schema, ("id",), ("held",)) for name in ("comments", "comments_index")]
     monkeypatch.setattr(etl_policy_registry, "installed_policies", lambda: {p.dataset: p for p in policies})
