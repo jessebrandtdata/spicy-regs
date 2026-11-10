@@ -182,10 +182,13 @@ def test_retained_input_to_existing_typed_download_and_mcp(tmp_path, monkeypatch
     }
     _, evidence = build(tmp_path / "reading/manifest.json", tmp_path / "typed")
     admitted = verify_evidence(evidence, archive_root=tmp_path / "raw")
-    # Every declared input, including the source review, is retained by value.
-    retained_text = (evidence / "members.json").read_text()
+    # Every declared input, including the source review, is retained: by value, or as a JSON copy cut of this
+    # machine's folders whose ``local_sha256`` is the exact input's (ss-81bv).
+    events = [json.loads(line) for line in (evidence / "journal.jsonl").read_text().splitlines()]
+    retained = {event.get(key) for event in events if event["event"] == "retained-file"
+                for key in ("sha256", "local_sha256")}
     for item in processing_inputs(source):
-        assert item["sha256"].removeprefix("sha256:") in retained_text
+        assert item["sha256"] in retained
     assert admitted.pin.artifact_digest
     _, tables, _ = family_tables("senate", "financial-summary")
     local = download_generation(monkeypatch, tmp_path / "typed/generation", evidence, tmp_path / "selected", tables)

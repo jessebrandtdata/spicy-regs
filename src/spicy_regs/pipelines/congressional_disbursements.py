@@ -168,7 +168,8 @@ def acquire_selection(
                         source_id=item["id"],
                         source_url=item["url"],
                         source_sha256=prior["source_sha256"],
-                        prior_evidence=prior["evidence_directory"],
+                        # The earlier acquisition's run, not its folder on this machine (ss-81bv).
+                        prior_run_id=Path(prior["evidence_directory"]).name,
                     )
                     continue
                 base = {**item, "evidence_directory": str(evidence.directory)}
@@ -184,7 +185,8 @@ def acquire_selection(
                         stage="retained-disbursement-" + item["format"],
                         raw_source=True,
                         source_url=item["url"],
-                        prior_receipt=local.get("receipt_path"),
+                        original_location=item["url"],
+                        prior_receipt=Path(local["receipt_path"]).name if local.get("receipt_path") else None,
                         prior_receipt_sha256=local.get("receipt_sha256"),
                     )
                     results[item["id"]] = {
