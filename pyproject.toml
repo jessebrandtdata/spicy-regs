@@ -65,6 +65,7 @@ build-federal-register-layer1 = "spicy_regs.transforms.build_federal_register:la
 build-fec-financial-profiles = "spicy_regs.pipelines.fec_financial_profiles:main"
 spicy-regs-run = "spicy_regs.operational_runner:main"
 spicy-regs-scorecards = "spicy_regs.scorecards.operations.cli:main"
+publish-local-generation = "spicy_regs.local_publication:main"
 build-historical-regulations = "spicy_regs.transforms.historical_regulations:main"
 build-table3-history = "spicy_regs.sources.table3_history:main"
 build-uscode-editions = "spicy_regs.sources.uscode_editions:main"

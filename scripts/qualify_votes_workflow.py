@@ -19,7 +19,7 @@ import pyarrow.parquet as pq
 from starlette.testclient import TestClient
 from rulespec_artifacts import LocalMemberSource, admit_artifact
 
-from scripts.qualification_store import DiskStore
+from spicy_regs.sources.disk_store import DiskStore
 from scripts.retained_qualification_support import (
     assert_pin, call, capture_code_pins, child, copy_exact, phase, records, serve, verify_code_pins,
 )
