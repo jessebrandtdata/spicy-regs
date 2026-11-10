@@ -100,7 +100,7 @@ def admit_release(profile, pages, scope: dict, destination: Path, *, blobs, obse
     )
 
 
-def raw_original(store, sha256: str, byte_size: int) -> Path:
+def raw_original(store, sha256: str, byte_size: int | None) -> Path:
     """The stored file of one original, verified against its digest and size; a gzip-wrapped one is refused."""
     described = store.describe_blob(sha256, byte_size)
     if described["encoding"] != "raw":
@@ -125,6 +125,46 @@ def snapshot_readers(profile, iter_retained_pages, scopes, destination: Path, *,
         readers.append(admit_release(profile, iter_retained_pages(scope, blob_source=blobs), scope,
                                      Path(destination) / str(index), blobs=blobs, observed=[capture["observed_at"]]))
     return readers, archives
+
+
+def journal_snapshot_releases(evidence, readers, event: str) -> None:
+    """Name each admitted release and its population outcome in the generation's evidence."""
+    for reader in readers:
+        evidence.event(event, source_logical_id=reader.pin.logical_id,
+                       source_artifact_digest=reader.pin.artifact_digest,
+                       collection_outcome=reader.collection_outcome)
+
+
+def published_before(evidence, stage: str, sha256: str) -> bool:
+    """Whether the published generation's evidence already holds these bytes for ``stage``."""
+    return any(evidence.inherited_event(event, stage=stage, sha256=sha256) for event in ("capture", "retained-file"))
+
+
+def restore_originals(store, digests, base_url: str, *, max_bytes: int, transport=None) -> int:
+    """Fetch each original ``store`` lacks from published source evidence, held to its digest; returns the count.
+
+    Evidence blobs are content-addressed under ``source-evidence/blobs/sha256/``. A hosted run starts with
+    an empty raw archive, and this is how it reads what earlier generations were built from.
+    """
+    import httpx
+
+    fetched = 0
+    with httpx.Client(headers={"User-Agent": "spicy-regs", "Accept-Encoding": "identity"}, timeout=120,
+                      transport=transport) as client:
+        for digest in sorted(set(digests)):
+            try:
+                store.describe_blob(digest)
+                continue
+            except FileNotFoundError:
+                pass
+            url = f"{base_url.rstrip('/')}/source-evidence/blobs/sha256/{digest.removeprefix('sha256:')}"
+            with client.stream("GET", url) as response:
+                response.raise_for_status()
+                written = store.put_stream(response.iter_bytes(), max_bytes=max_bytes)
+            if written.blob_ref != digest:
+                raise ValueError(f"Published evidence blob differs from its address: {digest}")
+            fetched += 1
+    return fetched
 
 
 def selected_readers(profile, selection: dict):

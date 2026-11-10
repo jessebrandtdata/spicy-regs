@@ -2,7 +2,7 @@
 
 Four published families are refreshed from a workstation: `treasury-fiscal`,
 `administration-policy`, `ofac-sanctions` and `grants-opportunities`. Each
-refresh is the same five steps: acquire, build, dry-run publish, publish, read
+hand refresh is the same five steps: acquire, build, dry-run publish, publish, read
 back. What each command does and refuses is in the family's own page
 ([Treasury](treasury-fiscal.md), [administration policy](retained-collections.md),
 [OFAC](ofac-sanctions.md), [Grants](grants-opportunities.md)); this page is only
@@ -125,11 +125,8 @@ $UV python -m spicy_regs.pipelines.ofac build \
 ```
 
 The published table then holds these two snapshots only. Their ZIPs stay in
-the raw archive and in R2 source evidence, which retention never deletes. An
-earlier generation's tables stay on R2 only while the weekly retention keeps
-them: the family's last three generations, and any generation whose digest a
-page under `docs/` names (`spicy_regs/generation_retention.py`). The OFAC and
-Grants pages name the 2026-10-20 generations for that reason.
+the raw archive and in R2 source evidence, which retention never deletes. What
+happens to the replaced generation's tables is under "After a publish".
 
 ## grants-opportunities
 
@@ -146,7 +143,7 @@ $UV python -m spicy_regs.pipelines.grants_opportunities build \
 `$EXPORT_DATE` is the newest daily export, `YYYY-MM-DD`. The 2026-11-09 export
 was written at 09:41 UTC; before a day's export exists, `acquire` for that date
 fails with HTTP 403 and the day before is the newest. The published table then
-holds this snapshot only, under the same retention as OFAC.
+holds this snapshot only.
 
 ## After a publish
 
@@ -173,3 +170,52 @@ that records the refresh.
 - Keep `$WORK`'s capture selections and both receipts with the session's
   records. The OFAC and Grants selections are the only record of which
   captures a published snapshot was admitted from besides the published rows.
+- **The replaced generation.** Weekly retention (Sundays 05:45 UTC,
+  `spicy_regs/generation_retention.py`) finds a family's earlier generations
+  through the index each build read. A hand-built generation records none, so
+  after a hand publish the replaced generation's tables are deleted at the
+  next weekly run unless a page under `docs/` names its digest. The OFAC and
+  Grants pages name their 2026-10-20 generations for that reason; the replaced
+  Treasury and administration-policy generations are not named, and their rows
+  are all in the new generation. Source evidence is never deleted.
+
+## Hosted refresh
+
+Each family also has a hosted workflow, `rollup-<family>.yml`, that runs
+`run-rollup-<family>` through the shared `_rollup.yml`. They are dispatch-only
+until one hosted run with `skip_upload` (the default when dispatched) has
+passed for each; a schedule starts running the day it reaches main.
+
+A hosted runner has no shared raw archive. Each run downloads through its
+generation's source evidence, and publication uploads every evidence blob to
+`source-evidence/blobs/sha256/` in R2 before the family pointer moves. That is
+where a hosted run's downloads are kept; the workstation's raw archive does not
+receive them.
+
+| Family | What a run does | When it publishes nothing |
+| --- | --- | --- |
+| `treasury-fiscal` | Reads the published generation's captures from its rows, restores their bytes from R2 evidence, adds each Debt to the Penny day listed after the newest published one | No later day is listed |
+| `administration-policy` | Reads every published administration's file at the archive's current commit | No file's bytes differ |
+| `ofac-sanctions` | Downloads the SDN and consolidated exports and publishes them as the two snapshots | Both ZIPs are the published ones |
+| `grants-opportunities` | Finds the newest daily export of the last seven days and publishes it as the one snapshot | That export date is published |
+
+The Treasury run needs the three-table generation, so it can start only after
+the first hand refresh above. It adds debt days only: a new monthly statement
+still needs its reviewed estimate entries and a hand refresh.
+
+Schedules to add once the rehearsals pass, each beside `workflow_dispatch`:
+
+```yaml
+# rollup-grants-opportunities.yml: two hours after the 2026-11-09 export was written (09:41 UTC)
+  schedule:
+    - cron: '47 11 * * *'
+# rollup-treasury-fiscal.yml: after the US business day
+  schedule:
+    - cron: '43 21 * * *'
+# rollup-ofac-sanctions.yml
+  schedule:
+    - cron: '17 22 * * *'
+# rollup-administration-policy.yml
+  schedule:
+    - cron: '13 23 * * *'
+```

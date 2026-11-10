@@ -492,8 +492,6 @@ def test_acquire_records_receipt_scopes_and_rebuilds_identical_releases_from_raw
 
 def test_listed_debt_dates_are_captured_and_a_published_generation_names_its_own_captures(tmp_path):
     """A refresh needs no kept capture file: new debt days come from the listing, the rest from published rows."""
-    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
-
     report = b"%PDF-1.7 retained statement"
     listing = [{"report_date": "2026-09-30", "report_group_id": "5",
                 "path": "/static-data/published-reports/mts/MonthlyTreasuryStatement_202609.pdf"}]
@@ -521,12 +519,10 @@ def test_listed_debt_dates_are_captured_and_a_published_generation_names_its_own
         ("mts_table_1", "2026-09-30"), ("mts_table_2", "2026-09-30"), ("debt_to_penny", "2026-10-16")]
 
     pipeline.build_from_captures(selection, tmp_path / "first")
-    store = CentralRawArchiveStore(tmp_path / "central-raw", create=False)
-    derived = pipeline.published_selection(sorted((tmp_path / "first" / "generation").glob("treasury_*.parquet")),
-                                           store=store)
+    derived = pipeline.published_selection(sorted((tmp_path / "first" / "generation").glob("treasury_*.parquet")))
     assert sorted(derived["releases"], key=json.dumps) == sorted(selection["releases"], key=json.dumps)
     assert derived["reports"] == {"2026-09-30": {
-        key: selection["reports"]["2026-09-30"][key] for key in ("url", "sha256", "byte_size")}}
+        key: selection["reports"]["2026-09-30"][key] for key in ("url", "sha256")}}
     pipeline.build_from_captures(derived, tmp_path / "second")
     for name in module.SCHEMAS:
         first, second = (pq.read_table(tmp_path / run / "generation" / f"{name}.parquet").to_pylist()

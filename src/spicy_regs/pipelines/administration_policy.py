@@ -21,6 +21,19 @@ from spicy_regs.sources import retained_collections
 FAMILY = "administration-policy"
 STAGE = "administration-policy-metadata"
 STATEMENTS = "administration_policy_statements"
+REMOTE = "https://github.com/unitedstates/statements-of-administration-policy.git"
+
+
+def head_commit() -> str:
+    """The archive's current commit, asked of its Git remote (no API quota is involved)."""
+    import re
+    import subprocess
+
+    listed = subprocess.run(["git", "ls-remote", REMOTE, "HEAD"], check=True, capture_output=True, text=True,
+                            timeout=60).stdout.split()
+    if len(listed) != 2 or listed[1] != "HEAD" or not re.fullmatch(r"[0-9a-f]{40}", listed[0]):
+        raise ValueError("Archive remote did not state one HEAD commit")
+    return listed[0]
 
 
 def published_sources(statements: Path) -> dict[str, dict]:

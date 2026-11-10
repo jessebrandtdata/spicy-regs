@@ -1,0 +1,20 @@
+name: Rollup — ofac_sanctions
+# Dispatch only until one hosted rehearsal with skip_upload has passed; the schedule to add then is in
+# docs/local-family-refresh.md. A run that finds nothing new publishes nothing and ends green.
+# Built here: the current SDN and consolidated exports; SDN admission takes most of the time.
+on:
+  workflow_dispatch:
+    inputs:
+      skip_upload:
+        description: 'Skip R2 upload (dry run)'
+        required: false
+        default: true
+        type: boolean
+jobs:
+  run:
+    uses: ./.github/workflows/_rollup.yml
+    secrets: inherit
+    with:
+      command: run-rollup-ofac-sanctions
+      skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
+      timeout_minutes: 60

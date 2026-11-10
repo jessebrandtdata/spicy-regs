@@ -13,28 +13,38 @@ from pathlib import Path
 
 from spicy_regs.contract_types import described_schema
 from spicy_regs.generations import build_generation
-from spicy_regs.pipelines.raw_releases import add_snapshot_build, download_original, snapshot_inputs
+from spicy_regs.pipelines.raw_releases import (
+    add_snapshot_build, download_original, journal_snapshot_releases, snapshot_inputs,
+)
 from spicy_regs.source_evidence import CaptureEvidence, acquisition_evidence
 from spicy_regs.transforms.build_grants_opportunities import OUTPUT, SCHEMA, TABLE, build_grants_opportunities
 
 STAGE = "grants-source-archive"
+RELEASE_EVENT = "grants-source-release"
 
 
-def _stated_version(url: str, transport) -> tuple[int, str]:
-    """The size and ETag the publisher states for one export now; the download is then bound to that version."""
+def stated_version(snapshot_date: str, *, transport=None) -> tuple[str, int, str] | None:
+    """The URL, size and ETag the publisher states for one dated export now, or ``None`` while it has none.
+
+    The bucket answers 403 for an object that does not exist; any other failure raises.
+    """
     import httpx
+    from spicy_docs.sources import grants_gov
 
+    url = f"{grants_gov.EXPORT_BASE}GrantsDBExtract{snapshot_date.replace('-', '')}v2.zip"
     with httpx.Client(transport=transport, timeout=60) as client:
         stated = client.head(url, headers={"User-Agent": "spicy-regs", "Accept-Encoding": "identity"})
+    if stated.status_code in (403, 404):
+        return None
     stated.raise_for_status()
     etag, size = stated.headers.get("etag"), stated.headers.get("content-length", "")
     if not etag or not size.isascii() or not size.isdecimal():
         raise ValueError("Grants.gov export states no ETag or size to bind the download to")
-    return int(size), etag
+    return url, int(size), etag
 
 
-def acquire(snapshot_dates, output_dir: Path, *, transport=None) -> dict:
-    """Capture each dated export once; returns the capture selection from the run's receipts."""
+def capture(evidence, snapshot_dates, *, transport=None) -> list[dict]:
+    """Capture each dated export once through ``evidence``, bound to its stated version; returns their scopes."""
     from spicy_docs.sources import grants_gov
 
     def official(url):
@@ -42,20 +52,27 @@ def acquire(snapshot_dates, output_dir: Path, *, transport=None) -> dict:
             raise ValueError("Grants.gov export URL is outside the official extract location")
         return url
 
-    releases = []
+    scopes = []
+    for snapshot_date in snapshot_dates:
+        stated = stated_version(snapshot_date, transport=transport)
+        if stated is None:
+            raise ValueError(f"Grants.gov has no export for {snapshot_date}")
+        url, size, etag = stated
+        evidence.event("grants-export-version", export_url=url, etag=etag, content_length=size)
+        descriptor = download_original(
+            evidence, lambda acquirer, store, snapshot_date=snapshot_date, size=size, etag=etag:
+            grants_gov.acquire_snapshot(acquirer, snapshot_date, store=store, expected_size=size, etag=etag),
+            stage=STAGE, max_bytes=grants_gov.MAX_ZIP_BYTES, validate_url=official, transport=transport,
+        )
+        # The scope check holds the probed URL to the owner's own name for this export date.
+        scopes.append(grants_gov.grants_scope(descriptor, snapshot_date))
+    return scopes
+
+
+def acquire(snapshot_dates, output_dir: Path, *, transport=None) -> dict:
+    """Capture the dated exports into the raw archive; returns the capture selection from the run's receipts."""
     with acquisition_evidence("grants-opportunities", output_dir=Path(output_dir)) as evidence:
-        for snapshot_date in snapshot_dates:
-            url = f"{grants_gov.EXPORT_BASE}GrantsDBExtract{snapshot_date.replace('-', '')}v2.zip"
-            size, etag = _stated_version(url, transport)
-            evidence.event("grants-export-version", export_url=url, etag=etag, content_length=size)
-            capture = download_original(
-                evidence, lambda acquirer, store, snapshot_date=snapshot_date, size=size, etag=etag:
-                grants_gov.acquire_snapshot(acquirer, snapshot_date, store=store, expected_size=size, etag=etag),
-                stage=STAGE, max_bytes=grants_gov.MAX_ZIP_BYTES, validate_url=official, transport=transport,
-            )
-            # The scope check holds the probed URL to the owner's own name for this export date.
-            releases.append(grants_gov.grants_scope(capture, snapshot_date))
-    return {"releases": releases}
+        return {"releases": capture(evidence, snapshot_dates, transport=transport)}
 
 
 def build(readers, output_dir: Path, *, archives):
@@ -79,12 +96,7 @@ def build(readers, output_dir: Path, *, archives):
                 if saved.get("sha256") != ref:
                     raise ValueError("Grants archive differs from the admitted source digest")
                 retained.add(ref)
-            evidence.event(
-                "grants-source-release",
-                source_logical_id=reader.pin.logical_id,
-                source_artifact_digest=reader.pin.artifact_digest,
-                collection_outcome=reader.collection_outcome,
-            )
+        journal_snapshot_releases(evidence, readers, RELEASE_EVENT)
         table = build_grants_opportunities(readers, output_dir)
         artifact = build_generation(
             output_dir / "generation",

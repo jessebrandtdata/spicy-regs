@@ -122,11 +122,11 @@ def acquire(selections, report_dates, output_dir: Path, *, debt_after: date | No
                        transport=transport)
 
 
-def published_selection(tables, *, store) -> dict:
+def published_selection(tables) -> dict:
     """The capture selection behind a published generation, read from its own rows.
 
     Every row names the page it came from, and every statement row its report control, so the generation
-    rebuilds from this selection and the originals in ``store`` without the capture files it was built with.
+    rebuilds from this selection and its originals without the capture files it was built with.
     """
     import pyarrow.parquet as pq
     from spicy_docs.sources.treasury_fiscal import selected_request
@@ -144,7 +144,7 @@ def published_selection(tables, *, store) -> dict:
         if "qualification_report_url" in table.column_names:
             controls = table.select(["report_date", "qualification_report_url", "qualification_report_sha256"])
             for issue, url, digest in {tuple(row.values()) for row in controls.to_pylist()}:
-                control = {"url": url, "sha256": digest, "byte_size": store.describe_blob(digest)["bytes"]}
+                control = {"url": url, "sha256": digest}
                 if reports.setdefault(issue.isoformat(), control) != control:
                     raise ValueError("Published rows name two report controls for one issue")
     return {"releases": [
@@ -240,7 +240,7 @@ def selected_inputs(selection: dict, destination: Path, *, store):
     for report_date, report in selection["reports"].items():
         reports[date.fromisoformat(report_date)] = {
             "url": report["url"], "sha256": report["sha256"],
-            "path": str(raw_original(store, report["sha256"], report["byte_size"]))}
+            "path": str(raw_original(store, report["sha256"], report.get("byte_size")))}
     return readers, {"debt_dates": dates.get(True, set()), "report_dates": dates.get(False, set()), "reports": reports}
 
 
@@ -274,7 +274,6 @@ def main():
         "published-captures", help="Write the capture selection behind a published generation, from its own rows")
     published.add_argument("--generation", required=True, type=Path, help="A local copy of the published generation")
     published.add_argument("--captures-out", required=True, type=Path)
-    published.add_argument("--archive-root", type=Path, help="Raw archive holding the originals (read only)")
     generation = commands.add_parser("build", help="Build a generation from capture selections and raw originals")
     generation.add_argument("--captures", required=True, action="append", type=Path)
     generation.add_argument("--output-dir", required=True, type=Path)
@@ -284,8 +283,7 @@ def main():
         if args.command == "acquire":
             selection = acquire(args.select, args.report, args.output_dir, debt_after=args.debt_after)
         else:
-            selection = published_selection(sorted(args.generation.glob("treasury_*.parquet")),
-                                            store=open_raw(args.archive_root))
+            selection = published_selection(sorted(args.generation.glob("treasury_*.parquet")))
         args.captures_out.write_text(json.dumps(selection, indent=2, sort_keys=True) + "\n")
         print(json.dumps({"captures": str(args.captures_out), "reports": sorted(selection["reports"]), "releases": [
             f"{scope['selection']['dataset']}:{scope['selection']['record_date']}" for scope in selection["releases"]]}))

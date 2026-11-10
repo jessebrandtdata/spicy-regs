@@ -13,27 +13,35 @@ from pathlib import Path
 
 from spicy_regs.contract_types import described_schema
 from spicy_regs.generations import build_generation
-from spicy_regs.pipelines.raw_releases import add_snapshot_build, download_original, snapshot_inputs
+from spicy_regs.pipelines.raw_releases import (
+    add_snapshot_build, download_original, journal_snapshot_releases, snapshot_inputs,
+)
 from spicy_regs.source_evidence import CaptureEvidence, acquisition_evidence
 from spicy_regs.transforms.build_ofac import SCHEMAS, build_ofac
 
 STAGE = "ofac-source-archive"
+RELEASE_EVENT = "ofac-source-release"
+
+
+def capture(evidence, selected_lists, *, transport=None) -> list[dict]:
+    """Capture each selected list's official export once through ``evidence``; returns their OFAC scopes."""
+    from spicy_docs.sources import ofac
+
+    scopes = []
+    for selected in selected_lists:
+        descriptor = download_original(
+            evidence, lambda acquirer, store, selected=selected: ofac.acquire_snapshot(acquirer, selected, store=store),
+            stage=STAGE, max_bytes=ofac.MAX_ZIP_BYTES, transport=transport,
+            validate_url=lambda url, selected=selected: ofac.validate_download_url(url, selected_list=selected),
+        )
+        scopes.append(ofac.ofac_scope(descriptor, selected))
+    return scopes
 
 
 def acquire(selected_lists, output_dir: Path, *, transport=None) -> dict:
-    """Capture each selected list's official export once; returns the capture selection from the run's receipts."""
-    from spicy_docs.sources import ofac
-
-    releases = []
+    """Capture the selected exports into the raw archive; returns the capture selection from the run's receipts."""
     with acquisition_evidence("ofac-sanctions", output_dir=Path(output_dir)) as evidence:
-        for selected in selected_lists:
-            capture = download_original(
-                evidence, lambda acquirer, store, selected=selected: ofac.acquire_snapshot(acquirer, selected, store=store),
-                stage=STAGE, max_bytes=ofac.MAX_ZIP_BYTES, transport=transport,
-                validate_url=lambda url, selected=selected: ofac.validate_download_url(url, selected_list=selected),
-            )
-            releases.append(ofac.ofac_scope(capture, selected))
-    return {"releases": releases}
+        return {"releases": capture(evidence, selected_lists, transport=transport)}
 
 
 def build(readers, output_dir: Path, *, archives):
@@ -56,12 +64,7 @@ def build(readers, output_dir: Path, *, archives):
                 if saved.get("sha256") != ref:
                     raise ValueError("OFAC original differs from the admitted digest")
                 retained.add(ref)
-            evidence.event(
-                "ofac-source-release",
-                source_logical_id=reader.pin.logical_id,
-                source_artifact_digest=reader.pin.artifact_digest,
-                collection_outcome=reader.collection_outcome,
-            )
+        journal_snapshot_releases(evidence, readers, RELEASE_EVENT)
         tables = build_ofac(readers, output_dir)
         artifact = build_generation(
             output_dir / "generation",
