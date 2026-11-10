@@ -16,12 +16,13 @@ the wiring.
 """
 
 import json
+from collections.abc import Sequence
 from contextlib import ExitStack
 from os import getenv
 from pathlib import Path
 from shutil import rmtree
 from time import monotonic
-from typing import Annotated, ClassVar
+from typing import Annotated, ClassVar, cast
 
 from cyclopts import App, Parameter
 from dotenv import load_dotenv
@@ -89,6 +90,8 @@ class SweepState:
             raw = r2.get_r2_client().get_object(Bucket=getenv("R2_BUCKET_NAME", "spicy-regs"), Key=SWEEP_STATE_KEY)
             held = json.loads(raw["Body"].read())
             next_batch, starts = held["next"], held["starts"]
+            if not all(type(value) is int for value in (next_batch, starts)):  # not 3.0, "3" or true
+                raise ValueError(f"names batch {next_batch!r} with {starts!r} starts; both must be integers")
             if held["batch_count"] != self.batch_count or not 0 <= next_batch < self.batch_count or starts < 0:
                 raise ValueError(f"names batch {next_batch} of {held['batch_count']}, not of {self.batch_count}")
         except Exception as error:
@@ -166,7 +169,7 @@ class RegulationsPipeline(Pipeline):
         self.verbose = verbose
         self._sweep_agencies: list[str] | None = None
         #: A sweep's unread comment keys per agency, kept from its first pass's scan for the comment batches.
-        self._held_comment_keys: dict[str, list[str]] | None = None
+        self._held_comment_keys: dict[str, Sequence[str]] | None = None
         self._pending_text: PendingCommentText | None = None
         self._text_pool: DerivedTextPool | None = None
         self._staging_dir: Path | None = None
@@ -414,13 +417,19 @@ class RegulationsPipeline(Pipeline):
         comment_type = source_record_type(RECORD_TYPES["comments"])
         holding = held is not None and "comments" not in source_types
         originals = self._originals()
+        # The keep loop below only reads cached key lists: its readers share one resource instead of one each.
+        shared: list = []
+
+        def resource():
+            return shared[0] if shared else originals.resource(mirrulations.s3_resource())
+
         read = mirrulations.reader_factory(
             [*source_types.values(), *([comment_type] if holding else [])],
             processed_keys=manifest,
             unresolved_keys=unresolved.for_reader,
             since_year=self.since_year,
             verbose=self.verbose,
-            resource_factory=lambda: originals.resource(mirrulations.s3_resource()),
+            resource_factory=resource,
         )
 
         def reader(agency: str, rt: RecordType):
@@ -444,12 +453,15 @@ class RegulationsPipeline(Pipeline):
         )
         if holding:
             assert held is not None
-            # Every agency was listed by its readers above, so each answer comes from the scan's cache.
+            # Every agency was listed by its readers above, so each answer comes from the scan's cache: the cached
+            # list itself, which no reader mutates (each copies its keys), so it is kept without a copy.
+            shared.append(originals.resource(mirrulations.s3_resource()))
             for agency in agencies:
                 lister = read(agency, comment_type).key_lister
                 if lister is None:
                     raise RuntimeError("reader_factory built a reader without its scan's key lister")
-                held[agency] = list(lister())
+                keys = lister()
+                held[agency] = cast(Sequence[str], keys) if isinstance(keys, Sequence) else list(keys)
             logger.info("Kept {:,} unread comment keys of {} agencies for the comment batches",
                         sum(len(keys) for keys in held.values()), len(held))
         # Before any merge or manifest can use or retire what was read.

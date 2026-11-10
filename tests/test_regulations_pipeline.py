@@ -996,6 +996,34 @@ def test_comment_batches_read_the_comment_keys_the_first_pass_listed(tmp_output,
         assert [set(ids) for ids in merged] == [{"EPA-2026-0001-0002"}, {"FAA-2026-0001-0002", "FAA-2026-0001-0003"}]
 
 
+def test_a_held_key_batch_retries_its_unresolved_keys_first(tmp_output, monkeypatch):
+    """The retry set is the only way back for a key an older manifest wrongly marked read: listing skips it.
+
+    The comment batch reads the first pass's held keys, and must still be handed its agency's unresolved keys.
+    """
+    from spicy_regs.pipelines.regulatory_publication import finish_checkpoints
+
+    monkeypatch.setenv("AGENCIES", "EPA")
+    docket, listed, stuck = "EPA-2026-0001", "EPA-2026-0001-0002", "EPA-2026-0001-0001"
+    store = {_docket_key(docket): dumps(_docket_payload(docket, "2026-11-09")).encode()}
+    for comment in (listed, stuck):
+        store[_comment_key(comment, docket)] = dumps(_comment_payload(comment, docket, "2026-11-09T00:00:00Z")).encode()
+    # An older run manifested the stuck key without its row, and left it in the retry set.
+    pl.DataFrame({"key": [_comment_key(stuck, docket)]}).write_parquet(tmp_output / "manifest.parquet")
+    finish_checkpoints(tmp_output, {"failed_keys": [{
+        "agency": "EPA", "record_type": "comments", "key": _comment_key(stuck, docket), "status": "unreadable",
+        "reason": "legacy parse failure", "attempted_at": "2026-10-01T00:00:00+00:00", "attempts": 1,
+    }], "pending_comment_text": []}, publish=False)
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+    merged = []
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", lambda staging_dir, record_type: merged.append(
+        sorted(pl.read_parquet(staging_dir / "comments" / "*.parquet")["comment_id"].to_list())))
+    RegulationsPipeline(output_dir=tmp_output, batch_count=1, use_iceberg=True, enrich_text=False,
+                        skip_upload=True).run_sweep()
+    assert merged == [[stuck, listed]]
+    assert restore_checkpoint(tmp_output, "failed_keys") == []
+
+
 @pytest.mark.parametrize("defer", [False, True])
 def test_manual_cli_finalizes_once_unless_workflow_owns_finalization(tmp_output, monkeypatch, defer):
     monkeypatch.setenv("R2_PUBLIC_URL", "https://test.invalid")

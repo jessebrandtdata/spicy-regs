@@ -487,7 +487,16 @@ def resumable(tmp_path, monkeypatch):
 
         return started, json.loads(raw) if raw else None
 
-    return run
+    class Sweeps:
+        """Call to run one sweep; ``remote`` is the fake R2 every run shares."""
+
+        def __init__(self) -> None:
+            self.remote = remote
+
+        def __call__(self, **kwargs):
+            return run(**kwargs)
+
+    return Sweeps()
 
 
 def test_a_killed_run_resumes_at_the_batch_it_was_in(resumable):
@@ -523,3 +532,14 @@ def test_an_unreadable_state_falls_back_to_the_given_batch(resumable, monkeypatc
 def test_a_sweep_that_does_not_publish_neither_reads_nor_writes_the_state(tmp_path):
     with pytest.raises(ValueError, match="drop --skip-upload"):
         RegulationsPipeline(output_dir=tmp_path, batch_count=5, use_iceberg=True).run_sweep(resume=True)
+
+
+@pytest.mark.parametrize("held", [{"next": 3.0, "starts": 0}, {"next": True, "starts": 0}, {"next": "3", "starts": 0},
+                                  {"next": 3, "starts": True}, {"next": 3, "starts": 1.0}])
+def test_a_state_that_names_no_integer_batch_is_not_used(resumable, held):
+    """A hand-edited 3.0 passed the range check, then range() raised after the first pass, on every run."""
+    import json
+
+    resumable.remote.objects[regulations.SWEEP_STATE_KEY] = json.dumps({"batch_count": 5, **held}).encode()
+    # The given start is used instead (not 1, which true would also name), and the sweep writes a sound state.
+    assert resumable(start=2) == ([2, 3, 4, 0, 1], {"batch_count": 5, "next": 2, "starts": 0})
