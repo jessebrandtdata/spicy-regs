@@ -16,7 +16,9 @@ from pathlib import Path
 
 from spicy_regs.contract_types import described_schema
 from spicy_regs.generations import build_generation
-from spicy_regs.pipelines.raw_releases import ReleaseBlobs, admit_release, merged_scopes, open_raw, raw_original
+from spicy_regs.pipelines.raw_releases import (
+    READ_INDEX_HELP, ReleaseBlobs, admit_release, inherit_read_index, merged_scopes, open_raw, raw_original,
+)
 from spicy_regs.source_evidence import JOURNAL, CaptureEvidence, acquisition_evidence
 from spicy_regs.transforms.build_treasury_fiscal import SCHEMAS, build_treasury_fiscal
 
@@ -197,20 +199,21 @@ def retain_and_build(readers, output_dir: Path, evidence, *, debt_dates, report_
     return files, summary
 
 
-def build(readers, output_dir: Path, *, debt_dates, report_dates, reports):
+def build(readers, output_dir: Path, *, debt_dates, report_dates, reports, read_index: Path | None = None):
     """Retain admitted pages and the explicit report controls through the existing owner."""
     output_dir = Path(output_dir)
     if (output_dir / "generation").exists():
         raise ValueError("Use a fresh output directory for each Treasury generation")
     evidence = CaptureEvidence(output_dir, "treasury-fiscal")
     try:
+        read_snapshot = inherit_read_index(evidence, read_index)
         files, summary = retain_and_build(tuple(readers), output_dir, evidence, debt_dates=debt_dates,
                                           report_dates=report_dates, reports=reports)
         artifact = build_generation(
             output_dir / "generation", family="treasury-fiscal", files=files,
             expected_keys=tuple(name + ".parquet" for name in SCHEMAS),
             schemas={name: described_schema(schema) for name, schema in SCHEMAS.items()},
-            inputs=evidence.inputs(),
+            inputs=evidence.inputs(), read_snapshot=read_snapshot,
         )
     except BaseException as error:
         evidence.finish(error)
@@ -244,11 +247,12 @@ def selected_inputs(selection: dict, destination: Path, *, store):
     return readers, {"debt_dates": dates.get(True, set()), "report_dates": dates.get(False, set()), "reports": reports}
 
 
-def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path | None = None):
+def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path | None = None,
+                        read_index: Path | None = None):
     """Rebuild every selected release from raw originals, then the ordinary generation."""
     output_dir = Path(output_dir)
     readers, inputs = selected_inputs(selection, output_dir / "source-releases", store=open_raw(archive_root))
-    return build(readers, output_dir, **inputs)
+    return build(readers, output_dir, read_index=read_index, **inputs)
 
 
 def _selection_argument(value: str):
@@ -278,6 +282,7 @@ def main():
     generation.add_argument("--captures", required=True, action="append", type=Path)
     generation.add_argument("--output-dir", required=True, type=Path)
     generation.add_argument("--archive-root", type=Path, help="Raw archive holding the originals (read only)")
+    generation.add_argument("--read-index", type=Path, help=READ_INDEX_HELP)
     args = parser.parse_args()
     if args.command in ("acquire", "published-captures"):
         if args.command == "acquire":
@@ -289,7 +294,8 @@ def main():
             f"{scope['selection']['dataset']}:{scope['selection']['record_date']}" for scope in selection["releases"]]}))
         return
     selection = merge_selections(json.loads(path.read_text()) for path in args.captures)
-    artifact, evidence, summary = build_from_captures(selection, args.output_dir, archive_root=args.archive_root)
+    artifact, evidence, summary = build_from_captures(selection, args.output_dir, archive_root=args.archive_root,
+                                                        read_index=args.read_index)
     print(json.dumps({"directory": str(args.output_dir / "generation"), "sourceEvidence": str(evidence),
                       "logicalId": artifact.pin.logical_id, "artifactDigest": artifact.pin.artifact_digest,
                       "table2Checks": summary}))

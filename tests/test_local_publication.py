@@ -18,8 +18,11 @@ from tests.generation_fakes import Store
 FAMILY = "treasury-fiscal"
 
 
-def generation(tmp_path, name, tables):
-    """A complete-family generation of ``tables`` (table name to its ids) with evidence citing one raw original."""
+def generation(tmp_path, name, tables, *, read=None):
+    """A complete-family generation of ``tables`` (table name to its ids) with evidence citing one raw original.
+
+    ``read`` is the published index bytes and prior root bytes a build recorded as what it read.
+    """
     files = []
     for table, ids in tables.items():
         path = tmp_path / f"{name}-source" / f"{table}.parquet"
@@ -29,8 +32,11 @@ def generation(tmp_path, name, tables):
     evidence = CaptureEvidence(tmp_path / f"{name}-build", FAMILY)
     evidence.retain_bytes(f"the original {name} was built from".encode(), stage="fixture-original", raw_source=True)
     directory = tmp_path / name
+    index = publication.parse_index(read[0]) if read else None
+    if read:
+        evidence.inherit_pinned_root(index, read[1])
     artifact = build_generation(directory, family=FAMILY, files=files, expected_keys=[path.name for path in files],
-                                inputs=evidence.inputs())
+                                inputs=evidence.inputs(), read_snapshot=index)
     evidence.finish()
     return directory, artifact.pin.artifact_digest.removeprefix("sha256:"), evidence.artifact_dir
 
@@ -92,6 +98,18 @@ def test_dry_run_runs_the_publication_guards_on_a_disk_store(tmp_path, capsys, m
     assert publication.parse_index(live.read_bytes())["families"][FAMILY]["artifactDigest"] == "sha256:" + first_digest
     with pytest.raises(SystemExit):
         run(tmp_path, "accepted", second, evidence, *dry, "--added-table", "cells.parquet")
+
+    # A build that recorded the index it read is held to it by the publisher itself: once the family has
+    # moved on, naming the new live digest in --expect-prior does not make the old build publishable.
+    third, _, third_evidence = generation(tmp_path, "third", {"debt": ["a", "b", "d"], "periods": ["p"]},
+                                          read=(live.read_bytes(), (first / "artifact.json").read_bytes()))
+    publication.publish_generation(second, client=store, bucket="live", prior_index=publication.parse_index(
+        live.read_bytes()), evidence_directories=(evidence,), added_tables=frozenset({"cells.parquet"}))
+    moved = tmp_path / "publication-moved.json"
+    moved.write_bytes(store.objects[publication.INDEX_V2_KEY].read_bytes())
+    with pytest.raises(refused, match="Family changed since the build read its inputs; rebuild before publishing"):
+        run(tmp_path, "stale-build", third, third_evidence, "--dry-run", "--scratch-raw", "--live-index", str(moved),
+            "--expect-prior", second_digest)
 
 
 def test_publish_holds_the_target_and_raw_root_then_reads_back_publicly(tmp_path, monkeypatch):

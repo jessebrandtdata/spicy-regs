@@ -14,7 +14,7 @@ from pathlib import Path
 from spicy_regs.contract_types import described_schema
 from spicy_regs.generations import build_generation
 from spicy_regs.pipelines.raw_releases import (
-    add_snapshot_build, download_original, journal_snapshot_releases, snapshot_inputs,
+    add_snapshot_build, download_original, inherit_read_index, journal_snapshot_releases, snapshot_inputs,
 )
 from spicy_regs.source_evidence import CaptureEvidence, acquisition_evidence
 from spicy_regs.transforms.build_grants_opportunities import OUTPUT, SCHEMA, TABLE, build_grants_opportunities
@@ -75,7 +75,7 @@ def acquire(snapshot_dates, output_dir: Path, *, transport=None) -> dict:
         return {"releases": capture(evidence, snapshot_dates, transport=transport)}
 
 
-def build(readers, output_dir: Path, *, archives):
+def build(readers, output_dir: Path, *, archives, read_index: Path | None = None):
     """Use normal evidence retention and generation admission; acquire nothing."""
     output_dir = Path(output_dir)
     if (output_dir / "generation").exists():
@@ -83,6 +83,7 @@ def build(readers, output_dir: Path, *, archives):
     readers = tuple(readers)
     evidence = CaptureEvidence(output_dir, "grants-opportunities")
     try:
+        read_snapshot = inherit_read_index(evidence, read_index)
         retained = set()
         for reader in readers:
             capture = reader.collection_outcome["requestedScope"]["capture"]
@@ -105,6 +106,7 @@ def build(readers, output_dir: Path, *, archives):
             expected_keys=(OUTPUT,),
             schemas={TABLE: described_schema(SCHEMA)},
             inputs=evidence.inputs(),
+            read_snapshot=read_snapshot,
             owned_output_root=output_dir,
         )
     except BaseException as error:
@@ -132,7 +134,7 @@ def main():
         print(json.dumps({"captures": str(args.captures_out), "releases": selection["releases"]}))
         return
     readers, archives = snapshot_inputs(args, GRANTS_GOV_PROFILE, iter_retained_pages)
-    artifact, evidence = build(readers, args.output_dir, archives=archives)
+    artifact, evidence = build(readers, args.output_dir, archives=archives, read_index=args.read_index)
     print(
         json.dumps(
             {

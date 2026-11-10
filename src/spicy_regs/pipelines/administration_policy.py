@@ -14,7 +14,7 @@ from pathlib import Path
 
 from spicy_regs.generations import build_generation
 from spicy_regs.native_types import described_schema
-from spicy_regs.pipelines.raw_releases import open_raw, raw_original
+from spicy_regs.pipelines.raw_releases import READ_INDEX_HELP, inherit_read_index, open_raw, raw_original
 from spicy_regs.source_evidence import JOURNAL, CaptureEvidence, acquisition_evidence
 from spicy_regs.sources import retained_collections
 
@@ -131,7 +131,8 @@ def candidate(selection: dict, output_dir: Path, evidence, *, store, retain: boo
     return built
 
 
-def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path | None = None):
+def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path | None = None,
+                        read_index: Path | None = None):
     """Build the candidate from raw originals and admit it as a generation with its source evidence."""
     output_dir = Path(output_dir)
     if (output_dir / "generation").exists() or (output_dir / "candidate").exists():
@@ -139,6 +140,7 @@ def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path
     store = open_raw(archive_root)
     evidence = CaptureEvidence(output_dir, FAMILY)
     try:
+        read_snapshot = inherit_read_index(evidence, read_index)
         built = candidate(selection, output_dir, evidence, store=store)
         tables = retained_collections.SCHEMAS
         artifact = build_generation(
@@ -149,6 +151,7 @@ def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path
             receipt_path=output_dir / "candidate" / "etl_receipts.parquet",
             receipt_policies=list(retained_collections.POLICIES.values()),
             receipt_generation_id=built["generation"], inputs=evidence.inputs(),
+            read_snapshot=read_snapshot,
         )
     except BaseException as error:
         evidence.finish(error)
@@ -173,6 +176,7 @@ def main():
     generation.add_argument("--captures", required=True, action="append", type=Path)
     generation.add_argument("--output-dir", required=True, type=Path)
     generation.add_argument("--archive-root", type=Path, help="Raw archive holding the originals (read only)")
+    generation.add_argument("--read-index", type=Path, help=READ_INDEX_HELP)
     args = parser.parse_args()
     if args.command == "acquire":
         selection = acquire(args.commit, args.administrations, args.output_dir,
@@ -182,7 +186,8 @@ def main():
             {key: source[key] for key in ("administration", "commit", "sha256")} for source in selection["sources"]]}))
         return
     selection = merge_selections(json.loads(path.read_text()) for path in args.captures)
-    artifact, evidence, built = build_from_captures(selection, args.output_dir, archive_root=args.archive_root)
+    artifact, evidence, built = build_from_captures(selection, args.output_dir, archive_root=args.archive_root,
+                                                     read_index=args.read_index)
     print(json.dumps({"directory": str(args.output_dir / "generation"), "sourceEvidence": str(evidence),
                       "logicalId": artifact.pin.logical_id, "artifactDigest": artifact.pin.artifact_digest,
                       "rows": {table: output["rows"] for table, output in built["outputs"].items()}}))

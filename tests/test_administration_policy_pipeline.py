@@ -1,12 +1,15 @@
 """Administration-policy refresh: raw capture, unchanged files keep their observation, evidence-bound generation."""
 
+from datetime import UTC, datetime, timedelta
 import hashlib
 import json
+import shutil
 
 import httpx
 import pyarrow.parquet as pq
 import pytest
 
+from spicy_regs import generation_retention
 from spicy_regs.pipelines import administration_policy as pipeline
 from spicy_regs.source_evidence import INPUT_ROLE
 from spicy_regs.sources import publication
@@ -111,3 +114,60 @@ def test_two_captures_of_one_administration_are_refused(tmp_path):
     assert pipeline.merge_selections([one, one]) == one
     with pytest.raises(ValueError, match="Two captures were selected for one administration"):
         pipeline.merge_selections([one, other])
+
+
+def test_a_build_that_read_the_published_index_names_the_generation_it_replaces(tmp_path):
+    """Recording the index a hand build read gives the publisher its staleness check and retention its chain."""
+    family, transport = "administration-policy", archive([])
+    first = pipeline.acquire(OCTOBER, ["46-Biden", "47-Trump"], tmp_path / "acquire-1", transport=transport)
+    october, october_evidence, _ = pipeline.build_from_captures(first, tmp_path / "october")
+    store = Store()
+    live = publication.publish_generation(
+        tmp_path / "october" / "generation", client=store, bucket="fixture", prior_index=publication.empty_index(),
+        evidence_directories=(october_evidence,))
+    # What `spicy-regs mirror` leaves: the generation under its prefix and the pointer that selected it.
+    mirror = tmp_path / "mirror"
+    held = mirror / live["families"][family]["prefix"]
+    shutil.copytree(tmp_path / "october" / "generation", held)
+    index = mirror / "publication.v2" / "snapshot.json"
+    index.parent.mkdir()
+    index.write_bytes(store.objects[publication.INDEX_V2_KEY])
+
+    selection = pipeline.acquire(NOVEMBER, [], tmp_path / "acquire-2", transport=transport,
+                                 prior_statements=held / f"{pipeline.STATEMENTS}.parquet")
+    november, evidence, _ = pipeline.build_from_captures(selection, tmp_path / "november", read_index=index)
+    read = november.root["spec"]["readSnapshot"]
+    assert read["families"][family]["artifactDigest"] == october.pin.artifact_digest
+    assert sorted(item["role"] for item in november.root["inputs"]) == ["prior-generation", "source-evidence"]
+    assert local_paths(tmp_path / "november" / "generation", evidence, also=(str(tmp_path),)) == []
+
+    # The publisher holds the family to the index the build read.
+    moved = json.loads(json.dumps(read))
+    moved["families"][family]["artifactDigest"] = "sha256:" + "0" * 64
+    moved["families"][family]["prefix"] = f"generations/{family}/" + "0" * 64
+    stale = Store()
+    stale.put_object(Bucket="fixture", Key=publication.INDEX_V2_KEY, Body=json.dumps(moved).encode())
+    with pytest.raises(publication.PublicationError, match="Family changed since the build read its inputs"):
+        publication.publish_generation(tmp_path / "november" / "generation", client=stale, bucket="fixture",
+                                       prior_index=read, evidence_directories=(evidence,))
+    publication.publish_generation(tmp_path / "november" / "generation", client=store, bucket="fixture",
+                                   prior_index=read, evidence_directories=(evidence,))
+
+    # Retention walks readSnapshot from the current generation, so the replaced one is on the chain and kept.
+    plan = generation_retention.plan(store, "fixture", notes=[], docspec={}, now=datetime.now(UTC) + timedelta(days=30))
+    reasons = {entry["digest"]: entry["keep"] for entry in plan["families"][family]["generations"]}
+    assert reasons == {november.pin.artifact_digest.removeprefix("sha256:"): ["current"],
+                       october.pin.artifact_digest.removeprefix("sha256:"): ["last 3: 1 before current"]}
+    assert plan["delete"] == []
+
+    # The same build without the index records no predecessor: retention plans the replaced tables for deletion.
+    unrecorded, unrecorded_evidence, _ = pipeline.build_from_captures(selection, tmp_path / "unrecorded")
+    other = Store()
+    before = publication.publish_generation(
+        tmp_path / "october" / "generation", client=other, bucket="fixture",
+        prior_index=publication.empty_index(), evidence_directories=(october_evidence,))
+    publication.publish_generation(tmp_path / "unrecorded" / "generation", client=other, bucket="fixture",
+                                   prior_index=before, evidence_directories=(unrecorded_evidence,))
+    assert unrecorded.root["spec"]["readSnapshot"] == {}
+    plan = generation_retention.plan(other, "fixture", notes=[], docspec={}, now=datetime.now(UTC) + timedelta(days=30))
+    assert plan["delete"] == [live["families"][family]["prefix"]]
