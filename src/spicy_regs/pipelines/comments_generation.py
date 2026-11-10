@@ -256,6 +256,12 @@ def publish_prepared_comments_remote(output_dir, *, client, bucket, reader, snap
 
 #: The comments family's datasets, which leave ETL receipts together (ss-juz8): admission requires a receipt member
 #: to classify every table beside it (``generations._verify_receipts``), so one family cannot keep receipts for one.
+#:
+#: SEAM (receipts kit, ss-ag1j): written out until the installed policies carry the kit's "receipts retired"
+#: marker. Then this one line derives it from the marker, so the marker is the only owner, for example
+#: ``RETIRED_RECEIPT_DATASETS = retired_datasets(installed_policies(), ("comments", "comments_index"))``,
+#: the kit's function returning the named datasets whose policy is marked and refusing a family marked in part.
+#: The mirror's early check (``require_registered_receipts``) and the publication declaration both read this name.
 RETIRED_RECEIPT_DATASETS = frozenset({"comments", "comments_index"})
 
 
