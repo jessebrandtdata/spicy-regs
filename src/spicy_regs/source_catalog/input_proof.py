@@ -82,7 +82,9 @@ def source_observation(event):
     locations = {event.get(key) for key in ("requested_url", "resolved_url", "original_location", "blob_member")}
     locations.discard(None)
     identities = {str(event[key]) for key in ("source_id", "native_id") if event.get(key) is not None}
-    derived = event["event"] == "retained-file" and event.get("blob_store") != "central-raw"
+    from spicy_regs.source_evidence import is_original
+
+    derived = not is_original(event)
     return {"sha256": sha(event["sha256"]), "bytes": count(event["byte_size"]),
         "provenance": "retained-derived-input" if derived else "capture-observation", "stage": event.get("stage"),
         "location": event.get("resolved_url") or event.get("blob_member"),
