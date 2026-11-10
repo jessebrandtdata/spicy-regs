@@ -1902,9 +1902,12 @@ tables:
       Not a range. The complete 2026-06-30 CourtListener opinion-clusters
       export, every mapped source field checked against the original export; the
       court fields agree with the same-edition docket map and court reference
-      data. A search catch-up adds every cluster whose id is above the export's
-      highest, whatever its filing date; a correction to an exported cluster
-      arrives with the next export. Opinion bodies and broader historical
+      data. A daily search catch-up adds the clusters whose ids are above the
+      export's highest, whatever their filing date, in id order and one day's
+      request quota at a time: the table is complete through its highest
+      cluster_id for what the publisher's search returned, and can be weeks
+      behind the publisher (docs/court-search-recovery.md). A correction to an exported
+      cluster arrives with the next export. Opinion bodies and broader historical
       coverage are separate. Per-court gaps are the publisher's: cadc has no
       unpublished cluster between 2001-04 and 2020-07. See
       docs/research/fork-output-ledger-2026-09-21.md and receipt

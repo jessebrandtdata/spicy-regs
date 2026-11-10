@@ -347,18 +347,19 @@ jobs:
           GAO_ALLOW_MASS_CLOSE_REASON: ${{ inputs.gao_allow_mass_close_reason }}
           FCC_PROCEEDINGS: ${{ inputs.fcc_proceedings }}
           # The two CourtListener search rollups get the token, because live
-          # search refuses without one: court_dockets (daily, a few search
-          # pages; keyless runs timed out on 429s 2026-09-21/22) and the weekly
-          # court_opinion_clusters search catch-up (owner decision 2026-10-30,
-          # ss-3uia). Both draw on one account's quota, which CourtListener
-          # applies per user (measured 2026-09-22 on a free token: 10/min,
-          # 100/hour, 250/day). The daily docket job has priority: if the quota
-          # runs short, defer or cancel the weekly catch-up, which stops before
-          # replacing its published table and resumes above it next week. The
-          # catch-up allots itself 50 requests a run (CourtListenerReader's
-          # default traversal budget); there is no quota scheduler (ss-yf0a).
-          # Bulk downloads and verified replay need no token; every other
-          # rollup stays keyless.
+          # search refuses without one: court_dockets (daily, about 7 requests
+          # at 18:30 UTC; keyless runs timed out on 429s 2026-09-21/22) and the
+          # daily court_opinion_clusters search catch-up (owner decisions
+          # 2026-10-30, ss-3uia, and 2026-11-10, ss-jran). Both draw on one
+          # account's quota, which CourtListener applies per user in rolling
+          # windows: 5 a minute, 50 an hour, 125 a day (its usage API, read
+          # 2026-11-08; the 10/100/250 measured 2026-09-22 was a promotional
+          # doubling). The docket job has priority: the catch-up reads the
+          # account's usage first, spends at most 105 requests a day, leaves 7
+          # free when the quota was spent at another hour, and publishes the
+          # whole id windows it finished, so the next day resumes above them
+          # (docs/court-search-recovery.md). Bulk downloads and verified replay
+          # need no token; every other rollup stays keyless.
           COURTLISTENER_API_TOKEN: ${{ (inputs.command == 'run-rollup-courtlistener' || inputs.command == 'run-rollup-court-opinion-clusters') && secrets.COURTLISTENER_API_TOKEN || '' }}
           # Zyte is a paid proxy; only a rollup that reads a walled host through it gets the token:
           # gao-recommendations (one request a run), gao-reports only while its product-page read is on,

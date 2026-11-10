@@ -5,17 +5,21 @@ opinions hang off — and its ``docket_id`` is what connects opinion text to the
 APA litigation in ``court_dockets`` and, through the docket's party names, to
 the agencies in ``agency_stats``.
 
-Bulk supplies the complete export; authenticated ``/search/?type=o`` adds
-indexed clusters of every publisher-defined status above the export's highest
-id. Search can omit unindexed RECAP clusters, and historical corrections arrive
-with later bulk exports. Search exhaustion and a maximum-ID check do not prove
-complete citation membership. Direct authenticated ``/clusters/`` is a valid
-alternative, but has a different count representation and requires a docket
-lookup for the court; it is not this reader's source shape.
+Bulk supplies the complete export. Indexed clusters of every publisher-defined
+status above the published table's highest id are added a day at a time from
+authenticated ``/search/?type=o`` by
+:mod:`spicy_regs.transforms.catch_up_court_opinion_clusters`, never by this
+build: a search that cannot finish inside the account's quota must not discard
+a multi-hour export read (ss-jran). Search can omit unindexed RECAP clusters,
+and historical corrections arrive with later bulk exports. Search exhaustion
+and a maximum-ID check do not prove complete citation membership. Direct
+authenticated ``/clusters/`` is a valid alternative, but has a different count
+representation and requires a docket lookup for the court; it is not the
+catch-up's source shape.
 The publisher numbers clusters in creation order and cuts each export table at
 a different hour of the export day (2026-06-30: clusters by 08:16 UTC, opinions
 09:56, citations 19:14), so the sibling tables name clusters created after this
-one was cut; a filing-date catch-up missed those filed earlier. Best-effort
+one was cut. Best-effort
 prior from R2, then dedup on ``cluster_id`` preferring the freshest row; rows
 are written in batches because the dump runs to ten million clusters and one
 ``from_pylist`` over that is an out-of-memory error. The dump has no
@@ -23,8 +27,8 @@ are written in batches because the dump runs to ten million clusters and one
 ``court_id`` / ``court_jurisdiction`` / ``court_is_federal`` are resolved from
 a docket→court map (see :mod:`spicy_regs.transforms.court_scope`) while each
 row is shaped; ``skip_court_scope`` opts out and leaves the three columns NULL
-at the cost of a ~46-minute map build. A scheduled run whose prior already
-holds the newest export reads neither dump and only catches up.
+at the cost of a ~46-minute map build. A build whose prior already holds the
+newest export reads neither dump and republishes the prior's rows.
 """
 
 from __future__ import annotations
@@ -42,7 +46,7 @@ from loguru import logger
 
 from spicy_regs.sources import r2
 from spicy_regs.transforms._courtlistener_writer import CourtListenerTableWriter
-from spicy_regs.sources.courtlistener import CourtListenerOpinionSearchReader, record_json, require_api_token
+from spicy_regs.sources.courtlistener import record_json
 from spicy_regs.transforms.court_scope import (
     CourtScope,
     build_docket_court_map,
@@ -55,11 +59,12 @@ from spicy_regs.court_receipts import (
 )
 
 if TYPE_CHECKING:
-    from spicy_docs.sources.courtlistener.search import CourtListenerTraversalBudget
     from spicy_regs.source_evidence import CaptureEvidence
 
 OUTPUT = "court_opinion_clusters.parquet"
 DATASET = "opinion-clusters"
+#: The journal event a build leaves for the next run: the export edition its table holds and its highest id.
+EXPORT_EVENT = "export-selection"
 
 CL_BASE_URL = "https://www.courtlistener.com"
 
@@ -280,16 +285,13 @@ def build_court_opinion_clusters(
     dump_date: date | None = None,
     local_file: Path | None = None,
     max_records: int | None = None,
-    skip_search_catchup: bool = False,
     docket_court_map: Path | None = None,
     courts_local_file: Path | None = None,
     skip_court_scope: bool = False,
     include_prior: bool = True,
-    search_through: int | None = None,
-    search_budget: CourtListenerTraversalBudget | None = None,
     evidence: CaptureEvidence | None = None,
 ) -> Path:
-    """Build ``court_opinion_clusters.parquet`` (bulk dump + search catch-up).
+    """Build ``court_opinion_clusters.parquet`` from a bulk dump, merged over the prior table.
 
     ``skip_court_scope`` leaves the three court columns NULL and skips the
     46-minute ``dockets`` read. It is the honest way to build the table without
@@ -297,18 +299,17 @@ def build_court_opinion_clusters(
     court decided is a table nobody can ask the obvious question of.
 
     With neither ``dump_date`` nor ``local_file``, a prior that already holds the
-    newest listed export (:func:`held_export`) is only caught up: no dump is
-    read, and the search rows above that export's highest id are merged over it.
-    Naming an edition or a file always reads it.
+    newest listed export (:func:`held_export`) is republished as it stands: no
+    dump is read. Naming an edition or a file always reads it. The prior's rows
+    from search, above the export, are carried through the merge.
 
     ``courts_local_file`` pairs a retained courts dump with a supplied docket
     map. ``include_prior=False`` builds the selected source edition alone,
     without downloading, reading or removing a retained prior table. Combine
-    these with ``local_file`` and ``skip_search_catchup=True`` for an offline
-    build from pinned originals.
+    these with ``local_file`` for an offline build from pinned originals.
 
-    ``search_through`` bounds catch-up to a selected sibling export's ceiling;
-    ``search_budget`` limits the entire search and ``evidence`` retains its pages.
+    ``evidence`` receives ``EXPORT_EVENT`` for a dated edition, so the next run
+    knows which export the table holds without restoring it.
     """
     import duckdb
 
@@ -319,9 +320,6 @@ def build_court_opinion_clusters(
         list_bulk_dumps,
     )
 
-    if not skip_search_catchup:
-        # Refuse before the bulk read: the search catch-up cannot run keyless.
-        require_api_token("Court opinion-cluster search catch-up")
     out_file = output_dir / OUTPUT
     prior_file = out_file if out_file.is_symlink() else output_dir / "_clusters_prior.parquet"
     new_file = output_dir / f".clusters-new-{uuid4().hex}.parquet"
@@ -345,7 +343,7 @@ def build_court_opinion_clusters(
 
     # 2. Resolve which published dump to read.
     held_high: int | None = None
-    catch_up_only = False
+    holds_newest = False
     if local_file is None:
         objects = list_bulk_dumps()
         resolved = dump_date or latest_dump_date(objects, DATASET)
@@ -355,9 +353,9 @@ def build_court_opinion_clusters(
         if published is None:
             raise RuntimeError(f"CourtListener bulk: no {DATASET} dump for {resolved}")
         held_high, held_day = prior_export if have_prior and dump_date is None else (None, None)
-        catch_up_only = held_high is not None and held_day is not None and held_day >= resolved.isoformat()
-        if catch_up_only:
-            logger.info("Opinion clusters: prior holds the {} export (to id {:,}); catch-up only", resolved, held_high)
+        holds_newest = held_high is not None and held_day is not None and held_day >= resolved.isoformat()
+        if holds_newest:
+            logger.info("Opinion clusters: prior holds the {} export (to id {:,}); no dump is read", resolved, held_high)
         else:
             logger.info(
                 "Opinion clusters: reading dump {} ({:.3f} GiB compressed)",
@@ -379,44 +377,26 @@ def build_court_opinion_clusters(
     scope: CourtScope | None = None
     if not skip_court_scope:
         jurisdictions = court_jurisdictions(dump_date=resolved, local_file=courts_local_file)
-        if catch_up_only:
-            # Search rows name their court; only bulk rows need the docket map.
+        if holds_newest:
+            # No bulk row is shaped, so no docket map is needed.
             scope = CourtScope.for_courts(jurisdictions)
         else:
             map_file = docket_court_map or build_docket_court_map(output_dir, dump_date=resolved)
             scope = CourtScope.from_map(map_file, jurisdictions)
 
-    # 4. Stream the dump into the staging table, batch by batch, noting where it ends.
+    # 4. Stream the dump into the staging table, batch by batch.
     writer = CourtListenerTableWriter(new_file, schema=_SCHEMA, batch_size=BATCH_ROWS)
-    export_high = held_high if catch_up_only else None
     try:
-        if not catch_up_only:
+        if not holds_newest:
             reader = CourtListenerBulkReader(
                 DATASET, dump_date=resolved, local_file=local_file, max_records=max_records
             )
             with closing(cast(Generator[dict, None, None], reader.iter_records())) as source_rows:
                 for row in source_rows:
-                    shaped = _shape_bulk(row, scope=scope)
-                    writer.add(shaped)
-                    cluster_id = shaped["cluster_id"]
-                    if cluster_id and cluster_id.isdecimal():
-                        export_high = max(export_high or 0, int(cluster_id))
+                    writer.add(_shape_bulk(row, scope=scope))
             if reader.stopped_early:
                 raise RuntimeError('Opinion cluster dump was not read to its end')
 
-        bulk_rows = writer.written + len(writer.rows)
-
-        # 5. All-status search catch-up for indexed clusters above the export.
-        # The range is disjoint from the export's ids, so no bulk row is replaced
-        # by the narrower search row and the first build below stays duplicate-free.
-        search_rows = 0
-        if not skip_search_catchup and export_high is not None:
-            logger.info("Opinion clusters: search catch-up for clusters above id {:,}", export_high)
-            for result in CourtListenerOpinionSearchReader(
-                above=export_high, through=search_through, traversal_budget=search_budget, evidence=evidence,
-            ).iter_records():
-                writer.add(_shape_search(result, scope=scope))
-                search_rows += 1
         writer.close()
     except BaseException:
         try:
@@ -424,32 +404,29 @@ def build_court_opinion_clusters(
         except Exception:
             logger.exception("Could not finish cleaning up failed CourtListener staging output")
         raise
-    logger.info(
-        "Opinion clusters: staged {:,} rows ({:,} bulk + {:,} search)",
-        writer.written,
-        bulk_rows,
-        search_rows,
-    )
+    bulk_rows = writer.written
+    logger.info("Opinion clusters: staged {:,} bulk rows", bulk_rows)
 
-    # 6. Merge prior + new, dedup on cluster_id preferring the freshest row.
+    # 5. Merge prior + new, dedup on cluster_id preferring the freshest row.
     #
     # A first build has nothing to merge *against*: one dump, whose cluster_id is
-    # the publisher's primary key, and a catch-up above its highest id, so the
-    # dedup is a no-op. Running the merge anyway would hold the staged copy and
-    # the merged copy on disk at once — 7.1 GiB rather than 3.6 GiB at the
-    # 2026-06-30 dump's size — which is the difference between fitting inside
-    # the project's free-space floor and not.
+    # the publisher's primary key, so the dedup is a no-op. Running the merge
+    # anyway would hold the staged copy and the merged copy on disk at once —
+    # 7.1 GiB rather than 3.6 GiB at the 2026-06-30 dump's size — which is the
+    # difference between fitting inside the project's free-space floor and not.
     # So the first build promotes the staged file instead, and pays for that with
     # dump order rather than date order.
     if not have_prior:
         witnesses = [file_witness(new_file)]
         if local_file is not None:
             witnesses.insert(0, file_witness(local_file))
+        # The receipt diagnostics keep their three names; this build adds no search row.
         out_file = finish_court_output('court_opinion_clusters', new_file, output_dir, witnesses=witnesses,
             diagnostics={'dump_date': resolved.isoformat() if resolved else None, 'bulk_rows': bulk_rows,
-                         'search_rows': search_rows})
+                         'search_rows': 0})
         total = pq.ParquetFile(out_file).metadata.num_rows
         logger.info("Court opinion clusters: {:,} rows (first build, dump order)", total)
+        _journal_export(evidence, resolved, out_file)
         return out_file
 
     build_generation_id = uuid4().hex
@@ -481,8 +458,21 @@ def build_court_opinion_clusters(
         generation_id=build_generation_id, refused_receipts=fresh_receipts, prior_receipts=receipt_path,
         witnesses=[file_witness(staged), *input_witnesses],
         diagnostics={'dump_date': resolved.isoformat() if resolved else None, 'bulk_rows': bulk_rows,
-                     'search_rows': search_rows})
+                     'search_rows': 0})
 
     total = pq.ParquetFile(out_file).metadata.num_rows
     logger.info("Court opinion clusters: {:,} rows", total)
+    _journal_export(evidence, resolved, out_file)
     return out_file
+
+
+def _journal_export(evidence: CaptureEvidence | None, edition: date | None, table: Path) -> None:
+    """State the edition a built table holds and its highest id, where the daily catch-up resumes."""
+    from spicy_regs.transforms.build_court_bulk_tables import _highest_cluster_id
+
+    if evidence is None or edition is None:
+        return
+    through = _highest_cluster_id([str(table)])
+    if through is not None:
+        evidence.event(EXPORT_EVENT, source_edition=edition.isoformat(), through=through,
+                       coverage="Bulk export merged over the prior; the prior's search rows above it are carried.")
