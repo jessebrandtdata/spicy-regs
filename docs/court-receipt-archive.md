@@ -89,6 +89,11 @@ publication replaces; publication refuses it otherwise.
 
 ## The first receipts-free publication
 
+Publish soon after this change merges. From the merge on, `read_receipt_fields`
+answers that these four tables' receipts are retired, while the live tables do
+not yet carry the promoted columns: until each family publishes, those fields
+are readable only from the pinned generations' receipts.
+
 Run from a checkout of main whose `.env` holds `R2_PUBLIC_URL` (the build reads
 the live index through it), through the project runner, with
 `SPICYGOV_RAW_ROOT` unset so originals go to the shared raw archive
