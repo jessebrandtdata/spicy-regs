@@ -210,12 +210,12 @@ def test_the_downloadable_part_of_a_listed_value_is_the_earlier_rules_value():
 
 
 def test_the_installed_extract_projects_to_the_earlier_rules_value():
-    """Whichever SpicyDocs is installed, before or after b19b092, its value for a record listing a withheld attachment
-    and a rendition with no file projects to the earlier rule's value."""
+    """Whichever SpicyDocs is installed, before or after b19b092 or 0.85.0 (the entry's ``attachment_id``), its value for
+    a record listing a withheld attachment and a rendition with no file projects to the earlier rule's value."""
     record = {"data": {"id": "EPA-X-0001-0002", "attributes": {"modifyDate": T0}}, "included": [
-        {"type": "attachments", "attributes": {"title": "Letter", "fileFormats": [
+        {"id": "09000064b8f4997d", "type": "attachments", "attributes": {"title": "Letter", "fileFormats": [
             {"fileUrl": _PDF["url"], "format": "pdf", "size": 1000}, {"fileUrl": None, "format": "docx", "size": 900}]}},
-        {"type": "attachments", "attributes": {"title": "Study", "fileFormats": None,
+        {"id": "09000064b8f4997e", "type": "attachments", "attributes": {"title": "Study", "fileFormats": None,
                                                "restrictReasonType": "Copyrighted",
                                                "restrictReason": "Copyrighted material"}},
     ]}

@@ -121,7 +121,8 @@ One rule replaces a value, in `attachments_json` only (`ADDITIVE`). Under
 the same version and agreement, a read replaces the held list when it only
 adds to it: the read is in the extract's own spelling, and with its
 renditions that have no `url`, the entries left with none and each entry's
-restriction removed (`downloadable_attachments`), it equals the held value
+restriction and `attachment_id` (SpicyDocs 0.85.0) removed
+(`downloadable_attachments`), it equals the held value
 byte for byte. That removal is exactly the rule before b19b092, so a list
 read before it is replaced by the same record's full list. Any other read
 list that differs from a held one is refused, counted

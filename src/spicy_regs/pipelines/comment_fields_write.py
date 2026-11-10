@@ -86,13 +86,14 @@ def read_columns(profile: str) -> tuple[str, ...]:
 READ_COLUMNS = read_columns("all")
 
 
-#: The keys b19b092 adds to an attachment's entry, and only when the record states them.
-_RESTRICTIONS = ("restrictReasonType", "restrictReason")
+#: The keys later extracts add to an attachment's entry: b19b092 the restriction, only when the record states it;
+#: SpicyDocs 0.85.0 the attachment's own ``attachment_id``, on every entry (NULL where the record states none).
+_ADDED_KEYS = ("restrictReasonType", "restrictReason", "attachment_id")
 
 
 def downloadable_attachments(value: str | None) -> str | None:
     """``attachments_json`` less what offers no file: every rendition with no ``url``, every entry left with none (a
-    withheld attachment states no ``fileFormats``) and each entry's restriction.
+    withheld attachment states no ``fileFormats``), and each entry's restriction and ``attachment_id``.
 
     That is what the rule before SpicyDocs b19b092 (2026-03-15 to 0.53.0) wrote for the same record, NULL for no entry,
     so a held value equal to this is one the read only adds to. Only removals: the value must be in the extract's own
@@ -107,7 +108,7 @@ def downloadable_attachments(value: str | None) -> str | None:
         for entry in listed:
             formats = [rendition for rendition in entry["formats"] or [] if rendition["url"]]
             if formats:
-                kept.append({**{k: v for k, v in entry.items() if k not in _RESTRICTIONS}, "formats": formats})
+                kept.append({**{k: v for k, v in entry.items() if k not in _ADDED_KEYS}, "formats": formats})
     except (ValueError, TypeError, KeyError, AttributeError):
         return None
     return json.dumps(kept) if kept else None
