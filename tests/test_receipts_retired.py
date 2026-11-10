@@ -295,3 +295,21 @@ def test_a_retirement_cannot_be_checked_without_the_pin_file(tmp_path, monkeypat
     monkeypatch.setattr(generation_retention, "RECEIPT_ARCHIVE", tmp_path / "missing.json")
     with pytest.raises(PublicationError, match="publish a retirement from a spicy-regs checkout"):
         _require_receipt_archive_pins("comments", "sha256:" + "ab" * 32, {"comments"})
+
+
+def test_the_mcp_server_serves_no_legacy_meanings_for_a_retired_table(monkeypatch, retire):
+    """A family entry without receipts read as a pre-native generation; a retired table's entry has none by design."""
+    from spicy_regs import mcp_server
+
+    index = {"families": {"federal-register": {"tables": {"federal_register.parquet": {}}}}}
+    monkeypatch.setattr(mcp_server, "_connection_local_selection", lambda cursor: None)
+    monkeypatch.setattr(mcp_server, "_connection_index", lambda cursor: index)
+    entry = {"legacy_column_descriptions": {"docket_ids_json": "The pre-native spelling."}}
+    import duckdb
+
+    with duckdb.connect() as cursor:
+        retire()
+        assert mcp_server._legacy_column_meanings(cursor, "federal_register", entry) == entry[
+            "legacy_column_descriptions"]
+        retire("federal_register")
+        assert mcp_server._legacy_column_meanings(cursor, "federal_register", entry) == {}
