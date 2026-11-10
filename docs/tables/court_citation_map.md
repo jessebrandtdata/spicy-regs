@@ -19,6 +19,6 @@ Which court opinion cites which, and how often, as CourtListener's citator resol
 | --- | --- | --- |
 | `citing_opinion_id` | `VARCHAR` | CourtListener opinion ID of the opinion that cites. Joins court_opinions.opinion_id. |
 | `cited_opinion_id` | `VARCHAR` | CourtListener opinion ID of the opinion cited. Joins court_opinions.opinion_id. |
-| `depth` | `BIGINT` | Number of times the citing opinion cites the cited one, as text. |
+| `depth` | `BIGINT` | Number of times the citing opinion cites the cited one. |
 | `dump_date` | `VARCHAR` | The CourtListener bulk export the row was copied from (ISO date). |
 | `source_sha256` | `VARCHAR` | SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence. |

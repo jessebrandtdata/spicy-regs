@@ -19,7 +19,11 @@ Entries link to the pull request that introduced the change.
   download goes once into the raw archive with its capture receipt and is kept
   as source evidence; a row the mapping refuses or that the publisher spelled
   other than canonically is recorded in the table's exceptions file with its
-  source row. The last generations with receipts are pinned
+  source row; more than 1,000 such rows, or an identity held twice, stop the
+  build. A held export (`COURTLISTENER_BULK_DIR`) is retained as the run's
+  original too, so every pointer names a file the evidence holds; court-opinions
+  publishes by hand (`publish-local-generation`), the citations through their
+  workflow. The last generations with receipts are pinned
   (`docs/pins/receipt-archive.json`); the switch, its equality proof and the
   procedure for the court opinions refresh are in
   `docs/court-receipt-archive.md`. Policies `courts/2` (citations family) and
