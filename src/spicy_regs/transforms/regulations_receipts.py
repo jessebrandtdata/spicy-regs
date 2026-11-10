@@ -50,6 +50,10 @@ BATCH_RESTORE_DATASETS = RESTORE_DATASETS | ATTRIBUTE_DATASETS
 #: Datasets whose writer keeps unchanged prior receipts exactly and gives a changed row only a predecessor
 #: reference (``carry_receipt_history``). Comments keeps its own catalog rules and inherits nothing.
 CARRY_DATASETS = frozenset(IDENTITIES) - {"comments"}
+#: Aggregates their scheduled rollups rebuild whole from published parents and publish without receipts (ss-nxew).
+#: The generation pins each parent it read (``spec.parents``); a row receipt would hold the row again and witness
+#: only that copy. No policy is installed for them, so admission asks for no receipt member.
+PARENT_PINNED_SUMMARIES = frozenset({"agency_monthly_volume", "agency_stats", "discovery_signals", "feed_summary"})
 
 NULLABLE_IDENTITIES = {
     "agency_lifecycle_stats": ("agency_code",),

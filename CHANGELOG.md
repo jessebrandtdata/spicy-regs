@@ -27,6 +27,15 @@ Entries link to the pull request that introduced the change.
   would have been refused. A partition that is really missing still refuses, and
   the message names it as its directory spells it.
 
+- **The four regulatory summaries build again, published without receipts** (ss-nxew).
+  `agency_stats`, `agency_monthly_volume`, `discovery_signals` and `feed_summary`
+  had a field policy installed on 2026-10-04 (64141879) but no receipt writer, so
+  admission refused every build and the four stayed at their 2026-10-03
+  generations. Their policies are removed. Each summary is rebuilt whole from
+  published parents, and its generation pins the parents it read. The catalog's
+  `etl_receipts.datasets` no longer lists the four; no field changed shape, and a
+  consumer holding a copy re-vendors.
+
 - **A new reading of an unchanged print replaces the old one** (ss-fmxo). When a
   derivation changed a print's text digest but its PDF bytes had not changed,
   `document_citations` and `bill_committee_actions` kept every finding under both
