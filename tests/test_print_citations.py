@@ -1298,6 +1298,40 @@ def test_each_named_reading_input_moves_the_processing_version(monkeypatch, move
         "CRPT": True, "BUDGET": True}
 
 
+@pytest.mark.parametrize(("reads_the_same", "reread"), [({"pdf"}, []), ({"xml", "txt"}, [CRPT_ID])])
+def test_a_derivation_move_rereads_only_a_print_held_from_a_rendition_it_changed(
+    tmp_path, monkeypatch, reads_the_same, reread
+):
+    """spicy-docs 0.84.0 moved the version for ``htm`` alone; all 71 held prints were PDF and none is read again."""
+    from spicy_regs.transforms import build_print_citations as module
+
+    listing = _listing(CRPT_ID, "ACTIVITY REPORT of the COMMITTEE")
+    acquirer = _Acquirer({CRPT_ID: _package(CRPT_ID, pages=REPORT_PAGES)})
+    _publish_as_prior(_build(tmp_path, _Reader({"CRPT": [listing]}), acquirer))
+    held = module.BODY_TEXT_DERIVATION_VERSION
+    monkeypatch.setattr(module, "BODY_TEXT_DERIVATION_VERSION", "moved")
+    monkeypatch.setattr(module, "DERIVATION_READS_AS",
+                        {**module.DERIVATION_READS_AS, "moved": (held, frozenset(reads_the_same))})
+    for asked in (reread, []):  # read under the move, the print is then held under it
+        acquirer.asked.clear()
+        _publish_as_prior(_build(tmp_path, _Reader({"CRPT": [listing]}), acquirer))
+        assert acquirer.asked == asked
+
+
+def test_the_installed_derivation_states_which_renditions_it_reads_as_before():
+    """Fails when spicy-docs moves the version: record what its decision record says it left alone, or nothing.
+
+    Without an entry every held print is outstanding, 40 a run, for a move that may not touch a PDF's text.
+    """
+    from spicy_docs.extraction.body_text import RENDITION_DERIVATIONS
+
+    from spicy_regs.transforms import build_print_citations as module
+
+    earlier, same = module.DERIVATION_READS_AS[module.BODY_TEXT_DERIVATION_VERSION]
+    assert earlier < module.BODY_TEXT_DERIVATION_VERSION and same <= set(RENDITION_DERIVATIONS)
+    assert module.DERIVATION_READS_AS["004"] == ("003", frozenset({"pdf", "xml", "uslm", "txt"}))
+
+
 @pytest.mark.parametrize(("package_id", "collection", "table_index", "pages"), [
     (CRPT_ID, "CRPT", 0, REPORT_PAGES), (BUDGET_ID, "BUDGET", 1, BUDGET_PAGES),
 ])

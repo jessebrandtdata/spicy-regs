@@ -28,6 +28,7 @@ import os
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
+from functools import cache
 from importlib.metadata import version
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple, Protocol
@@ -248,11 +249,12 @@ def _now() -> str:
 
 
 class _Held(NamedTuple):
-    """One published parent row's read state: the source timestamp, text digest and citation rule set it was read under."""
+    """One published parent row's read state: the source timestamp, text digest, citation rule set and rendition read."""
 
     last_modified: str | None
     text_sha256: str | None
     rule_set_version: str | None
+    body_rendition: str | None
 
 
 def _held_packages(prior_file: Path | None) -> dict[str, _Held]:
@@ -262,16 +264,42 @@ def _held_packages(prior_file: Path | None) -> dict[str, _Held]:
     import duckdb
 
     return {
-        package_id: _Held(modified, text_sha256, rule_set_version)
-        for package_id, modified, text_sha256, rule_set_version in duckdb.sql(
-            "SELECT package_id, last_modified, text_sha256, rule_set_version FROM ("
+        package_id: _Held(*read)
+        for package_id, *read in duckdb.sql(
+            "SELECT package_id, last_modified, text_sha256, rule_set_version, body_rendition FROM ("
             + latest_package_rows(f"read_parquet('{prior_file}')") + ")"
         ).fetchall()
     }
 
 
-def _processing_versions(vocabularies: Mapping[str, Mapping[str, tuple[tuple[str, str], ...]]]) -> dict[str, str]:
-    """Identify every input that decides a print's published rows, even when no finding exists.
+#: Where a body-text derivation derives the same text and record as the one before it, by rendition:
+#: ``{version: (the earlier version, the renditions it reads the same)}``. A print read under the earlier version
+#: from one of those renditions is not read again for the move. ``004`` (spicy-docs 0.84.0) changed only the
+#: ``htm`` branch: script, CSS, ``<noscript>`` and ``<template>`` content is left out and a block element breaks
+#: the line. The ``pdf``, ``xml``, ``uslm`` and ``txt`` branches consult neither rule, so they read as ``003`` by
+#: construction (spicy-docs ``docs/decisions.md``, "An HTML body's script, CSS, ``<noscript>`` and ``<template>``
+#: content is not body text"; its 354 such bodies, read again with the two vendored wheels, 0 changed:
+#: ``vendor/spicy_docs-0.84.0.json``). ``htm`` is absent on purpose: it reads the same only for a body that is
+#: one ``<pre>`` with nothing in those four elements, which is a fact of each body, not of the rendition, and
+#: telling needs the body a re-read would fetch. On 2026-11-10 all 71 held prints were ``pdf``, so the move
+#: re-reads none; a print read from ``htm`` is read once more.
+DERIVATION_READS_AS: Mapping[str, tuple[str, frozenset[str]]] = {
+    "004": ("003", frozenset({"pdf", "xml", "uslm", "txt"})),
+}
+
+
+def _derivation_read_as(rendition: str | None) -> str:
+    """The earliest derivation version whose text for ``rendition`` the installed one reproduces; itself when none."""
+    read_as = BODY_TEXT_DERIVATION_VERSION
+    while read_as in DERIVATION_READS_AS and rendition in DERIVATION_READS_AS[read_as][1]:
+        read_as = DERIVATION_READS_AS[read_as][0]
+    return read_as
+
+
+def _processing_versions(
+    vocabularies: Mapping[str, Mapping[str, tuple[tuple[str, str], ...]]], rendition: str | None = None
+) -> dict[str, str]:
+    """Identify every input that decides the published rows of a print read from ``rendition``, even with no finding.
 
     **Named inputs, not the installed SpicyDocs' whole-code digest.** Over the
     eight builds vendored through round 5 (0.53.0, printing, four FEC, laws,
@@ -287,8 +315,10 @@ def _processing_versions(vocabularies: Mapping[str, Mapping[str, tuple[tuple[str
       is written into every citation row but is not in the rule-set digest,
       so a relabel would otherwise never reach a held row;
     * the body-text derivation: spicy-docs' ``BODY_TEXT_DERIVATION_VERSION``
-      (it moves when a rendition's text can change, its digest pinned beside
-      it there), PyMuPDF's release and the rendition order;
+      (it moves when some rendition's text can change, its digest pinned beside
+      it there) as this rendition reads it (:data:`DERIVATION_READS_AS`; with
+      no rendition, the installed version), PyMuPDF's release and the
+      rendition order;
     * each output's contract columns and types, so a column a contract adds is
       filled on held prints;
     * for reports, the covered-Congress and action rules, the chamber map and
@@ -307,7 +337,7 @@ def _processing_versions(vocabularies: Mapping[str, Mapping[str, tuple[tuple[str
                 for name in _OUTPUTS[collection]}
 
     common = {
-        "body_text_derivation": BODY_TEXT_DERIVATION_VERSION,
+        "body_text_derivation": _derivation_read_as(rendition),
         "pdf_reader_release": version("PyMuPDF"),
         "citation_rules": CITATION_RULE_SET_VERSION,
         "citation_rule_tables": sorted((rule.name, rule.target_table) for rule in CITATION_RULES),
@@ -606,14 +636,14 @@ def build_print_citations(
     logger.info("BUDGET: {} measured parts admitted by the package grammar", len(MEASURED_BUDGET_PARTS))
 
     vocabularies = _roster_vocabulary(rosters, current_congress())
-    processing_versions = _processing_versions(vocabularies)
+    processing_versions = cache(lambda rendition: _processing_versions(vocabularies, rendition))
     evaluated: dict[str, set[tuple[str, str]]] = {CRPT: set(), BUDGET: set()}
 
     def complete(package_id: str, collection: str, last_modified: str | None) -> bool:
         published = held[_OUTPUTS[collection][0]].get(package_id)
         if last_modified is None or published is None or published.last_modified != last_modified:
             return False
-        expected = (last_modified, published.text_sha256, processing_versions[collection])
+        expected = (last_modified, published.text_sha256, processing_versions(published.body_rendition)[collection])
         return all(_read_identity(checkpoints[name].get(package_id)) == expected for name in _OUTPUTS[collection])
 
     def left_unread(collection: str, package_id: str) -> None:
@@ -800,7 +830,8 @@ def build_print_citations(
                                replaced_text_sha256=sorted(superseded), text_sha256=provenance.text_sha256)
         state = {"package_id": package_id, "last_modified": package.summary.last_modified,
                  "source_sha256": source_sha256, "text_sha256": provenance.text_sha256,
-                 "processing_version": processing_versions[collection], "read_at": _now()}
+                 "processing_version": processing_versions(provenance.body_rendition)[collection],
+                 "read_at": _now()}
         for name in _OUTPUTS[collection]:
             previous = checkpoints[name].get(package_id, {})
             selected = latest_read(previous, state)

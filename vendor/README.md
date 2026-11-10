@@ -1,6 +1,14 @@
 # Source reader wheels
 
-- **Selected provider** `spicy_docs-0.83.0` reads a GovInfo HTML body whose literal, never-closed
+- **Selected provider** `spicy_docs-0.84.0` leaves script, CSS, `<noscript>` and `<template>` content out
+  of an HTML body's text and breaks the line where a block element would glue two texts (ss-uxon). Its
+  `BODY_TEXT_DERIVATION_VERSION` is `004`. Only the `htm` branch changed, so a held print read from PDF is
+  not read again: `transforms/build_print_citations.DERIVATION_READS_AS` records that `004` reads `pdf`,
+  `xml`, `uslm` and `txt` as `003`. An `htm` body reads the same only when it is one `<pre>` with nothing
+  in those four elements; all 837 `htm` bodies the live hearing transcripts and committee reports hold
+  have that shape and derive the same text under both wheels. Built from spicy-docs main `12baaaa0`,
+  twice, byte-identical. See [the build receipt](spicy_docs-0.84.0.json), which states the measurements.
+- **Earlier provider** `spicy_docs-0.83.0` reads a GovInfo HTML body whose literal, never-closed
   `<bullet>` tags outnumber the generic depth of 256 (CRPT-112hrpt747, CRPT-118hrpt963): the HTML
   reader matches end tags in linear time and the body reader bounds depth by its event bound. A
   package MODS that states its parts in a shape the reader refuses raises `GovInfoPartsRefusedError`,
