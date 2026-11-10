@@ -8,10 +8,9 @@ from pathlib import Path
 import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
-import pytest
 
 from spicy_regs.citation_resolution import ROUTES
-from spicy_regs.earlier_receipt_policies import earlier_policies
+from spicy_regs.policy_migrations import earlier_policies
 from spicy_regs.etl_receipts import ReceiptContext, read_with_receipts, write_dataset
 from spicy_regs.explorer_navigation import declarations, published_navigation, scalar, target_keys
 from spicy_regs.gao_citation_keys import CITATION_PRODUCT_SQL, citation_product_id
@@ -93,10 +92,10 @@ def test_gao_only_policy_change_retains_exact_previous_schemas_and_input_columns
     assert current.identity_fields == previous.identity_fields == ("report_id",)
     assert "citation_product_id" not in LEGACY_COLUMNS["gao_reports"]
     assert POLICIES["gao_decisions"].policy_version == POLICIES["fcc_filings"].policy_version == "government-sources/3"
-    with pytest.raises(ValueError, match="exact declared policy"):
-        earlier_policies(replace(previous, subject_schema=previous.subject_schema.append(pa.field("extra", pa.string()))))
-    with pytest.raises(ValueError, match="exact declared policy"):
-        earlier_policies(replace(current, identity_fields=("title",)))
+    # Only the exact recorded descriptors read their predecessors.
+    assert earlier_policies(previous) == (v2, v1)
+    assert earlier_policies(replace(previous, subject_schema=previous.subject_schema.append(pa.field("extra", pa.string())))) == ()
+    assert earlier_policies(replace(current, identity_fields=("title",))) == ()
 
 
 def test_v3_native_prior_restores_then_adds_key_without_changing_old_fields(tmp_path):

@@ -1,0 +1,2166 @@
+{
+ "captured": "2026-11-10, earlier_receipt_policies.earlier_policies at fork main a9b29898, asked about every installed policy, every descriptor in its twelve history files and every policy it returned",
+ "answers": {
+  "sha256:001ac0cde7a3c2ee4ab57a4ab6889c9c5b29f352b2e027f6a9c4769a5da7900f": [
+   "native_legal_reference_reads",
+   "legislative-documents/2",
+   [
+    "sha256:50715fc1145eaa2c403d86699138d80916d0f5bb32cc9d76bd9555b89214af78"
+   ]
+  ],
+  "sha256:004151435d2810ed687bf8c3118770324976f84b64fb8e1f15c6109c044784f8": [
+   "gao_decisions",
+   "government-sources/2",
+   [
+    "sha256:23d8da668fe8106353e94abce8646ac887cd2e877020573f08a98b957d314287"
+   ]
+  ],
+  "sha256:008689fba36a505ef3e104ae51eee9c50149cc48e8959eac56b6c8fc028735f0": [
+   "lobbying_filings",
+   "government-sources/2",
+   [
+    "sha256:d32ea5e8bd0d6c586d902bcd85695e4d9e50ee97af883c0b282e64a879388186"
+   ]
+  ],
+  "sha256:01de90c424d0b4c5656da38b2add4389c564eaaae1131490b8d70031b65babb0": [
+   "scorecard_methodologies",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:0281391529cc377c99ca0266abd1efce80617c4bd22e62fcd8032bd7c4335997": [
+   "fr_docket_links",
+   "regulations-native-v2",
+   [
+    "sha256:19682a46d51b8834881720750c297ad32d9656116ea75dc7d459d36afef799ea"
+   ]
+  ],
+  "sha256:0286139f818701ab1c478d2ce2c64a60345b59b8476823c30caa0710031c770b": [
+   "comments_index",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:0400645e72f8b3c6ff9a6bf3358e1610956d0efc825c0c1468d7c97f731c6172": [
+   "fec_lobbyist_registrations",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:e986649778217e46b85e91011eff48a7ca47a9eb5e679576266e5f53428fff06"
+   ]
+  ],
+  "sha256:041f7f2cef9e2bc7ce213fe7494e2e7a107787033314dd9d10b71aff906adeea": [
+   "fec_loan_guarantors",
+   "fec-subject-receipts/3",
+   [
+    "sha256:81c6b35df48f0607b7669bcc57aee20c35cc293e80a8638907741aacebf06aa9",
+    "sha256:9ce969b14b99ba714206ec5a27744d5582520bf9803124a3658aa4d316631863"
+   ]
+  ],
+  "sha256:0494daa1300fab02d593982cc656201f274c23a2002d6074704c658f7409c75a": [
+   "scorecard_member_item_results",
+   "scorecards-etl-v2",
+   [
+    "sha256:b00651b23d03ea0dbdd59b7a8a2a2c7d246e65f4154c3f83ff224c58bb9fa24d"
+   ]
+  ],
+  "sha256:0506d0db0df7f2e7884cc1eef400ba33ef2ad079b3351799ec2e74c39b504d10": [
+   "fec_candidate_api_observations",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:adb2ec070186981c786ee2573f2c58d021168d4ea94a8bedfab5ebbe95931c4d"
+   ]
+  ],
+  "sha256:06c2cb66a80619472c954aff098e0733c8919bebd67b61a368f1a4d8001d30f8": [
+   "fec_contribution_aggregates",
+   "fec-subject-receipts/3",
+   [
+    "sha256:331d6937f9a037055e4d869f64d8fbe929e1219319144ebae5defabb049fbc84",
+    "sha256:9def077ee927ff1ccf137ab2de5da9d6208cce4f26b6b360ff564ffe4af09ec0"
+   ]
+  ],
+  "sha256:073276c70f297cfa70f06fca444e90f0bdeb9a628f31ba80da404147d4dfc8cb": [
+   "fec_quality_notices",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:510bcebf0f895758be2ad127900516be83a2becf75be5bb08251746c35d66cff"
+   ]
+  ],
+  "sha256:0861c8643cdd9cc22fcd5f09204eadf4dc7e54be4ee0103fb12e8321d6aef919": [
+   "cftc_rule_observations",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:09d79a31283d339bcc6d9d41d072f2360ba8ccaa7be090ded452cf70904b1cf2": [
+   "fec_coordinated_party_expenditures",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:0b71944728089ce4c327751ad66ef53360a8027c12ca7a87f5bd22595a26d94d": [
+   "fec_relationships",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:4573ed3e94aac609518b0f8f17eb954a898e34cfbe6edf5f00224c603d1d3b03"
+   ]
+  ],
+  "sha256:0c6b24cde8cae6dccb2a34bfae53a25c4ec5fd2e227756826ea5b866eca72019": [
+   "fec_candidate_history",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:0ddda08e12f582bf7f09b2eb90b4040938ca78d0a74144128cbb1ec0688ff2e3"
+   ]
+  ],
+  "sha256:0cf1d0576dfdb98d049aeb31887180395da14204206bbf4272d37dbb9e6a11a6": [
+   "cbo_feed_items",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:0d4eae758be0e07fed0e8219861cf9efbc9997858af05a9b081bba501bfe219c": [
+   "fec_receipts",
+   "fec-subject-receipts/3",
+   [
+    "sha256:902b8c00ad382a2d279fda543929993228b11aadbe96ef9d8c5e5f43602bcc15",
+    "sha256:17f48e0b42ee487c267ea757f3b407f35defc0e6230679979a0ecf0aee93f95e"
+   ]
+  ],
+  "sha256:0ddda08e12f582bf7f09b2eb90b4040938ca78d0a74144128cbb1ec0688ff2e3": [
+   "fec_candidate_history",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:0e6e3ab223b587a794cc868e18f6e429a1fa4b4fff6d4c34d71a1295f86a0398": [
+   "fec_loan_terms",
+   "fec-subject-receipts/3",
+   [
+    "sha256:acc72e9540cd92490c2c3da6290dedd04bc01abdc85b53a34b8ec926b99007e7",
+    "sha256:38a2c3b0c571ce708ffc59af6d359d2cfdc7ef599391bc72489738182a123df0"
+   ]
+  ],
+  "sha256:0fa9aa8842c4dffd595bc9ce9d3dc16c2a6584a684bc52ffef309a87b2041e4a": [
+   "fec_loans",
+   "fec-subject-receipts/3",
+   [
+    "sha256:700bf040329d97b1430863e697ec1ff0ace5025e5d8b00bb3b3a1addef82083e",
+    "sha256:d3b2029adaee22f3beb63be61374a6ab3b035cbf84e11de45d57498d9fa570ca"
+   ]
+  ],
+  "sha256:10010ba1cd5d37d4d4cbb267ee9da7e907701470ecebdc67d98825df17ba748d": [
+   "fec_audit_findings",
+   "fec-subject-receipts/2",
+   [
+    "sha256:fcdded3a816905c6150d523118fd96bee0e059f3673c54427983de644585dd35"
+   ]
+  ],
+  "sha256:102195f96038280d982a5d3f969da97fcbd5aaee271c59f8c7dc01cf98b79b87": [
+   "section_diffs",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:10742e313b3671700bc3a741863066c0500f7ddc0144e96ccc48df50b1e34bf3": [
+   "press_releases",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:10d0ea3fdb320f25fb5a9d689d1a490364767f8ef2ee3bcdbafbeebf3f6d6cad": [
+   "fec_filing_definitions",
+   "fec-subject-receipts/2",
+   [
+    "sha256:a7d5c89cb48761d94b9494a52573f43d82f5c88cd653410bd7e2d064b80c4e3b"
+   ]
+  ],
+  "sha256:11ba7a2955666b72b6510b28abb9cf2d55e92f290f67c9ea68c5ec1dfce62c4e": [
+   "fec_legal_matters",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:12e2d01385ec44782c0161598b6c61df52715cf28210c164b1a4d69e1c64ccfb": [
+   "fec_reference_filing_feed_items",
+   "fec-identity-context-receipts/2",
+   []
+  ],
+  "sha256:138b14269f221b877d10c317b00513d9ba381ee834c20a414cc6e78a33092d35": [
+   "scorecard_member_ratings",
+   "scorecards-etl-ratings-v3",
+   [
+    "sha256:b7cf0071f9d1e349997e41dd5bd08f9f1c1a1bea172fe4c30f7ee9f857493dd4",
+    "sha256:d19e6f4611272f4e9c190125d71c523d357226461f109f0455642dfcae7df536"
+   ]
+  ],
+  "sha256:13e482a46db2a67477d6d5f036f56a791016e8eaf5c73a11ba0c348ebe9474da": [
+   "fcc_filings",
+   "government-sources/2",
+   [
+    "sha256:7445baec38bfc4b6d80549299dac0c2ef407d5f53efdfb465cc934dd03af3f13"
+   ]
+  ],
+  "sha256:14048051c0bec138b988e2dc80593dae59935cf81e21a64f0246b180ff633e47": [
+   "fec_oversight_recommendations",
+   "fec-subject-receipts/2",
+   [
+    "sha256:701b917b164973808968fa2e0307fe37d9ba1bb7cae47e4b120a18177b2d4503"
+   ]
+  ],
+  "sha256:140ba88ad206b77dd598c46a239a130788c68b4a19b0e6d9bb58591c5eb07366": [
+   "fec_legal_matters",
+   "fec-subject-receipts/2",
+   [
+    "sha256:11ba7a2955666b72b6510b28abb9cf2d55e92f290f67c9ea68c5ec1dfce62c4e"
+   ]
+  ],
+  "sha256:14e64bbeee1b7078832f48f116d3d9c21c4de4ec1fd15ac334ca378553eebc43": [
+   "committee_report_read_outcomes",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:15549bee5691044b3cf3fe0311f69b7c089579d4dd1ea9c62ea85e48f00e2e1c": [
+   "scorecard_methodologies",
+   "scorecards-etl-v2",
+   [
+    "sha256:01de90c424d0b4c5656da38b2add4389c564eaaae1131490b8d70031b65babb0"
+   ]
+  ],
+  "sha256:1554f9a3a22461cf933d8209980b292477071b40f3c9f922deb819a4cafe3a00": [
+   "fec_account_transfers",
+   "fec-subject-receipts/3",
+   [
+    "sha256:eae060f7ce8caf58a0d715869359d7be33a662505b64f908fcf32c5d8d498d05",
+    "sha256:4ba7e76f3a4c7893387c4405047eb283a7b96f55690cf39705b40c7eb30af92e"
+   ]
+  ],
+  "sha256:156a4547d3352178c710bcd9459c57fdbf2394b28f98ca578ecaaa3555170f3e": [
+   "fec_filing_links",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:a964c9ee57f4bf2959444d7c47b6265f9f75d48b6ae05cd9e30c1a51403d4e51"
+   ]
+  ],
+  "sha256:15af4831caf28eda859a33d8e42e9cfc3da16cf123aaeab65ce21fbc099f454d": [
+   "fec_independent_expenditures",
+   "fec-subject-receipts/3",
+   [
+    "sha256:6a38e3dbbd599532b7364f62b538b21f1dcc4f2e508c378565c017cee7abb213",
+    "sha256:c48e8011562e984bf101667f615a0abc09250bafa5eaca7af2fa27ff65b27457"
+   ]
+  ],
+  "sha256:17f48e0b42ee487c267ea757f3b407f35defc0e6230679979a0ecf0aee93f95e": [
+   "fec_receipts",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:192b7fd7b5b30df38ecda022423044a3f101e5d837c2c748930013e87f264f14": [
+   "bill_vote_references",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:19682a46d51b8834881720750c297ad32d9656116ea75dc7d459d36afef799ea": [
+   "fr_docket_links",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:19b96a2ce51a32365bd7ca26a0c1b0f47bd4441116f1d57cf47e33f3bb8806dd": [
+   "fec_disbursements",
+   "fec-subject-receipts/3",
+   [
+    "sha256:a99e77f69c36db1414a2f8b07f6c1beca726944923d15e2defa27973b30155c3",
+    "sha256:8b5d221bf278c71e3a5d3809d356f47933117d3f0b797965d11bfe5db48f6d0a"
+   ]
+  ],
+  "sha256:19bdae368f01cc1c06eb927619107671c268b456ff671b323dac8b7f23b40476": [
+   "amendments",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:1a382c9528e5c1e44137fda61fabe62ddf429b4b1dd8a01d89da7db6b6b13a8d": [
+   "native_legal_references_document_file_outcomes",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:1aeefc07a2f122b8902b213bfc83b418b9c0e8b11aa0c5ab75569d9400f0838a": [
+   "fec_filings",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:1c651ea57a43877c65b9083be91b2ff29b450079ad49c7e67b8c88cccf232218": [
+   "fec_bundled_contributions",
+   "fec-subject-receipts/3",
+   [
+    "sha256:70b28257fcb7cd948e7000b741a3aa8cd6ee1bc95c586a1d1966c93366f324d6",
+    "sha256:f0c98ef22b21655040b71877611a3b27866ce11e0a4b3d218696e0794a309812"
+   ]
+  ],
+  "sha256:1d39980a1ee24d6f80e86e85f9e38abd40ea9148030059e3c7a13fb7688ed907": [
+   "gao_decisions",
+   "government-sources/3",
+   [
+    "sha256:004151435d2810ed687bf8c3118770324976f84b64fb8e1f15c6109c044784f8",
+    "sha256:23d8da668fe8106353e94abce8646ac887cd2e877020573f08a98b957d314287"
+   ]
+  ],
+  "sha256:1d3b39c1d63a994c973bad3743d3d1456868b8799cf6d15afa7a3182656f3c9e": [
+   "fec_source_catalog",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:1f05444aaf39f2f53dee41ad38d6d0380ded5bfa23b63958f8da213555861ff9": [
+   "crs_report_files",
+   "crs-report-files/1",
+   []
+  ],
+  "sha256:1fa6e831d66156d3aaf7dc92c89e2033b06fcd236d3db61a14eabcccc4df7e15": [
+   "diff_summaries",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:1fc02c514bfc57b9ec1e6ef4f186d39e3cc453324e62bfc3ac5e6a194a6ae794": [
+   "fec_communication_costs",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:1fe9c8420d1cd2d94fd0d79047cc33d2a0405da0c58d6d3e6aea9f282896454d": [
+   "comments",
+   "regulations-native-v2",
+   [
+    "sha256:2c0387f4d4433d360cbc0ff9a98b1e77eca2cd0281c5ee00219e445206dff7b3"
+   ]
+  ],
+  "sha256:209739288c05dbe2ec38b59f783a7d2fa888c8ba989d966b3bd6bbc24832bdbb": [
+   "court_opinion_pdf_extractions",
+   "courts/1",
+   []
+  ],
+  "sha256:20c17abbe20a2b68765debf22a18a1e539ee3fe4dbff4b09a5bd378289dbb8a4": [
+   "scorecard_snapshots",
+   "scorecards-etl-v2",
+   [
+    "sha256:909419d1ad18b4f3ff3104bad6127892fcebd6b70ed47cc726f55cc153a352f8"
+   ]
+  ],
+  "sha256:2117e38936b0b0dc7cb24889e4daa941794ef791dee721775fd93e9dd5f2d980": [
+   "fec_agency_report_text",
+   "fec-subject-receipts/2",
+   [
+    "sha256:5e3beae7a1b59b2975de9f9a56c0d731ad872d59f76c18e9b8dd121c78644ab3"
+   ]
+  ],
+  "sha256:21b1bac7ab53641b755cad94668b1ed69682b38ec5c05428d785317df87db550": [
+   "member_party_affiliations",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:22753e24e58c15f78f7c44bbcade69ee3a0f4efbb40def1a22f44da0f7895630": [
+   "laws",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:237a08d8ec9a2f99522030fb0cb19e9c4316df0361ee2c229d67eab2ccdb90ea": [
+   "committee_reports",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:23d8da668fe8106353e94abce8646ac887cd2e877020573f08a98b957d314287": [
+   "gao_decisions",
+   "government-sources/1",
+   []
+  ],
+  "sha256:23dd35d5dd4c78ab065409c0b1574999b27e6e3fb2125d186cd26e841c5eb6de": [
+   "fec_committee_observations",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:bef56a69ff95bc8d2ef2a3b64fe30726c8f96159d7d629e6ff7dce6a2d0adf38"
+   ]
+  ],
+  "sha256:2447d89de65833125b983f6a8a0f1bb1a78820fe6b2fbb303441c2a55fc0d43c": [
+   "uscode_edition_structure",
+   "uscode-editions-public-v2",
+   []
+  ],
+  "sha256:25d66693b7c63c596878a792fd266c78dddb5ab798f9835633a4f413791b9edb": [
+   "section_classifications",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:26a03cf0d637df471e8b12054a94c5d76df1134730468c67e915824d1ead9486": [
+   "fec_source_records",
+   "fec-identity-context-receipts/2",
+   []
+  ],
+  "sha256:26d3c1de81e4dca7476e0e71ef3f06fe019b9d65cfcd9eaa4b79b5641ca138b1": [
+   "edis_documents",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:278490b1a585e8214aba18866344e48ef655827294008fb65f9cd3a3ed156328": [
+   "fec_filing_definition_evidence",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:2820958daf05d01559bbb6f0380c2e1be2a9e100b1894ac0d2f781524121a573": [
+   "fec_communication_costs",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:28dde83e2e4f1faa93ed8e49df8fa11460590602a993788ff8bae9f36e95002d": [
+   "fec_electioneering_communications",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:2af52430a4bc8372f903f09cd85c376f2a22c6302a85fb2c2f7378cce03df048": [
+   "bill_committee_activities",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:2afd7066c58398a59bfdddabcde168ab34cbcbc534b3f1ce538405fab433b58d": [
+   "scorecards",
+   "scorecards-etl-v2",
+   [
+    "sha256:e593f49f16ac83a3880bb856ccf52a89d93da4a9c330f4e1b3d4eeb385fb5198"
+   ]
+  ],
+  "sha256:2ba6e42fef1f9acfb2ea20ff2edcf34389e7d51be30021d527a0c9aab05332e0": [
+   "table3_records",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:2bb1993c4bbf3fc9474496d834cfa8b1d03cc1bcc2335e06878a6100cde67032": [
+   "fec_committees",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:2c0387f4d4433d360cbc0ff9a98b1e77eca2cd0281c5ee00219e445206dff7b3": [
+   "comments",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:2dc84cb07cbc85cff524be820a246233daa4d5ac24286a05d4a7fce57834385a": [
+   "agenda_item_proceedings",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:2e2e74a0d2f8636cdd4d06bdec553667a7f66257990d4309d328255f3a5ac525": [
+   "administration_policy_statements",
+   "administration-policy-v1",
+   []
+  ],
+  "sha256:2fbdfd205936d2d44e0ea8850d3f660d5d59dba0fee6bf6c827ca10724eee3ac": [
+   "court_opinions",
+   "courts/2",
+   [
+    "sha256:92b31c2267ce7c3b3a14b603dd2ce4fdb2f1a8776939b2e1517dcf84934edf40"
+   ]
+  ],
+  "sha256:2fe5e173b3c95f87dea32006ff7d2417856c12495eae6e05e677babe567d08de": [
+   "fec_reported_financial_summaries",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:301f556928453b50ff47d963c36c10b7422665638bd368a305b01147863339c1": [
+   "proceedings",
+   "regulations-native-v2",
+   [
+    "sha256:b0a6714eb996665612612d7d26fce1ea591829ce5e800cb93349647bc26f8694"
+   ]
+  ],
+  "sha256:3117203760fe10bd282f6827de831a1ddaec1c1d5cc3e2bb399b511bd299a58f": [
+   "fec_collection_selection",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:320132a2b98e668331e9d30156a92650ef5ef86c86ec13a10231acbee81d8b98": [
+   "fec_record_evidence",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:4fe62881e56ff282e120b732e5d1da6fe0b06db7485296027712a588c6979972"
+   ]
+  ],
+  "sha256:3213e32c8a8f2bfb60f2679aa50295d4c518996a2df6ee6d2101c677f949bf16": [
+   "court_parentheticals",
+   "courts/1",
+   []
+  ],
+  "sha256:322884a5cd327027b4551910b7ccf6483908f85dfa2e4b433a7fdb1f66aed69b": [
+   "bill_family_backfills",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:3242ce2b1c156cad113bd7a869b1eb3c871de6419d8b4faeec0affd628dd14ee": [
+   "members",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:3293ee11f17fde4663b2fd6430ce2d434b11f86acf06197cce67c7431cfccc0b": [
+   "fcc_proceedings",
+   "government-sources/1",
+   []
+  ],
+  "sha256:32b421fbbdd0c8ab06c4600ccf3c5f98fec468cc71a075ed9c6b295da0bbf895": [
+   "fec_agency_report_documents",
+   "fec-subject-receipts/2",
+   [
+    "sha256:fa355fe0266054506b758ffad7aefdddb9ec6e1950eee5252fd776f7dda77693"
+   ]
+  ],
+  "sha256:331d6937f9a037055e4d869f64d8fbe929e1219319144ebae5defabb049fbc84": [
+   "fec_contribution_aggregates",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:3326572ec030aa725635e4218b6001f8c7b344c4e865a0678e683b4701cefaec": [
+   "fec_postgres_committee_history_observations",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:332b644685a6a019d34d5620bf8451ff674545554a2d4ab37fa7d1b6fa59e690": [
+   "committee_assignments",
+   "congress-subjects/2",
+   [
+    "sha256:bdff7d0e8bda01eec2e4313cbd815934b36673670682507da689d5d85260e1d3"
+   ]
+  ],
+  "sha256:33d6e9ea98813ce50883742ee3d8605fa11f4244ffe888a176e2b14fbd6a26f5": [
+   "agenda_item_proceedings",
+   "regulations-native-v2",
+   [
+    "sha256:2dc84cb07cbc85cff524be820a246233daa4d5ac24286a05d4a7fce57834385a"
+   ]
+  ],
+  "sha256:34162163a39190b3f47ef8b0b11565cb3fa9c7bb6abd57b3be197f3920479f78": [
+   "bill_family_backfill_walks",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:3517bb372de798ca320d963fa207eb5e64a933ec511d80b6c50c31624de8b0f2": [
+   "fec_filing_header_associations",
+   "fec-subject-receipts/3",
+   [
+    "sha256:cd44fb7c667300586d33e1d9db759465e32db44c82ed3183bec44bdb5d23b160",
+    "sha256:632bf51b1c5251195107ee00455b409c9211227c970964aecfe94bb59c7e9fec"
+   ]
+  ],
+  "sha256:36aea1778bae3909e4879c4b050a629123580ce2aa0417791b81e7092a43f221": [
+   "fec_legal_parties",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:37a973a869f9e2a88798af51746b23d8c7d9ec94c2a39ffbf30153541bc9c144": [
+   "bill_committees",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:382ff79910596299649fdf6fa88ecfde5f537fa97214d9933a87985f747e6576": [
+   "docket_attributes",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:38a2c3b0c571ce708ffc59af6d359d2cfdc7ef599391bc72489738182a123df0": [
+   "fec_loan_terms",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:392a6d5969807932b78e091af4daf0c9c785bc457060224fb8591e3bac50c994": [
+   "fec_debts",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:39f197887b207e4174933b00477400153a893f2f9a6077ee4a242a88fad0a65d": [
+   "court_dockets",
+   "courts/1",
+   []
+  ],
+  "sha256:3b006af38cabb42026e2250dbb10174dfc4ebeb526d4e69e0ea1bd660aa1491d": [
+   "edis_attachments",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:3dd44180a20593266d19efc3decb1249f235857a1a993cd55e8d095dcc9c7813": [
+   "legislative_document_file_states",
+   "1",
+   []
+  ],
+  "sha256:400e92395f4b544cf5fe43e19d4a2839ea79ede0d04eef91247e513e1daecae6": [
+   "fec_research_meeting_observations",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:737ab6e6dbe5085b53675f799478d5b68de07eb22372ec33373084d2ca97e925"
+   ]
+  ],
+  "sha256:4054e36cfb24ef76d7fba59d1eb44421a8a58ad19c4988d38daf05c9c1aab993": [
+   "fec_electioneering_communications",
+   "fec-subject-receipts/3",
+   [
+    "sha256:28dde83e2e4f1faa93ed8e49df8fa11460590602a993788ff8bae9f36e95002d",
+    "sha256:93b4deba37c9f3443c94a985713c382b8166eb8d31ff5a72cd1409fad60f2276"
+   ]
+  ],
+  "sha256:40a90000c219a51e3291b71971c0f69d6ed6954241c0ae141d832661a467b5dd": [
+   "budget_volumes",
+   "legislative-documents/3",
+   []
+  ],
+  "sha256:42785ff70c2b557e4472a6d47dd280895b78b186edc59e9264eff90cc7d0811d": [
+   "fec_registration_statements",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:c0bf6b22889d60ba7a06416eda1a16d8212d838be45eff9cfc4f7c01c8f82360"
+   ]
+  ],
+  "sha256:45376e567fec15960c1f2148432e84b906f5327e3d9549a64f7bd4c89cb863f6": [
+   "committee_report_reads",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:455a4b10b4baa7ff9414d5e9894dbbc5142f962218233dc94970a5ba59e4efa3": [
+   "ferc_original_files",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:4573ed3e94aac609518b0f8f17eb954a898e34cfbe6edf5f00224c603d1d3b03": [
+   "fec_relationships",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:48dac00203e265334d3680cae07c34068b9de32ecf4e6d5481c2a0bbdcb21988": [
+   "scorecard_metric_components",
+   "scorecards-etl-v2",
+   [
+    "sha256:654835efabf551d0a2d62caa536063716254efe022ef3e62ebeb5cd7d21622f3"
+   ]
+  ],
+  "sha256:498e7ef54da013d0638c717970d81b3bba80b1db5c43da6476fb8eb00f9ce1d3": [
+   "document_citation_reads",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:49bb96a1b848aacfabe1b669ca3758b6fb72a29369076983ff818ebbc2c4b083": [
+   "fec_legal_events",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:4a569d125100f80ccd9083534e60f2d9ea4ff9da0fd69a3d8a5354b91117f1c8": [
+   "documents",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:4ba7e76f3a4c7893387c4405047eb283a7b96f55690cf39705b40c7eb30af92e": [
+   "fec_account_transfers",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:4bda935238fd6cfbc32a500648c6c99ae90b90a5f7b53a21fd8569cdd550e89e": [
+   "fec_filings",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:1aeefc07a2f122b8902b213bfc83b418b9c0e8b11aa0c5ab75569d9400f0838a"
+   ]
+  ],
+  "sha256:4c25b5a3d5e91b8702775ecb74373c8cfd6b61fb6834a4f3baf93724d3ec916b": [
+   "committee_reports_document_file_outcomes",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:4eb8616771e959b90a0985f6e7bdce8288bb8649288c8a767033d0c074a1301e": [
+   "scorecard_metrics",
+   "scorecards-etl-v2",
+   [
+    "sha256:51dc93fe8b48448cccd664d2d39ea2222823b30b67cb936cfd61755f15d616bf"
+   ]
+  ],
+  "sha256:4ee825028ba386ca5dc6dbc656704a4de8be527a293a8e74b53df695a49ff61c": [
+   "fec_collections",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:4fe62881e56ff282e120b732e5d1da6fe0b06db7485296027712a588c6979972": [
+   "fec_record_evidence",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:50715fc1145eaa2c403d86699138d80916d0f5bb32cc9d76bd9555b89214af78": [
+   "native_legal_reference_reads",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:510bcebf0f895758be2ad127900516be83a2becf75be5bb08251746c35d66cff": [
+   "fec_quality_notices",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:514d669ca4552c73078fbe92cbc32fc93171d7fb3e019bdf15d6bb598ed993f1": [
+   "fec_filing_report_observations",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:51524c6ac808de1844e0ec5e8dfd1d0e8668201156bd2f9da1d4acc764b25958": [
+   "edis_attachment_files",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:51dc93fe8b48448cccd664d2d39ea2222823b30b67cb936cfd61755f15d616bf": [
+   "scorecard_metrics",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:51e85c6836a0b8f50a7676201a33b84d2462457794d356de8420358d8389d2a4": [
+   "lobbying_foreign_entities",
+   "government-sources/1",
+   []
+  ],
+  "sha256:543a8627e99d6e73d58d24b8446c7c5ea3a2febb69bb2386a3f7dc838538face": [
+   "fec_source_catalog",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:1d3b39c1d63a994c973bad3743d3d1456868b8799cf6d15afa7a3182656f3c9e"
+   ]
+  ],
+  "sha256:5536ee763e51a3b9d77d4afbecc5192992b702838a8da300230d1d0ef2459cec": [
+   "supreme_court_opinion_observations",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:5594e7a151846f3b23eb12964c8ab20cfbb4b8a3b9745d5ab84bb16bb95f8ddf": [
+   "bill_family_archives",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:55de976fa705382cc4b82abaef7b6b7611e6fa943ab185326b50bcdbf438737e": [
+   "bill_committee_actions",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:564ab7e39d9edfef0384d5a26aa522263d812fe480331d1f65f3db1c3146609b": [
+   "fec_source_records",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:56da0b53e786023b2523c5fea2ad8402b7349bd5cdf1cce60d7a00832d1144b5": [
+   "fcc_proceedings",
+   "government-sources/2",
+   [
+    "sha256:3293ee11f17fde4663b2fd6430ce2d434b11f86acf06197cce67c7431cfccc0b"
+   ]
+  ],
+  "sha256:576c7507f636050a22f540c9742db44f15b04d6eb39da6bcec835bfbf55dfec7": [
+   "fec_source_records",
+   "fec-identity-context-receipts/3",
+   [
+    "sha256:26a03cf0d637df471e8b12054a94c5d76df1134730468c67e915824d1ead9486",
+    "sha256:564ab7e39d9edfef0384d5a26aa522263d812fe480331d1f65f3db1c3146609b"
+   ]
+  ],
+  "sha256:5907552892e66c3c63aaeacaf15683a887e4df601460c4c78b3e1d011e23b89a": [
+   "scorecard_member_links",
+   "scorecards-etl-member-links-v3",
+   [
+    "sha256:94519b2d5d0a68e2b22e121feec4ee111f4f8d23df61b83a552e05904afa8e2e",
+    "sha256:f5f7c5912836eef5b1011d26b7f022371470bc4c6d2d904337c8622a6b73e03b"
+   ]
+  ],
+  "sha256:595a5b48880c6c2bd41096175ef924ff7f741f5e3202986eb589fc20ba67c7ef": [
+   "lobbying_affiliated_organizations",
+   "government-sources/1",
+   []
+  ],
+  "sha256:59da47e72ddb5fac55437bb272f76bda7e8257a704396b21af169d71397bd840": [
+   "lobbying_conviction_disclosures",
+   "government-sources/1",
+   []
+  ],
+  "sha256:59e108be29b30bc0d0d77800cde09e99dc8464bd3c264a09ac22d34a56aaefe7": [
+   "fec_report_metrics",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:5a7b7b90fed9c0c594b49ea346e3068d23748608b542ba98c1d2245839e04d93": [
+   "fec_intercommittee_transactions",
+   "fec-subject-receipts/3",
+   [
+    "sha256:960c541ee8a834da12893fe17eb8c7cf20366887f9ae7e5c668c1bd846601b04",
+    "sha256:8ce28b1cc066b29c359750e550366b6292f252879d76b7e349ea2dc13b5f9336"
+   ]
+  ],
+  "sha256:5c090c94ca89441bb94bafd4eb4205f6b85cde4878f5893cc6dcbe822b5b0135": [
+   "court_citations",
+   "courts/1",
+   []
+  ],
+  "sha256:5c224cf5cd11068a32d1cdd59eae9833393894dda1996dfa0d6e8d2ab31b4031": [
+   "law_sections",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:5c2600a30af1d19626668cc4d928bf140beb45e2d8a2d41611db0d02ea0973a5": [
+   "fec_filing_definition_evidence",
+   "fec-subject-receipts/2",
+   [
+    "sha256:278490b1a585e8214aba18866344e48ef655827294008fb65f9cd3a3ed156328"
+   ]
+  ],
+  "sha256:5d28f56db8615673307b5f45dafe41a3f6431d8cd2268379e95ef24470299d28": [
+   "member_terms",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:5df4255bc42681ea64eda21ebe5376c3ad3d204f43fa2c4bf273b1a1ecc84cce": [
+   "fec_collection_selection",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:3117203760fe10bd282f6827de831a1ddaec1c1d5cc3e2bb399b511bd299a58f"
+   ]
+  ],
+  "sha256:5e3beae7a1b59b2975de9f9a56c0d731ad872d59f76c18e9b8dd121c78644ab3": [
+   "fec_agency_report_text",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:5ecc3f80f761aa41eac08cd91ce5880ab506caa6f3c8bc631068cd5d6e308e5a": [
+   "document_citations",
+   "legislative-documents/2",
+   [
+    "sha256:8c34a052ea8c3d8bcd1a3bce842b7158b22f2a076e965a3a1b73a5328d72cdcf"
+   ]
+  ],
+  "sha256:5f4b3c6c625c88e2b8097c2cdbdea18d9942e4b81b40f90952062861696de9da": [
+   "scorecard_publishers",
+   "scorecards-etl-v2",
+   [
+    "sha256:64a83364b7c50424aba0c0842628efdb0e81de65d4dc4a470f5e0fda311e51e8"
+   ]
+  ],
+  "sha256:5fce780536272c69954aa5795508b930cbe74129d1a7ae5c559ea76fc33b9840": [
+   "committee_meetings_detail_reads",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:5fe07430d26b46d01ec7f5ab5711ba8695670c9b06738c680923603c7ac9c107": [
+   "scorecard_items",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:60cca5e39e34d4207edc2a220f5502f1aa7c129a3e81a32af9a223b2a99f1a20": [
+   "scorecard_metric_items",
+   "scorecards-etl-v2",
+   [
+    "sha256:bd53e6b3f2d4a248398331d9c3a7ce908dbbd0cd1c51f9751884559d74d6673a"
+   ]
+  ],
+  "sha256:61c66e912112fb396c1104e4a5581c7a92590b0c273bbd84ea76f16b74e399c6": [
+   "scorecard_item_links",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:61cf218f96ef6b75fdb29169ef3a90df512d439732ab1eef1da7e8547c1019ac": [
+   "comment_periods",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:6244472987e823bc822bbd4ca8934c0c8972a82e26f72d3d792d5fbb6193d400": [
+   "table3_historical_records",
+   "table3-historical-public/2",
+   []
+  ],
+  "sha256:62f70d04db04474119052fc86940314d4f88b0734c5689acd2ebf40bb4ed2827": [
+   "laws_document_file_outcomes",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:632bf51b1c5251195107ee00455b409c9211227c970964aecfe94bb59c7e9fec": [
+   "fec_filing_header_associations",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:64a83364b7c50424aba0c0842628efdb0e81de65d4dc4a470f5e0fda311e51e8": [
+   "scorecard_publishers",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:653520baaa270371ae3aa5d850077376cf6e7645a98b69963a4db4253f62bd8a": [
+   "fec_inaugural_donations",
+   "fec-subject-receipts/3",
+   [
+    "sha256:c6e8263954958d0c1fba0948e184e24d82d4e476e4e4b1badd3fbed3ee6c1f9d",
+    "sha256:9f5f57a37b3b266cf5f8faa3f3deff6f254f1635d05c1faf90992614af64e9d7"
+   ]
+  ],
+  "sha256:654835efabf551d0a2d62caa536063716254efe022ef3e62ebeb5cd7d21622f3": [
+   "scorecard_metric_components",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:65d19af0820d880746f2f9db53e175311d2f54cdfd061872ca764f56cf076bfa": [
+   "fec_allocation_bases",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:661d49273286ec01196298001093bf5500ee48863e145c32f813be5998b42dde": [
+   "bill_versions",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:667fa4377c9d98fe4b9397b8895588362d2dc6b3e2d9c653e59810da6b467100": [
+   "document_attributes",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:6803fafbfd14da6e02b3d79c504621a96f8fcc496a5bfceefb838c5ccd760cc2": [
+   "bill_actions",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:697ea33002b738ae1cae8aaebd40fc924b826a835ac809fa19327da5cf66a119": [
+   "bill_versions",
+   "legislative-documents/2",
+   [
+    "sha256:661d49273286ec01196298001093bf5500ee48863e145c32f813be5998b42dde"
+   ]
+  ],
+  "sha256:6a38e3dbbd599532b7364f62b538b21f1dcc4f2e508c378565c017cee7abb213": [
+   "fec_independent_expenditures",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:6ad4e81f582f68618e9fe676d8f59fbe890c169ba94cef0d425bc4fc58f34408": [
+   "court_opinion_texts",
+   "courts/1",
+   []
+  ],
+  "sha256:6b25c445c0b5984b32f3a27f9e2b558157abb27be6bd70eb78406790db9a403b": [
+   "gao_reports",
+   "government-sources/2",
+   [
+    "sha256:aaf3bbb441f1f8b32d74d4a1c9fb63062bb7bc0d300c2859f5873d467a7ec770"
+   ]
+  ],
+  "sha256:6b496469bce79e287b9c58e9b66fa457e38e4b73f6a666b5874ba066eacd0a5e": [
+   "fec_postgres_committee_history_observations",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:3326572ec030aa725635e4218b6001f8c7b344c4e865a0678e683b4701cefaec"
+   ]
+  ],
+  "sha256:6d2246991b1c7210c30682ecb728724bc0d67fbadcd042b7a6e19e1844fd018e": [
+   "senate_expenditures",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:6d8e8888832a7e9c887216fd20731b158a261579eaf2e4acbf1b5a7fc746d26b": [
+   "public_activity_events",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:6dc272195a9d565994a47733c0b6cab237696153427cf125cba86c9dc177ab8e": [
+   "lobbying_activities",
+   "government-sources/1",
+   []
+  ],
+  "sha256:700bf040329d97b1430863e697ec1ff0ace5025e5d8b00bb3b3a1addef82083e": [
+   "fec_loans",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:701b917b164973808968fa2e0307fe37d9ba1bb7cae47e4b120a18177b2d4503": [
+   "fec_oversight_recommendations",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:70b28257fcb7cd948e7000b741a3aa8cd6ee1bc95c586a1d1966c93366f324d6": [
+   "fec_bundled_contributions",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:71b45c7a30523e2a94afd8de58c1b6a96e1895a24610ab9febfb5d5cc38b9553": [
+   "inspectors_general_report_metadata",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:7267f1aca5061e6c2ed6eab3f30e01bd32b4097b58c259c9ff081adc4d6803f4": [
+   "committee_reports",
+   "legislative-documents/3",
+   []
+  ],
+  "sha256:737ab6e6dbe5085b53675f799478d5b68de07eb22372ec33373084d2ca97e925": [
+   "fec_research_meeting_observations",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:7445baec38bfc4b6d80549299dac0c2ef407d5f53efdfb465cc934dd03af3f13": [
+   "fcc_filings",
+   "government-sources/1",
+   []
+  ],
+  "sha256:74ccb94652213d3876c36a9f6595431c0368e3b13775c9de1196582188d774fb": [
+   "federal_register",
+   "regulations-native-v2",
+   [
+    "sha256:ef0a06942693b6f8e1e972ed2f3524a482796fb1d1839fc72571b945bd06372f"
+   ]
+  ],
+  "sha256:7599feade24749b46b61ea530aae173b080cabdc2bed20a30ac4706e9b3158f8": [
+   "lobbying_registrants",
+   "government-sources/1",
+   []
+  ],
+  "sha256:75a8fd8a0b29af20c432357a087f606bffd059941f5c428968482fe42ba65fa1": [
+   "court_opinion_clusters",
+   "courts/1",
+   []
+  ],
+  "sha256:75b91e29a85dc0e1382ea0979ca81e6d4175bf5aa424c04716be180733f6d286": [
+   "hearing_transcripts",
+   "legislative-documents/3",
+   []
+  ],
+  "sha256:75fe0bf4d96eee3486e029fed10d709271c853f316ffe2636ddd30f813e66c34": [
+   "lobbying_clients",
+   "government-sources/1",
+   []
+  ],
+  "sha256:784aaaad1219fcdef47c2f047218423609c861f1a907814fbddc250a194d7922": [
+   "gao_reports",
+   "government-sources/4",
+   [
+    "sha256:c9241f8b0142c2cec1e42e299553d37903bacfd23f88931c67f7d68f967fa3b2",
+    "sha256:6b25c445c0b5984b32f3a27f9e2b558157abb27be6bd70eb78406790db9a403b",
+    "sha256:aaf3bbb441f1f8b32d74d4a1c9fb63062bb7bc0d300c2859f5873d467a7ec770"
+   ]
+  ],
+  "sha256:78a23d49ce190fa3791dba65308fd370c17abaabd817a045e4da7901955fec1b": [
+   "fec_filing_report_observations",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:792a5c9b9fd3f06d081a7135c001275b1f08291fff1d8b35d14d67a402584d7c": [
+   "agency_lifecycle_stats",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:79acb3b7fb791f9a525da821757596f95f201316766f3d681099cb64462af261": [
+   "fec_agency_mapping_dispositions",
+   "fec-subject-receipts/3",
+   [
+    "sha256:8e72ed94793a5e59d26fcd0b5bbb4a1503d49f4ad16233013f91928160d82001",
+    "sha256:d15e472eb843c2d58ecd6be5acf48a8a50425679b612a584149e36f0f6449f85"
+   ]
+  ],
+  "sha256:7a96b44a742540797338b147e1823892452cdf4e92d5bf86b1f5842b4f89c081": [
+   "section_diff_items",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:7c14eaec43eb181444f67081471adc3c1c327c16a1a9d0ae2fa394c3f17a9bba": [
+   "cfr_sections",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:7c1a21bd3ccb1b6b34afedeecf0f2eeb3f25892902dd821397dc671a0c9950b4": [
+   "ferc_accession_files",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:7c6d41b1c522d825ac852b668d74dec4ef52c4839986e27f1af3d97e8b4c8979": [
+   "member_vote_terms",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:7ea49d1c5522944051685e229142a814d6416c5d324860fb92a0e9e1c9833aa3": [
+   "native_legal_references",
+   "legislative-documents/2",
+   [
+    "sha256:a9da77fb1f2000cc3cfd9b78db3c2e0dd171bbab82dbd530c094637e1b6157a7"
+   ]
+  ],
+  "sha256:7fc40f09b39947e463c3c4807de85d97085e21afe1d8d09b35e5485fec79b3a4": [
+   "unified_agenda",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:80995815cc872fc4f921b27a80c01ad2b8cb5f63cfc79376124cbef7f8268f19": [
+   "fec_allocated_disbursements",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:80c6ad26a352a7b7c4424094f868d75f5602aea626085b1d6905e9cd3d36b121": [
+   "committees",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:81c6b35df48f0607b7669bcc57aee20c35cc293e80a8638907741aacebf06aa9": [
+   "fec_loan_guarantors",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:84949e39fa03ba8fe0a8eb5443f0ad65f5ed27168257112e9e3f14911b7bcf16": [
+   "rule_targets",
+   "regulations-native-v2",
+   [
+    "sha256:885b4963d8c3a08bc6d32dcf3fc7893db6a89e1138ec2afd917ff0ecd83d9ecf"
+   ]
+  ],
+  "sha256:87ff45793b99d373392332c1d90c738dc1f5b02e04ad4ede6c5d428b40adf5d4": [
+   "fec_filing_text_observations",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:885b4963d8c3a08bc6d32dcf3fc7893db6a89e1138ec2afd917ff0ecd83d9ecf": [
+   "rule_targets",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:8a0b716332d26086cde20c475f66bfa249ff47b9b25cbb6241800e25ffc8566c": [
+   "fec_filing_text_observations",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:8b5d221bf278c71e3a5d3809d356f47933117d3f0b797965d11bfe5db48f6d0a": [
+   "fec_disbursements",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:8c34a052ea8c3d8bcd1a3bce842b7158b22f2a076e965a3a1b73a5328d72cdcf": [
+   "document_citations",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:8caf5eb0dd7e29a54363001b0e1518405b7182149ec90f909cd28b9d5335ae8f": [
+   "report_sections",
+   "legislative-documents/3",
+   []
+  ],
+  "sha256:8cdff4432bff2cfdaa8b64308a3325ad4e1d0b4cec634588fb4c73c4a7ce5f23": [
+   "fec_historical_ie_statistics",
+   "fec-subject-receipts/2",
+   [
+    "sha256:f83036cca36a251c621ed7a61ad454a36d0c12249e623d1aae6e0850902d6f0c"
+   ]
+  ],
+  "sha256:8ce28b1cc066b29c359750e550366b6292f252879d76b7e349ea2dc13b5f9336": [
+   "fec_intercommittee_transactions",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:8d4bab754f295ac5f36ace0b2a4379faa05cd9588530a364563270dee9b4383f": [
+   "fec_committees",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:2bb1993c4bbf3fc9474496d834cfa8b1d03cc1bcc2335e06878a6100cde67032"
+   ]
+  ],
+  "sha256:8e72ed94793a5e59d26fcd0b5bbb4a1503d49f4ad16233013f91928160d82001": [
+   "fec_agency_mapping_dispositions",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:8f1371ee7c224f9e153e35104fc79db86bb98fdbafcf229de5b38ce6621f00ea": [
+   "org_committee_links",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:8f2e8238bc924e1dfd46a08dbc62be6bf59b324ab60b8c7b586f637bd524b293": [
+   "bill_publisher_summaries",
+   "legislative-documents/3",
+   [
+    "sha256:b0c7edd5e9e6d8b2d8dac735cf087fcd2b99394cc6cd9ab8c63e45ec701e14ac"
+   ]
+  ],
+  "sha256:902b8c00ad382a2d279fda543929993228b11aadbe96ef9d8c5e5f43602bcc15": [
+   "fec_receipts",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:909419d1ad18b4f3ff3104bad6127892fcebd6b70ed47cc726f55cc153a352f8": [
+   "scorecard_snapshots",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:90954686e569728b012c66edf57e14a1c81e07ad7e3bcdcb8539180636e5b4ce": [
+   "fec_reported_financial_summaries",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:91778cac506ae581eaa8f01cfcdca902383b823584042a64516293b9321b67c0": [
+   "fec_committee_history",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:92668442fc6b327163a41ba53f14953c758025d35f30372acf778916913d1e21": [
+   "bill_family_document_file_outcomes",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:92b31c2267ce7c3b3a14b603dd2ce4fdb2f1a8776939b2e1517dcf84934edf40": [
+   "court_opinions",
+   "courts/1",
+   []
+  ],
+  "sha256:93b4deba37c9f3443c94a985713c382b8166eb8d31ff5a72cd1409fad60f2276": [
+   "fec_electioneering_communications",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:94519b2d5d0a68e2b22e121feec4ee111f4f8d23df61b83a552e05904afa8e2e": [
+   "scorecard_member_links",
+   "scorecards-etl-v2",
+   [
+    "sha256:f5f7c5912836eef5b1011d26b7f022371470bc4c6d2d904337c8622a6b73e03b"
+   ]
+  ],
+  "sha256:94e3242f4ed65a6b5858642ffe7c6a39d267a097c8978a0b26e09889dae0cd41": [
+   "law_code_sections",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:94ef3f1c819725f3640a52ac48de47df6fae45beaa0d788553f07defd251b43e": [
+   "gao_recommendations",
+   "government-sources/2",
+   [
+    "sha256:c760916f35bf51c886cf329f05b46aec84f05ed677cbf336fb3f550a313a19d7"
+   ]
+  ],
+  "sha256:95595c6e1690280fe46e13eb725fb015fb3919079298e02a91a7ca3c2c847e4c": [
+   "regulatory_agenda_items",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:95d6f8f0e1167c593784c80a6e93656ab21c2bf76748a3e09fd991da27408fd9": [
+   "bill_summaries",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:95fc5021b6ae858ade66b8c53378c97af5b3696c1e86103afed2ea9ec7c07148": [
+   "fec_reported_financial_summaries",
+   "fec-subject-receipts/3",
+   [
+    "sha256:2fe5e173b3c95f87dea32006ff7d2417856c12495eae6e05e677babe567d08de",
+    "sha256:90954686e569728b012c66edf57e14a1c81e07ad7e3bcdcb8539180636e5b4ce"
+   ]
+  ],
+  "sha256:960c541ee8a834da12893fe17eb8c7cf20366887f9ae7e5c668c1bd846601b04": [
+   "fec_intercommittee_transactions",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:960d72faa22688dfb19348bc61393a22433d2c09b2f205460c3e1417bfff1a7f": [
+   "ferc_search_documents",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:96219d8f612070cb117039e6cbe5012bfb1ac0f02c2ee276c0f2f79720268043": [
+   "house_activity_reports",
+   "legislative-documents/3",
+   []
+  ],
+  "sha256:965a50462193e4a610e605f47e84d2de31b350643e5b2cb215ceb1cda2678a63": [
+   "committee_report_cbo_letters",
+   "legislative-documents/3",
+   []
+  ],
+  "sha256:97b119fd2883aed2256ef69b2a0acef37882b745f1db0089f43c92ea2462f21e": [
+   "fec_allocation_bases",
+   "fec-subject-receipts/3",
+   [
+    "sha256:9dddf4bb432b4c39a95f90243f9e6af0845653ba54e8d9126058c2fc64252d24",
+    "sha256:65d19af0820d880746f2f9db53e175311d2f54cdfd061872ca764f56cf076bfa"
+   ]
+  ],
+  "sha256:980b3ad8dab96588eb05bbdf033458cec9ae9a68601be5a8471f824c3cfbffff": [
+   "fec_legal_documents",
+   "fec-subject-receipts/2",
+   [
+    "sha256:f8df0e8c7b3c778bc902b7cc203cbbd45edab5bf2c8a336aae0936842164016b"
+   ]
+  ],
+  "sha256:993f4a93ba8c8bc3ef3666771cf79d8f18d931ca0ba4398909a5aead7280ee54": [
+   "fec_allocated_disbursements",
+   "fec-subject-receipts/3",
+   [
+    "sha256:80995815cc872fc4f921b27a80c01ad2b8cb5f63cfc79376124cbef7f8268f19",
+    "sha256:ae3ef00b78977ef3719cb5d845d910f16e974b22a68cb2812eecc887ad070702"
+   ]
+  ],
+  "sha256:9b70b07d2e517a0507fad42cf9ae3745664315bb315131fd0b153984f3ecd077": [
+   "documents",
+   "regulations-native-v2",
+   [
+    "sha256:4a569d125100f80ccd9083534e60f2d9ea4ff9da0fd69a3d8a5354b91117f1c8"
+   ]
+  ],
+  "sha256:9c1f15071eda161c69e7532a3e1f08cf7bedf655aaf4425cad7c21c223d6897e": [
+   "bill_sections",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:9ce969b14b99ba714206ec5a27744d5582520bf9803124a3658aa4d316631863": [
+   "fec_loan_guarantors",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:9d135c565bf0858cfbe6755bdbbc5c0d4c9ea67c8fbddd1e52b248929852d153": [
+   "sam_entities",
+   "government-sources/1",
+   []
+  ],
+  "sha256:9d4e43e296526447564cedac38d71de572dd369ca4ec8c2b038d44ba3e540e58": [
+   "scorecard_item_links",
+   "scorecards-etl-v2",
+   [
+    "sha256:61c66e912112fb396c1104e4a5581c7a92590b0c273bbd84ea76f16b74e399c6"
+   ]
+  ],
+  "sha256:9d5591e65190572523551c4bd6d0437a57737ddff5bc706a5c12c6887f4a62b2": [
+   "fec_legal_events",
+   "fec-subject-receipts/2",
+   [
+    "sha256:49bb96a1b848aacfabe1b669ca3758b6fb72a29369076983ff818ebbc2c4b083"
+   ]
+  ],
+  "sha256:9db6b4661f87bad4a5b5e60570166dd6e0e63cd3193721fe111bb99cd7ce05cc": [
+   "bill_subjects",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:9dddf4bb432b4c39a95f90243f9e6af0845653ba54e8d9126058c2fc64252d24": [
+   "fec_allocation_bases",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:9def077ee927ff1ccf137ab2de5da9d6208cce4f26b6b360ff564ffe4af09ec0": [
+   "fec_contribution_aggregates",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:9e8091be2ac422e818fc5da7192fcf11e5b7177e0bd4007bdefbdbfef9c8d496": [
+   "dockets",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:9f5f57a37b3b266cf5f8faa3f3deff6f254f1635d05c1faf90992614af64e9d7": [
+   "fec_inaugural_donations",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:9fdf3bc52c0b081c9c337ad3d2dfd556cf2f4a5ea41759be8ec775b146179330": [
+   "house_record_enrichment_results",
+   "navigation-read-outcomes/2",
+   [
+    "sha256:aba76c1a818ee4a3a10682b0b070ca7e5ddd2a7782a5730886fc9a6652d6e519"
+   ]
+  ],
+  "sha256:a04ae0006735075b7782568eab2514f8353da24eec9773b54db50ec6efbf1ffb": [
+   "document_citation_read_outcomes",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:a1119432506d74792d6f8b4b7723872bb0fcb1293491da8ce65725d90c299973": [
+   "congress_acquisition",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:a3b0459a855c45f5732320557a227e3ecead6d806204c2d52592bae3259f9676": [
+   "usaspending_recipients",
+   "government-sources/1",
+   []
+  ],
+  "sha256:a56be093d55e9c4a52c35155a98d695e7702a4cc0357fd8050bbd7fc7bf3be17": [
+   "crs_reports",
+   "government-sources/3",
+   [
+    "sha256:cffbe937152a6c16449ebab42f1b54b69f14993824250bcbda64befcfee3eb19",
+    "sha256:dcb4154100836c8f64e2b085456d85c263c1bf35ca032982b6a1475c9d8c51dd"
+   ]
+  ],
+  "sha256:a71fd5bd59ae88478d30b44173627923dd5ec022002d0afb0828db199721f542": [
+   "administration_policy_bill_links",
+   "administration-policy-v1",
+   []
+  ],
+  "sha256:a78a9dfaeba3660c8b188889c7416255d71c221b63ec94a9a1bc871f09350bb3": [
+   "scorecard_action_comparisons",
+   "scorecards-etl-v2",
+   []
+  ],
+  "sha256:a7a3360754b2746ecd4776796cc80afd8e78a4b01cc3ccd7209b86e0d9a14bc5": [
+   "fec_filing_text_observations",
+   "fec-subject-receipts/3",
+   [
+    "sha256:87ff45793b99d373392332c1d90c738dc1f5b02e04ad4ede6c5d428b40adf5d4",
+    "sha256:8a0b716332d26086cde20c475f66bfa249ff47b9b25cbb6241800e25ffc8566c"
+   ]
+  ],
+  "sha256:a7d5c89cb48761d94b9494a52573f43d82f5c88cd653410bd7e2d064b80c4e3b": [
+   "fec_filing_definitions",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:a88aade7952c582839cae8141c0b30163b1c795fb02682c5d71614deda44e3fc": [
+   "lifecycle_events",
+   "regulations-native-v2",
+   [
+    "sha256:fae4ac605bc680bcdfc27fbdc08f06c8e0b50026e245339db32fa2aeef316525"
+   ]
+  ],
+  "sha256:a964c9ee57f4bf2959444d7c47b6265f9f75d48b6ae05cd9e30c1a51403d4e51": [
+   "fec_filing_links",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:a99e77f69c36db1414a2f8b07f6c1beca726944923d15e2defa27973b30155c3": [
+   "fec_disbursements",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:a9da77fb1f2000cc3cfd9b78db3c2e0dd171bbab82dbd530c094637e1b6157a7": [
+   "native_legal_references",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:a9db4d130a2e7672c1fa80062a91e6a83ba7a098b32aef024c4a138f54d52a08": [
+   "fec_debts",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:aaf3bbb441f1f8b32d74d4a1c9fb63062bb7bc0d300c2859f5873d467a7ec770": [
+   "gao_reports",
+   "government-sources/1",
+   []
+  ],
+  "sha256:ab1d4b62a87ac393d44532f82df5964b2d27bb3c49d0b5df9d48ccd0d6f77b8b": [
+   "fec_collections",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:4ee825028ba386ca5dc6dbc656704a4de8be527a293a8e74b53df695a49ff61c"
+   ]
+  ],
+  "sha256:ab59a26aa0166ed5ce3398ac37ebc5efb124e73cb80258016c5e7d4c3ed49d3d": [
+   "hearing_bill_links",
+   "legislative-documents/3",
+   []
+  ],
+  "sha256:aba76c1a818ee4a3a10682b0b070ca7e5ddd2a7782a5730886fc9a6652d6e519": [
+   "house_record_enrichment_results",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:abb18b1217c756b2c135fbdf28decd02c7110b6cbdf4472c7a34c5b7d1301b45": [
+   "uscode_edition_sections",
+   "uscode-editions-public-v2",
+   []
+  ],
+  "sha256:abb1fc0d9542786cfb64b9b4ed42e1861942ff395752adf2f328a4c7c433ffe8": [
+   "cftc_comment_files",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:abebb842b69743558f5106cb66678bb0ac9dffad417052d493f142a8271705ea": [
+   "lobbying_activity_lobbyists",
+   "government-sources/1",
+   []
+  ],
+  "sha256:acc72e9540cd92490c2c3da6290dedd04bc01abdc85b53a34b8ec926b99007e7": [
+   "fec_loan_terms",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:adb2ec070186981c786ee2573f2c58d021168d4ea94a8bedfab5ebbe95931c4d": [
+   "fec_candidate_api_observations",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:add3c571265e62cc0e8860ed4300542cb4a47e9f3f31d37b4ea6293cd0281350": [
+   "print_citations_document_file_outcomes",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:ae3ef00b78977ef3719cb5d845d910f16e974b22a68cb2812eecc887ad070702": [
+   "fec_allocated_disbursements",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:aee968469e3f202d20b58d7367b6e59a5ffeb03d6b566499c7f7b8f7478b084f": [
+   "comment_periods",
+   "regulations-native-v2",
+   [
+    "sha256:61cf218f96ef6b75fdb29169ef3a90df512d439732ab1eef1da7e8547c1019ac"
+   ]
+  ],
+  "sha256:afb5f727606eee956f98479ec4a8bec157e05a7bf850631c176bf852577c5c90": [
+   "house_communications",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:b00651b23d03ea0dbdd59b7a8a2a2c7d246e65f4154c3f83ff224c58bb9fa24d": [
+   "scorecard_member_item_results",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:b0a6714eb996665612612d7d26fce1ea591829ce5e800cb93349647bc26f8694": [
+   "proceedings",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:b0c7edd5e9e6d8b2d8dac735cf087fcd2b99394cc6cd9ab8c63e45ec701e14ac": [
+   "bill_publisher_summaries",
+   "legislative-documents/2",
+   [
+    "sha256:f4a242487fc7b982811c8c85c20144f2dbceeb5d0a0616f4f7d0a107593f482f"
+   ]
+  ],
+  "sha256:b1f5fea5a604635daac99c77fc5b0da52d16ef3b074b44c8c1f4841b49b923c0": [
+   "fec_report_metrics",
+   "fec-subject-receipts/2",
+   [
+    "sha256:59e108be29b30bc0d0d77800cde09e99dc8464bd3c264a09ac22d34a56aaefe7"
+   ]
+  ],
+  "sha256:b22e17099851f6ada800ab4c7ec52e3dd880db88671b5a63a55f150519569095": [
+   "bill_cosponsors",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:b327925622456f0df7ca5a19138df163a1e48b5aae667f13efe535c7fb15eed4": [
+   "member_vote_terms",
+   "congress-subjects/2",
+   [
+    "sha256:7c6d41b1c522d825ac852b668d74dec4ef52c4839986e27f1af3d97e8b4c8979"
+   ]
+  ],
+  "sha256:b5a84a31b8996b1ed4be30952fc4bfe1939144ee7edb584bd53876a032370643": [
+   "treaties",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:b5d65c20212dfc1c07fbde3d0801b2bf42e898ed1a5ce1a69d1c9d6b480f3498": [
+   "committee_meetings",
+   "congress-subjects/2",
+   [
+    "sha256:da75a6a9c41b00b9931dedce7890ec79ae6b168498693297b439752e6a09262d"
+   ]
+  ],
+  "sha256:b75057a5f0f00ac75088f5b650fb5877bc39922f280ab436e7c03f3593fd48bb": [
+   "supreme_court_pdf_observations",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:b7cf0071f9d1e349997e41dd5bd08f9f1c1a1bea172fe4c30f7ee9f857493dd4": [
+   "scorecard_member_ratings",
+   "scorecards-etl-ratings-v2",
+   [
+    "sha256:d19e6f4611272f4e9c190125d71c523d357226461f109f0455642dfcae7df536"
+   ]
+  ],
+  "sha256:b8f102a56ad9280a247ab49d2d58673a767094db54884b92bf91d22524d8638f": [
+   "fec_debts",
+   "fec-subject-receipts/3",
+   [
+    "sha256:392a6d5969807932b78e091af4daf0c9c785bc457060224fb8591e3bac50c994",
+    "sha256:a9db4d130a2e7672c1fa80062a91e6a83ba7a098b32aef024c4a138f54d52a08"
+   ]
+  ],
+  "sha256:ba33682218a4dfb49b15aa9a3bf9a2b54a8b8f68e8bdd7855dce441cfaf8875b": [
+   "fec_coordinated_party_expenditures",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:bc77c18ba377715858571674885b7fd93154d00e48123a123cec72179b0db997": [
+   "fec_committee_history",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:91778cac506ae581eaa8f01cfcdca902383b823584042a64516293b9321b67c0"
+   ]
+  ],
+  "sha256:bd328eb0e7d6ec49cb8e2ed0d259fc50fee2508c541ea5d17250df72b0621460": [
+   "federal_register_issues",
+   "historical-regulations-public-v2",
+   []
+  ],
+  "sha256:bd53e6b3f2d4a248398331d9c3a7ce908dbbd0cd1c51f9751884559d74d6673a": [
+   "scorecard_metric_items",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:bd8b6cb87f1f9828c69acbf44afc0256609706276810421e52f5b42615dc576b": [
+   "scorecard_items",
+   "scorecards-etl-v2",
+   [
+    "sha256:5fe07430d26b46d01ec7f5ab5711ba8695670c9b06738c680923603c7ac9c107"
+   ]
+  ],
+  "sha256:bdff7d0e8bda01eec2e4313cbd815934b36673670682507da689d5d85260e1d3": [
+   "committee_assignments",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:bef56a69ff95bc8d2ef2a3b64fe30726c8f96159d7d629e6ff7dce6a2d0adf38": [
+   "fec_committee_observations",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:c0bf6b22889d60ba7a06416eda1a16d8212d838be45eff9cfc4f7c01c8f82360": [
+   "fec_registration_statements",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:c10aadf651aacb6a7e21b46e702429371dd1abc1e7eaf56edbbd368cd8ea5d08": [
+   "senate_expenditures_document_file_outcomes",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:c33af9fe8526f0277ffd5330b6e7b633ba031b32fed046a46913d0f508c31f12": [
+   "sec_comment_files",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:c45015b2fdabab0432e75e63880f3be9f1d6a9e770350ba2a9be06df09ce348f": [
+   "nominations",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:c48e8011562e984bf101667f615a0abc09250bafa5eaca7af2fa27ff65b27457": [
+   "fec_independent_expenditures",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:c56a58ba27221670fe2f0137297d1f028bb7e55dc83f7c661c9388d723b67d3b": [
+   "fec_legal_parties",
+   "fec-subject-receipts/2",
+   [
+    "sha256:36aea1778bae3909e4879c4b050a629123580ce2aa0417791b81e7092a43f221"
+   ]
+  ],
+  "sha256:c6e8263954958d0c1fba0948e184e24d82d4e476e4e4b1badd3fbed3ee6c1f9d": [
+   "fec_inaugural_donations",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:c760916f35bf51c886cf329f05b46aec84f05ed677cbf336fb3f550a313a19d7": [
+   "gao_recommendations",
+   "government-sources/1",
+   []
+  ],
+  "sha256:c9241f8b0142c2cec1e42e299553d37903bacfd23f88931c67f7d68f967fa3b2": [
+   "gao_reports",
+   "government-sources/3",
+   [
+    "sha256:6b25c445c0b5984b32f3a27f9e2b558157abb27be6bd70eb78406790db9a403b",
+    "sha256:aaf3bbb441f1f8b32d74d4a1c9fb63062bb7bc0d300c2859f5873d467a7ec770"
+   ]
+  ],
+  "sha256:c9d117018f346e0bd39438f72148f70476336ee2a255e114e2fa47ca42f6f379": [
+   "record_issues",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:cbfb2acc4b47b4547d7ca8f53292c4bcc4802682f7a4a613af1c03fc142d7bfa": [
+   "fec_reference_source_pages",
+   "fec-identity-context-receipts/2",
+   []
+  ],
+  "sha256:cc95e5d5de6c2b485b999e5b2a3d07661c51c247dfee3fa5b59bf88939d48809": [
+   "fec_committee_master_observations",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:f15547e361a67751c407b5add67ab6a2a94066d241832a7dca0b27f83fedc80b"
+   ]
+  ],
+  "sha256:cc9aa174f5814152c691424d936f7cca7f14604ee496fa9656acbb6d721804a2": [
+   "roll_call_votes",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:cd44fb7c667300586d33e1d9db759465e32db44c82ed3183bec44bdb5d23b160": [
+   "fec_filing_header_associations",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:cf413e38bf03a6b9eab61638850e3e0aa1632b2e49edc8e66674a407bef0997f": [
+   "cbo_cost_estimates",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:cf6ca9876cd2d079c700b1e60748da2cbc72475bd4d54a38dfd37e728424ad12": [
+   "scorecard_members",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:cffbe937152a6c16449ebab42f1b54b69f14993824250bcbda64befcfee3eb19": [
+   "crs_reports",
+   "government-sources/2",
+   [
+    "sha256:dcb4154100836c8f64e2b085456d85c263c1bf35ca032982b6a1475c9d8c51dd"
+   ]
+  ],
+  "sha256:d155151e0fe74620c90592af97ae39c688e6b828b6eeb881012d61580d97629c": [
+   "unified_agenda",
+   "regulations-native-v2",
+   [
+    "sha256:7fc40f09b39947e463c3c4807de85d97085e21afe1d8d09b35e5485fec79b3a4"
+   ]
+  ],
+  "sha256:d15e472eb843c2d58ecd6be5acf48a8a50425679b612a584149e36f0f6449f85": [
+   "fec_agency_mapping_dispositions",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:d19940e95b6ca9f8b2c1d09a03a2ff029b1b0f13281cf7b8f9ee93b2349ecf61": [
+   "house_communications_detail_reads",
+   "navigation-read-outcomes/2",
+   [
+    "sha256:ef2eb2bcc45729c701bed172dd8fbc6c2877406aacca2f14f4604bce3f629289"
+   ]
+  ],
+  "sha256:d19e6f4611272f4e9c190125d71c523d357226461f109f0455642dfcae7df536": [
+   "scorecard_member_ratings",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:d227c32717fe71e80fe727f048f54a3544505cec9aba0c2a366944d462a39a91": [
+   "org_committee_links",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:8f1371ee7c224f9e153e35104fc79db86bb98fdbafcf229de5b38ce6621f00ea"
+   ]
+  ],
+  "sha256:d32ea5e8bd0d6c586d902bcd85695e4d9e50ee97af883c0b282e64a879388186": [
+   "lobbying_filings",
+   "government-sources/1",
+   []
+  ],
+  "sha256:d3b2029adaee22f3beb63be61374a6ab3b035cbf84e11de45d57498d9fa570ca": [
+   "fec_loans",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:d5551abdba7b451950088a8dfe1d2651f2849241291e72b2511e98d2a9bd0208": [
+   "supreme_court_index_observations",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:d7ce377b373b567c7cc29f7caff5271ab8b8895038438058673625fc1c57fcae": [
+   "regulatory_agenda_items",
+   "regulations-native-v2",
+   [
+    "sha256:95595c6e1690280fe46e13eb725fb015fb3919079298e02a91a7ca3c2c847e4c"
+   ]
+  ],
+  "sha256:d889c81cd4df1831e01794fe2837f1a3d7e40b8e04b7a90da9a8601dca1c85e7": [
+   "nominations",
+   "congress-subjects/2",
+   [
+    "sha256:c45015b2fdabab0432e75e63880f3be9f1d6a9e770350ba2a9be06df09ce348f"
+   ]
+  ],
+  "sha256:d9734b908af76bdd06491f16ae4ede2b1e145cc70371b577960a68bdbe840d5a": [
+   "fec_api_response_controls",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:da21faba19c3cbecf784f0b66018921ff4c34b6aed11b573848e81a3013d7f96": [
+   "federal_register",
+   "regulations-native-v3",
+   [
+    "sha256:74ccb94652213d3876c36a9f6595431c0368e3b13775c9de1196582188d774fb",
+    "sha256:ef0a06942693b6f8e1e972ed2f3524a482796fb1d1839fc72571b945bd06372f"
+   ]
+  ],
+  "sha256:da75a6a9c41b00b9931dedce7890ec79ae6b168498693297b439752e6a09262d": [
+   "committee_meetings",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:dc036a2451cc290d19e339e2228cbb514bbf093c66e4cbad0f441bf00b478e42": [
+   "sec_rulemakings",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:dc6e8ca90603875cc3605129ad1c65ea1979d45220536e59b01e38b8fb84a766": [
+   "member_votes",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:dcb4154100836c8f64e2b085456d85c263c1bf35ca032982b6a1475c9d8c51dd": [
+   "crs_reports",
+   "government-sources/1",
+   []
+  ],
+  "sha256:dfca49a74acc9b74578b59792ceb76536ec041397903687835c01bcb5e8714ae": [
+   "court_citation_map",
+   "courts/1",
+   []
+  ],
+  "sha256:e593f49f16ac83a3880bb856ccf52a89d93da4a9c330f4e1b3d4eeb385fb5198": [
+   "scorecards",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:e5a1bd996b9733fe632aa9ff06f26124c59f60fe3c1669f4edd120b03f4ade31": [
+   "fec_filing_report_observations",
+   "fec-subject-receipts/3",
+   [
+    "sha256:78a23d49ce190fa3791dba65308fd370c17abaabd817a045e4da7901955fec1b",
+    "sha256:514d669ca4552c73078fbe92cbc32fc93171d7fb3e019bdf15d6bb598ed993f1"
+   ]
+  ],
+  "sha256:e66cd3388f5e8c30e8e085e798c16cdb19a5ecccca3167c348968e120a5bc5c4": [
+   "court_docket_groups",
+   "courts/1",
+   []
+  ],
+  "sha256:e904ff664eec7a9dbec7982e00472394643766097634c03a42df52a0f5499694": [
+   "scorecard_members",
+   "scorecards-etl-v2",
+   [
+    "sha256:cf6ca9876cd2d079c700b1e60748da2cbc72475bd4d54a38dfd37e728424ad12"
+   ]
+  ],
+  "sha256:e97f8ce9218308d349a58191f82d82e4f07e6e772f32af041e6c29ea566e93d2": [
+   "roll_call_votes",
+   "congress-subjects/2",
+   [
+    "sha256:cc9aa174f5814152c691424d936f7cca7f14604ee496fa9656acbb6d721804a2"
+   ]
+  ],
+  "sha256:e986649778217e46b85e91011eff48a7ca47a9eb5e679576266e5f53428fff06": [
+   "fec_lobbyist_registrations",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:e99650d66c57633d6bf2867e94ae817d1572db0e3f7578b894a78e62a86889e9": [
+   "cftc_comments",
+   "retained-native-collections-v1",
+   []
+  ],
+  "sha256:ea540e88f1355ab8a2813d92c95bf565ec4440af0c106a13e036b7606dfb38a3": [
+   "fec_coordinated_party_expenditures",
+   "fec-subject-receipts/3",
+   [
+    "sha256:09d79a31283d339bcc6d9d41d072f2360ba8ccaa7be090ded452cf70904b1cf2",
+    "sha256:ba33682218a4dfb49b15aa9a3bf9a2b54a8b8f68e8bdd7855dce441cfaf8875b"
+   ]
+  ],
+  "sha256:eae060f7ce8caf58a0d715869359d7be33a662505b64f908fcf32c5d8d498d05": [
+   "fec_account_transfers",
+   "fec-subject-receipts/2",
+   []
+  ],
+  "sha256:ebf416a77ce78bd43b8f5da9427bb390e26fc89a914cf1875061ecbf1b336a95": [
+   "nominations",
+   "congress-subjects/3",
+   [
+    "sha256:d889c81cd4df1831e01794fe2837f1a3d7e40b8e04b7a90da9a8601dca1c85e7",
+    "sha256:c45015b2fdabab0432e75e63880f3be9f1d6a9e770350ba2a9be06df09ce348f"
+   ]
+  ],
+  "sha256:ec6af49c7bed9a9392045a605b2b0e15740216b45d1eff5b7665db98c1a9f0ab": [
+   "congress_bills",
+   "congress-subjects/1",
+   []
+  ],
+  "sha256:edc60370390cacbdc948795ef0d8c0dae13ed95cd1fb753acfa2b0fd9d9984b3": [
+   "nominations_detail_reads",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:ee05d34ab41209ea0a756e5d8d9c4d3884d1757bfcfadb31956515ae2305e0fe": [
+   "scorecard_member_ratings",
+   "scorecards-etl-ratings-v4",
+   [
+    "sha256:138b14269f221b877d10c317b00513d9ba381ee834c20a414cc6e78a33092d35",
+    "sha256:b7cf0071f9d1e349997e41dd5bd08f9f1c1a1bea172fe4c30f7ee9f857493dd4",
+    "sha256:d19e6f4611272f4e9c190125d71c523d357226461f109f0455642dfcae7df536"
+   ]
+  ],
+  "sha256:ee20842e38d1771c78c243f787e81a35c70fda71c4646c37897a118a57b182e3": [
+   "fec_agency_reports",
+   "fec-subject-receipts/2",
+   [
+    "sha256:f34372fefa0cc83e499be759c3f4684107fb8b6d5452870a1ea05d71d6e89770"
+   ]
+  ],
+  "sha256:ee40edeea51f00ba24d53f1f256b903002868ea6260cd255afcc9eb091c5bed3": [
+   "comment_attributes",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:ef0a06942693b6f8e1e972ed2f3524a482796fb1d1839fc72571b945bd06372f": [
+   "federal_register",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:ef2eb2bcc45729c701bed172dd8fbc6c2877406aacca2f14f4604bce3f629289": [
+   "house_communications_detail_reads",
+   "navigation-read-outcomes/1",
+   []
+  ],
+  "sha256:ef9766c9780916d8c386636ddc0649b97532daa26cd61043884f533ef17ae4d3": [
+   "fec_communication_costs",
+   "fec-subject-receipts/3",
+   [
+    "sha256:1fc02c514bfc57b9ec1e6ef4f186d39e3cc453324e62bfc3ac5e6a194a6ae794",
+    "sha256:2820958daf05d01559bbb6f0380c2e1be2a9e100b1894ac0d2f781524121a573"
+   ]
+  ],
+  "sha256:f0c98ef22b21655040b71877611a3b27866ce11e0a4b3d218696e0794a309812": [
+   "fec_bundled_contributions",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:f0d0d2ea93cf3cc64db635d6597e4a319214de06f4a450f943ef6503a53fcf59": [
+   "scorecard_member_links",
+   "scorecards-etl-member-links-v4",
+   [
+    "sha256:5907552892e66c3c63aaeacaf15683a887e4df601460c4c78b3e1d011e23b89a",
+    "sha256:94519b2d5d0a68e2b22e121feec4ee111f4f8d23df61b83a552e05904afa8e2e",
+    "sha256:f5f7c5912836eef5b1011d26b7f022371470bc4c6d2d904337c8622a6b73e03b"
+   ]
+  ],
+  "sha256:f1206ba23b27db641df436c7dd4073d2d8a9f3bca42618a66ba035b470a4030f": [
+   "uscode_editions",
+   "uscode-editions-public-v2",
+   []
+  ],
+  "sha256:f141e7ddde7a0d9e9de33ea661fe267356638a83e33e4c32a140adf7eebe43bd": [
+   "rulemaking_lifecycles",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:f15547e361a67751c407b5add67ab6a2a94066d241832a7dca0b27f83fedc80b": [
+   "fec_committee_master_observations",
+   "fec-identity-context-receipts/1",
+   []
+  ],
+  "sha256:f28dfd8bd43bc7273369c7417dadab19d16635c3d2feab1a03add6b75fd5e3e8": [
+   "court_opinion_pdf_extractions",
+   "courts/2",
+   [
+    "sha256:209739288c05dbe2ec38b59f783a7d2fa888c8ba989d966b3bd6bbc24832bdbb"
+   ]
+  ],
+  "sha256:f34372fefa0cc83e499be759c3f4684107fb8b6d5452870a1ea05d71d6e89770": [
+   "fec_agency_reports",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:f411b39c6e4aca470de0a1b6bca94b89f338b93cb6c1c7fae58ad45d909c7f63": [
+   "fec_api_response_controls",
+   "fec-identity-context-receipts/2",
+   [
+    "sha256:d9734b908af76bdd06491f16ae4ede2b1e145cc70371b577960a68bdbe840d5a"
+   ]
+  ],
+  "sha256:f4a242487fc7b982811c8c85c20144f2dbceeb5d0a0616f4f7d0a107593f482f": [
+   "bill_publisher_summaries",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:f5285ede918dedbfda4f1357e33e13bd8db51df5f6f3f86754e9b5e011deb22b": [
+   "ecfr_snapshots",
+   "historical-regulations-public-v2",
+   []
+  ],
+  "sha256:f5331e198069daf8d742351481bdcc797b0056f084f4835be2af3dc950ec6ee0": [
+   "financial_changes",
+   "legislative-documents/1",
+   []
+  ],
+  "sha256:f5f7c5912836eef5b1011d26b7f022371470bc4c6d2d904337c8622a6b73e03b": [
+   "scorecard_member_links",
+   "scorecards-etl-v1",
+   []
+  ],
+  "sha256:f661c5a510354935a99739f420d52860c52c1652cae592a143b622d9289c6b4c": [
+   "fcc_filings",
+   "government-sources/3",
+   [
+    "sha256:13e482a46db2a67477d6d5f036f56a791016e8eaf5c73a11ba0c348ebe9474da",
+    "sha256:7445baec38bfc4b6d80549299dac0c2ef407d5f53efdfb465cc934dd03af3f13"
+   ]
+  ],
+  "sha256:f7f002e26b1929a766c3c831639a6234b140c2ac41fd9094755138f79bca7878": [
+   "house_communications",
+   "congress-subjects/2",
+   [
+    "sha256:afb5f727606eee956f98479ec4a8bec157e05a7bf850631c176bf852577c5c90"
+   ]
+  ],
+  "sha256:f83036cca36a251c621ed7a61ad454a36d0c12249e623d1aae6e0850902d6f0c": [
+   "fec_historical_ie_statistics",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:f8df0e8c7b3c778bc902b7cc203cbbd45edab5bf2c8a336aae0936842164016b": [
+   "fec_legal_documents",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:fa355fe0266054506b758ffad7aefdddb9ec6e1950eee5252fd776f7dda77693": [
+   "fec_agency_report_documents",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:fae4ac605bc680bcdfc27fbdc08f06c8e0b50026e245339db32fa2aeef316525": [
+   "lifecycle_events",
+   "regulations-native-v1",
+   []
+  ],
+  "sha256:faf8c724d217cae86dd9586d3007e0cb768b9a7b1e9d9c5cb3ff07302e77fbae": [
+   "senate_expenditures",
+   "legislative-documents/2",
+   [
+    "sha256:6d2246991b1c7210c30682ecb728724bc0d67fbadcd042b7a6e19e1844fd018e"
+   ]
+  ],
+  "sha256:fcaa0be00a2d0357a8f89e788a2117c0108047df2e0c8d1a4feb10321a9d204e": [
+   "ecfr_snapshot_sections",
+   "historical-regulations-public-v2",
+   []
+  ],
+  "sha256:fcdded3a816905c6150d523118fd96bee0e059f3673c54427983de644585dd35": [
+   "fec_audit_findings",
+   "fec-subject-receipts/1",
+   []
+  ],
+  "sha256:ff7086e9157e17112d903969c94a2122e3a5b9016b1e70b4c86e5c213e7a71d2": [
+   "committee_directory_entries",
+   "congress-subjects/1",
+   []
+  ]
+ },
+ "deviations": {
+  "sha256:09d79a31283d339bcc6d9d41d072f2360ba8ccaa7be090ded452cf70904b1cf2": {
+   "earlier": [
+    "sha256:ba33682218a4dfb49b15aa9a3bf9a2b54a8b8f68e8bdd7855dce441cfaf8875b"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:1fc02c514bfc57b9ec1e6ef4f186d39e3cc453324e62bfc3ac5e6a194a6ae794": {
+   "earlier": [
+    "sha256:2820958daf05d01559bbb6f0380c2e1be2a9e100b1894ac0d2f781524121a573"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:26a03cf0d637df471e8b12054a94c5d76df1134730468c67e915824d1ead9486": {
+   "earlier": [
+    "sha256:564ab7e39d9edfef0384d5a26aa522263d812fe480331d1f65f3db1c3146609b"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:28dde83e2e4f1faa93ed8e49df8fa11460590602a993788ff8bae9f36e95002d": {
+   "earlier": [
+    "sha256:93b4deba37c9f3443c94a985713c382b8166eb8d31ff5a72cd1409fad60f2276"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:2fe5e173b3c95f87dea32006ff7d2417856c12495eae6e05e677babe567d08de": {
+   "earlier": [
+    "sha256:90954686e569728b012c66edf57e14a1c81e07ad7e3bcdcb8539180636e5b4ce"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:331d6937f9a037055e4d869f64d8fbe929e1219319144ebae5defabb049fbc84": {
+   "earlier": [
+    "sha256:9def077ee927ff1ccf137ab2de5da9d6208cce4f26b6b360ff564ffe4af09ec0"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:392a6d5969807932b78e091af4daf0c9c785bc457060224fb8591e3bac50c994": {
+   "earlier": [
+    "sha256:a9db4d130a2e7672c1fa80062a91e6a83ba7a098b32aef024c4a138f54d52a08"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:6a38e3dbbd599532b7364f62b538b21f1dcc4f2e508c378565c017cee7abb213": {
+   "earlier": [
+    "sha256:c48e8011562e984bf101667f615a0abc09250bafa5eaca7af2fa27ff65b27457"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:700bf040329d97b1430863e697ec1ff0ace5025e5d8b00bb3b3a1addef82083e": {
+   "earlier": [
+    "sha256:d3b2029adaee22f3beb63be61374a6ab3b035cbf84e11de45d57498d9fa570ca"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:70b28257fcb7cd948e7000b741a3aa8cd6ee1bc95c586a1d1966c93366f324d6": {
+   "earlier": [
+    "sha256:f0c98ef22b21655040b71877611a3b27866ce11e0a4b3d218696e0794a309812"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:78a23d49ce190fa3791dba65308fd370c17abaabd817a045e4da7901955fec1b": {
+   "earlier": [
+    "sha256:514d669ca4552c73078fbe92cbc32fc93171d7fb3e019bdf15d6bb598ed993f1"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:80995815cc872fc4f921b27a80c01ad2b8cb5f63cfc79376124cbef7f8268f19": {
+   "earlier": [
+    "sha256:ae3ef00b78977ef3719cb5d845d910f16e974b22a68cb2812eecc887ad070702"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:81c6b35df48f0607b7669bcc57aee20c35cc293e80a8638907741aacebf06aa9": {
+   "earlier": [
+    "sha256:9ce969b14b99ba714206ec5a27744d5582520bf9803124a3658aa4d316631863"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:87ff45793b99d373392332c1d90c738dc1f5b02e04ad4ede6c5d428b40adf5d4": {
+   "earlier": [
+    "sha256:8a0b716332d26086cde20c475f66bfa249ff47b9b25cbb6241800e25ffc8566c"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:8e72ed94793a5e59d26fcd0b5bbb4a1503d49f4ad16233013f91928160d82001": {
+   "earlier": [
+    "sha256:d15e472eb843c2d58ecd6be5acf48a8a50425679b612a584149e36f0f6449f85"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:902b8c00ad382a2d279fda543929993228b11aadbe96ef9d8c5e5f43602bcc15": {
+   "earlier": [
+    "sha256:17f48e0b42ee487c267ea757f3b407f35defc0e6230679979a0ecf0aee93f95e"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:960c541ee8a834da12893fe17eb8c7cf20366887f9ae7e5c668c1bd846601b04": {
+   "earlier": [
+    "sha256:8ce28b1cc066b29c359750e550366b6292f252879d76b7e349ea2dc13b5f9336"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:9dddf4bb432b4c39a95f90243f9e6af0845653ba54e8d9126058c2fc64252d24": {
+   "earlier": [
+    "sha256:65d19af0820d880746f2f9db53e175311d2f54cdfd061872ca764f56cf076bfa"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:a99e77f69c36db1414a2f8b07f6c1beca726944923d15e2defa27973b30155c3": {
+   "earlier": [
+    "sha256:8b5d221bf278c71e3a5d3809d356f47933117d3f0b797965d11bfe5db48f6d0a"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:acc72e9540cd92490c2c3da6290dedd04bc01abdc85b53a34b8ec926b99007e7": {
+   "earlier": [
+    "sha256:38a2c3b0c571ce708ffc59af6d359d2cfdc7ef599391bc72489738182a123df0"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:b0c7edd5e9e6d8b2d8dac735cf087fcd2b99394cc6cd9ab8c63e45ec701e14ac": {
+   "earlier": [],
+   "why": "No installed policy reads it: the installed /3 reads /2 only to identify it as replay-required. /1, which only /2 read, is recorded unread (kept for its shape), and an unread entry is read by no recorded policy."
+  },
+  "sha256:c6e8263954958d0c1fba0948e184e24d82d4e476e4e4b1badd3fbed3ee6c1f9d": {
+   "earlier": [
+    "sha256:9f5f57a37b3b266cf5f8faa3f3deff6f254f1635d05c1faf90992614af64e9d7"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:cd44fb7c667300586d33e1d9db759465e32db44c82ed3183bec44bdb5d23b160": {
+   "earlier": [
+    "sha256:632bf51b1c5251195107ee00455b409c9211227c970964aecfe94bb59c7e9fec"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  },
+  "sha256:eae060f7ce8caf58a0d715869359d7be33a662505b64f908fcf32c5d8d498d05": {
+   "earlier": [
+    "sha256:4ba7e76f3a4c7893387c4405047eb283a7b96f55690cf39705b40c7eb30af92e"
+   ],
+   "why": "No installed policy reads it and the ladder never recursed into it: the installed /3 branch returned /2 and /1 itself. The ladder answered a /2 asked directly with nothing only because its /2 branch required the installed file to be /2; while /2 was installed it read /1, as the ledger does."
+  }
+ }
+}

@@ -9,15 +9,18 @@ the current state to that receipt and reads rows only where a binding breaks:
 * public: every receipt file must still have its stored version (ETag and size) at its fixed URL;
 * generation: ``publication.v2.json``'s comments family, which the website and MCP server read, must be the
   receipt's generation;
-* catalog: the pair must be reachable from the receipt's source through compaction alone, under the declared schema.
+* catalog: the comments table must be reachable from the receipt's source through compaction alone, under the
+  declared schema. The shared receipt table's identity is recorded beside it but decides nothing: the mirror
+  publishes no receipts (ss-juz8), so its "is comments current" and this check's are one rule
+  (``CatalogPairSnapshot.subject``).
 
 Otherwise the raw catalog's IDs and agency/docket/month counts must equal both the fixed and the generation index,
 which fails when the catalog advanced past the publication. A deduplicating consumer view cannot establish physical
 catalog integrity. Counts cannot see a text-only change, so any comments-table commit other than compaction since the
-receipt's snapshot fails as unpublished; the counts then print as diagnostics. The receipt table is shared by every
-dataset's writers, so any write to it sends the run to the row path (~95 s, 2026-11-09; accepted). A receipt that
-names no generation or catalog pair (written before the publisher recorded them; the receipt format number did not
-change) binds nothing, so every run reads rows until a comments publication writes one.
+receipt's snapshot fails as unpublished; the counts then print as diagnostics. A write to the shared receipt table
+(any dataset's writer) no longer sends the run to the row path (~95 s, 2026-11-09). A receipt that names no
+generation or catalog pair (written before the publisher recorded them; the receipt format number did not change)
+binds nothing, so every run reads rows until a comments publication writes one.
 
 Exit 0 when bound or verified, 1 on any mismatch or incomplete check.
 """
@@ -91,10 +94,8 @@ def main() -> int:
                                                   receipt["generation"].get("artifactDigest") == family["artifactDigest"])
         source = receipt_source(receipt)
         with _stage("catalog: snapshot against the published source"):
-            subject_bound, receipts_bound = ((False, False) if source is None else
-                                             iceberg.compacted_since(rt, source, declared_schema=True))
-        if (source is not None and generation_bound and subject_bound and receipts_bound
-                and not (args.agency or args.verify_content)):
+            subject_bound = source is not None and iceberg.compacted_since(rt, source, declared_schema=True)[0]
+        if source is not None and generation_bound and subject_bound and not (args.agency or args.verify_content):
             print(f"OK: generation {family['artifactDigest'][:19] if family else 'none'} and catalog snapshot "
                   f"{source.snapshot_id} (compaction only) are the receipt's", flush=True)
             return 0
@@ -106,9 +107,7 @@ def main() -> int:
             ("receipt names no generation" if "generation" not in receipt else "generation differs from receipt",
              not generation_bound),
             ("receipt predates pair snapshots", source is None),
-            ("comments table has unpublished catalog commits", unpublished),
-            ("shared etl_receipts table changed since publication", source is not None and subject_bound
-             and not receipts_bound)) if applies]
+            ("comments table has unpublished catalog commits", unpublished)) if applies]
         indexes = {"fixed": [f"{base}/{INDEX_KEY}"]}
         generation = [f"{base}/{member.path}" for member in publication.table_members(index, INDEX_KEY)]
         if generation != indexes["fixed"]:

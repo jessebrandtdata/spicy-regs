@@ -234,7 +234,7 @@ def test_house_refused_key_preserves_only_valid_native_congress(tmp_path, event_
 
 @pytest.mark.parametrize('name', ['house_communications_detail_reads', 'house_record_enrichment_results'])
 def test_house_prior_v1_rederives_native_key_from_exact_recorded_event(tmp_path, name):
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
     from spicy_regs.etl_receipts import ReceiptContext, write_dataset
     from spicy_regs.navigation_read_outcomes import DETAIL_SCHEMA
 

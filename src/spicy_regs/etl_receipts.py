@@ -686,7 +686,7 @@ def receipt_policies(policy: DatasetPolicy) -> tuple[DatasetPolicy, ...]:
     New generations write the current subject schema; readers of already selected inputs choose an earlier
     declared subject schema only through ``selected_subject_policy``.
     """
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
 
     return (policy, *earlier_policies(policy))
 

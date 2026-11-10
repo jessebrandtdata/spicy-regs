@@ -69,6 +69,24 @@ def dataset_policy(name):
     raise ValueError(f"No coordinated processing reader for {name}")
 
 
+def _regulations_maps(dataset):
+    from spicy_regs.transforms.regulations_shape import SOURCE_COLUMNS
+
+    return dataset in SOURCE_COLUMNS
+
+
+def _regulations_reads(dataset, published, destination):
+    from spicy_regs.transforms.regulations_shape import published_as_source
+
+    return published_as_source(dataset, published, destination)
+
+
+#: Per mapper family: which datasets it maps, and how its builders' input is read back from a published table once a
+#: dataset's receipts are retired (``SelectedPriors._published``). A family adds its reader when its first table
+#: retires while a receipt-route consumer still reads it.
+PUBLISHED_READERS = ((_regulations_maps, _regulations_reads),)
+
+
 class SelectedPriors:
     """Capture one publication index and fetch only its pinned subject/receipt pairs."""
 
@@ -110,6 +128,8 @@ class SelectedPriors:
             self.restored[dataset] = None
             return None
         subjects, receipt_path, generation = list(selection.subjects), selection.receipts, selection.generation_id
+        if receipt_path is None:
+            return self._published(dataset, subjects)
         if dataset in field_registry():
             selected_policy = legislative_input_policy(dataset, subjects)
         directory = self.directory / dataset
@@ -204,6 +224,26 @@ class SelectedPriors:
         self._check_processing(dataset)
         return output
 
+    def _published(self, dataset, subjects):
+        """A retired dataset's prior: its pinned public table, as its mapper's builders read their input.
+
+        Only a mapper that declares that reader can be read here (``PUBLISHED_READERS``); any other refuses by name
+        rather than hand a builder a table it would misread. Its consumers then wait for the reader, or switch first.
+        """
+        reader = next((read for owns, read in PUBLISHED_READERS if owns(dataset)), None)
+        if reader is None:
+            raise ValueError(f"{dataset}: its receipts are retired and its mapper declares no reader of the published "
+                             "table (subject_receipts.PUBLISHED_READERS); add one before its consumers read it")
+        output = self.directory / dataset / "processing" / (dataset + ".parquet")
+        output.parent.mkdir(parents=True)
+        with phase_log("prior-published-input", dataset=dataset):
+            reader(dataset, subjects, output)
+        self.selections[dataset] = (subjects, None, None)
+        self.restored[dataset] = output
+        self.processing_members[dataset] = (output,)
+        self._check_processing(dataset)
+        return output
+
     def _check_processing(self, dataset):
         output = self.restored[dataset]
         members = tuple(sorted(output.rglob("*.parquet"))) if output.is_dir() else (output,)
@@ -245,7 +285,8 @@ class SelectedPriors:
                                     for path in self.processing_members[dataset]]}
                       if source.is_dir() else pin(source))
         binding = {"dataset": dataset, "generationId": generation,
-                   "subjects": [pin(path) for path in subjects], "receipts": self.selected.receipts_pin(dataset, receipts),
+                   "subjects": [pin(path) for path in subjects],
+                   "receipts": None if receipts is None else self.selected.receipts_pin(dataset, receipts),
                    "processing": processing}
         if verification := self.selected.receipts_verification(dataset):
             # The parent pin below stays the index's {sha256, byteSize}, the only shape a generation parent admits;
@@ -263,7 +304,8 @@ class SelectedPriors:
         else:
             for ordinal, subject in enumerate(binding["subjects"]):
                 r2.note_pinned_read(f"{dataset}/subjects/{ordinal}.parquet", subject)
-        r2.note_pinned_read(f"{dataset}/etl_receipts.parquet", binding["receipts"])
+        if binding["receipts"] is not None:
+            r2.note_pinned_read(f"{dataset}/etl_receipts.parquet", binding["receipts"])
         return binding
 
     def download_members(self, key, target):
@@ -338,7 +380,8 @@ class NativeReceiptLifecycle(RollupPipeline):
             else:
                 for ordinal, path in enumerate(selection.subjects):
                     parents[f"{dataset}/subjects/{ordinal}.parquet"] = prior.selected.member_pin(path)
-            parents[f"{dataset}/etl_receipts.parquet"] = prior.selected.member_pin(selection.receipts)
+            if selection.receipts is not None:
+                parents[f"{dataset}/etl_receipts.parquet"] = prior.selected.member_pin(selection.receipts)
         self._primed_receipt_work = output_dir, private, prior
         return parents
 
@@ -523,7 +566,8 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
             combined = combine_receipts(receipts, candidate / "etl_receipts.parquet")
         with phase_log("unmatched-failures"):
             unmatched = has_unmatched_failures(
-                combined, {name: [selection[1]] for name, selection in prior.selections.items()})
+                combined, {name: [selection[1]] for name, selection in prior.selections.items()
+                           if selection[1] is not None})  # a retired parent has no receipts to match
         if fresh_failure_datasets or unmatched:
             raise ValueError("Subject conversion refused; retained receipts require review")
         by_dataset = {p.dataset: [] for p in self.receipt_policies}

@@ -188,7 +188,7 @@ def test_shared_source_declarations_preserve_prior_columns_order_and_keys():
 
 def test_earlier_member_link_policy_and_row_do_not_invent_new_geography():
     from dataclasses import replace
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
     from spicy_regs.scorecards.etl import POLICIES, admitted_read_policies
 
     current = POLICIES["scorecard_member_links"]
@@ -204,5 +204,4 @@ def test_earlier_member_link_policy_and_row_do_not_invent_new_geography():
     with pytest.raises(KeyError):
         restore_source_row("scorecard_member_links", before | {"normalized_district": "0"})
     for policy in (current, geography, previous):
-        with pytest.raises(ValueError):
-            earlier_policies(replace(policy, identity_fields=("scorecard_id",)))
+        assert earlier_policies(replace(policy, identity_fields=("scorecard_id",))) == ()

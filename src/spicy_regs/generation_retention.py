@@ -68,7 +68,13 @@ ARCHIVE_PINS = "https://congressional-data.spicygov.ai/viewer-publications/pins/
 ARCHIVE_S3_PINS = "s3://congressional-tech-raw/viewer-publications/pins/spicy-generations.json"
 DOCSPEC_PINS_FORMAT = "docspec-fork-generation-pins"
 _KEY = re.compile(r"generations/([a-z][a-z0-9_-]*)/([0-9a-f]{64})/")
+_NAME = re.compile(r"[a-z][a-z0-9_-]*\Z")
 _HEX = re.compile(r"(?<![0-9a-f])[0-9a-f]{8,64}(?![0-9a-f])")
+#: The last generation each family published with per-row receipts, for every table whose receipts are retired
+#: (``subject_catalog.RECEIPTS_RETIRED``). The docs scan below keeps each one, as it keeps any digest a docs file
+#: cites; :func:`receipt_archive_pins` reads and checks the entries.
+RECEIPT_ARCHIVE = DOCS / "pins/receipt-archive.json"
+RECEIPT_ARCHIVE_FORMAT = "spicy-regs-receipt-archive"
 _DIGEST = re.compile(r"sha256:([0-9a-f]{64})\Z")
 _ARCHIVE_DIGEST = re.compile(r"(?:sha256:)?([0-9a-f]{64})\Z")
 _NEVER = datetime.min.replace(tzinfo=timezone.utc)
@@ -122,6 +128,26 @@ def note_pins(notes: Iterable[tuple[str, str]], generations: Mapping[str, Genera
                 if digest.startswith(token):
                     named.setdefault(digest, set()).add(name)
     return named
+
+
+def receipt_archive_pins(raw: bytes | None = None) -> dict[str, dict]:
+    """Each retired table's archive pin, by dataset, checked: family, digest, publication instant, receipts key.
+
+    The receipts key is the member under that very generation, so the pin names the bytes it keeps.
+    """
+    document = json.loads(RECEIPT_ARCHIVE.read_bytes() if raw is None else raw)
+    if document.get("format") != RECEIPT_ARCHIVE_FORMAT or document.get("version") != 1:
+        raise ValueError(f"{RECEIPT_ARCHIVE.name} is not a {RECEIPT_ARCHIVE_FORMAT} v1 document")
+    pins = document["archives"]
+    for dataset, pin in pins.items():
+        match = _DIGEST.fullmatch(str(pin.get("artifactDigest")))
+        family = pin.get("family")
+        if (set(pin) != {"family", "artifactDigest", "publishedAt", "receipts"} or match is None
+                or not isinstance(family, str) or not _NAME.fullmatch(family)
+                or pin["receipts"] != f"{PREFIX}{family}/{match[1]}/etl_receipts.parquet"):
+            raise ValueError(f"Invalid receipt archive pin for {dataset}: {pin}")
+        datetime.fromisoformat(pin["publishedAt"])
+    return pins
 
 
 def docspec_pins(raw: bytes, *, label: str = "DocSpec") -> dict[str, str]:
