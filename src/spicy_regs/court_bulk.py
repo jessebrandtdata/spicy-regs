@@ -177,8 +177,9 @@ def write_table(dataset: str, source: Path, path: Path, *, constants: Mapping[st
                   for field in subject if field.name in stamped.names]
         respelled = " OR ".join(f"({column} IS NOT NULL AND NOT coalesce({check}, false))"
                                 for column, check in checks if check) or "false"
+        # Ordered by the batch's own row numbers: the published order is the source's.
         query = (f"SELECT {', '.join(columns)}, ({' OR '.join(flags)}) AS _bad, ({respelled}) AS _respelled "
-                 f"FROM {etl_bulk.SOURCE_BATCH}")
+                 f"FROM {etl_bulk.SOURCE_BATCH} ORDER BY _o")
         exception_rows: list[dict] = []
         with ExitStack() as stack:
             con, _ = stack.enter_context(etl_bulk.bulk_connection(path.parent))
@@ -200,7 +201,8 @@ def write_table(dataset: str, source: Path, path: Path, *, constants: Mapping[st
                 table = pa.Table.from_batches([batch])
                 for name, value in constants.items():
                     table = table.append_column(name, pa.array([value] * table.num_rows, pa.string()))
-                con.register(etl_bulk.SOURCE_BATCH, table)
+                numbered = table.append_column("_o", pa.array(range(table.num_rows), pa.int64()))
+                con.register(etl_bulk.SOURCE_BATCH, numbered)
                 try:
                     result = con.execute(query).to_arrow_table()
                 finally:
@@ -210,7 +212,8 @@ def write_table(dataset: str, source: Path, path: Path, *, constants: Mapping[st
                 bad = result["_bad"]
                 decided: dict[int, dict | None] = {}
                 # Only flagged rows are visited in Python (none in the sampled 2026 exports); the rest stay in Arrow.
-                for index in pc.call_function("indices_nonzero", [pc.call_function("or", [bad, result["_respelled"]])]).to_pylist():
+                flagged = pc.call_function("or", [bad, result["_respelled"]])
+                for index in pc.call_function("indices_nonzero", [flagged]).to_pylist():
                     flag = bad[index].as_py()
                     raw = table.slice(index, 1).to_pylist()[0]
                     record = {"dataset": dataset, "ordinal": ordinal + index,
