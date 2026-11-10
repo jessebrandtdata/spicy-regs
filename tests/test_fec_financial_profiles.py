@@ -5,6 +5,8 @@ from datetime import date
 import hashlib
 import io
 import json
+from pathlib import Path
+import shutil
 
 import httpx
 import pyarrow as pa
@@ -23,6 +25,7 @@ from tests.test_fec_summaries import fields
 
 PIN = "sha256:" + "a" * 64
 CAPTURED = "2026-09-12T14:42:28+00:00"
+FIXTURES = Path(__file__).parent / "fixtures" / "fec_summaries"
 
 
 def candidate(**values):
@@ -55,28 +58,32 @@ def committee(**values):
     return native | values
 
 
+def real(kind):
+    """Real rows of FEC's 2026-11-10 file: a name holding commas, and one committee linked to two candidates."""
+    return (FIXTURES / f"{kind}_summary_2026.csv").read_bytes()
+
+
 def csv_bytes(kind, rows):
-    """A summary CSV as FEC writes it: a header row, then one row per summary."""
-    names = sorted(fields(module.LAYOUTS[kind]))
+    """A summary CSV as FEC writes it: a bare header in FEC's column order, then every data field quoted."""
+    names = real(kind).decode().splitlines()[0].split(",")
     text = io.StringIO()
-    writer = csv.DictWriter(text, names, lineterminator="\n")
-    writer.writeheader()
-    writer.writerows(rows)
+    text.write(",".join(names) + "\n")
+    csv.DictWriter(text, names, quoting=csv.QUOTE_ALL, lineterminator="\n").writerows(rows)
     return text.getvalue().encode()
 
 
-def captured(tmp_path, candidates=(), committees=(), *, observed=CAPTURED):
-    """Both CSVs in a raw archive, and their captures as ``acquire`` records them."""
+def captured(tmp_path, candidates=(), committees=(), *, observed=CAPTURED, cycle=2026, bodies=None, root=None):
+    """Both CSVs in a raw archive (``root``, else one in ``tmp_path``), and their captures as ``acquire`` records them."""
     from spicy_docs.storage.raw_archive import CentralRawArchiveStore
 
-    store = CentralRawArchiveStore(tmp_path / "raw")
+    store = CentralRawArchiveStore(root or tmp_path / "raw")
     captures = []
     for kind, rows in (("candidate", candidates), ("committee", committees)):
-        body = csv_bytes(kind, rows)
+        body = (bodies or {}).get(kind) or csv_bytes(kind, rows)
         digest = "sha256:" + hashlib.sha256(body).hexdigest()
         store.put_blob(digest, len(body), [body])
-        captures.append({"entity_kind": kind, "cycle": 2026, "collection_id": module.collection_id(kind, 2026),
-                         "request_url": pipeline.summary_url(kind, 2026), "response_sha256": digest,
+        captures.append({"entity_kind": kind, "cycle": cycle, "collection_id": module.collection_id(kind, cycle),
+                         "request_url": pipeline.summary_url(kind, cycle), "response_sha256": digest,
                          "observed_at": observed, "byte_size": len(body)})
     return captures, store
 
@@ -106,6 +113,66 @@ def test_exact_money_and_equivalent_committee_witnesses(tmp_path):
     assert locator["source_record_id"] == f"{k['source_sha256']}/original/{locator['ordinal']:020d}"
     assert locator["field_mapping"]["source_locator"]["ordinal"] == 0
     assert {w["selection_evidence_sha256"] for w in witnesses} == {PIN}
+
+
+def test_real_rows_keep_quoted_commas_and_one_profile_per_linked_committee(tmp_path):
+    rows = {kind: list(csv.DictReader(io.StringIO(real(kind).decode()))) for kind in ("candidate", "committee")}
+    captures, store = captured(tmp_path, bodies={kind: real(kind) for kind in rows})
+    output = tmp_path / module.OUTPUT
+    summary = module.build_profiles(module.select(captures), store, output, selection_sha256=PIN)
+    assert summary["source_rows"] == {"bulk-candidate_summary_2026-csv": 1, "bulk-committee_summary_2026-csv": 2,
+                                      "bulk-candidate_summary_2026-csv:unmapped": 1,
+                                      "bulk-committee_summary_2026-csv:unmapped": 1}
+    c, k = pq.read_table(output).to_pylist()
+    (row,) = rows["candidate"]
+    assert (c["entity_id"], c["entity_name"]) == (row["Cand_Id"], "CARL, JERRY LEE, JR") == (row["Cand_Id"], row["Cand_Name"])
+    assert (c["receipts_raw"], c["cash_on_hand_raw"], c["period_end_raw"]) == (
+        row["Total_Receipt"], row["Cash_On_Hand_COP"], row["Coverage_End_Date"])
+    assert k["entity_id"] == "C00285254" and k["selection_reason"] == "equivalent_witnesses" and k["witness_count"] == 2
+    assert {w["candidate_native_id"] for w in json.loads(k["witnesses_json"])} == {r["CAND_ID"] for r in rows["committee"]}
+    assert k["receipts_raw"] == rows["committee"][0]["TTL_RECEIPTS"] and k["receipts_status"] == "exact"
+
+
+def test_profile_id_survives_a_refresh_and_tells_entities_kinds_and_cycles_apart(tmp_path):
+    def by_entity(rows):
+        return {(row["entity_kind"], row["entity_id"]): row for row in rows}
+
+    september = by_entity(rows_for(tmp_path / "september", [candidate()], [committee()]))
+    november = by_entity(rows_for(tmp_path / "november", [candidate(Total_Receipt="1.00")],
+                                  [committee(TTL_RECEIPTS="2.00"), committee(CMTE_ID="C00000001")],
+                                  observed="2026-11-10T16:58:18+00:00"))
+    for key in september:
+        assert september[key]["profile_id"] == november[key]["profile_id"]
+        assert september[key]["scope_id"] != november[key]["scope_id"]
+    assert len({row["profile_id"] for row in november.values()}) == len(november) == 3
+    # The same native identifier under the other kind, and the same entity in another cycle, are other profiles.
+    other_kind = by_entity(rows_for(tmp_path / "kind", [candidate(Cand_Id="C00880898")], [committee()]))
+    assert other_kind["candidate", "C00880898"]["profile_id"] != other_kind["committee", "C00880898"]["profile_id"]
+    other_cycle = by_entity(rows_for(tmp_path / "cycle", [candidate()], [committee()], cycle=2024))
+    assert other_cycle["candidate", "H6CA04230"]["profile_id"] != september["candidate", "H6CA04230"]["profile_id"]
+
+
+@pytest.mark.parametrize("kind", ["candidate", "committee"])
+@pytest.mark.parametrize("damage", ["header-only", "cut at a row boundary"])
+def test_a_file_that_lost_its_rows_refuses_unless_accepted(tmp_path, kind, damage):
+    full = {"candidate": [candidate(Cand_Id=f"H6CA{i:05}") for i in range(20)],
+            "committee": [committee(CMTE_ID=f"C{i:08}") for i in range(20)]}
+    published = {"candidate": 20, "committee": 20}
+
+    def build(directory, kept, **kwargs):
+        rows = {**full, kind: full[kind][:kept]}
+        captures, store = captured(directory, rows["candidate"], rows["committee"])
+        return module.build_profiles(module.select(captures), store, directory / module.OUTPUT,
+                                     selection_sha256=PIN, prior_rows=published, **kwargs)
+
+    kept = 0 if damage == "header-only" else 10
+    with pytest.raises(ValueError, match=f"The {kind} summary CSV holds {kept} rows.* --accept-shrink {kind}"):
+        build(tmp_path / "refused", kept)
+    assert not (tmp_path / "refused" / module.OUTPUT).exists()
+    summary = build(tmp_path / "accepted", kept, accept_shrink=[kind])
+    assert summary["accepted_shrink"] == [kind] and summary["published_rows"] == published
+    # Losing exactly the stated share (2 of 20) still builds without acceptance.
+    assert build(tmp_path / "within", 18)["profiles"] == {"selected": 38}
 
 
 @pytest.mark.parametrize("change", [{"TTL_RECEIPTS": "100.02"}, {"CVG_END_DT": "20260629"}])
@@ -228,6 +295,28 @@ def test_acquire_build_and_publish_one_generation_from_the_captured_pair(tmp_pat
     assert data_dictionary.expected_schemas()[module.TABLE] == described_schema(module.SCHEMA)
     with pytest.raises(ValueError, match="fresh directory"):
         pipeline.build(record["captures"], output)
+
+
+def test_a_hand_build_holds_each_file_to_the_mirrored_live_table(tmp_path):
+    """``--read-index`` names a ``spicy-regs mirror`` snapshot; the live table beside it sets each file's floor."""
+    raw = tmp_path / "central-raw"  # conftest's SPICYGOV_RAW_ROOT, which the build reads
+    first, _ = captured(tmp_path, [candidate(Cand_Id=f"H6CA{i:05}") for i in range(20)], [committee()], root=raw)
+    artifact, evidence = pipeline.build(first, tmp_path / "first")
+    index = publication.publish_generation(tmp_path / "first" / "generation", client=Store(), bucket="fixture",
+                                           prior_index=publication.empty_index(), evidence_directories=(evidence,))
+    mirror = tmp_path / "live"
+    shutil.copytree(tmp_path / "first" / "generation", mirror / index["families"][pipeline.FAMILY]["prefix"])
+    read_index = mirror / "publication.v2" / "index.json"
+    read_index.parent.mkdir()
+    read_index.write_text(json.dumps(index))
+
+    header_only, _ = captured(tmp_path, [], [committee()], root=raw, observed="2026-11-10T16:58:18+00:00")
+    with pytest.raises(ValueError, match="The candidate summary CSV holds 0 rows.*20 the published"):
+        pipeline.build(header_only, tmp_path / "refused", read_index=read_index)
+    accepted, _ = pipeline.build(header_only, tmp_path / "accepted", read_index=read_index, accept_shrink=["candidate"])
+    root = json.loads((tmp_path / "accepted" / "generation" / "artifact.json").read_text())
+    assert root["spec"]["readSnapshot"]["families"][pipeline.FAMILY]["artifactDigest"] == artifact.pin.artifact_digest
+    assert pq.read_table(tmp_path / "accepted" / "generation" / module.OUTPUT).num_rows == 1
 
 
 def test_acquire_saves_both_summary_csvs_into_the_raw_archive_and_can_publish_them(tmp_path, monkeypatch):

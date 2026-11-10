@@ -15,8 +15,8 @@ Exact source-reported money for an explicitly selected candidate and committee C
 
 | Column | Type | Description |
 | --- | --- | --- |
-| `profile_id` | `VARCHAR` | Stable profile identity from selection policy, explicit scope, entity kind, native entity ID and election cycle. |
-| `scope_id` | `VARCHAR` | Explicit retained snapshot selection identity. This is not an automatically refreshed latest record. |
+| `profile_id` | `VARCHAR` | Profile identity from selection policy, entity kind, native entity ID and election cycle; the same entity keeps it across refreshes. Generations published before 2026-11 also hashed scope_id, so theirs changed with each capture. |
+| `scope_id` | `VARCHAR` | Names the cycle and capture day of the published CSV pair; it changes with each refresh, profile_id does not. |
 | `entity_kind` | `VARCHAR` | Candidate or committee; candidate-wide and committee amounts must not be added together. |
 | `entity_id` | `VARCHAR` | Literal FEC candidate or committee identifier from the selected source. |
 | `entity_name` | `VARCHAR` | Publisher entity name when every witness agrees; null for conflicting names. |

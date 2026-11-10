@@ -19245,7 +19245,7 @@
     "label": "Source-reported financial summary observations",
     "category": "query_data",
     "summary": "One source entity/period/summary-layout/version observation. Keeps monetary measures in a typed list with native names, raw spelling, status and unit. Reported totals are separate from itemized observations; overlapping cycle, year-to-date, quarterly and semiannual measures are not automatically additive. Resolve collection_id and source_record_id against fec_source_records in the captured source generation, using source_locator_json and source_sha256 to distinguish repeated witnesses. Stored or release-matched derived evidence routes preserve the same exact source coordinates.",
-    "coverage": "Sampled. Supported observations from retained candidate, committee, presidential and bundling summary layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration does not establish complete FEC history or current publication.",
+    "coverage": "Sampled. Supported observations from retained candidate, committee, presidential and bundling summary layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration does not establish complete FEC history or current publication. Its 2026 candidate and committee summary CSVs are the 2026-09-12 captures; fec_financial_profiles is refreshed separately from the publisher's current files, so the two can disagree for one entity.",
     "kind": "sampled",
     "measured_on": "2026-10-01",
     "data_quality": "Two layouts repeat one figure. candidate-web-summary/1 holds a candidate's row from FEC's weball file and, for a current House or Senate campaign, an identical row from webl, a subset of weball; committee-summary-csv/1 repeats a committee's row once per linked candidate. Keep one row per layout, entity, cycle and period before summing (cycle 2026, measured 2026-10-03, with 2,949 identical candidate pairs and 70 committees repeated, every repeat identical).",
@@ -26361,12 +26361,12 @@
       {
         "column_name": "profile_id",
         "column_type": "VARCHAR",
-        "description": "Stable profile identity from selection policy, explicit scope, entity kind, native entity ID and election cycle."
+        "description": "Profile identity from selection policy, entity kind, native entity ID and election cycle; the same entity keeps it across refreshes. Generations published before 2026-11 also hashed scope_id, so theirs changed with each capture."
       },
       {
         "column_name": "scope_id",
         "column_type": "VARCHAR",
-        "description": "Explicit retained snapshot selection identity. This is not an automatically refreshed latest record."
+        "description": "Names the cycle and capture day of the published CSV pair; it changes with each refresh, profile_id does not."
       },
       {
         "column_name": "entity_kind",

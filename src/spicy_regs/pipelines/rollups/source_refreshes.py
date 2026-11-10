@@ -215,7 +215,9 @@ class HouseDisbursementsRollup(SourceRefreshRollup):
 class FecFinancialProfilesRollup(SourceRefreshRollup):
     """Publish the FEC's current candidate and committee summary CSVs of a cycle as the family's profiles.
 
-    FEC rewrites both files every day; a run whose two downloads are the published bytes publishes nothing.
+    FEC overwrites both files every day, so the day's bytes are captured and their evidence sent to R2 before
+    anything parses them: a refused build keeps them. A run whose two downloads are the published bytes
+    publishes nothing; a file that lost more than ``MAX_ROW_LOSS`` of its published rows refuses.
     """
 
     name = fec_financial_profiles.FAMILY
@@ -225,10 +227,12 @@ class FecFinancialProfilesRollup(SourceRefreshRollup):
 
     def build(self, output_dir: Path) -> Path:
         evidence = self.evidence
-        captures = fec_financial_profiles.capture(evidence, [self.cycle], transport=self.transport)
+        captures = fec_financial_profiles.acquire([self.cycle], output_dir / "capture", transport=self.transport,
+                                                  publish=not self.skip_upload)["captures"]
         if all(published_before(evidence, fec_financial_profiles.STAGE, item["response_sha256"]) for item in captures):
             raise Unchanged(f"both {self.cycle} summary files are the published ones")
-        return fec_financial_profiles.profiles_table(evidence, captures, output_dir)
+        (published,) = self.published_tables(output_dir / "published")
+        return fec_financial_profiles.profiles_table(evidence, captures, output_dir, published=published)
 
 
 ofac_sanctions_app = make_rollup_app(OfacSanctionsRollup)

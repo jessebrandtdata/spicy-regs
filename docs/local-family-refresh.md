@@ -272,9 +272,12 @@ $UV python -m spicy_regs.pipelines.fec_financial_profiles build --captures "$WOR
 ```
 
 The published table then holds this one pair. Compare the build with the live
-table by `entity_kind` and `entity_id`: profiles the new files add or drop, and
-amounts and `period_end` that moved with newer reports. The fec-query tables
-stay at their September captures ([what that means for a
+table by `entity_kind` and `entity_id` (or `profile_id`, which a refresh keeps):
+profiles the new files add or drop, and amounts and `period_end` that moved with
+newer reports. A file with more than 10% fewer rows than the live table records
+for its kind refuses; after reviewing it, `build --accept-shrink candidate` (or
+`committee`) accepts the loss. The fec-query tables stay at their September
+captures ([what that means for a
 reader](fec-financial-profiles.md#build-from-a-captured-pair)).
 
 ## After a publish
@@ -345,7 +348,7 @@ receive them.
 | `house-disbursements` | Captures the House's two listing pages and reads the published tables (162 MB); when the pages list a CSV the published rows lack, restores the published originals from R2 evidence, downloads the new ones and rebuilds every quarter | The pages list no new CSV |
 | `grants-opportunities` | Finds the newest daily export of the last seven days and publishes it as the one snapshot | That export date is published |
 | `executive-orders` | Lists every order the API serves, restores the published bodies from R2 evidence and fetches only the bodies the published generation lacks; scheduled on weekdays from the start | No order was added, changed or removed |
-| `fec-financial-profiles` | Downloads both 2026 summary CSVs and publishes them as the family's one pair | Both files are the published bytes |
+| `fec-financial-profiles` | Downloads both 2026 summary CSVs and sends their evidence to R2 before parsing (a refused build keeps the day's files), then publishes them as the family's one pair; a file with more than 10% fewer rows than the live table refuses until a hand refresh accepts it | Both files are the published bytes |
 
 The Treasury run needs the three-table generation, so it can start only after
 the first hand refresh above. It adds debt days only: a new monthly statement

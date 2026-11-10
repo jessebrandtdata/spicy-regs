@@ -33,6 +33,9 @@ POLICY = "fec-reported-profile-selection/1"
 LAYOUTS = {"candidate": CANDIDATE_CSV, "committee": COMMITTEE_CSV}
 #: A runaway bound on one summary CSV: the 2026 committee summary was 8.3 MB on 2026-11-10.
 MAX_SUMMARY_BYTES = 256 * 1024**2
+#: The share of one CSV's rows a refresh may lose against the published profiles before it refuses, so a header-only
+#: or truncated download never publishes. FEC dropped 32 of 18,594 rows between 2026-09-12 and 2026-11-10.
+MAX_ROW_LOSS = 0.10
 MEASURES = {
     "candidate": {
         "receipts": "Total_Receipt",
@@ -184,8 +187,10 @@ def profile(rows, capture, selection):
     selected = first if equivalent else None
     result = dict.fromkeys(SCHEMA.names)
     result.update(
+        # One entity of one kind and cycle keeps its identity across captures, so a link to it survives a refresh;
+        # scope_id names the capture. Generations selected from fec-query also hashed their scope (one per capture).
         profile_id="sha256:"
-        + hashlib.sha256(json_bytes([POLICY, selection["scope_id"], kind, entity_id, selection["cycle"]])).hexdigest(),
+        + hashlib.sha256(json_bytes([POLICY, kind, entity_id, selection["cycle"]])).hexdigest(),
         scope_id=selection["scope_id"],
         entity_kind=kind,
         entity_id=entity_id,
@@ -264,12 +269,34 @@ def _profiles(summaries: Path, selection, outcomes):
             reader.close()
 
 
-def build_profiles(selection, store, destination, *, selection_sha256):
+def published_rows(table: Path) -> dict[str, int]:
+    """The CSV rows behind a published profiles table, by entity kind: the witnesses its profiles record."""
+    import pyarrow.parquet as pq
+
+    totals = pq.read_table(table, columns=["entity_kind", "witness_count"]).group_by("entity_kind").aggregate(
+        [("witness_count", "sum")])
+    return dict(zip(totals["entity_kind"].to_pylist(), totals["witness_count_sum"].to_pylist(), strict=True))
+
+
+def _refuse_lost_rows(selection, counts, prior_rows, accept_shrink):
+    """Refuse a CSV that lost more than ``MAX_ROW_LOSS`` of the rows the published profiles record for its kind."""
+    for capture in selection["captures"]:
+        kind, held = capture["entity_kind"], counts[capture["collection_id"]]
+        prior = prior_rows.get(kind)
+        if prior and kind not in accept_shrink and held < prior * (1 - MAX_ROW_LOSS):
+            raise ValueError(
+                f"The {kind} summary CSV holds {held:,} rows, more than {MAX_ROW_LOSS:.0%} fewer than the {prior:,} "
+                f"the published profiles record; a header-only or cut download looks like this. Accept a genuine "
+                f"loss by hand with build --accept-shrink {kind}")
+
+
+def build_profiles(selection, store, destination, *, selection_sha256, prior_rows=None, accept_shrink=()):
     """Map both captured CSVs from ``store`` into a staged summary table, then write the profiles atomically.
 
-    ``selection_sha256`` is the digest of the retained selection, recorded in every witness. The staged table
-    lives beside ``destination`` only for this call; ``destination`` is replaced only after every witness of
-    every mapped row has been written into a profile.
+    ``selection_sha256`` is the digest of the retained selection, recorded in every witness. ``prior_rows`` are
+    the published rows by kind (``published_rows``); a CSV that lost more than ``MAX_ROW_LOSS`` of them refuses
+    unless its kind is in ``accept_shrink``. The staged table lives beside ``destination`` only for this call;
+    ``destination`` is replaced only after every witness of every mapped row has been written into a profile.
     """
     from spicy_docs.sources.fec.delimited import verified_archive_session
 
@@ -281,6 +308,7 @@ def build_profiles(selection, store, destination, *, selection_sha256):
             rows = (row for capture in selection["captures"]
                     for row in _summaries(capture, selection["cycle"], store, selection_sha256, counts))
             write_rows(rows, staged, SUMMARY_SCHEMA, batch_size=256)
+        _refuse_lost_rows(selection, counts, prior_rows or {}, frozenset(accept_shrink))
         mapped = sum(counts[item["collection_id"]] for item in selection["captures"])
 
         def checked():
@@ -290,4 +318,5 @@ def build_profiles(selection, store, destination, *, selection_sha256):
 
         with closing(checked()) as profiles:
             write_rows(profiles, destination, SCHEMA, batch_size=128)
-    return {"source_rows": dict(counts), "profiles": dict(outcomes), "selection_policy": POLICY}
+    return {"source_rows": dict(counts), "profiles": dict(outcomes), "selection_policy": POLICY,
+            "published_rows": prior_rows, "accepted_shrink": sorted(accept_shrink)}

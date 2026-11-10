@@ -28,8 +28,9 @@ reported monetary measures, coverage dates, entity name and relevant source
 interpretation facts agree. They produce one profile with every complete witness
 retained. Conflicting amounts or overlapping but different periods produce an
 ambiguous profile, with no chosen amount or date. Capture timestamps never break
-ties. A changed or amended source snapshot requires an explicit new selection;
-this output does not infer amendment chains or combine captures.
+ties. The table holds one captured pair at a time: a refresh replaces it with
+the publisher's current files, which already carry FEC's amendments; this output
+does not infer amendment chains or combine captures.
 
 Missing, invalid, reversed, outside-cycle or after-capture coverage dates remain
 visible independently of amount eligibility. An exact amount can therefore have
@@ -50,10 +51,11 @@ python -m spicy_regs.pipelines.fec_financial_profiles acquire --cycle 2026 \
   --output-dir "$WORK/fec-summaries" --captures-out "$WORK/fec-summaries.json"
 ```
 
-`.github/workflows/capture-fec-summaries.yml` runs the same capture on a hosted
-runner. Its raw archive is scratch, so `--publish-evidence` seals the run's
+The hosted `run-rollup-fec-financial-profiles` starts with the same capture. Its
+raw archive is scratch, so unless the run skips upload it seals that capture's
 evidence and sends it, both originals and an index row per file
-(`source-evidence/indexes/fec-summaries/`) to R2, which retention never deletes.
+(`source-evidence/indexes/fec-summaries/`) to R2, which retention never deletes,
+before it parses anything: a refused build still keeps the day's files.
 
 ## Build from a captured pair
 
@@ -81,6 +83,24 @@ differs from its header, a header missing a layout field, or a profile count
 that differs from the mapped rows refuses the build before the output replaces
 its destination. The generation records no parent: `source_table_generation` is
 null, and `scope_id` names the cycle and capture day.
+
+A CSV that holds more than 10% fewer rows than the live profiles record for its
+kind (the sum of their `witness_count`) refuses: a header-only or truncated
+download would otherwise publish, and the 50% byte guard of the publisher cannot
+see one file of two. FEC dropped 32 of 18,594 rows between the 2026-09-12 and
+2026-11-10 files. The hosted run compares with the live table; a hand build
+compares with the one its `--read-index` mirror holds and has no prior without
+it. Accept a genuine loss, after reviewing the file, with
+`build --accept-shrink candidate` (or `committee`); the next hosted run then
+compares with that publication.
+
+`profile_id` hashes the selection rule, entity kind, FEC identifier and cycle,
+so one candidate or committee keeps its identity, and a link to it, across
+refreshes. Generations selected from fec-query (to 2026-10-20) also hashed
+`scope_id`, which names the capture day, so their identities changed with every
+capture; the first refresh therefore changes every `profile_id` once. `scope_id`,
+`captured_at`, `source_sha256`, the witnesses' `record_id` and
+`selection_evidence_sha256` still change with each capture.
 
 The published profiles are as current as their capture, not as the fec-query
 tables. Those keep their September captures until fec-query is rebuilt, so the
