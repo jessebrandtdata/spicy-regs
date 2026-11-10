@@ -17,22 +17,51 @@ Run every command from the checkout through
 export WORK=/path/to/a/fresh/scratch/dir
 unset SPICYGOV_RAW_ROOT            # a real refresh writes originals to the shared raw archive
 SPICY_REGS_R2_URL=https://data.spicygov.ai $UV spicy-regs mirror "$WORK/live" \
-  --family treasury-fiscal --family administration-policy
+  --family treasury-fiscal --family administration-policy \
+  --family ofac-sanctions --family grants-opportunities      # 150 MB
 ```
 
 `mirror` fetches the live generations it names, each file checked against its
-pin, and prints their prefixes; `$LIVE_TREASURY` and `$LIVE_POLICY` below are
-those directories under `$WORK/live`.
+pin, and prints their prefixes and the pointer snapshot that selected them.
+Below, `$LIVE_TREASURY`, `$LIVE_POLICY` and the like are those generation
+directories under `$WORK/live`, and `$LIVE_INDEX` is the snapshot
+(`$WORK/live/publication.v2/<sha>.json`). Every build takes
+`--read-index "$LIVE_INDEX"`: the generation then records the index it read,
+so the publisher refuses it once the family has moved on, and retention finds
+the generation it replaces.
 
 A rehearsal instead sets `SPICYGOV_RAW_ROOT` to a scratch directory for every
-step and stops after the dry run. `publish-local-generation` refuses to publish
-a build whose evidence points at any raw archive but the shared one, so a
-rehearsal build cannot be published by mistake.
+step, adds `--scratch-raw` to the dry run and stops there. What keeps a
+rehearsal build from being published:
+
+- a publish, and a dry run without `--scratch-raw`, refuse while
+  `SPICYGOV_RAW_ROOT` is set;
+- they refuse evidence whose `source-archive.json` pointer is missing or names
+  another archive than the shared one;
+- they refuse when any original the evidence journal cites is absent from the
+  shared archive, whatever the pointer says.
+
+The last check is by name: it does not re-hash the originals, and it cannot
+tell a scratch build from a real one once the same originals have also been
+acquired into the shared archive. That build is publishable, and correctly so:
+its tables come from bytes the shared archive holds.
 
 The publish step alone needs credentials. It reads `R2_ENDPOINT`,
 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET_NAME` from `.env`
 (`--env-file` names another file) and refuses any account or bucket but the
-verified one. The dry run reads none of them.
+verified one. The dry run reads none of them. Both refuse while
+`R2_ALLOW_SHRINK` or `R2_MIN_SIZE_RATIO` is set, in the shell or in `.env`, so
+the dry run and the publish apply the same shrink guard.
+
+Two settings in `.env` do not do in a publish run what they do elsewhere:
+
+- `SPICYGOV_CATALOG_REQUEST`: the catalogue refresh request needs
+  `SPICYGOV_RAW_ROOT` set and the publish needs it unset, so the request is not
+  written (the publish logs that and succeeds). Refresh the catalogue by hand.
+- `SPICYGOV_PUBLICATION_MIRROR`: `.env.example` gives it as a relative path,
+  which resolves from the directory the command runs in. From a worktree that
+  is a stray directory beside the worktree. Give it as an absolute path, or
+  run the publish from the primary checkout.
 
 Before OFAC or Grants admission, check that no nightly job is running; the
 admission holds a core for minutes:
@@ -44,9 +73,11 @@ ps -axo pid,etime,command | grep -E 'nightly_publish\.py|archive_publish_job\.py
 ## The publish steps, for every family
 
 `$GENERATION` and `$EVIDENCE` are the `directory` and `sourceEvidence` the build
-printed. `$PRIOR` is the live generation's digest, which the dry run prints as
-`prior.artifactDigest`; passing it to the publish refuses a live table that
-changed after you compared against it.
+printed; pass the evidence from where the build wrote it. `$PRIOR` is the live
+generation's digest, which the dry run prints as `prior.artifactDigest`. A
+publish of a family that is already live requires it and refuses when the live
+generation is another one, so a generation published after your dry run is
+never replaced unseen.
 
 ```sh
 $UV publish-local-generation --generation "$GENERATION" --evidence "$EVIDENCE" \
@@ -57,8 +88,13 @@ $UV publish-local-generation --generation "$GENERATION" --evidence "$EVIDENCE" \
 ```
 
 The dry run runs the real publication guards against a private disk store
-holding a copy of the live index, and its receipt lists each table's rows
-beside the live rows. The publish then reads the family back anonymously from
+holding a copy of the public index (`--live-index` names a saved copy), and
+its receipt lists each table's rows beside the live rows. The publish compares
+with the index stored in the bucket, read with the credentials; the two are
+the same object unless a publish lands in between, which `--expect-prior`
+catches. Neither creates `--output` until every guard has passed, so a refused
+command can be corrected and run again as typed. The publish then reads the
+family back anonymously from
 `https://data.spicygov.ai` (the index, the artifact root and every member's
 bytes) and writes `receipt.json`: prefix, digest, each table's rows and
 SHA-256, and the evidence it pins. If the publish ends with an error after
@@ -75,7 +111,7 @@ $UV python -m spicy_regs.pipelines.treasury_fiscal acquire --debt-after "$LAST_D
 $UV python -m spicy_regs.pipelines.treasury_fiscal published-captures \
   --generation "$LIVE_TREASURY" --captures-out "$WORK/treasury-published.json"
 $UV python -m spicy_regs.pipelines.treasury_fiscal build --captures "$WORK/treasury-published.json" \
-  --captures "$WORK/treasury-new.json" --output-dir "$WORK/treasury-build"
+  --captures "$WORK/treasury-new.json" --read-index "$LIVE_INDEX" --output-dir "$WORK/treasury-build"
 ```
 
 `$LAST_DEBT_DATE` is the latest `record_date` in the live
@@ -104,7 +140,7 @@ $UV python -m spicy_regs.pipelines.administration_policy acquire --commit "$ARCH
   --prior-statements "$LIVE_POLICY/administration_policy_statements.parquet" \
   --output-dir "$WORK/policy-acquire" --captures-out "$WORK/policy-captures.json"
 $UV python -m spicy_regs.pipelines.administration_policy build \
-  --captures "$WORK/policy-captures.json" --output-dir "$WORK/policy-build"
+  --captures "$WORK/policy-captures.json" --read-index "$LIVE_INDEX" --output-dir "$WORK/policy-build"
 ```
 
 `acquire` prints each administration with the commit its capture comes from: a
@@ -121,7 +157,7 @@ it admitting the SDN list, and about 0.5 GB of scratch; 41 MB uploaded.
 $UV python -m spicy_regs.pipelines.ofac acquire --list sdn --list consolidated \
   --output-dir "$WORK/ofac-acquire" --captures-out "$WORK/ofac-captures.json"
 $UV python -m spicy_regs.pipelines.ofac build \
-  --captures "$WORK/ofac-captures.json" --output-dir "$WORK/ofac-build"
+  --captures "$WORK/ofac-captures.json" --read-index "$LIVE_INDEX" --output-dir "$WORK/ofac-build"
 ```
 
 The published table then holds these two snapshots only. Their ZIPs stay in
@@ -137,7 +173,7 @@ all of it admission, and about 1 GB of scratch; 192 MB uploaded.
 $UV python -m spicy_regs.pipelines.grants_opportunities acquire --snapshot-date "$EXPORT_DATE" \
   --output-dir "$WORK/grants-acquire" --captures-out "$WORK/grants-captures.json"
 $UV python -m spicy_regs.pipelines.grants_opportunities build \
-  --captures "$WORK/grants-captures.json" --output-dir "$WORK/grants-build"
+  --captures "$WORK/grants-captures.json" --read-index "$LIVE_INDEX" --output-dir "$WORK/grants-build"
 ```
 
 `$EXPORT_DATE` is the newest daily export, `YYYY-MM-DD`. The 2026-11-09 export
@@ -162,22 +198,35 @@ that records the refresh.
   release and generation digests. They remain true of that export. Add the
   published snapshot's date and digests beside them, from `receipt.json` and
   the capture selection.
-- **Coverage sentences** in `src/spicy_regs/table_metadata.json` (rendered to
-  `docs/tables/`): `ofac_*` says prior selected snapshots remain on refresh,
-  which a refresh that selects only the new snapshots does not do, and
-  `grants_opportunity_observations` still says public delivery is pending.
-  Correct them, then run `$UV spicy-regs-dict generate` and `spicy-regs-dict check`.
+- **Coverage sentences.** A table's coverage is written in
+  `data_dictionary/descriptions.yaml`; `$UV spicy-regs-dict generate` renders
+  it to `src/spicy_regs/table_metadata.json` and `docs/tables/`, and
+  `spicy-regs-dict check` holds them equal. Change it there when a refresh
+  changes what the table covers, such as selecting earlier snapshots again.
 - Keep `$WORK`'s capture selections and both receipts with the session's
   records. The OFAC and Grants selections are the only record of which
   captures a published snapshot was admitted from besides the published rows.
 - **The replaced generation.** Weekly retention (Sundays 05:45 UTC,
-  `spicy_regs/generation_retention.py`) finds a family's earlier generations
-  through the index each build read. A hand-built generation records none, so
-  after a hand publish the replaced generation's tables are deleted at the
-  next weekly run unless a page under `docs/` names its digest. The OFAC and
-  Grants pages name their 2026-10-20 generations for that reason; the replaced
-  Treasury and administration-policy generations are not named, and their rows
-  are all in the new generation. Source evidence is never deleted.
+  `spicy_regs/generation_retention.py`) keeps a family's current generation
+  and the two before it, which it finds through the index each build recorded
+  with `--read-index`, and any generation whose digest a page under `docs/`
+  names. A build without `--read-index` records no predecessor, and the tables
+  of the generation it replaces are deleted at the next weekly run unless
+  named. The four generations the first refreshes replace are named below, so
+  they stay whichever way their successors are built. Source evidence is never
+  deleted.
+
+## Generations kept by name
+
+Each row keeps one generation's tables on R2 for as long as it stays here.
+These are the 2026-10 generations the first refreshes replace.
+
+| Family | Generation |
+| --- | --- |
+| `treasury-fiscal` | `372240db17b82c781e027d351c38618610dcf342b3111445736ac776dceca8fe` |
+| `administration-policy` | `57069ca7317f126e30829cdf955a8f672d36c28dd2faae11a048a6894db8abc1` |
+| `ofac-sanctions` | `30353c6e00d9a6d374b6862cc6c4774e9171eb95b5b3d921aba8f362315804d1` |
+| `grants-opportunities` | `b98a33ef40900f6dde4f49bfd9a41609178750d2af0207b00b52dbf1f0b0e5ab` |
 
 ## Hosted refresh
 
