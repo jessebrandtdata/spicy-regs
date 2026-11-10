@@ -946,6 +946,56 @@ def test_a_first_pass_whose_manifest_upload_is_refused_stops_the_sweep(tmp_outpu
     assert _published_ids(native_publication, "dockets") == ["EPA-2026-0001", "FAA-2026-0001"]
 
 
+@pytest.mark.parametrize("first_pass_lists", [True, False])
+def test_comment_batches_read_the_comment_keys_the_first_pass_listed(tmp_output, monkeypatch, first_pass_lists):
+    """One scan per agency per sweep: the first pass keeps the unread comment keys and no comment batch lists again.
+
+    A comment written after the scan waits for the next sweep (it is not manifested, so it is not lost). An agency
+    the first pass did not list, because its scan failed, is listed by its own batch as before.
+    """
+    monkeypatch.setenv("AGENCIES", "EPA,FAA")
+    store = {}
+    for agency in ("EPA", "FAA"):
+        docket, comment = f"{agency}-2026-0001", f"{agency}-2026-0001-0002"
+        store[_docket_key(docket, agency=agency)] = dumps(_docket_payload(docket, "2026-11-09", agency)).encode()
+        store[_comment_key(comment, docket, agency)] = dumps(
+            _comment_payload(comment, docket, "2026-11-09T00:00:00Z", agency)).encode()
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+    listed, real = [], mirrulations.list_agency_files_by_type
+
+    def counting(resource, bucket, prefix, agency, record_types, **kwargs):
+        listed.append((agency, sorted(record_type.name for record_type in record_types)))
+        if not first_pass_lists and agency == "EPA" and len(listed) <= 2:
+            raise OSError("listing raw-data/EPA/ refused")
+        return real(resource, bucket, prefix, agency, record_types, **kwargs)
+
+    monkeypatch.setattr(mirrulations, "list_agency_files_by_type", counting)
+    late = _comment_key("FAA-2026-0001-0003", "FAA-2026-0001", "FAA")
+    merged = []
+
+    def merge_comments(staging_dir, record_type):
+        merged.append(pl.read_parquet(staging_dir / "comments" / "*.parquet")["comment_id"].to_list())
+        store[late] = dumps(_comment_payload("FAA-2026-0001-0003", "FAA-2026-0001", "2026-11-10T00:00:00Z",
+                                             "FAA")).encode()  # written while the sweep runs
+
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", merge_comments)
+    sweep = RegulationsPipeline(allow_fresh_start=True, output_dir=tmp_output, batch_count=2, use_iceberg=True,
+                                enrich_text=False, skip_upload=True).run_sweep
+    every = ["comments", "dockets", "documents"]
+    if first_pass_lists:
+        sweep()
+        assert sorted(listed) == [("EPA", every), ("FAA", every)]
+        assert merged == [["EPA-2026-0001-0002"], ["FAA-2026-0001-0002"]]
+        assert set(pl.read_parquet(tmp_output / "manifest.parquet")["key"].to_list()) == set(store) - {late}
+    else:
+        with pytest.raises(RuntimeError, match="the comment batches after it ran"):
+            sweep()
+        # The pass kept nothing, so each batch lists its own agency again, for comments alone, and sees what the
+        # mirror holds by then: FAA's batch also reads the comment written during the sweep.
+        assert sorted(listed[2:]) == [("EPA", ["comments"]), ("FAA", ["comments"])]
+        assert [set(ids) for ids in merged] == [{"EPA-2026-0001-0002"}, {"FAA-2026-0001-0002", "FAA-2026-0001-0003"}]
+
+
 @pytest.mark.parametrize("defer", [False, True])
 def test_manual_cli_finalizes_once_unless_workflow_owns_finalization(tmp_output, monkeypatch, defer):
     monkeypatch.setenv("R2_PUBLIC_URL", "https://test.invalid")
