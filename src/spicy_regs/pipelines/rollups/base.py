@@ -345,10 +345,14 @@ class RollupPipeline(Pipeline):
         managed download reuses its descriptor; any other file is hashed once.
         The rollup's own table is primed but is no parent (:meth:`_own`).
         """
+        return self._prime_tables(self.inputs, output_dir, snapshot)
+
+    def _prime_tables(self, keys: tuple[str, ...], output_dir: Path, snapshot: Mapping | None) -> dict[str, dict]:
+        """:meth:`_prime` for ``keys``: each published table downloaded, pinned and returned as a parent."""
         from spicy_regs.sources import publication
 
         parents = {}
-        for remote_key in self.inputs:
+        for remote_key in keys:
             local = output_dir / remote_key
             downloaded = False
             if local.exists():
