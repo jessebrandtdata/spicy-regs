@@ -13,7 +13,7 @@ files, and where the last generations published with receipts are pinned.
 | --- | --- | --- |
 | 1. Promote the fields the receipts held | merged | Receipt route. `federal_register` gains `html_url`, `pdf_url`, `body_html_url`, `source_sha256`, `regulations_dot_gov_info_json` as its last columns; `fr_docket_links` gains `normalized_docket_candidates`. |
 | 2. Readers use the published tables | merged | The links job and the rulemaking materializer read the pinned `federal_register` table, not its receipts. Receipts are still written. |
-| Retirement rule at publication | merged, inert | `retired_receipt_datasets` exists; nothing declares it. |
+| Retirement rule | merged, inert | A table's installed policy marked `"receipts_retired": true` stops needing receipts and may never state them again, on every path that builds or publishes (ss-ag1j); nothing is marked yet. |
 | 3. Merge at the public table, no receipts | not merged | Waits for one clean night of steps 1 and 2 and for the pins below. |
 
 ## The first night
