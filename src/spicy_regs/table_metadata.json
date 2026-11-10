@@ -916,9 +916,9 @@
         "description": "Which of the Register's statements carries the pair: `printed` (the document's printed docket labels), `regulations_dot_gov_info` (the Register's regulations.gov link, read from `regulations_dot_gov_docket_id` alone, never off a document id) or `both`, where a printed label is that docket id or SpicyDocs' normalizer reads it from the label. Every printed occurrence that carries the pair reads `both`, and the link then adds no row. The current builder writes one of these labels; retained historical rows without a label keep NULL."
       },
       {
-        "column_name": "normalized_docket_candidates_json",
-        "column_type": "VARCHAR",
-        "description": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket."
+        "column_name": "normalized_docket_candidates",
+        "column_type": "VARCHAR[]",
+        "description": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
       }
     ],
     "subject": "rulemaking",
@@ -930,7 +930,7 @@
       "docket_id"
     ],
     "later_policy_columns": [
-      "normalized_docket_candidates_json"
+      "normalized_docket_candidates"
     ]
   },
   "discovery_signals": {
@@ -31799,7 +31799,7 @@
     "coverage": "True range: dated records published from 1994-01-03 on, the whole span the API serves.",
     "kind": "true_range",
     "measured_on": "2026-09-23",
-    "data_quality": "Document numbers are not globally unique: `00-111` names different records on 2000-01-14 and 2000-01-18. Current merging preserves both dates and replaces only the same dated record on a later successful fetch. This code correction does not restore historical records already lost from published files; those require a pinned historical replay and publication. A number-only source reference remains ambiguous when its input generation supplies multiple dated candidates. One RIN, docket and title can cover a rule and its later corrections, effective-date delays and confirmations, all typed `Rule` since 2008 with `subtype` NULL, so a RIN or title match picks a document family, not a document; `action` tells them apart (`Final rule; correction.`) where the Register states one. The API lists no RIN on a large share of `Rule` documents every year, some of which state one in the printed text or inside `docket_ids`. A row not read since the Register's regulations.gov link and `action` were first requested (2026-10-03) is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`, which a row read since holds as `'{}'` at least. The scheduled run re-reads the last 120 days, so a relayed comment count follows the Register's own checks to about the comment period's close. `html_url`, `pdf_url`, `body_html_url` and `regulations_dot_gov_info_json` are the last columns: they were held beside the table until 2026-11 and are the Register's own values for every row. `source_sha256` names the retained API page a row was last read from and is NULL on a row not read since it was added, which is every document published before the 120-day window of that first run.",
+    "data_quality": "Document numbers are not globally unique: `00-111` names different records on 2000-01-14 and 2000-01-18. Current merging preserves both dates and replaces only the same dated record on a later successful fetch. This code correction does not restore historical records already lost from published files; those require a pinned historical replay and publication. A number-only source reference remains ambiguous when its input generation supplies multiple dated candidates. One RIN, docket and title can cover a rule and its later corrections, effective-date delays and confirmations, all typed `Rule` since 2008 with `subtype` NULL, so a RIN or title match picks a document family, not a document; `action` tells them apart (`Final rule; correction.`) where the Register states one. The API lists no RIN on a large share of `Rule` documents every year, some of which state one in the printed text or inside `docket_ids`. A row not read since the Register's regulations.gov link and `action` were first requested (2026-10-03) is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`, which a row read since holds as `'{}'` at least. The scheduled run re-reads the last 120 days, so a relayed comment count follows the Register's own checks to about the comment period's close. `html_url`, `pdf_url`, `body_html_url` and `regulations_dot_gov_info_json` are the last columns: they were held beside the table until 2026-11 and are as the Register stated them, its nulls included: `pdf_url` is NULL on about 33,500 rows, mostly 1994, where it serves no PDF. `source_sha256` names the retained API page a row was last read from and is NULL on a row not read since it was added, which is every document published before the 120-day window of that first run. It changes nightly on every row in the window, so compare generations without it.",
     "columns": [
       {
         "column_name": "document_number",
@@ -32009,7 +32009,7 @@
       {
         "column_name": "source_sha256",
         "column_type": "VARCHAR",
-        "description": "SHA-256 of the retained Federal Register API page this row was last read from, as the run's source-evidence journal spells it (`sha256:<hex>`); the page is `source-evidence/blobs/sha256/<hex>`. NULL on a row no run has read since the column was added (2026-11): the scheduled run re-reads the last 120 days."
+        "description": "SHA-256 of the retained Federal Register API page this row was last read from, as the run's source-evidence journal spells it (`sha256:<hex>`); the page is `source-evidence/blobs/sha256/<hex>`. NULL on a row no run has read since the column was added (2026-11). It is a pointer, not part of the record: the scheduled run re-reads the last 120 days, so it changes every night on every row in that window (about 8,700) whether or not the record changed, and a comparison of two generations must leave it out. Where one run reads a document on two pages it names the first."
       },
       {
         "column_name": "regulations_dot_gov_info_json",

@@ -56,7 +56,7 @@ def published(root, before=()):
 def assert_links(table, register):
     """The link rows a Register table states, checked on rows read by hand from the fixture."""
     links = pq.read_table(table).to_pylist()
-    assert pq.read_schema(table).names[-2:] == ["link_source", "normalized_docket_candidates_json"]
+    assert pq.read_schema(table).names[-2:] == ["link_source", "normalized_docket_candidates"]
     assert [row["docket_id"] for row in links] == sorted(row["docket_id"] for row in links)
     documents = {(row["document_number"], row["publication_date"]): row for row in pq.read_table(register).to_pylist()}
     printed = sum(len([label for label in row["docket_ids"] or [] if label and label.strip()])
@@ -68,7 +68,12 @@ def assert_links(table, register):
     [link] = [row for row in links if row["document_number"] == "2026-22078"]
     assert (link["docket_id"], link["docket_source_ordinal"], link["link_source"]) == (
         "Docket Number USCG-2026-1075", 0, "both")
-    assert json.loads(link["normalized_docket_candidates_json"]) == ["USCG-2026-1075"]
+    assert link["normalized_docket_candidates"] == ["USCG-2026-1075"]
+    # A label the normalizer reads no regulations.gov docket from holds an empty list, never NULL: 2026-22032
+    # prints the antidumping case number A-570-893.
+    [case] = [row for row in links if row["document_number"] == "2026-22032" and row["docket_id"] == "A-570-893"]
+    assert case["normalized_docket_candidates"] == [] and case["link_source"] == "printed"
+    assert all(row["normalized_docket_candidates"] is not None for row in links)
 
 
 def rows(path):
@@ -380,3 +385,61 @@ def test_a_retirement_covers_only_the_datasets_it_names(tmp_path):
     with pytest.raises(ValueError, match="Receipt policies must classify every subject output"):
         build_generation(tmp_path / "third", family="two", files=tables, expected_keys=keys, receipt_path=pairs[0][1],
                          receipt_policies=policies[:1], receipt_generation_id="build-1")
+
+
+def test_links_refuse_a_register_table_that_predates_the_promoted_columns(tmp_path):
+    """The live table's shape on the day of the merge: 38 columns under regulations-native-v2, no html_url.
+
+    The standalone "Rollup — fr_docket_links" workflow, run before the first v3 Register generation, pins exactly
+    that; it failed in DuckDB's binder (``"fr" does not have a column named "html_url"``)."""
+    import pyarrow as pa
+
+    from spicy_regs.etl_receipts import receipt_policies
+    from spicy_regs.transforms.build_fr_docket_links import build_fr_docket_links
+    from spicy_regs.transforms.regulations_receipts import policy
+    from spicy_regs.transforms.regulations_shape import shape_record
+
+    [live] = [p for p in receipt_policies(policy("federal_register")) if p.policy_version == "regulations-native-v2"]
+    assert len(live.subject_schema.names) == 38 and "html_url" not in live.subject_schema.names
+    row = shape_record("federal_register", {"document_number": "2026-00001", "publication_date": "2026-01-02",
+                                            "docket_ids_json": '["EPA-2026-0001"]'})
+    pq.write_table(pa.Table.from_pylist([{name: row.get(name) for name in live.subject_schema.names}],
+                                        schema=live.subject_schema), tmp_path / "federal_register.parquet")
+    with pytest.raises(ValueError, match=r"predates its promoted columns \(html_url, pdf_url\).*must publish first"):
+        build_fr_docket_links(tmp_path)
+    assert not (tmp_path / "fr_docket_links.parquet").exists()
+
+
+def test_the_hosted_links_job_pins_the_published_register_table_and_waits_for_its_promotion(
+        tmp_path, monkeypatch, remote):
+    """Hosted mode against the fake bucket: the links read the Register table the index pins, by download, and
+    record it as their parent with its family and generation. Before the Register job has published its promoted
+    columns the links job refuses and publishes nothing."""
+    from spicy_regs.pipelines.rollups.federal_register import FederalRegisterRollup
+    from spicy_regs.pipelines.rollups.fr_docket_links import FrDocketLinksRollup
+    from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
+    from spicy_regs.sources import publication
+
+    index = stored(remote, monkeypatch)
+    publish_prior(remote, monkeypatch, tmp_path)
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://example.test")
+    with pytest.raises(ValueError, match="predates its promoted columns"):
+        FrDocketLinksRollup(output_dir=tmp_path / "early", skip_upload=False).run()
+    assert "fr-docket-links" not in index()["families"]
+
+    serve(monkeypatch, tmp_path, "night-1")
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://example.test")
+    FederalRegisterRollup(output_dir=tmp_path / "register", skip_upload=False).run()
+    register = index()["families"]["federal-register"]
+    with monkeypatch.context() as links_only:
+        links_only.setattr(SelectedPriors, "get", lambda self, dataset: pytest.fail(f"restored {dataset}"))
+        FrDocketLinksRollup(output_dir=tmp_path / "links", skip_upload=False).run()
+    links = index()["families"]["fr-docket-links"]
+    assert links["etlReceipts"]["datasets"] == ["fr_docket_links"]
+    root = publication.family_root(remote.objects[links["prefix"] + "/artifact.json"], links)
+    table = register["tables"]["federal_register.parquet"]
+    assert root["spec"]["parents"] == {"federal_register.parquet": {
+        "sha256": table["sha256"], "byteSize": table["byteSize"],
+        "family": "federal-register", "artifactDigest": register["artifactDigest"]}}
+    assert_same_table(published(tmp_path / "links") / "fr_docket_links.parquet",
+                      FIXTURE / "expected/links-night-1.parquet")

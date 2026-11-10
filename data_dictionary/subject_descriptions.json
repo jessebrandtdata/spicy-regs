@@ -3442,7 +3442,7 @@
       "html_url": "The document's page on federalregister.gov.",
       "pdf_url": "The document's PDF rendition.",
       "body_html_url": "The document's full-text HTML body; the XML body the Register also serves carries no boilerplate.",
-      "source_sha256": "SHA-256 of the retained Federal Register API page this row was last read from, as the run's source-evidence journal spells it (`sha256:<hex>`); the page is `source-evidence/blobs/sha256/<hex>`. NULL on a row no run has read since the column was added (2026-11): the scheduled run re-reads the last 120 days.",
+      "source_sha256": "SHA-256 of the retained Federal Register API page this row was last read from, as the run's source-evidence journal spells it (`sha256:<hex>`); the page is `source-evidence/blobs/sha256/<hex>`. NULL on a row no run has read since the column was added (2026-11). It is a pointer, not part of the record: the scheduled run re-reads the last 120 days, so it changes every night on every row in that window (about 8,700) whether or not the record changed, and a comparison of two generations must leave it out. Where one run reads a document on two pages it names the first.",
       "regulations_dot_gov_info_json": "The Register's own statement of the regulations.gov docket and document it matched this document to (the API's `regulations_dot_gov_info`), a JSON object exactly as stated: `{}` where the Register states nothing, the time of its check alone where it checked and found nothing, otherwise any of the docket, the document, the comment count, the supporting documents and their titles. NULL on a row not read since the field was first requested (2026-10-03)."
     }
   },
@@ -3493,7 +3493,7 @@
       "regulation_id_numbers": "RINs (Native list) claimed by the FR document — the RIN-side join key for a rulemaking. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
       "executive_order_number": "Executive order number, for presidential documents.",
       "link_source": "Which of the Register's statements carries the pair: `printed` (the document's printed docket labels), `regulations_dot_gov_info` (the Register's regulations.gov link, read from `regulations_dot_gov_docket_id` alone, never off a document id) or `both`, where a printed label is that docket id or SpicyDocs' normalizer reads it from the label. Every printed occurrence that carries the pair reads `both`, and the link then adds no row. The current builder writes one of these labels; retained historical rows without a label keep NULL.",
-      "normalized_docket_candidates_json": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket."
+      "normalized_docket_candidates": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
     }
   },
   "gao_decisions": {

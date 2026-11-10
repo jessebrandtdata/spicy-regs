@@ -554,7 +554,7 @@ def test_v1_fr_docket_links_pair_restores_and_rewrites_under_v2_with_its_candida
     current = policy("fr_docket_links")
     (prior,) = earlier_policies(current)
     assert (prior.policy_version, current.policy_version) == ("regulations-native-v1", "regulations-native-v2")
-    assert current.subject_schema.names == [*prior.subject_schema.names, "normalized_docket_candidates_json"]
+    assert current.subject_schema.names == [*prior.subject_schema.names, "normalized_docket_candidates"]
     raw = {"docket_id": "Docket No. FAA-2007-29334", "docket_source_ordinal": 0, "document_number": "1",
            "publication_date": "2026-01-01", "normalized_docket_candidates_json": '["FAA-2007-29334"]',
            "docket_normalization_rule": "rule", "html_url": "https://www.federalregister.gov/d/1", "pdf_url": None}
@@ -566,7 +566,19 @@ def test_v1_fr_docket_links_pair_restores_and_rewrites_under_v2_with_its_candida
     assert restored == raw
     new = write(tmp_path, "fr_docket_links", [restored], generation="new", label="new")
     [row] = pq.read_table(new.subjects[0]).to_pylist()
-    assert row["normalized_docket_candidates_json"] == '["FAA-2007-29334"]' and "html_url" not in row
+    assert row["normalized_docket_candidates"] == ["FAA-2007-29334"] and "html_url" not in row
+    assert "normalized_docket_candidates_json" not in row
+    # The earlier pair has no column of that name to compare, so the restore proves the columns it does hold:
+    # a retained input that disagrees with one of them still refuses.
+    from spicy_regs.etl_receipts import decode_exact_json, exact_json, _digest
+    receipt = pq.read_table(receipts).to_pylist()
+    values = decode_exact_json(receipt[0]["processing_json"])
+    values["raw_conversion_inputs"]["title"] = "another title"
+    receipt[0]["processing_json"] = exact_json(values)
+    receipt[0]["receipt_id"] = _digest({key: value for key, value in receipt[0].items() if key != "receipt_id"})
+    pq.write_table(pa.Table.from_pylist(receipt, schema=RECEIPT_SCHEMA), receipts)
+    with pytest.raises(ValueError, match="retained processor input differs"):
+        list(read_internal(ReceiptInput("fr_docket_links", (subject,), receipts, "old")))
 
 
 def test_v1_unified_agenda_pair_restores_and_rewrites_under_v2_with_related_rins_null(tmp_path):

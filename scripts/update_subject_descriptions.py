@@ -121,7 +121,10 @@ def main(tables=None):
     field_prose['federal_register', 'source_sha256'] = (
         'SHA-256 of the retained Federal Register API page this row was last read from, as the run\'s source-evidence '
         'journal spells it (`sha256:<hex>`); the page is `source-evidence/blobs/sha256/<hex>`. NULL on a row no run '
-        'has read since the column was added (2026-11): the scheduled run re-reads the last 120 days.')
+        'has read since the column was added (2026-11). It is a pointer, not part of the record: the scheduled run '
+        're-reads the last 120 days, so it changes every night on every row in that window (about 8,700) whether '
+        'or not the record changed, and a comparison of two generations must leave it out. Where one run reads a '
+        'document on two pages it names the first.')
     extras = {
         'attachments':'attachments_json', 'attachment_records':'attachments_json', 'fr_document_ids':'fr_document_ids_json',
         'is_original':'is_original_raw','agency_codes':'agency_codes_json','links':'links_json','dates':'dates_json',

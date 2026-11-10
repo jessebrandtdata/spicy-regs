@@ -51,6 +51,20 @@ def build_fr_docket_links(output_dir: Path) -> Path:
     if not fr_file.exists():
         raise FileNotFoundError(f"federal_register.parquet not found in {output_dir}")
 
+    held = set(pq.read_schema(fr_file).names)
+    # The published table holds each list natively; this builder's rows still state them as the receipt writer
+    # takes them, so a published table is read back into that text here (ss-vse3, until the links leave receipts).
+    published = ("" if "docket_ids_json" in held else
+                 " REPLACE (array_to_string(agency_slugs, ',') AS agency_slugs),"
+                 " CAST(to_json(docket_ids) AS VARCHAR) AS docket_ids_json,"
+                 " CAST(to_json(regulation_id_numbers) AS VARCHAR) AS regulation_id_numbers_json")
+    if published and (missing := sorted(set(DISPLAY_COLUMNS) - held - {"docket_ids_json", "regulation_id_numbers_json"})):
+        # A generation published before regulations-native-v3 kept html_url and pdf_url in its receipts.
+        raise ValueError(
+            f"The pinned federal_register generation predates its promoted columns ({', '.join(missing)}), which "
+            "the links carry: the federal_register job must publish first (rollup-federal-register.yml runs it "
+            "before this one; a standalone fr_docket_links run cannot go ahead of it)")
+
     logger.info("Building FR docket links via DuckDB...")
 
     out_file = output_dir / "fr_docket_links.parquet"
@@ -69,14 +83,7 @@ def build_fr_docket_links(output_dir: Path) -> Path:
     # Carries the columns the docket page's FR section renders (normalizeFRRow
     # rebuilds `docket_ids` from docket_ids_json, so keep that column). Sorted by
     # docket_id with a small row-group size so per-docket lookups prune.
-    held = set(pq.read_schema(fr_file).names)
     stated = "regulations_dot_gov_docket_id" if "regulations_dot_gov_docket_id" in held else "CAST(NULL AS VARCHAR)"
-    # The published table holds each list natively; this builder's rows still state them as the receipt writer
-    # takes them, so a published table is read back into that text here (ss-vse3, until the links leave receipts).
-    published = ("" if "docket_ids_json" in held else
-                 " REPLACE (array_to_string(agency_slugs, ',') AS agency_slugs),"
-                 " CAST(to_json(docket_ids) AS VARCHAR) AS docket_ids_json,"
-                 " CAST(to_json(regulation_id_numbers) AS VARCHAR) AS regulation_id_numbers_json")
     display = ", ".join(f"fr.{column}" for column in DISPLAY_COLUMNS)
     query = f"""
     COPY (

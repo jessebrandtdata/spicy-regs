@@ -1244,6 +1244,52 @@ def selected_dictionary_definitions(index: dict, names: Iterable[str], descripti
     return descriptions, schemas
 
 
+def accept_pending_policy_columns(index: dict, base_url: str, descriptions: dict, expected: dict, live: dict, *,
+                                  load_root=None) -> tuple[dict, dict, list[str]]:
+    """Leave out of a live check the columns a table's installed policy declares and its selected generation predates.
+
+    A column promotion merges before the nightly that publishes it, so until then the live file lacks columns the
+    dictionary describes (six for the two Register tables on 2026-11-10; the same on 2026-11-09 for bills). Such a
+    column is declared, not yet published: reported as a notice, not a failure. It is recognised from the
+    generation itself, never from a list: the family root states the policy the table was written under, and only
+    when that is a declared earlier policy of the installed one (``receipt_policies``) are the columns the
+    installed policy adds to it set aside. Every other difference stays an error: a column both policies hold that
+    the file lacks, a type, a table without receipts, a root stating a policy that is not a declared earlier one.
+    Roots are read only for tables that lack an expected column, one read per family.
+    """
+    from spicy_regs.etl_policy_registry import installed_policies
+    from spicy_regs.etl_receipts import receipt_policies
+    from spicy_regs.sources import publication
+
+    load_root = load_root or publication.load_family_root
+    installed, roots, notices = installed_policies(), {}, []
+    descriptions, expected = dict(descriptions), dict(expected)
+    for table in sorted(set(expected) & set(live)):
+        missing = {name for name, _ in expected[table]} - {name for name, _ in live[table]}
+        owner = publication.table_owner(index, table + ".parquet")
+        if not missing or table not in installed or owner is None or "etlReceipts" not in owner[1]:
+            continue
+        family, entry = owner
+        if family not in roots:
+            roots[family] = load_root(base_url, entry)[1]
+        stated = roots[family].get("spec", {}).get("etlReceipts", {}).get("policies", [])
+        written = next((p for p in receipt_policies(installed[table])[1:]
+                        if any(p.descriptor() == declared for declared in stated)), None)
+        if written is None:
+            continue
+        pending = sorted(missing - set(written.subject_schema.names))
+        if not pending:
+            continue
+        notices.append(f"[{table}] declared, not yet published: {', '.join(pending)} (the selected generation "
+                       f"states {written.policy_version}; installed is {installed[table].policy_version})")
+        expected[table] = [pair for pair in expected[table] if pair[0] not in pending]
+        if table in descriptions:
+            columns = descriptions[table].get("columns") or {}
+            descriptions[table] = {**descriptions[table],
+                                   "columns": {name: text for name, text in columns.items() if name not in pending}}
+    return descriptions, expected, notices
+
+
 def _reconcile_columns(
     table: str,
     left_label: str,
@@ -1579,6 +1625,14 @@ def cmd_check(args: argparse.Namespace) -> int:
         expected = expected_schemas()
         if index is not None:
             descriptions, expected = selected_dictionary_definitions(index, live, Path(args.descriptions))
+            try:
+                descriptions, expected, notices = accept_pending_policy_columns(
+                    index, resolve_r2_base_url(args.base), descriptions, expected, live)
+                for notice in notices:
+                    print(f"  notice: {notice}")
+            except (httpx.HTTPError, OSError, PublicationError) as exc:
+                print(f"! Could not read a published family root: {exc}", file=sys.stderr)
+                unreadable = True
         errors += check_descriptions(live, {name: value for name, value in descriptions.items() if name in live})
         expected = {name: value for name, value in expected.items() if name in live}
         errors += check_schema_drift(expected, live)

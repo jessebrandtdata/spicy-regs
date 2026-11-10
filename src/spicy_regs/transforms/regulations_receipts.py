@@ -207,8 +207,11 @@ def _processor_input(dataset, row, *, processor=None):
     shaped = shape_record(dataset, value)
     schema = subject_schema(dataset)
     reproduced = pa.Table.from_pylist([shaped], schema=schema).to_pylist()[0]
-    selected = {name: row.get(name) for name in schema.names}
-    if exact_json(reproduced) != exact_json(selected):
+    # A pair selected under an earlier policy holds that policy's columns. One promoted since under a new name
+    # (a list its receipt held as JSON text) has no selected value to compare: it is reproduced from the retained
+    # input alone. A pair under the current policy holds every column, so nothing is left out for it.
+    held = [name for name in schema.names if name in row]
+    if exact_json({name: reproduced[name] for name in held}) != exact_json({name: row[name] for name in held}):
         raise ValueError(f"{dataset}: retained processor input differs from selected native subject")
     if any(exact_json(shaped.get(name)) != exact_json(row.get(name)) for name in RECEIPT_COLUMNS[dataset]):
         raise ValueError(f"{dataset}: retained processor input differs from selected processing evidence")
