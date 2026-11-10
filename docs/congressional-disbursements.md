@@ -64,7 +64,7 @@ qualification for any changed extraction behavior.
 ```sh
 uv run --frozen python -m spicy_regs.pipelines.congressional_disbursements normalize \
   --acquisition acquired/manifest.json --output normalized
-uv run --frozen python -m spicy_regs.pipelines.house_disbursements \
+uv run --frozen python -m spicy_regs.pipelines.house_disbursements build \
   --normalization normalized/manifest.json --output house-tables
 
 uv run --frozen python -m spicy_regs.pipelines.congressional_disbursement_pages \

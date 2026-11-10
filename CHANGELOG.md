@@ -202,8 +202,9 @@ Entries link to the pull request that introduced the change.
   receipt ownership, keeping the table, and refuses receipts for it again; the
   receipt lookup, dictionary and MCP server say its fields are columns, and a
   consumer still on receipts reads it as its pinned public table.
-  `docs/pins/receipt-archive.json` keeps its last receipts generation. Nothing
-  is marked yet.
+  `docs/pins/receipt-archive.json` keeps its last receipts generation, and
+  publication refuses the first generation without them until that file pins
+  the family's live generation for each table leaving them.
 
 - Prepared native conversions publish by an operator-named receipt digest.
   `--publish-prepared` now requires `--expect-receipt-digest`, the

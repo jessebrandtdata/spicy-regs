@@ -12,11 +12,14 @@ from datetime import UTC, date, datetime, timedelta
 from os import getenv
 from pathlib import Path
 
-from spicy_regs.pipelines import administration_policy, executive_orders, grants_opportunities, ofac, treasury_fiscal
+from spicy_regs.pipelines import (
+    administration_policy, executive_orders, grants_opportunities, house_disbursements, ofac, treasury_fiscal,
+)
 from spicy_regs.pipelines.raw_releases import (
     journal_snapshot_releases, published_before, restore_originals, snapshot_readers,
 )
 from spicy_regs.pipelines.rollups.base import RollupPipeline, Unchanged, make_rollup_app
+from spicy_regs.schemas.house_disbursements import PARTITION_COLUMNS as HOUSE_PARTITIONS, TABLES as HOUSE_TABLES
 from spicy_regs.sources import r2, retained_collections
 from spicy_regs.transforms import build_executive_orders, build_grants_opportunities, build_ofac, build_treasury_fiscal
 
@@ -175,8 +178,40 @@ class ExecutiveOrdersRollup(SourceRefreshRollup):
         return executive_orders.retain_and_build(selection, output_dir, evidence, prior=prior)
 
 
+class HouseDisbursementsRollup(SourceRefreshRollup):
+    """Rebuild the House ledger when the House lists a CSV the published generation lacks.
+
+    The published originals are restored from R2 evidence (0.92 GB for 2016 to mid-2026) rather than downloaded
+    from the House again; every published quarter is normalized again with the new ones.
+    """
+
+    name = house_disbursements.FAMILY
+    outputs = tuple(f"{table}.parquet" for table in HOUSE_TABLES.values())
+    partitioned = {key: HOUSE_PARTITIONS for key in outputs}
+
+    def build(self, output_dir: Path) -> tuple[Path, ...]:
+        from spicy_docs.sources.house_disbursements import HouseDisbursementsBudget
+
+        evidence = self.evidence
+        listed = house_disbursements.listed_links(evidence, transport=self.transport)
+        # The published rows, not the prior evidence's journal, say which files are published: a journal event read
+        # back here would have to be handed on by every native conversion (native_conversion.INHERITED_EVENTS).
+        for key in self.outputs:
+            r2.download_members(key, output_dir / "published")
+        files = house_disbursements.published_files(output_dir / "published")
+        added = house_disbursements.additions(listed, files)
+        if not added:
+            raise Unchanged("the House lists no CSV the published generation lacks")
+        restore_originals(evidence.store, [item["source_sha256"] for item in files],
+                          getenv("R2_PUBLIC_URL", r2.VERIFIED_PUBLIC_URL), max_bytes=HouseDisbursementsBudget().max_bytes,
+                          transport=self.transport)
+        return house_disbursements.refresh(files, added, output_dir, store=evidence.store, evidence=evidence,
+                                           transport=self.transport)
+
+
 ofac_sanctions_app = make_rollup_app(OfacSanctionsRollup)
 grants_opportunities_app = make_rollup_app(GrantsOpportunitiesRollup)
 administration_policy_app = make_rollup_app(AdministrationPolicyRollup)
 treasury_fiscal_app = make_rollup_app(TreasuryFiscalRollup)
 executive_orders_app = make_rollup_app(ExecutiveOrdersRollup)
+house_disbursements_app = make_rollup_app(HouseDisbursementsRollup)

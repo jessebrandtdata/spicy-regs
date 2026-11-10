@@ -2074,9 +2074,16 @@ def _lineage_meanings(lineage: Mapping[str, Sequence[str]], *, cursor: duckdb.Du
 
 
 def _legacy_column_meanings(cursor: duckdb.DuckDBPyConnection, table: str, entry: Mapping) -> dict[str, str]:
-    """Historical meanings for actual columns of a selected pre-native generation."""
-    from spicy_regs.sources.publication import table_owner
+    """Historical meanings for actual columns of a selected pre-native generation.
 
+    A family entry without receipts is pre-native, except for a table whose receipts are retired: that one is the
+    native table by design (``subject_catalog.RECEIPTS_RETIRED``) and its native meanings stand.
+    """
+    from spicy_regs.sources.publication import table_owner
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    if table in retired_receipt_datasets():
+        return {}
     local = _connection_local_selection(cursor)
     if local is not None and table in local.get("native", {}):
         return {}

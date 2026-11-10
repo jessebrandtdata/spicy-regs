@@ -107,7 +107,9 @@ installed policy file (`src/spicy_regs/etl_policies/<table>.json`) carries
 accepts the first generation without them, requires the table to stay
 published, and refuses any generation that claims receipts for it again, as
 admission does. Unmarked, the generation is refused. The prior generation's
-receipt file is not touched; `docs/pins/receipt-archive.json` keeps it. A
+receipt file is not touched; `docs/pins/receipt-archive.json` keeps it, and the
+first generation without receipts is refused until that file pins the family's
+live generation for each table leaving them (read from the publishing checkout). A
 receipt file must still classify every table beside it, so the tables of one
 family leave receipts together.
 

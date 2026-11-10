@@ -62,7 +62,7 @@ docs = [
 [project.scripts]
 build-cbo-archive-cards = "spicy_regs.transforms.cbo_archive_cards:main"
 build-federal-register-layer1 = "spicy_regs.transforms.build_federal_register:layer1_main"
-build-fec-financial-profiles = "spicy_regs.pipelines.fec_financial_profiles:main"
+build-fec-financial-profiles = "spicy_regs.pipelines.fec_financial_profiles:build_main"
 spicy-regs-run = "spicy_regs.operational_runner:main"
 spicy-regs-scorecards = "spicy_regs.scorecards.operations.cli:main"
 publish-local-generation = "spicy_regs.local_publication:main"
@@ -118,6 +118,7 @@ run-rollup-administration-policy = "spicy_regs.pipelines.rollups.source_refreshe
 run-rollup-ofac-sanctions = "spicy_regs.pipelines.rollups.source_refreshes:ofac_sanctions_app"
 run-rollup-grants-opportunities = "spicy_regs.pipelines.rollups.source_refreshes:grants_opportunities_app"
 run-rollup-executive-orders = "spicy_regs.pipelines.rollups.source_refreshes:executive_orders_app"
+run-rollup-house-disbursements = "spicy_regs.pipelines.rollups.source_refreshes:house_disbursements_app"
 run-rollup-bill-family = "spicy_regs.pipelines.rollups.bill_family:app"
 run-rollup-press-releases = "spicy_regs.pipelines.rollups.press_releases:app"
 run-rollup-amendments = "spicy_regs.pipelines.rollups.amendments:app"

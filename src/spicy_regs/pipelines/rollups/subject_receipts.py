@@ -69,24 +69,6 @@ def dataset_policy(name):
     raise ValueError(f"No coordinated processing reader for {name}")
 
 
-def _regulations_maps(dataset):
-    from spicy_regs.transforms.regulations_shape import SOURCE_COLUMNS
-
-    return dataset in SOURCE_COLUMNS
-
-
-def _regulations_reads(dataset, published, destination):
-    from spicy_regs.transforms.regulations_shape import published_as_source
-
-    return published_as_source(dataset, published, destination)
-
-
-#: Per mapper family: which datasets it maps, and how its builders' input is read back from a published table once a
-#: dataset's receipts are retired (``SelectedPriors._published``). A family adds its reader when its first table
-#: retires while a receipt-route consumer still reads it.
-PUBLISHED_READERS = ((_regulations_maps, _regulations_reads),)
-
-
 class SelectedPriors:
     """Capture one publication index and fetch only its pinned subject/receipt pairs."""
 
@@ -227,17 +209,19 @@ class SelectedPriors:
     def _published(self, dataset, subjects):
         """A retired dataset's prior: its pinned public table, as its mapper's builders read their input.
 
-        Only a mapper that declares that reader can be read here (``PUBLISHED_READERS``); any other refuses by name
-        rather than hand a builder a table it would misread. Its consumers then wait for the reader, or switch first.
+        Only the regulations mapper reads a published table back into its builders' shape
+        (``regulations_shape.published_as_source``); any other dataset refuses by name rather than hand a builder a
+        table it would misread. Its consumers then wait for such a reader here, or switch first.
         """
-        reader = next((read for owns, read in PUBLISHED_READERS if owns(dataset)), None)
-        if reader is None:
-            raise ValueError(f"{dataset}: its receipts are retired and its mapper declares no reader of the published "
-                             "table (subject_receipts.PUBLISHED_READERS); add one before its consumers read it")
+        from spicy_regs.transforms.regulations_shape import SOURCE_COLUMNS, published_as_source
+
+        if dataset not in SOURCE_COLUMNS:
+            raise ValueError(f"{dataset}: its receipts are retired and its mapper has no reader of the published "
+                             "table (SelectedPriors._published); add one before its consumers read it")
         output = self.directory / dataset / "processing" / (dataset + ".parquet")
         output.parent.mkdir(parents=True)
         with phase_log("prior-published-input", dataset=dataset):
-            reader(dataset, subjects, output)
+            published_as_source(dataset, subjects, output)
         self.selections[dataset] = (subjects, None, None)
         self.restored[dataset] = output
         self.processing_members[dataset] = (output,)

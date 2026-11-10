@@ -58,6 +58,12 @@ class SelectedDataset:
     receipts: Path | None
     generation_id: str | None
 
+    def required_receipts(self, reader: str) -> Path:
+        """The selected receipts, for a reader that still reads them; a retired table's refuses by name."""
+        if self.receipts is None:
+            raise ValueError(f"{self.dataset} has retired receipts; {reader} still reads them")
+        return self.receipts
+
 
 def unique_build_directory(root: Path) -> Path:
     directory = Path(root) / ".builds" / uuid4().hex

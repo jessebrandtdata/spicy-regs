@@ -1639,6 +1639,27 @@ def _generation_scoped_tables() -> frozenset[str]:
     return frozenset(name + ".parquet" for name in FILE_TABLES.values())
 
 
+def _require_receipt_archive_pins(family: str, live: str, datasets) -> None:
+    """Refuse the first generation without a retired table's receipts until the docs pin the one they live in.
+
+    That is the family's current generation, the last with receipts: weekly retention deletes it within days unless
+    docs/pins/receipt-archive.json cites it (generation_retention). The file is read through retention's own reader
+    from the checkout the publishing job runs in; an install without docs/ cannot publish a retirement.
+    """
+    from spicy_regs import generation_retention
+
+    if not generation_retention.RECEIPT_ARCHIVE.is_file():
+        raise PublicationError(f"Cannot check the receipt archive pins: {generation_retention.RECEIPT_ARCHIVE} is not "
+                               "readable here; publish a retirement from a spicy-regs checkout")
+    pins = generation_retention.receipt_archive_pins()
+    for name in sorted(datasets):
+        pin = pins.get(name, {})
+        if pin.get("artifactDigest") != live or pin.get("family") != family:
+            raise PublicationError(
+                f"{name} leaves its receipts in {family} generation {live}, but docs/pins/receipt-archive.json pins "
+                f"{pin.get('family')} {pin.get('artifactDigest')}: pin the live generation before this publish")
+
+
 def _stage_verified_generation(
     artifact, source, *, upload_member, client, bucket: str, index: dict,
     evidence_directories: tuple[Path, ...] = (), added_tables: frozenset[str] = frozenset(),
@@ -1703,6 +1724,8 @@ def _stage_verified_generation(
     dropped = set((old_family or {}).get("etlReceipts", {}).get("datasets", [])) - claimed - shared
     if not {name + ".parquet" for name in dropped & retired} <= set(tables):
         raise PublicationError("A retired receipt dataset keeps its table and publishes no receipts")
+    if dropped & retired and old_family is not None:
+        _require_receipt_archive_pins(family, old_family["artifactDigest"], dropped & retired)
     # The member itself may go only when every dataset it owned is retired: one holding shared logs alone stays.
     if (old_family and "etlReceipts" in old_family and "etlReceipts" not in entry
             and not (dropped and dropped <= retired)):

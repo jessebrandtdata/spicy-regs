@@ -1,6 +1,6 @@
 """Download originals into the raw archive and derive admitted source releases from them.
 
-Shared by the hand-refreshed source pipelines (Treasury, OFAC, Grants.gov). A capture descriptor is the
+Shared by the hand-refreshed source pipelines (Treasury, OFAC, Grants.gov, FEC summaries). A capture descriptor is the
 request URL, SHA-256, observation time and size of one original, as its raw acquisition receipt records them;
 a release is rebuilt from descriptors and raw originals on every build, so no release directory has to
 outlive the generation it feeds.
