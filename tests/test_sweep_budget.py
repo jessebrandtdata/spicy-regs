@@ -19,27 +19,38 @@ MINUTE = 60.0
 
 @pytest.fixture
 def sweep(tmp_path, monkeypatch):
-    """Run a five-batch sweep whose manifest load and batches take the given minutes on a fake clock."""
+    """Run a five-batch sweep whose manifest load, first pass and batches take the given minutes on a fake clock.
+
+    ``first`` is the pass over every agency's dockets and documents; ``started`` lists the comment batches.
+    """
     now = [0.0]
     monkeypatch.setattr(regulations, "monotonic", lambda: now[0])
     monkeypatch.setenv("AGENCIES", "A,B,C,D,E")
 
-    def run(minutes, *, budget, load=5.0, start=0):
-        started = []
+    def run(minutes, *, budget, load=5.0, start=0, first=0.0):
+        started, firsts, begun = [], [], now[0]
 
         def load_manifest(*args, **kwargs):
             now[0] += load * MINUTE
             return Manifest.empty()
 
-        def batch(self, *, manifest):
+        def one_pass(self, *, manifest):
+            names = [record_type.name for record_type in self._record_types()]
+            if self.batch_number is None:
+                assert not started and names == ["dockets", "documents"] and self._agencies() == list("ABCDE")
+                firsts.append(now[0])
+                now[0] += first * MINUTE
+                return
+            assert firsts and names == ["comments"]
             started.append(self.batch_number)
             now[0] += minutes[self.batch_number] * MINUTE
 
         monkeypatch.setattr(Manifest, "load", load_manifest)
-        monkeypatch.setattr(RegulationsPipeline, "run", batch)
+        monkeypatch.setattr(RegulationsPipeline, "run", one_pass)
         pipeline = RegulationsPipeline(output_dir=tmp_path, batch_count=5, use_iceberg=True)
         stopped = pipeline.run_sweep(budget_minutes=budget, start_batch=start)
-        assert pipeline.batch_number is None
+        assert firsts == [begun + load * MINUTE]  # right after the manifest, before any batch
+        assert (pipeline.batch_number, pipeline.skip_comments, pipeline.only_comments) == (None, False, False)
         marker = tmp_path / regulations.SWEEP_STOPPED_NAME
         return stopped, started, marker.read_text() if marker.exists() else None, now[0] / MINUTE
 
@@ -50,6 +61,36 @@ def test_sweep_stops_before_the_batch_its_longest_batch_says_will_not_fit(sweep)
     # Starts at 5, 55 and 155 minutes. At 225 one more batch is estimated at the longest so far, 100: past 300.
     stopped, started, marker, ended = sweep([50, 100, 70, 10, 10], budget=300)
     assert (stopped, started, marker, ended) == (3, [0, 1, 2], "3\n", 225)
+
+
+def test_every_agencys_documents_come_first_and_spend_the_budget_without_raising_the_estimate(sweep):
+    """On 2026-11-10 the documents of 12 of the 15 batches still ended on 10-03, waiting behind comment batches."""
+    # The first pass runs 5-105. Batches start at 105, 155 and 205, each estimated at the 80-minute floor; the
+    # 100-minute pass is not a batch, or the third would be estimated past 300. At 255, 255 + 80 is past 300.
+    assert sweep([50, 50, 50, 50, 50], budget=300, first=100) == (3, [0, 1, 2], "3\n", 255)
+    # A first pass that leaves less than the floor starts no batch; its documents are still committed.
+    assert sweep([1, 1, 1, 1, 1], budget=300, first=220)[:3] == (0, [], "0\n")
+
+
+@pytest.mark.parametrize(
+    ("scope", "passes"),
+    [({}, [None, 0, 1]), ({"only_comments": True}, [0, 1]), ({"skip_comments": True}, [None])],
+)
+def test_only_comments_skips_the_first_pass_and_skip_comments_is_that_pass_alone(tmp_path, monkeypatch, scope,
+                                                                                 passes):
+    monkeypatch.setenv("AGENCIES", "A,B")
+    monkeypatch.setattr(Manifest, "load", lambda *a, **kw: Manifest.empty())
+    seen = []
+    monkeypatch.setattr(RegulationsPipeline, "run", lambda self, *, manifest: seen.append(
+        (self.batch_number, [record_type.name for record_type in self._record_types()])))
+    pipeline = RegulationsPipeline(output_dir=tmp_path, batch_count=2, use_iceberg=True, **scope)
+    assert pipeline.run_sweep() is None
+    assert seen == [(batch, ["dockets", "documents"] if batch is None else ["comments"]) for batch in passes]
+    assert (pipeline.skip_comments, pipeline.only_comments) == (
+        scope.get("skip_comments", False), scope.get("only_comments", False))
+    # The chunked path stages no attribute rows, so comment batches never take it.
+    with pytest.raises(ValueError, match="chunk_size"):
+        RegulationsPipeline(output_dir=tmp_path, batch_count=2, use_iceberg=True, chunk_size=10).run_sweep()
 
 
 def test_the_estimate_is_never_below_the_floor(sweep):

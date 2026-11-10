@@ -820,7 +820,8 @@ def test_sweep_reuses_manifest_and_discovers_agencies_once(tmp_output, monkeypat
     pipe = RegulationsPipeline(output_dir=tmp_output, batch_count=2, use_iceberg=True)
     pipe.run_sweep()
     assert discoveries == loads == [1]
-    assert seen == [(id(manifest), ["A", "B"]), (id(manifest), ["C"])]
+    # Every agency's dockets and documents first, then each batch's comments.
+    assert seen == [(id(manifest), ["A", "B", "C"]), (id(manifest), ["A", "B"]), (id(manifest), ["C"])]
     assert pipe.batch_number is None
 
 
@@ -832,6 +833,8 @@ def test_failed_sweep_stops_before_later_batch_can_retire_pending_keys(tmp_outpu
 
     def run(self, *, manifest):
         seen.append(self.batch_number)
+        if self.batch_number is None:  # the dockets and documents pass commits
+            return
         manifest.record(["pending"])
         raise OSError("checkpoint publication failed")
 
@@ -839,9 +842,35 @@ def test_failed_sweep_stops_before_later_batch_can_retire_pending_keys(tmp_outpu
     pipe = RegulationsPipeline(output_dir=tmp_output, batch_count=3, use_iceberg=True)
     with pytest.raises(OSError):
         pipe.run_sweep()
-    assert seen == [0]
+    assert seen == [None, 0]
     assert not (tmp_output / "manifest.parquet").exists()
     assert pipe.batch_number is None
+
+
+def test_a_sweep_commits_every_agencys_dockets_before_any_comment_batch(tmp_output, monkeypatch):
+    """The real composition: one pass stages every agency's dockets, then each batch stages its comments alone."""
+    monkeypatch.setenv("AGENCIES", "EPA,FAA")
+    store = {}
+    for agency in ("EPA", "FAA"):
+        docket, comment = f"{agency}-2026-0001", f"{agency}-2026-0001-0001"
+        store[_docket_key(docket, agency=agency)] = dumps(_docket_payload(docket, "2026-11-09", agency)).encode()
+        store[_comment_key(comment, docket, agency)] = dumps(
+            _comment_payload(comment, docket, "2026-11-09T00:00:00Z", agency)).encode()
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+    merges = []
+
+    def merge_comments(staging_dir, record_type):
+        dockets = pl.read_parquet(tmp_output / "dockets.parquet")["docket_id"].sort().to_list()
+        staged = sorted(f"{path.parent.name}/{path.name}" for name in ("dockets", "documents", "comments")
+                        for path in (staging_dir / name).glob("*.parquet"))
+        merges.append((staged, dockets))
+
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", merge_comments)
+    RegulationsPipeline(allow_fresh_start=True, output_dir=tmp_output, batch_count=2, use_iceberg=True,
+                        enrich_text=False, skip_upload=True).run_sweep()
+    both = ["EPA-2026-0001", "FAA-2026-0001"]
+    assert merges == [(["comments/EPA.parquet"], both), (["comments/FAA.parquet"], both)]
+    assert set(pl.read_parquet(tmp_output / "manifest.parquet")["key"].to_list()) == set(store)
 
 
 @pytest.mark.parametrize("defer", [False, True])

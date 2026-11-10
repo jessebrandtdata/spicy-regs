@@ -1,7 +1,9 @@
 name: ETL (new pipeline)
 
 # One process loads the processed-key manifest and discovers agencies once.
-# Each batch commits its retry checkpoints and manifest before the next starts.
+# It reads and publishes every agency's dockets and documents first, in one
+# pass; the batches then read comments only (run_sweep says why).
+# Each pass commits its retry checkpoints and manifest before the next starts.
 # A failure stops the sweep and blocks final publication; a fresh runner resumes
 # from the durable checkpoint. A scheduled sweep stops starting batches at its
 # time budget and exits cleanly, so the consumers publish the batches it

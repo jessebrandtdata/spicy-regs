@@ -179,7 +179,16 @@ class RegulationsPipeline(Pipeline):
             )
 
     def run_sweep(self, *, budget_minutes: float | None = None, start_batch: int = 0) -> int | None:
-        """Reuse membership and agency discovery; commit every batch before the next.
+        """Reuse membership and agency discovery; commit every pass before the next.
+
+        Every agency's dockets and documents come first, in one pass that publishes
+        them once; the batches then read comments only. The documents rode in the
+        comment batches, which take about 74 minutes even with 10 new keys (run
+        42769233858), so a sweep reached two or three of the 15 and on 2026-11-10
+        twelve batches' documents still ended on 10-03. The pass lists the whole
+        mirror, as the 15 batches did in 42 minutes on 2026-10-03 (run 37147050861).
+        With ``only_comments`` the first pass is skipped; with ``skip_comments`` it
+        is the whole sweep.
 
         Stop on failure: continuing with uncommitted in-memory keys could retire
         a failed batch when a later batch publishes its manifest. A fresh runner
@@ -199,8 +208,9 @@ class RegulationsPipeline(Pipeline):
         Sweeps that always began at the first batch would never reach the later ones
         while a batch that merges new comment rows takes 79.4 minutes (run 42674437011).
         """
-        if self.batch_number is not None or not self.batch_count or self.batch_count < 1 or self.full_refresh:
-            raise ValueError("A sweep requires positive batch_count, no batch_number, and no full_refresh")
+        if (self.batch_number is not None or not self.batch_count or self.batch_count < 1 or self.full_refresh
+                or self.chunk_size):
+            raise ValueError("A sweep requires positive batch_count, no batch_number, chunk_size or full_refresh")
         if not 0 <= start_batch < self.batch_count:
             raise ValueError(f"start_batch {start_batch} is outside 0..{self.batch_count - 1}")
         self._refuse_comments_without_catalog()
@@ -209,10 +219,19 @@ class RegulationsPipeline(Pipeline):
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / SWEEP_STOPPED_NAME).unlink(missing_ok=True)
         self._sweep_agencies = self._agencies()
+        scope = self.skip_comments, self.only_comments
         try:
             self.batch_number = 0
             self._agencies()  # Refuse an oversized batch before hashing the manifest.
             manifest = Manifest.load(output_dir, allow_fresh_start=self.allow_fresh_start)
+            if not self.only_comments:
+                self.batch_number, self.skip_comments = None, True
+                logger.info("ETL sweep: dockets and documents of all {} agencies", len(self._sweep_agencies))
+                self.run(manifest=manifest)
+                self.skip_comments = scope[0]
+            if self.skip_comments:
+                return None
+            self.only_comments = True
             longest = 0.0
             for batch in (*range(start_batch, self.batch_count), *range(start_batch)):
                 self.batch_number = batch
@@ -235,6 +254,7 @@ class RegulationsPipeline(Pipeline):
         finally:
             self.batch_number = None
             self._sweep_agencies = None
+            self.skip_comments, self.only_comments = scope
 
     def _run(self, manifest: Manifest) -> None:
         state_dir = self.output_dir or (Path.cwd() / "output")
@@ -618,7 +638,11 @@ def main(
         int | None,
         Parameter(help="Split the agencies into this many batches, deriving each batch's size (overrides batch-size)"),
     ] = None,
-    sweep: Annotated[bool, Parameter(help="Run every batch with one manifest; requires --batch-count")] = False,
+    sweep: Annotated[
+        bool,
+        Parameter(help="With one manifest, read every agency's dockets and documents, then each batch's comments; "
+                       "requires --batch-count"),
+    ] = False,
     sweep_budget_minutes: Annotated[
         float | None,
         Parameter(help="With --sweep: start no batch that is not expected to finish within this many minutes of "
