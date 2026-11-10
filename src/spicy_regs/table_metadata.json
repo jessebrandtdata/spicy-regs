@@ -26353,9 +26353,9 @@
     "label": "Reported candidate and committee financial profiles",
     "category": "query_data",
     "summary": "Exact source-reported money for an explicitly selected candidate and committee CSV snapshot, with visible missing dates and unresolved conflicts.",
-    "coverage": "Not a range. Designed for complete explicitly selected candidate and committee summary CSV populations in one election cycle. Actual population and publication are established by the selected generation and its retained source evidence. The date records this design statement, not a source measurement.",
+    "coverage": "Not a range. Every row of one captured pair of the FEC's 2026 candidate and committee summary CSVs, which FEC rewrites daily; captured_at and period_end say how current each profile is. Each refresh replaces the published pair; earlier pairs are in earlier generations and source evidence, not in this table. The fec-query tables keep their own, older captures. The date records this design statement, not a source measurement.",
     "kind": "not_a_range",
-    "measured_on": "2026-10-20",
+    "measured_on": "2026-11-10",
     "data_quality": null,
     "columns": [
       {
@@ -26441,12 +26441,12 @@
       {
         "column_name": "source_sha256",
         "column_type": "VARCHAR",
-        "description": "SHA-256 of the original retained CSV capture, distinct from the derived parent table."
+        "description": "SHA-256 of the original retained CSV capture the profile was mapped from."
       },
       {
         "column_name": "source_table_generation",
         "column_type": "VARCHAR",
-        "description": "Exact managed fec-query generation containing the input summary table; recorded as a generation parent."
+        "description": "Null since profiles are mapped from the captured CSV itself (source_sha256). Generations published before 2026-11 named the fec-query generation they were selected from."
       },
       {
         "column_name": "witnesses_json",

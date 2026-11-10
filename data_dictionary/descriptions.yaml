@@ -11025,10 +11025,11 @@ tables:
     - profile_id
     summary: Exact source-reported money for an explicitly selected candidate and committee CSV snapshot, with visible
       missing dates and unresolved conflicts.
-    coverage: Not a range. Designed for complete explicitly selected candidate and committee summary CSV populations
-      in one election cycle. Actual population and publication are established by the selected generation and its
-      retained source evidence. The date records this design statement, not a source measurement.
-    measured_on: '2026-10-20'
+    coverage: Not a range. Every row of one captured pair of the FEC's 2026 candidate and committee summary CSVs,
+      which FEC rewrites daily; captured_at and period_end say how current each profile is. Each refresh replaces
+      the published pair; earlier pairs are in earlier generations and source evidence, not in this table. The
+      fec-query tables keep their own, older captures. The date records this design statement, not a source measurement.
+    measured_on: '2026-11-10'
     grain: One native entity, kind, cycle and explicit snapshot scope. Equivalent witnesses select once; conflicting
       facts remain visible without choosing a winner.
     columns:
@@ -11056,9 +11057,9 @@ tables:
       captured_at: Aware timestamp of the explicitly selected original source capture. Values are only as fresh as
         this retained snapshot; no live freshness guarantee.
       source_collection_id: Exact selected candidate or committee summary CSV collection identity.
-      source_sha256: SHA-256 of the original retained CSV capture, distinct from the derived parent table.
-      source_table_generation: Exact managed fec-query generation containing the input summary table; recorded as
-        a generation parent.
+      source_sha256: SHA-256 of the original retained CSV capture the profile was mapped from.
+      source_table_generation: Null since profiles are mapped from the captured CSV itself (source_sha256). Generations
+        published before 2026-11 named the fec-query generation they were selected from.
       witnesses_json: All complete selected summary observations for this entity, including original raw measures,
         native locators, linked candidates, dates and mapping identities. Decimals serialize as exact text.
       source_url: Publisher URL recorded for the selected CSV capture; not a newly acquired source.

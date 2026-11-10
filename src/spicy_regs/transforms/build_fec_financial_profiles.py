@@ -1,36 +1,38 @@
-"""Named profiles from an explicit pair of retained FEC summary CSV snapshots.
+"""Named profiles from an explicit pair of captured FEC summary CSVs.
 
-The financial rule owns amount eligibility. This owner only groups equivalent
-witnesses and exposes unresolved conflicts; it never sums or selects a latest row.
+Each CSV is read as fec-observations reads it and mapped by the fec-query summary mapper, so a witness keeps the
+locator and record identity a rebuilt fec-query would give the same bytes. The financial rule owns amount
+eligibility. This owner only groups equivalent witnesses and exposes unresolved conflicts; it never sums or
+selects a latest row.
 """
 
 from __future__ import annotations
 
 from collections import Counter
 from contextlib import closing
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 import hashlib
 from itertools import groupby
 import json
 from pathlib import Path
 import re
+from tempfile import TemporaryDirectory
 
 import duckdb
 import pyarrow as pa
-import pyarrow.parquet as pq
 
-from spicy_regs.contract_types import described_schema
-from spicy_regs.fec_financial_rules import IDENTITY_VERSION, VALUE_MAPPING_VERSION
 from spicy_regs.parquet_rows import write_rows
-from spicy_regs.sources import publication
 from spicy_regs.transforms.fec_financial_policy import reported_summary_measure
-from spicy_regs.transforms.fec_summaries import SUMMARY_SCHEMA
+from spicy_regs.transforms.fec_query import FIRST_FEC_CYCLE, CollectionSelection
+from spicy_regs.transforms.fec_summaries import CANDIDATE_CSV, COMMITTEE_CSV, SUMMARY_SCHEMA, map_summary
 
 TABLE = "fec_financial_profiles"
 OUTPUT = TABLE + ".parquet"
-PARENT = "fec_reported_financial_summaries.parquet"
 POLICY = "fec-reported-profile-selection/1"
+LAYOUTS = {"candidate": CANDIDATE_CSV, "committee": COMMITTEE_CSV}
+#: A runaway bound on one summary CSV: the 2026 committee summary was 8.3 MB on 2026-11-10.
+MAX_SUMMARY_BYTES = 256 * 1024**2
 MEASURES = {
     "candidate": {
         "receipts": "Total_Receipt",
@@ -82,36 +84,65 @@ def json_bytes(value):
     ).encode()
 
 
-def _signature(path):
-    value = path.stat()
-    return value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns, value.st_ctime_ns
+def collection_id(kind: str, cycle: int) -> str:
+    """The collection identity fec-observations gave one cycle's summary CSV."""
+    return f"bulk-{kind}_summary_{cycle}-csv"
 
 
-def validate_selection(selection, snapshot):
-    """Bind both populations, capture facts and the exact managed parent."""
-    cycle = selection["cycle"]
-    if type(cycle) is not int or not 1976 <= cycle <= 9998 or cycle % 2:
-        raise ValueError("Profile selection requires an even FEC election cycle")
-    if not isinstance(selection["scope_id"], str) or not selection["scope_id"]:
-        raise ValueError("Profile selection requires an explicit scope identity")
-    parent = publication.table_pin(snapshot, PARENT)
-    if parent.get("family") != "fec-query" or selection["table"]["pin"] != parent:
-        raise ValueError("Profile input differs from the selected managed summary table")
-    items = selection["collections"]
-    if len(items) != 2 or {item["entity_kind"] for item in items} != set(MEASURES):
+def select(captures: list[dict]) -> dict:
+    """The selection of one candidate and one committee capture of one cycle, as ``acquire`` records them.
+
+    The scope names the cycle and the capture days, so two captures of one day share a scope and a profile
+    identity. Anything but exactly one complete capture of each kind refuses.
+    """
+    if len(captures) != 2 or {item["entity_kind"] for item in captures} != set(MEASURES):
         raise ValueError("Select exactly one candidate CSV and one committee CSV")
-    for item in items:
-        kind = item["entity_kind"]
-        if item["collection_id"] != f"bulk-{kind}_summary_{cycle}-csv":
+    cycles = {item["cycle"] for item in captures}
+    cycle = next(iter(cycles))
+    if len(cycles) != 1 or type(cycle) is not int or not FIRST_FEC_CYCLE <= cycle <= 9998 or cycle % 2:
+        raise ValueError("Profile selection requires both CSVs of one even FEC election cycle")
+    days = set()
+    for item in captures:
+        if item["collection_id"] != collection_id(item["entity_kind"], cycle):
             raise ValueError("Profile collection does not identify the declared CSV cycle")
-        if not _PIN.fullmatch(str(item["source_sha256"])):
-            raise ValueError("Profile source requires an exact digest")
-        if type(item["expected_rows"]) is not int or item["expected_rows"] < 0:
-            raise ValueError("Profile selection requires complete declared row counts")
-        captured = datetime.fromisoformat(item["captured_at"])
-        if captured.tzinfo is None or not item["source_url"].startswith("https://"):
+        if not _PIN.fullmatch(str(item["response_sha256"])) or type(item["byte_size"]) is not int:
+            raise ValueError("Profile source requires an exact digest and size")
+        observed = datetime.fromisoformat(item["observed_at"])
+        if observed.tzinfo is None or not item["request_url"].startswith("https://"):
             raise ValueError("Profile capture requires an aware time and source URL")
-    return parent
+        days.add(observed.astimezone(UTC).date().isoformat())
+    return {
+        "scope_id": f"fec-summary-csv-{cycle}-captured-" + "-and-".join(sorted(days)),
+        "cycle": cycle,
+        "captures": sorted(captures, key=lambda item: item["entity_kind"]),
+    }
+
+
+def _summaries(capture, cycle, store, selection_sha256, counts):
+    """Map each data row of one captured CSV as fec-query maps it; the header and blank rows carry no record."""
+    from spicy_docs.sources.fec.row_profile import positional_row_scope
+
+    from spicy_regs.transforms.build_fec_observations import header_mapped_records
+
+    kind, collection, digest = capture["entity_kind"], capture["collection_id"], capture["response_sha256"]
+    original = {"requestUrl": capture["request_url"], "observedAt": capture["observed_at"],
+                "responseSha256": digest, "byteSize": capture["byte_size"], "representation": "opaque"}
+    item = {
+        "collection_id": collection,
+        "source_family": "fec_summaries",
+        "profile": "positional",
+        "scope": positional_row_scope(original, format="delimited", encoding="utf-8", delimiter=",", quoting="csv",
+                                      max_decoded_bytes=MAX_SUMMARY_BYTES),
+        "field_mapping": {"header_collection_id": collection, "header_row_ordinal": 0, "data_has_header": True},
+    }
+    # The witnesses are the original's own rows, so its digest is their source pin; no evidence row is kept.
+    selection = CollectionSelection(collection, digest, digest, "official-fec", cycle, "snapshot", selection_sha256)
+    for row, named in header_mapped_records(item, store):
+        if named is None:
+            counts[collection + ":unmapped"] += 1
+            continue
+        counts[collection] += 1
+        yield map_summary(row, selection, LAYOUTS[kind])[0]
 
 
 def _coverage(row, cycle, captured_at):
@@ -141,9 +172,9 @@ def _equivalence(row, kind):
     return json_bytes({**{key: row[key] for key in fields}, "name": row[kind + "_name"]})
 
 
-def profile(rows, item, selection):
+def profile(rows, capture, selection):
     """Keep all witnesses; equal financial facts select once, conflicts select none."""
-    kind = item["entity_kind"]
+    kind = capture["entity_kind"]
     first = rows[0]
     entity_id = first[kind + "_native_id"]
     if not isinstance(entity_id, str) or not entity_id:
@@ -167,19 +198,20 @@ def profile(rows, item, selection):
         if equivalent
         else "conflicting_reported_snapshots",
         amount_basis="source_reported",
-        captured_at=item["captured_at"],
-        source_collection_id=item["collection_id"],
-        source_sha256=item["source_sha256"],
-        source_table_generation=selection["table"]["pin"]["artifactDigest"],
+        captured_at=capture["observed_at"],
+        source_collection_id=capture["collection_id"],
+        source_sha256=capture["response_sha256"],
+        # Generations selected from fec-query named its generation here; these come from the CSV itself.
+        source_table_generation=None,
         witness_count=len(rows),
         witnesses_json=json_bytes(rows).decode(),
-        source_url=item["source_url"],
+        source_url=capture["request_url"],
         publisher_profile_url=f"https://www.fec.gov/data/{kind}/{entity_id}/?cycle={selection['cycle']}",
         selection_policy=POLICY,
     )
     if selected:
         result["coverage_status"], result["coverage_reasons_json"] = _coverage(
-            selected, selection["cycle"], item["captured_at"]
+            selected, selection["cycle"], capture["observed_at"]
         )
         for field in ("period_start", "period_end"):
             for suffix in ("", "_raw", "_status"):
@@ -206,87 +238,56 @@ def profile(rows, item, selection):
     return result
 
 
-def build_profiles(selection, snapshot, destination):
-    """One bounded ordered table read; atomic output follows final membership checks."""
-    parent = validate_selection(selection, snapshot)
-    path = Path(selection["table"]["path"])
-    signature = _signature(path)
-    identity = publication.file_identity(path)
-    if identity["sha256"] != parent["sha256"] or identity["bytes"] != parent["byteSize"]:
-        raise ValueError("Profile parent bytes differ from selected digest")
-    if _signature(path) != signature:
-        raise ValueError("Profile parent changed during verification")
-    footer = pq.ParquetFile(path)
-    if not footer.schema_arrow.equals(SUMMARY_SCHEMA, check_metadata=False):
-        raise ValueError("Profile parent does not have the complete exact-value summary schema")
-    table = snapshot["families"]["fec-query"]["tables"][PARENT]
-    if (
-        footer.metadata.num_rows != table["rows"]
-        or [list(pair) for pair in described_schema(SUMMARY_SCHEMA)] != table["columns"]
-    ):
-        raise ValueError("Profile parent footer differs from declared population")
-    footer.close()
-    items = {item["collection_id"]: item for item in selection["collections"]}
+def _profiles(summaries: Path, selection, outcomes):
+    """One profile per entity of the staged summaries, read in one bounded ordered pass."""
+    captures = {item["collection_id"]: item for item in selection["captures"]}
+    # No corpus-sized Python list or spill. Sorting is bounded by DuckDB's
+    # memory refusal, and only one entity's witnesses stay in Python.
+    with duckdb.connect(config={"threads": 1, "memory_limit": "512MB", "max_temp_directory_size": "0B"}) as db:
+        reader = db.execute(
+            """SELECT * FROM read_parquet(?)
+               ORDER BY collection_id,
+                 CASE WHEN summary_type='candidate-summary-csv/1'
+                      THEN candidate_native_id ELSE committee_native_id END, record_id""",
+            [str(summaries)],
+        ).to_arrow_reader(batch_size=256)
+        try:
+            rows = (row for batch in reader for row in batch.to_pylist())
+            for (collection, _entity), group in groupby(
+                rows, key=lambda row: (row["collection_id"], row[captures[row["collection_id"]]["entity_kind"] + "_native_id"])
+            ):
+                result = profile(list(group), captures[collection], selection)
+                outcomes[result["selection_status"]] += 1
+                outcomes["witnesses"] += result["witness_count"]
+                yield result
+        finally:
+            reader.close()
+
+
+def build_profiles(selection, store, destination, *, selection_sha256):
+    """Map both captured CSVs from ``store`` into a staged summary table, then write the profiles atomically.
+
+    ``selection_sha256`` is the digest of the retained selection, recorded in every witness. The staged table
+    lives beside ``destination`` only for this call; ``destination`` is replaced only after every witness of
+    every mapped row has been written into a profile.
+    """
+    from spicy_docs.sources.fec.delimited import verified_archive_session
+
+    destination = Path(destination)
     counts, outcomes = Counter(), Counter()
-    seen = set()
+    with TemporaryDirectory(dir=destination.parent, prefix=".fec-summaries-") as scratch:
+        staged = Path(scratch) / "summaries.parquet"
+        with verified_archive_session():
+            rows = (row for capture in selection["captures"]
+                    for row in _summaries(capture, selection["cycle"], store, selection_sha256, counts))
+            write_rows(rows, staged, SUMMARY_SCHEMA, batch_size=256)
+        mapped = sum(counts[item["collection_id"]] for item in selection["captures"])
 
-    def records():
-        # No corpus-sized Python list or spill. Sorting is bounded by DuckDB's
-        # memory refusal, and only one entity's witnesses stay in Python.
-        with duckdb.connect(config={"threads": 1, "memory_limit": "512MB", "max_temp_directory_size": "0B"}) as db:
-            reader = db.execute(
-                """SELECT * FROM read_parquet(?) WHERE collection_id IN (?, ?)
-                   ORDER BY collection_id,
-                     CASE WHEN summary_type='candidate-summary-csv/1'
-                          THEN candidate_native_id ELSE committee_native_id END, record_id""",
-                [str(path), *items],
-            ).to_arrow_reader(batch_size=256)
+        def checked():
+            yield from _profiles(staged, selection, outcomes)
+            if outcomes.pop("witnesses", 0) != mapped:
+                raise ValueError("Profile witnesses differ from the mapped summary rows")
 
-            def source_rows():
-                for batch in reader:
-                    for row in batch.to_pylist():
-                        item = items[row["collection_id"]]
-                        kind = item["entity_kind"]
-                        if (
-                            row["source_sha256"] != item["source_sha256"]
-                            or row["source_cycle"] != selection["cycle"]
-                            or row["summary_type"] != kind + "-summary-csv/1"
-                            or row["value_mapping_version"] != VALUE_MAPPING_VERSION
-                            or row["identity_version"] != IDENTITY_VERSION
-                            or row["mapping_version"] != "fec-" + kind + "-summary-csv/1"
-                            or row["source_namespace"] != "fec-bulk-" + kind + "-summary-csv"
-                            or row["source_authority"] != "official-fec"
-                            or row["source_representation_role"] != "snapshot"
-                            or row["correction_operation"] != "none"
-                        ):
-                            raise ValueError("Selected profile row differs from its declared source or mapping")
-                        if row["record_id"] in seen:
-                            raise ValueError("Duplicate physical witness identity in selected profile")
-                        seen.add(row["record_id"])
-                        counts[row["collection_id"]] += 1
-                        if counts[row["collection_id"]] > item["expected_rows"]:
-                            raise ValueError("Selected profile population exceeds declaration")
-                        yield row
-
-            try:
-                for (collection, _entity), group in groupby(
-                    source_rows(),
-                    key=lambda row: (
-                        row["collection_id"],
-                        row[items[row["collection_id"]]["entity_kind"] + "_native_id"],
-                    ),
-                ):
-                    rows = list(group)
-                    result = profile(rows, items[collection], selection)
-                    outcomes[result["selection_status"]] += 1
-                    yield result
-            finally:
-                reader.close()
-        if dict(counts) != {key: item["expected_rows"] for key, item in items.items() if item["expected_rows"]}:
-            raise ValueError("Selected profile population differs from declaration")
-        if _signature(path) != signature:
-            raise ValueError("Profile parent changed during reading")
-
-    with closing(records()) as rows:
-        write_rows(rows, Path(destination), SCHEMA, batch_size=128)
+        with closing(checked()) as profiles:
+            write_rows(profiles, destination, SCHEMA, batch_size=128)
     return {"source_rows": dict(counts), "profiles": dict(outcomes), "selection_policy": POLICY}

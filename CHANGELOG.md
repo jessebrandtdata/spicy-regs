@@ -142,6 +142,16 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **`fec_financial_profiles` is built from a captured pair of FEC summary CSVs,
+  not from fec-query** (ss-coca). `build --captures` maps the candidate and
+  committee CSVs from the raw archive with the fec-query summary mapper, and the
+  dispatch-only `rollup-fec-financial-profiles.yml` does the same with the day's
+  download; the family is also published by hand (`publish-local-generation`).
+  A generation records no parent, `source_table_generation` is null, and the
+  explorer lists no input table. Rebuilt from the 2026-09-12 pair, all 18,521
+  published rows match but for those two lineage fields. The fec-query tables
+  keep their September captures, so a fresh profile can show newer totals than
+  the same committee's summary or itemized rows there.
 - **`comments` and `comments_index` publish without ETL receipts** (ss-juz8,
   part of ss-vse3). The comments family's generation has no `etl_receipts.parquet`
   and its index entry no `etlReceipts`; the generation's two tables keep their

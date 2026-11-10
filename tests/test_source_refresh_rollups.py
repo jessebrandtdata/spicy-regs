@@ -33,6 +33,7 @@ ROLLUPS = {
     "ofac_sanctions_app": rollups.OfacSanctionsRollup,
     "grants_opportunities_app": rollups.GrantsOpportunitiesRollup,
     "house_disbursements_app": rollups.HouseDisbursementsRollup,
+    "fec_financial_profiles_app": rollups.FecFinancialProfilesRollup,
 }
 
 
@@ -107,6 +108,28 @@ def test_ofac_keeps_its_exports_in_evidence_and_skips_published_ones(tmp_path, m
     assert generations(tmp_path / "unchanged") == []
     (outcome,) = (tmp_path / "unchanged").glob("source-evidence/*/run-outcome.json")
     assert json.loads(outcome.read_bytes())["outcome"] == "complete"
+
+
+def test_fec_profiles_build_from_the_days_summaries_and_skip_published_ones(tmp_path, monkeypatch):
+    from tests.test_fec_financial_profiles import candidate, committee, csv_bytes
+
+    bodies = {"candidate": csv_bytes("candidate", [candidate()]), "committee": csv_bytes("committee", [committee()])}
+    serve = httpx.MockTransport(lambda request: httpx.Response(
+        200, content=bodies[request.url.path.rsplit("/", 1)[-1].split("_")[0]], headers={"content-type": "text/csv"}))
+    monkeypatch.setattr(rollups.FecFinancialProfilesRollup, "transport", serve)
+    rollups.FecFinancialProfilesRollup(output_dir=tmp_path / "first").run()
+    generation, events = published(tmp_path / "first")
+    rows = pq.read_table(generation / "fec_financial_profiles.parquet").to_pylist()
+    assert sorted((row["entity_kind"], row["entity_id"]) for row in rows) == [
+        ("candidate", "H6CA04230"), ("committee", "C00880898")]
+    digests = {"sha256:" + hashlib.sha256(body).hexdigest() for body in bodies.values()}
+    assert {row["source_sha256"] for row in rows} == digests == {
+        event["sha256"] for event in events if event["event"] == "capture" and event.get("blob_store") == "central-raw"}
+    assert not json.loads((generation / "artifact.json").read_text())["spec"].get("parents")
+
+    publish_as_prior(monkeypatch, lambda event, fields: fields.get("stage") == "fec-summary-capture")
+    rollups.FecFinancialProfilesRollup(output_dir=tmp_path / "unchanged").run()
+    assert generations(tmp_path / "unchanged") == []
 
 
 def test_grants_takes_the_newest_export_and_skips_a_published_date(tmp_path, monkeypatch):

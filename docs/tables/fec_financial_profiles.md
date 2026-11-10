@@ -6,7 +6,7 @@
 
 Exact source-reported money for an explicitly selected candidate and committee CSV snapshot, with visible missing dates and unresolved conflicts.
 
-**Coverage.** Not a range. Designed for complete explicitly selected candidate and committee summary CSV populations in one election cycle. Actual population and publication are established by the selected generation and its retained source evidence. The date records this design statement, not a source measurement. *(measured 2026-10-20)*
+**Coverage.** Not a range. Every row of one captured pair of the FEC's 2026 candidate and committee summary CSVs, which FEC rewrites daily; captured_at and period_end say how current each profile is. Each refresh replaces the published pair; earlier pairs are in earlier generations and source evidence, not in this table. The fec-query tables keep their own, older captures. The date records this design statement, not a source measurement. *(measured 2026-11-10)*
 
 - **Parquet file:** `fec_financial_profiles.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
@@ -31,8 +31,8 @@ Exact source-reported money for an explicitly selected candidate and committee C
 | `amount_basis` | `VARCHAR` | Source_reported. Amount eligibility uses the maintained reported_summary_measure rule; no transaction-derived totals or cross-period sums. |
 | `captured_at` | `VARCHAR` | Aware timestamp of the explicitly selected original source capture. Values are only as fresh as this retained snapshot; no live freshness guarantee. |
 | `source_collection_id` | `VARCHAR` | Exact selected candidate or committee summary CSV collection identity. |
-| `source_sha256` | `VARCHAR` | SHA-256 of the original retained CSV capture, distinct from the derived parent table. |
-| `source_table_generation` | `VARCHAR` | Exact managed fec-query generation containing the input summary table; recorded as a generation parent. |
+| `source_sha256` | `VARCHAR` | SHA-256 of the original retained CSV capture the profile was mapped from. |
+| `source_table_generation` | `VARCHAR` | Null since profiles are mapped from the captured CSV itself (source_sha256). Generations published before 2026-11 named the fec-query generation they were selected from. |
 | `witnesses_json` | `VARCHAR` | All complete selected summary observations for this entity, including original raw measures, native locators, linked candidates, dates and mapping identities. Decimals serialize as exact text. |
 | `source_url` | `VARCHAR` | Publisher URL recorded for the selected CSV capture; not a newly acquired source. |
 | `publisher_profile_url` | `VARCHAR` | FEC entity-and-cycle page for navigation; its current contents may differ from this dated retained snapshot. |
