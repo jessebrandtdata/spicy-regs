@@ -29,7 +29,9 @@ def family_policies(datasets: frozenset[str] | None = None):
     from spicy_regs.legislative_documents import field_registry
     from spicy_regs.scorecards.etl import POLICIES as scorecards
     from spicy_regs.transforms.government_receipts import POLICIES as government
-    from spicy_regs.transforms.regulations_receipts import policy as regulations_policy, SOURCE_COLUMNS
+    from spicy_regs.transforms.regulations_receipts import (
+        PARENT_PINNED_SUMMARIES, SOURCE_COLUMNS, policy as regulations_policy,
+    )
     from spicy_regs.transforms.fec_identity_receipts import dataset_policy as identity_policy, REGISTRY
     from spicy_regs.transforms.fec_subject_receipts import dataset_policy as fec_policy
     from spicy_regs.transforms.fec_native_subjects import FIELD_RULES
@@ -61,7 +63,8 @@ def family_policies(datasets: frozenset[str] | None = None):
     for name in field_registry():
         add(legislative_policy(name))
     for name in SOURCE_COLUMNS:
-        add(regulations_policy(name))
+        if name not in PARENT_PINNED_SUMMARIES:
+            add(regulations_policy(name))
     for name in REGISTRY:
         add(identity_policy(name))
     declarations = json.loads((ROOT / 'data_dictionary/fec_typed_schemas.json').read_text())['tables']

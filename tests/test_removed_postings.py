@@ -94,8 +94,8 @@ def test_a_removed_posting_with_no_held_comments_subtracts_nothing(tmp_path, bui
     assert pl.read_parquet(builder(tmp_path))["comment_count"].sum() == 11
 
 
-def test_a_removed_posting_is_no_part_of_its_agencys_output_spike(tmp_path):
-    """Spike: 30 days' output at least twice the prior year's monthly mean, over at least 24 documents a year."""
+def _spike_documents(path: Path) -> pl.DataFrame:
+    """One agency's documents: 24 over the prior year (a monthly mean of 2), then 4 in the last 30 days."""
     now = datetime.now(UTC)
     documents = RECORD_TYPES["documents"]
     posted = [now - timedelta(days=60 + 14 * n) for n in range(24)] + [now - timedelta(days=5)] * 4
@@ -105,7 +105,13 @@ def test_a_removed_posting_is_no_part_of_its_agencys_output_spike(tmp_path):
         for n, day in enumerate(posted)
     ]
     frame = pl.DataFrame(rows, schema=documents.schema)
-    frame.write_parquet(tmp_path / "documents.parquet")
+    frame.write_parquet(path / "documents.parquet")
+    return frame
+
+
+def test_a_removed_posting_is_no_part_of_its_agencys_output_spike(tmp_path):
+    """Spike: 30 days' output at least twice the prior year's monthly mean, over at least 24 documents a year."""
+    frame = _spike_documents(tmp_path)
     assert pl.read_parquet(build_discovery_signals(tmp_path))["recent_30d"].to_list() == [4]
     frame.with_columns(
         publisher_status=pl.when(pl.col("document_id") == "FNA-2026-0001-0027").then(pl.lit("removed")),

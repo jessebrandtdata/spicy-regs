@@ -434,35 +434,6 @@
         ]
       },
       {
-        "dataset": "agency_monthly_volume",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code",
-          "year",
-          "month",
-          "document_type"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "agency_stats",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "agenda_item_proceedings",
         "receipt_only": false,
         "policy_version": "regulations-native-v2",
@@ -1190,19 +1161,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "discovery_signals",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {
@@ -2192,19 +2150,6 @@
         ],
         "processing_fields": [
           "selection_metadata"
-        ]
-      },
-      {
-        "dataset": "feed_summary",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "docket_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {

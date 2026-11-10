@@ -17,12 +17,6 @@
   "agency_lifecycle_stats": [
    "sha256:792a5c9b9fd3f06d081a7135c001275b1f08291fff1d8b35d14d67a402584d7c"
   ],
-  "agency_monthly_volume": [
-   "sha256:055cead8fb64b88cfb67457ef2d311fdf73902e870fd61da0c464eb779245b49"
-  ],
-  "agency_stats": [
-   "sha256:c12ae0b716b190c701be0734b32389c8056d7b602e6f0b94dd0a40646a752b6b"
-  ],
   "agenda_item_proceedings": [
    "sha256:33d6e9ea98813ce50883742ee3d8605fa11f4244ffe888a176e2b14fbd6a26f5"
   ],
@@ -180,9 +174,6 @@
   ],
   "diff_summaries": [
    "sha256:1fa6e831d66156d3aaf7dc92c89e2033b06fcd236d3db61a14eabcccc4df7e15"
-  ],
-  "discovery_signals": [
-   "sha256:a8e3de6ad51a30527a3969842ea61d80d3056ee22b68dc553690a052ff901bae"
   ],
   "docket_attributes": [
    "sha256:382ff79910596299649fdf6fa88ecfde5f537fa97214d9933a87985f747e6576"
@@ -402,9 +393,6 @@
   ],
   "federal_register_issues": [
    "sha256:bd328eb0e7d6ec49cb8e2ed0d259fc50fee2508c541ea5d17250df72b0621460"
-  ],
-  "feed_summary": [
-   "sha256:90589c5969351d5a95975a7b9999490a4c5a85efcd46f9152b0719d4e0e39490"
   ],
   "ferc_accession_files": [
    "sha256:7c1a21bd3ccb1b6b34afedeecf0f2eeb3f25892902dd821397dc671a0c9950b4"

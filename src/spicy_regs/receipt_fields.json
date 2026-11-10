@@ -38,27 +38,6 @@
     "supersedes_id": "Id of a prior row this one continues; always NULL here."
    }
   },
-  "agency_monthly_volume": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "agency_code",
-     "year",
-     "month",
-     "document_type",
-     "document_count"
-    ]
-   }
-  },
-  "agency_stats": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "agency_code",
-     "docket_count",
-     "document_count",
-     "comment_count"
-    ]
-   }
-  },
   "agenda_item_proceedings": {
    "containers": {
     "raw_conversion_inputs": [
@@ -1196,16 +1175,6 @@
     "sections_added_json": "Section headings that were added, as a JSON array.",
     "sections_removed_json": "Section headings that were removed, as a JSON array.",
     "to_source": "Which acquisition path supplied the later printing."
-   }
-  },
-  "discovery_signals": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "agency_code",
-     "recent_30d",
-     "baseline",
-     "ratio"
-    ]
    }
   },
   "docket_attributes": {
@@ -2825,21 +2794,6 @@
    ]
   },
   "federal_register_issues": {},
-  "feed_summary": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "docket_id",
-     "agency_code",
-     "title",
-     "docket_type",
-     "modify_date",
-     "abstract",
-     "comment_count",
-     "comment_end_date",
-     "date_created"
-    ]
-   }
-  },
   "ferc_accession_files": {},
   "ferc_original_files": {},
   "ferc_search_documents": {},
