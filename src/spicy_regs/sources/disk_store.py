@@ -112,6 +112,22 @@ class DiskStore:
         finally:
             temporary.unlink(missing_ok=True)
 
+    def copy_object(self, *, Bucket, Key, CopySource):
+        """A server-side copy as R2 makes one: the source's bytes and ETag, no stored SHA-256, never an overwrite."""
+        target, source = self.path(Bucket, Key), CopySource['Key']
+        self.path(CopySource['Bucket'], source)
+        with self.lock:
+            if source not in self.objects:
+                raise refused('NoSuchKey')
+            if Key in self.objects:
+                raise refused('PreconditionFailed')
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(self.objects[source], target)
+            self.objects[Key], self.etags[Key] = target, self.etags[source]
+            self.checksums.pop(Key, None)
+            self.calls.append({'method': 'copy_object', 'key': Key, 'bytes': target.stat().st_size})
+            return {}
+
     def get_paginator(self, name):
         if name != 'list_objects_v2':
             raise ValueError('Unsupported private store paginator')
