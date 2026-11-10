@@ -158,10 +158,10 @@ SPLIT = {"fixture_bill_sections.parquet": ["congress"]}
 KEYS = ["fixture_bill_sections.parquet", "fixture_congress_bills.parquet"]
 
 
-def _sections(directory, by_congress: dict[str, list[str]], **layout) -> None:
-    """Write one ``congress=<N>/part-000000.parquet`` member per congress, its rows holding that congress."""
+def _sections(directory, by_congress: dict[str, list[str]], *, part: int = 0, **layout) -> None:
+    """Write one ``congress=<N>/part-<part>.parquet`` member per congress, its rows holding that congress."""
     for congress, bills in by_congress.items():
-        path = directory / "fixture_bill_sections" / f"congress={congress}" / "part-000000.parquet"
+        path = directory / "fixture_bill_sections" / f"congress={congress}" / f"part-{part:06d}.parquet"
         path.parent.mkdir(parents=True, exist_ok=True)
         pq.write_table(pa.table({"bill_id": bills, "congress": [congress] * len(bills),
                                  "body": [f"text of {bill}" for bill in bills]}), path, **layout)
@@ -333,32 +333,42 @@ def test_a_partition_is_the_same_partition_whatever_order_its_columns_are_listed
     assert store.writes == writes
 
 
-@pytest.mark.parametrize("rows, publishes", [
-    ({"118": 1, "119": 300}, True),
-    ({"118": 301, "119": 1}, False),  # the table holds more rows than before; congress 119 lost 299 of its 300
-    ({"118": 1, "119": 299}, False),
+@pytest.mark.parametrize("parts, publishes", [
+    ({"118": [1], "119": [300]}, True),
+    ({"118": [1], "119": [150, 150]}, True),
+    ({"118": [1], "119": [250]}, False),  # more than either prior part file held, fewer than the two together
+    ({"118": [301], "119": [1]}, False),  # the table holds more rows than before; congress 119 lost 299 of its 300
+    ({"118": [1], "119": [299]}, False),
 ])
-def test_a_smaller_split_table_publishes_only_if_every_partition_kept_its_row_count(tmp_path, rows, publishes):
-    """Ticket ss-kqzz. Rows are counted per partition: the table's total can hold while one partition empties.
+def test_a_smaller_split_table_publishes_only_if_every_partition_kept_its_row_count(tmp_path, parts, publishes):
+    """Ticket ss-kqzz. Rows are counted per partition over all its part files: a table's total can hold while one
+    partition empties, and a partition's files can be merged or cut again with every row kept.
 
-    The prior is written one row per row group and the candidate in one group, so the candidate is under half the
-    prior's bytes whatever its rows (asserted), as when a writer's layout changed and no data did.
+    The prior holds congress 119 as part files of 100 and 200 rows in 16-row groups and the candidate is written
+    one group per file, so it lands between the 0.2 floor and the 0.5 ratio (asserted), where the rows decide.
     """
+    def write(directory, by_congress: dict[str, list[int]], **layout) -> None:
+        for congress, counts in by_congress.items():
+            bills = iter([f"{congress}-hr{number}" for number in range(sum(counts))])
+            for part, count in enumerate(counts):
+                _sections(directory, {congress: [next(bills) for _ in range(count)]}, part=part, **layout)
+
     store = Store()
     old, new = tmp_path / "out1", tmp_path / "out2"
-    _sections(old, {"118": ["118-hr0"], "119": [f"119-hr{n}" for n in range(300)]}, row_group_size=1)
+    write(old, {"118": [1], "119": [100, 200]}, row_group_size=16)
     first = _publish(tmp_path, store, "first", _outputs(old))
     held = first["families"]["bills"]["tables"]["fixture_bill_sections.parquet"]
     assert [(m["partition"], m["rows"]) for m in held["members"]] == [
-        ({"congress": "118"}, 1), ({"congress": "119"}, 300)]
-    _sections(new, {congress: [f"{congress}-hr{n}" for n in range(count)] for congress, count in rows.items()})
-    assert sum(path.stat().st_size for path in new.rglob("part-*.parquet")) * 2 < held["byteSize"]
+        ({"congress": "118"}, 1), ({"congress": "119"}, 100), ({"congress": "119"}, 200)]
+    write(new, parts)
+    ratio = sum(path.stat().st_size for path in new.rglob("part-*.parquet")) / held["byteSize"]
+    assert 0.2 < ratio < 0.5  # measured 0.346, 0.406, 0.304, 0.347 and 0.345
     if publishes:
         second = _publish(tmp_path, store, "second", _outputs(new), prior=first)
         table = second["families"]["bills"]["tables"]["fixture_bill_sections.parquet"]
-        assert (table["rows"], [m["rows"] for m in table["members"]]) == (301, [1, 300])
+        assert (table["rows"], [m["rows"] for m in table["members"]]) == (301, [1, *parts["119"]])
         return
-    with pytest.raises(RuntimeError, match="shrink"):
+    with pytest.raises(RuntimeError, match=r"< threshold 0\.5\)\."):
         _publish(tmp_path, store, "second", _outputs(new), prior=first)
 
 
