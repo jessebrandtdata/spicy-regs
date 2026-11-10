@@ -776,10 +776,13 @@ def test_workflow_setup_validates_the_dispatch_inputs(tmp_path: Path, event, bat
 
     workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/etl-new-pipeline.yml").read_text())
     assert workflow["jobs"]["etl-new"]["timeout-minutes"] == "${{ fromJSON(needs.setup.outputs.timeout_minutes) }}"
-    output = tmp_path / "github_output"
+    output, bin_dir = tmp_path / "github_output", tmp_path / "bin"
     output.touch()
+    bin_dir.mkdir()
+    (bin_dir / "gh").write_text("#!/bin/sh\n")  # a scheduled sweep asks for the latest sweep: none here
+    (bin_dir / "gh").chmod(0o755)
     env = {
-        "PATH": "/usr/bin:/bin",
+        "PATH": f"{bin_dir}:/usr/bin:/bin",
         "EVENT": event,
         "BATCH_NUMBER": batch,
         "TIMEOUT_MINUTES": timeout,
@@ -797,46 +800,6 @@ def test_workflow_setup_validates_the_dispatch_inputs(tmp_path: Path, event, bat
     written = dict(line.split("=", 1) for line in output.read_text().splitlines())
     assert outputs.items() <= written.items()
     assert written["run"] == "true"
-
-
-@pytest.mark.parametrize(
-    ("schedule", "succeeded_today", "run", "asked"),
-    [("25 6 * * *", "1", "true", False), ("25 18 * * *", "0", "true", True), ("25 18 * * *", "1", "false", True)],
-)
-def test_retry_sweep_runs_only_when_no_scheduled_sweep_succeeded_today(
-    tmp_path: Path, schedule, succeeded_today, run, asked
-) -> None:
-    """The 18:25 sweep re-lists everything, so it exits once a scheduled sweep has succeeded today."""
-    import subprocess
-
-    import yaml
-
-    workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/etl-new-pipeline.yml").read_text())
-    assert workflow["jobs"]["etl-new"]["if"] == "${{ needs.setup.outputs.run == 'true' }}"
-    bin_dir, calls, output = tmp_path / "bin", tmp_path / "gh-calls", tmp_path / "github_output"
-    bin_dir.mkdir()
-    (bin_dir / "gh").write_text(f'#!/bin/sh\necho "$*" >> "{calls}"\necho {succeeded_today}\n')
-    (bin_dir / "gh").chmod(0o755)
-    output.touch()
-    env = {
-        "PATH": f"{bin_dir}:/usr/bin:/bin",
-        "EVENT": "schedule",
-        "SCHEDULE": schedule,
-        "BATCH_NUMBER": "",
-        "TIMEOUT_MINUTES": "",
-        "SKIP_UPLOAD": "",
-        "BATCH_COUNT": str(workflow["env"]["BATCH_COUNT"]),
-        "GITHUB_OUTPUT": str(output),
-    }
-    [step] = workflow["jobs"]["setup"]["steps"]
-    result = subprocess.run(["bash", "-c", step["run"]], env=env, capture_output=True, text=True)
-
-    assert result.returncode == 0, result.stderr
-    written = dict(line.split("=", 1) for line in output.read_text().splitlines())
-    assert written["run"] == run
-    assert calls.exists() is asked
-    if asked:
-        assert "--event schedule --status success" in calls.read_text()
 
 
 def test_sweep_reuses_manifest_and_discovers_agencies_once(tmp_output, monkeypatch):

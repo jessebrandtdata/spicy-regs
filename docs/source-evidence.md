@@ -94,8 +94,12 @@ derived again on every row each run, with no request: `detail_read` from the
 old list marker, the RIN columns and `nominations.is_civilian`.
 
 Before publishing a table pointer, the publisher requires the exact admitted
-audit input and re-admits it from storage. Missing, altered or failed evidence
-blocks publication.
+audit input and admits it again: the root, manifest and journal from storage,
+and each blob from the local bytes that storage was shown to hold (below).
+Evidence that failed, or that is missing or altered when it is checked, blocks
+publication. A blob removed or replaced after its own check is not seen.
+
+## Stored blobs
 
 The artifact root, member manifest and journal are stored under
 `source-evidence/<artifact-digest>/`. Each blob member `blobs/sha256/<hex>` is
@@ -108,16 +112,49 @@ artifact's digest prefix, then admit it with the input's expected pin.
 Artifacts published before September 25, 2026 keep their blobs under their own
 prefix and stay readable there.
 
-A blob is created only from bytes whose SHA-256 equals its key, with
-Content-MD5 on every request and a create-only condition, and admission reads
-it back once. A blob that already exists is not downloaded again when its
-stored size and ETag equal those of the locally admitted bytes; rulespec then
-admits the artifact over those local bytes. Any other existing object is read
-back and refused unless its bytes match. This check cannot see a same-size
-replacement that also reproduces the MD5-based ETag, storage corruption that
-leaves the ETag unchanged, or a replacement between the check and a later
-reader's download. The shared prefix must be written only by this publisher.
-A full audit can still read every blob and admit it.
+Each blob is checked once, when it is written, on one of eight workers:
+
+| Blob | Requests | Stored bytes read |
+| --- | --- | --- |
+| Absent | HEAD, create-only PUT (multipart above 64 MiB), GET | All, once, right after its own PUT |
+| Present, stored size and ETag equal the local bytes | HEAD | None |
+| Present with another identity, or created first by another writer or by this publisher's retried request | HEAD, GET (after a refused PUT in the second case) | All, once |
+
+A blob is created only from a buffer that was read once and whose SHA-256
+equals its key. The request is create-only, so an existing object is never
+overwritten, and carries that buffer's Content-MD5 and the SDK's CRC32 trailer,
+so storage refuses a body damaged in transit. A read-back holds the stored
+bytes to the member's size and SHA-256. Rulespec then admits the artifact,
+hashing the local copy of each blob shown equal. A blob whose read-back
+differed or found nothing is streamed from storage by that admission, which
+refuses the artifact.
+
+The publisher logs how many creations storage answered with the sent buffer's
+MD5 as the ETag. It does not rely on that answer: that an ETag describes what
+storage kept is an assumption that would fail silently, and a read does not
+need it.
+
+| Fault | Outcome |
+| --- | --- |
+| Body damaged or cut short in transit | Refused at the write |
+| Storage kept other bytes than it was sent | Refused: the read-back differs |
+| Another object already at the key | Never overwritten; refused unless its bytes match |
+| Blob gone when its read-back follows its write | Refused |
+| Blob removed, replaced or decayed after its read-back | Not seen |
+| Already-stored blob replaced by bytes with the same size and MD5-based ETag, or damaged with its ETag kept | Not seen |
+
+Until November 2026 the read-back ran inside admission, one blob at a time,
+after every blob of the artifact had been sent: 104 of the 130 minutes that
+each 20,000 new Mirrulations originals took in run 42674437011, with up to
+20,000 blobs unread if the run died. Read-backs now leave at most eight unread.
+
+The shared prefix must be written only by this publisher. The generation audit
+(`spicy_regs.generation_audit`) reads and admits the evidence a table generation
+cites. No table cites the `regulations-mirrulations` originals, no audit reads
+them, and scheduled runs delete the runner copy once R2 admits it, so the
+read-back at the write is the only check of those stored bytes.
+
+## Run audit and input proofs
 
 The reusable workflow always uploads `output/source-evidence/` with the run
 audit, on success and failure. The directory is outside hidden `.builds/`
