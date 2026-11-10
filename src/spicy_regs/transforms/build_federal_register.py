@@ -49,6 +49,10 @@ OUTPUT = "federal_register.parquet"
 #: The column naming the retained API page a row was last read from; appended after the contract's columns.
 POINTER = "source_sha256"
 
+#: Rows per row group of the published table, as the receipt writer left it (507 groups for 1,012,333 rows on
+#: 2026-11-09): readers fetch by range, so the layout is part of what is published.
+ROW_GROUP_ROWS = 2000
+
 # The oldest documents the API serves. A backfill with no prior table starts here.
 FR_EPOCH = date(1994, 1, 1)
 
@@ -181,6 +185,7 @@ def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=
             return body
 
         window = None
+        pages = []
         for page in federal_register.iter_federal_register_pages(retained_fetch, query_scope=scope, traversals=1):
             response = federal_register.parse_page_response(page.response_bytes)
             digest = "sha256:" + hashlib.sha256(page.response_bytes).hexdigest()
@@ -192,10 +197,16 @@ def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=
             # A later page's key is the source's next_page_url, which is not a window request and does not parse as one.
             if page.window_page_index == 0:
                 window = federal_register.federal_register_request_window(page.request_key)
-            if not federal_register.federal_register_records_included(response, query_scope=scope, page_window=window):
+            included = federal_register.federal_register_records_included(response, query_scope=scope,
+                                                                          page_window=window)
+            # Each page by the digest its rows point at (source_sha256); a capped probe's records are its halves'.
+            pages.append({"sha256": digest, "records": len(response["results"]) if included else 0})
+            if not included:
                 continue
             for document in response["results"]:
                 yield digest, document
+        evidence.event("federal-register-pages", requested_from=scope["publishedFrom"],
+                       requested_through=scope["publishedThrough"], pages=pages)
 
 
 def build_federal_register(
@@ -332,4 +343,95 @@ def build_federal_register(
 
     total = pq.ParquetFile(out_file).metadata.num_rows
     logger.info("Federal Register: {:,} rows", total)
+    return out_file
+
+
+def published_prior(key: str, path: Path) -> bool:
+    """Download the table the captured index pins for ``key``; ``False`` when no family publishes it.
+
+    Never a bare-key object: the receipt route read only selected generations, and so does this one.
+    """
+    from os import getenv
+
+    from spicy_regs.sources import publication
+
+    public_url = getenv("R2_PUBLIC_URL")
+    if not public_url or publication.table_owner(publication.current_index(public_url), key) is None:
+        return False
+    return r2.download(key, path)
+
+
+def merge_federal_register(
+    output_dir: Path,
+    *,
+    since: date | None = None,
+    documents: Callable[[date], Iterable[dict]] | None = None,
+    download_prior: Callable[[str, Path], bool] = published_prior,
+    evidence=None,
+) -> Path:
+    """The published table: this run's observations, mapped once, over the pinned prior public table (ss-vse3).
+
+    ``build_federal_register`` reads and checks the run's documents; they are mapped to the published columns
+    here (``regulations_shape``) and replace the prior table's rows of the same ``(document_number,
+    publication_date)``. Every other prior row is carried as published, never read back through a receipt or
+    rewritten one row at a time: on 2026-11-09 that restore and rewrite were 1,542 of the job's 1,764 s for 233
+    changed rows. Order is the table's: date descending, then number; row groups stay at ``ROW_GROUP_ROWS``.
+
+    A prior that is not exactly the published schema (one published before the promoted columns) is refused: carrying
+    it would publish NULL for values only its receipts hold. The merge is checked by count, one row per key and
+    every prior key kept, and the counts go to the run's journal beside the pages it read.
+    """
+    import duckdb
+
+    from spicy_regs.transforms.regulations_shape import IDENTITIES, shape_records, subject_schema
+
+    schema = subject_schema("federal_register")
+    key = ", ".join(IDENTITIES["federal_register"])
+    prior, out_file = output_dir / "_fr_published.parquet", output_dir / OUTPUT
+    have_prior = prior.exists() or download_prior(OUTPUT, prior)
+    if not have_prior and out_file.exists():
+        # A local run beside the table it last built: that table is its prior.
+        out_file.replace(prior)
+        have_prior = True
+    if have_prior and not pq.read_schema(prior).equals(schema, check_metadata=False):
+        raise ValueError(
+            "The published federal_register is not the table this route merges into (it lacks the columns its "
+            "receipts held, or a type differs): publish the generation that fills them before merging at the "
+            "public table")
+    if since is None:
+        prior_max = _prior_max_publication_date(prior) if have_prior else None
+        since = (prior_max - timedelta(days=OVERLAP_DAYS)) if prior_max else FR_EPOCH
+    # The night's observations alone (no prior to merge), moved off the table's name before the merge writes it.
+    observed = build_federal_register(output_dir, since=since, documents=documents,
+                                      download_prior=lambda *_: False, evidence=evidence
+                                      ).replace(output_dir / "_fr_observed.parquet")
+    fresh = pa.concat_tables(
+        [pa.Table.from_pylist(shape_records("federal_register", batch.to_pylist()), schema=schema)
+         for batch in pq.ParquetFile(observed).iter_batches(batch_size=5000)] or [schema.empty_table()])
+    names = ", ".join(f'"{name}"' for name in schema.names)
+    merged = output_dir / "_fr_merged.parquet"
+    with duckdb.connect() as con:
+        con.execute("SET memory_limit='4GB'")
+        con.execute("SET threads=2")
+        con.register("fresh", fresh)
+        carried = (f" UNION ALL BY NAME SELECT {names} FROM read_parquet('{prior}') ANTI JOIN fresh USING ({key})"
+                   if have_prior else "")
+        rows = con.execute(f"SELECT {names} FROM fresh{carried} ORDER BY publication_date DESC, document_number")
+        with pq.ParquetWriter(merged, schema, compression="zstd") as writer:
+            for batch in rows.to_arrow_reader(50_000):
+                writer.write_table(pa.Table.from_batches([batch]).cast(schema), row_group_size=ROW_GROUP_ROWS)
+        [(total, keys)] = con.execute(f"SELECT count(*), count(DISTINCT ({key})) FROM read_parquet('{merged}')"
+                                      ).fetchall()
+        prior_rows = pq.ParquetFile(prior).metadata.num_rows if have_prior else 0
+        [(added,)] = (con.execute(f"SELECT count(*) FROM fresh ANTI JOIN read_parquet('{prior}') USING ({key})")
+                      .fetchall() if have_prior else [(fresh.num_rows,)])
+    counts = {"prior_rows": prior_rows, "read_rows": fresh.num_rows, "new_rows": added, "rows": total}
+    if total != keys or total != prior_rows + added:
+        raise ValueError(f"Federal Register merge lost or repeated a record: {counts}, {keys} keys")
+    merged.replace(out_file)
+    for scratch in (prior, observed):
+        scratch.unlink(missing_ok=True)
+    if evidence is not None:
+        evidence.event("federal-register-merge", **counts)
+    logger.info("Federal Register: {:,} rows ({:,} read, {:,} new)", total, fresh.num_rows, added)
     return out_file

@@ -345,7 +345,7 @@ tables:
       document_count: "Number of documents the agency posted of that type in that month."
 
   fr_docket_links:
-    grain: "One row per document–docket pair a dated Federal Register record states. Native receipt identity uses document_number, publication_date, literal docket_id and docket_source_ordinal: printed-array positions keep repeated labels distinct; the ordinal is NULL for a regulations.gov-only link, whose docket_id distinguishes the relationship. link_source is not part of the identity."
+    grain: "One row per document–docket pair a dated Federal Register record states. Its row identity is document_number, publication_date, literal docket_id and docket_source_ordinal: printed-array positions keep repeated labels distinct; the ordinal is NULL for a regulations.gov-only link, whose docket_id distinguishes the relationship. link_source is not part of the identity."
     label: "Federal Register to docket links"
     subject: rulemaking
     coverage: >-

@@ -163,6 +163,19 @@ Entries link to the pull request that introduced the change.
   structs, in the same position, every other column unchanged. A reader of
   those files that parses `attachments_json` must read `attachments` instead.
 
+- **The Federal Register and its docket links publish no per-row receipts**
+  (ss-vse3, step 3). The Register job maps the night's documents once and
+  merges them into the pinned published table in DuckDB (fresh wins on
+  number and date, every other row carried as published, 2,000-row groups as
+  before); the links rebuild from that table straight into their published
+  columns. Both installed policies are marked `receipts_retired`;
+  `docs/pins/receipt-archive.json` keeps the last receipts generation of
+  each. The journal gains `federal-register-pages` (each page's SHA-256 and
+  record count) and `federal-register-merge` (prior, read, new and total
+  rows). A prior published before the promoted columns is refused. Both jobs
+  time out at 30 minutes (a re-read keeps 240). Merge after step 1's first
+  hosted night is verified.
+
 - **`federal_register` and `fr_docket_links` publish the fields their receipts
   held** (ss-vse3, step 1 of moving both tables off per-row receipts).
   `federal_register` gains, as its last columns, `html_url`, `pdf_url`,

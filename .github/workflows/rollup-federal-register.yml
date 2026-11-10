@@ -24,8 +24,11 @@ jobs:
       producer_ref: main
       skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
       fr_since: ${{ inputs.since || '' }}
-      # Native priors also require complete retained restoration during a daily resume.
-      timeout_minutes: ${{ inputs.since && 240 || 180 }}
+      # No receipts since ss-vse3 step 3: a night downloads the pinned table (~220 MB), reads ~9,000 documents
+      # and merges natively, about 2 of the 45.7 minutes the receipt route took (2026-11-09 timers). 30 keeps a
+      # wide margin over setup and upload and stops a hang 150 minutes sooner. A re-read (`since`) maps every
+      # document it fetches in Python, up to the whole million rows, so it keeps 240.
+      timeout_minutes: ${{ inputs.since && 240 || 30 }}
 
   docket-links:
     needs: run
@@ -35,4 +38,5 @@ jobs:
     with:
       command: run-rollup-fr-docket-links
       producer_ref: main
-      timeout_minutes: 180
+      # Rebuilt whole from the pinned Register table in DuckDB, no receipts (ss-vse3 step 3).
+      timeout_minutes: 30

@@ -186,34 +186,29 @@ def test_a_retired_parent_is_selected_as_its_pinned_public_table(tmp_path, monke
     assert subject.read_bytes() == REGISTER.read_bytes()
 
 
-def test_a_receipt_route_consumer_reads_a_retired_parent_and_builds_the_same_table(tmp_path, monkeypatch, retire):
-    """Consumers and parents switch in either order: the docket links, still on receipts and declaring no published
-    input, read a retired Register table through ``SelectedPriors`` (its regulations reader) and publish the links
-    the receipt route published from the Register's receipts. Nothing of the Register's receipts exists to read."""
-    from spicy_regs.pipelines.rollups.fr_docket_links import FrDocketLinksRollup
+def test_a_receipt_route_reader_gets_a_retired_parent_as_its_mapper_reads_it(tmp_path, monkeypatch, retire):
+    """Consumers and parents switch in either order: a reader still on receipts (``SelectedPriors``, which every
+    receipt rollup's inputs and soft inputs go through) gets a retired Register table as the regulations builders read
+    their input, bound to the table alone. (Until step 3 the docket links were such a consumer, and published from it
+    exactly the links the receipt route published; they are a plain rollup now.)"""
     from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
-    from spicy_regs.receipt_switch import receipt_files, table_differences
+    from spicy_regs.receipt_switch import table_differences
+    from spicy_regs.transforms.regulations_shape import published_as_source
 
-    fixture = REGISTER.parents[1]
     root = tmp_path / "output"
     root.mkdir()
     (root / "federal_register.parquet").write_bytes(REGISTER.read_bytes())  # the plain rollup's local table
     retire("federal_register")
     monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
-    monkeypatch.setattr(FrDocketLinksRollup, "published_inputs", ())
     prior = SelectedPriors(tmp_path / "probe", root=root, public_url="")
     restored = prior.get("federal_register")
     assert prior.selections["federal_register"][1:] == (None, None)
     assert "docket_ids_json" in pq.read_schema(restored).names  # the builder's text shape, not the native lists
-    FrDocketLinksRollup(output_dir=root).run()
-    [generation] = list((root / "generations").iterdir())
-    assert table_differences(generation / "fr_docket_links.parquet", fixture / "expected/links-night-1.parquet",
-                             key=("docket_id", "document_number", "publication_date")) == []
-    parents = json.loads((generation / "artifact.json").read_text())["spec"]["parents"]
-    assert parents["federal_register/subjects/0.parquet"]["sha256"] == "sha256:" + hashlib.sha256(
-        REGISTER.read_bytes()).hexdigest()
-    assert not any(name.startswith("federal_register/etl_receipts") for name in parents)
-    assert [path.name for path in receipt_files(root) if "federal_register" in str(path)] == []
+    expected = published_as_source("federal_register", REGISTER, tmp_path / "expected.parquet")
+    assert table_differences(restored, expected, key=("document_number", "publication_date")) == []
+    binding = prior.input_provenance("federal_register")
+    assert binding["receipts"] is None and binding["subjects"] == [{"sha256": "sha256:" + hashlib.sha256(
+        REGISTER.read_bytes()).hexdigest(), "byteSize": REGISTER.stat().st_size}]
 
 
 def test_a_retired_parent_without_a_reader_for_its_mapper_refuses_by_name(tmp_path, retire):

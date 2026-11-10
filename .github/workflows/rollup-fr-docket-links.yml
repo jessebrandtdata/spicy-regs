@@ -16,5 +16,6 @@ jobs:
     with:
       command: run-rollup-fr-docket-links
       producer_ref: main
-      timeout_minutes: 180
+      # Rebuilt whole from the pinned Register table in DuckDB, no receipts (ss-vse3 step 3).
+      timeout_minutes: 30
       skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}

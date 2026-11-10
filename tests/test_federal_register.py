@@ -17,7 +17,7 @@ import pytest
 
 from spicy_docs.schemas.federal_register import FEDERAL_REGISTER_COLUMNS, project_federal_register_document
 
-from spicy_regs.transforms.build_federal_register import build_federal_register, published_columns
+from spicy_regs.transforms.build_federal_register import build_federal_register, merge_federal_register, published_columns
 
 COLUMNS = published_columns()
 
@@ -285,7 +285,8 @@ def _links(tmp_path, records):
 
     from spicy_regs.transforms.build_fr_docket_links import build_fr_docket_links
 
-    build_federal_register(tmp_path, documents=lambda start: iter(records), download_prior=lambda k, p: False)
+    # The links read the Register's published (merged, native) table, as the plain route gives it them.
+    merge_federal_register(tmp_path, documents=lambda start: iter(records), download_prior=lambda k, p: False)
     return pq.read_table(build_fr_docket_links(tmp_path)).to_pylist()
 
 
@@ -312,19 +313,22 @@ def test_each_document_docket_pair_is_one_row_that_says_which_statement_carries_
         ("E8-4997", "FRL-8541-7", 1, "printed"),
     ]
     fna = next(r for r in rows if r["docket_id"] == "FNA-2026-0034")
-    assert (fna["publication_date"], fna["normalized_docket_candidates_json"]) == ("2026-06-24", '["FNA-2026-0034"]')
+    assert (fna["publication_date"], fna["normalized_docket_candidates"]) == ("2026-06-24", ["FNA-2026-0034"])
 
 
 def test_a_register_table_read_before_the_link_was_requested_links_its_printed_labels_only(tmp_path):
     """A held row whose regulations_dot_gov_info is NULL (not read) adds no row: absence of a read is not a link."""
+    import pyarrow as pa
     import pyarrow.parquet as pq
 
     from spicy_regs.transforms.build_fr_docket_links import build_fr_docket_links
 
-    build_federal_register(tmp_path, documents=lambda start: iter(_linked_records()), download_prior=lambda k, p: False)
+    merge_federal_register(tmp_path, documents=lambda start: iter(_linked_records()), download_prior=lambda k, p: False)
     table = pq.read_table(tmp_path / "federal_register.parquet")
-    pq.write_table(table.drop_columns([c for c in table.column_names if c.startswith("regulations_dot_gov")]),
-                   tmp_path / "federal_register.parquet")
+    for name in [c for c in table.column_names if c.startswith("regulations_dot_gov")]:
+        at = table.schema.get_field_index(name)
+        table = table.set_column(at, table.schema.field(at), pa.nulls(table.num_rows, table.schema.field(at).type))
+    pq.write_table(table, tmp_path / "federal_register.parquet")
     rows = pq.read_table(build_fr_docket_links(tmp_path)).to_pylist()
     assert {r["link_source"] for r in rows} == {"printed"} and len(rows) == 10
 
