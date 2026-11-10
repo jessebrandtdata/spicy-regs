@@ -39,7 +39,9 @@ rehearsal build from being published:
 - they refuse evidence whose `source-archive.json` pointer is missing or names
   another archive than the shared one;
 - they refuse when any original the evidence journal cites is absent from the
-  shared archive, whatever the pointer says.
+  shared archive, whatever the pointer says. An original is a capture or a file
+  retained with `raw_source=True`; a selection, manifest, receipt or normalized
+  input the build wrote for itself is published with its evidence instead.
 
 The last check is by name: it does not re-hash the originals, and it cannot
 tell a scratch build from a real one once the same originals have also been

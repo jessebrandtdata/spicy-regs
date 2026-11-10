@@ -112,6 +112,18 @@ def without_local_paths(value):
     return value
 
 
+def is_original(event: dict) -> bool:
+    """Whether a journal event records a publisher original rather than a file the build made for itself.
+
+    A capture is an original. A retained file is one only when ``raw_source=True`` sent its bytes to the central
+    raw archive, which the event records as ``blob_store: central-raw``; selections, manifests, receipts and
+    normalized inputs stay with their evidence. The marker is as old as the archive pointer
+    (``ARCHIVE_REFERENCE``), so every journal beside a pointer states it.
+    """
+    return event.get("event") == "capture" or (
+        event.get("event") == "retained-file" and event.get("blob_store") == "central-raw")
+
+
 class SourceEvidenceError(RuntimeError):
     """Source retention failed; never turn this into a skippable source refusal."""
 

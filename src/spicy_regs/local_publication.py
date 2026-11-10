@@ -19,7 +19,7 @@ from tempfile import TemporaryDirectory
 
 from spicy_regs.catalog_refresh_request import REQUEST_ENV
 from spicy_regs.generations import implementation_id
-from spicy_regs.source_evidence import ARCHIVE_REFERENCE, INPUT_ROLE, JOURNAL
+from spicy_regs.source_evidence import ARCHIVE_REFERENCE, INPUT_ROLE, JOURNAL, is_original
 from spicy_regs.sources import publication, r2
 from spicy_regs.sources.publication import PublicationError
 
@@ -59,11 +59,15 @@ def _require_prior(live: dict | None, expected: str | None, family: str) -> None
 
 
 def _cited_originals(evidence: Path) -> set[str]:
-    """The digest of every original an evidence journal says the build read or downloaded."""
+    """The digest of every publisher original an evidence journal says the build read or downloaded.
+
+    Files the build wrote for itself (a selection, a manifest, a normalized input) are published with the
+    evidence, not kept in the raw archive, so they are not asked of it.
+    """
     cited = set()
     for line in (evidence / JOURNAL).read_text().splitlines():
         event = json.loads(line)
-        if event["event"] in ("capture", "retained-file") and event.get("sha256"):
+        if is_original(event) and event.get("sha256"):
             cited.add(event["sha256"])
     return cited
 
