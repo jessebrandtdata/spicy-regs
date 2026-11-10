@@ -6,7 +6,9 @@ the only complete copy of them, so ``docs/pins/receipt-archive.json`` cites it, 
 Nothing fails if that pin is missing or a docs edit drops its digest, except this test.
 """
 
+import gzip
 import json
+from pathlib import Path
 
 import pytest
 
@@ -28,6 +30,32 @@ def _document(archives):
 def test_every_retired_table_has_an_archive_pin_and_every_pin_a_retired_table():
     subject_catalog.retired_receipt_datasets.cache_clear()
     assert set(retention.receipt_archive_pins()) == subject_catalog.retired_receipt_datasets()
+
+
+#: Each pinned generation's own root (artifact.json, gzipped, fetched once from the public bucket when it was pinned).
+ROOTS = Path(__file__).parent / "fixtures/receipt_archive"
+
+
+def test_each_pin_names_a_generation_that_holds_that_tables_receipts():
+    """Checked against the pinned generation's own root, not against the pin file: the root's digest is recomputed
+    from its content, so a pin edited to any other generation finds no root of that digest, or one that does not
+    state receipts for the table.
+
+    What it cannot see: that the bucket still holds that generation (retention deletes members it does not keep), and
+    that it is the family's last generation with receipts (publication checks that when they are dropped).
+    """
+    from rulespec_artifacts import expected_artifact_digest, parse_canonical_json
+
+    for dataset, pin in retention.receipt_archive_pins().items():
+        digest = pin["artifactDigest"]
+        path = ROOTS / (digest.removeprefix("sha256:") + ".json.gz")
+        assert path.is_file(), f"{dataset}: commit the pinned generation's artifact.json as {path.name}"
+        root = parse_canonical_json(gzip.decompress(path.read_bytes()))
+        assert expected_artifact_digest(root) == digest, dataset
+        receipts = root["spec"]["etlReceipts"]
+        assert root["spec"]["family"] == pin["family"], dataset
+        assert dataset in [policy["dataset"] for policy in receipts["policies"]], dataset
+        assert pin["receipts"] == f"generations/{pin['family']}/{digest.removeprefix('sha256:')}/{receipts['key']}"
 
 
 def test_retention_keeps_every_pinned_generation():

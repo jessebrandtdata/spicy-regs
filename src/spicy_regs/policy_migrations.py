@@ -154,15 +154,13 @@ def unreadable_shipped_policies(installed: Mapping | None = None, migrations: Ma
     replay-required entry has no code that replays it.
     """
     from spicy_regs.etl_policy_registry import installed_policies
-    from spicy_regs.subject_catalog import retired_receipt_datasets
 
     installed = installed_policies() if installed is None else installed
     migrations = ledger() if migrations is None else migrations
     problems = []
+    # A table whose receipts are retired is checked too: the change that marks it may promote columns as well, and
+    # its last night on receipts reads its prior under the new policy.
     for name, policy in sorted(installed.items()):
-        if name in retired_receipt_datasets():
-            # No prior of a retired table is read through receipts again; its entry stays as the record of them.
-            continue
         entry = migrations.get(name, {})
         current = descriptor_digest(policy)
         if entry.get("installed") != current:

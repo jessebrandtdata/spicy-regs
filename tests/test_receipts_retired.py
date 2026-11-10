@@ -3,6 +3,9 @@
 The marker (``subject_catalog.RECEIPTS_RETIRED``) sits beside the table's descriptor in its installed policy file, so
 retiring moves no policy version and no ledger entry. These tests mark (or unmark) a table by patching the one
 function every reader asks (``subject_catalog.retired_receipt_datasets``).
+Which tables the installed files mark is held in one place: tests/test_receipt_archive_pins.py requires the marked
+tables to equal the pinned ones, each pin checked against its generation's own root, so a table marked by accident
+(no pin) fails there and a family's switch edits no test here.
 """
 
 import copy
@@ -23,16 +26,12 @@ REGISTER = Path(__file__).parent / "fixtures/federal_register_switch/expected/ni
 
 @pytest.fixture
 def retire(monkeypatch):
-    """Mark tables retired for one test, as their installed files would."""
+    """Start from no table retired, then mark the ones a test names, as their installed files would: a family's
+    switch changes the installed marks and none of these tests."""
     def mark(*names):
         monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset(names))
+    mark()
     return mark
-
-
-def test_the_installed_files_retire_exactly_the_switched_tables():
-    """Comments and their index left receipts first (ss-juz8): the mirror publishes the catalog table alone."""
-    subject_catalog.retired_receipt_datasets.cache_clear()
-    assert subject_catalog.retired_receipt_datasets() == frozenset({"comments", "comments_index"})
 
 
 def test_the_marker_is_a_tables_and_never_part_of_its_policy():
@@ -65,7 +64,8 @@ def test_admission_needs_no_receipts_for_a_retired_table_and_refuses_them(retire
         require_registered_receipts({**tables, "fr_docket_links.parquet": {}}, None)
 
 
-def test_the_ledger_guard_leaves_a_retired_tables_entry_as_the_record_of_its_receipts(retire):
+def test_the_ledger_guard_checks_a_retired_table_like_any_other(retire):
+    """A marked table's policy may still change in the commit that marks it; an unrecorded change still fails."""
     from spicy_regs.etl_policy_registry import installed_policies
 
     installed = installed_policies()
@@ -73,9 +73,8 @@ def test_the_ledger_guard_leaves_a_retired_tables_entry_as_the_record_of_its_rec
     installed["federal_register"] = replace(current, subject_schema=current.subject_schema.append(
         pa.field("added_later", pa.string())), policy_version="regulations-native-v9")
     migrations = copy.deepcopy(dict(ledger()))
-    assert [p.split(":")[0] for p in unreadable_shipped_policies(installed, migrations)] == ["federal_register"]
     retire("federal_register")
-    assert unreadable_shipped_policies(installed, migrations) == []
+    assert [p.split(":")[0] for p in unreadable_shipped_policies(installed, migrations)] == ["federal_register"]
 
 
 def test_the_generator_keeps_the_marker_its_installed_file_carries(retire):
@@ -224,5 +223,121 @@ def test_a_retired_parent_without_a_reader_for_its_mapper_refuses_by_name(tmp_pa
     root.mkdir()
     (root / "bill_cosponsors.parquet").write_bytes(REGISTER.read_bytes())
     retire("bill_cosponsors")
-    with pytest.raises(ValueError, match="bill_cosponsors: its receipts are retired and its mapper declares no reader"):
+    with pytest.raises(ValueError, match="bill_cosponsors: its receipts are retired and its mapper has no reader"):
         SelectedPriors(tmp_path / "probe", root=root, public_url="").get("bill_cosponsors")
+
+
+def pin_archive(monkeypatch, tmp_path, archives):
+    """Serve ``archives`` as docs/pins/receipt-archive.json to retention's reader, for one test."""
+    from spicy_regs import generation_retention
+
+    path = tmp_path / "receipt-archive.json"
+    path.write_text(json.dumps({"format": generation_retention.RECEIPT_ARCHIVE_FORMAT, "version": 1,
+                                "archives": archives}))
+    monkeypatch.setattr(generation_retention, "RECEIPT_ARCHIVE", path)
+
+
+def _pin(family, digest):
+    hexd = digest.removeprefix("sha256:")
+    return {"family": family, "artifactDigest": digest, "publishedAt": "2026-10-10T15:45:23Z",
+            "receipts": f"generations/{family}/{hexd}/etl_receipts.parquet"}
+
+
+@pytest.mark.parametrize("stale", [False, True], ids=["live-generation-pinned", "stale-pin"])
+def test_the_first_receipts_free_publish_needs_the_live_generation_pinned(tmp_path, monkeypatch, retire, stale):
+    """Shaped like comments on 2026-11-10: one family, two tables, both retired together, both pinned to the family's
+    live generation (the last with receipts). A pin of any other generation is refused, naming table and both
+    digests, and nothing is published."""
+    from spicy_regs import etl_policy_registry
+    from spicy_regs.etl_receipts import DatasetPolicy, ReceiptContext, combine_receipts, write_dataset
+    from spicy_regs.generations import build_generation
+    from spicy_regs.sources.publication import PublicationError, empty_index, publish_generation
+    from tests.generation_fakes import Store
+
+    store, schema = Store(), pa.schema([("id", pa.string())])
+    policies = [DatasetPolicy(name, schema, ("id",), ("held",)) for name in ("comments", "comments_index")]
+    monkeypatch.setattr(etl_policy_registry, "installed_policies", lambda: {p.dataset: p for p in policies})
+    held = ReceiptContext("build-1", "row", "test", [{"source_id": "s", "body_version": "1"}])
+    pairs = [write_dataset([({"id": "1", "held": "x"}, held)], tmp_path / p.dataset, p) for p in policies]
+    receipts = combine_receipts([receipt for _, receipt in pairs], tmp_path / "etl_receipts.parquet")
+    tables = [subject for subject, _ in pairs if subject is not None]
+    keys = [p.dataset + ".parquet" for p in policies]
+    build_generation(tmp_path / "with-receipts", family="comments", files=tables, expected_keys=keys,
+                     receipt_path=receipts, receipt_policies=policies, receipt_generation_id="build-1")
+    index = publish_generation(tmp_path / "with-receipts", client=store, bucket="b", prior_index=empty_index())
+    live = index["families"]["comments"]["artifactDigest"]
+    pinned = "sha256:" + "ab" * 32 if stale else live
+    pin_archive(monkeypatch, tmp_path, {"comments": _pin("comments", live), "comments_index": _pin("comments", pinned)})
+    retire("comments", "comments_index")
+    build_generation(tmp_path / "receipts-free", family="comments", files=tables, expected_keys=keys)
+    if stale:
+        with pytest.raises(PublicationError, match=f"comments_index leaves its receipts in comments generation {live}, "
+                                                   f"but docs/pins/receipt-archive.json pins comments {pinned}"):
+            publish_generation(tmp_path / "receipts-free", client=store, bucket="b", prior_index=index)
+        assert "etlReceipts" in store_index(store)["families"]["comments"]
+    else:
+        published = publish_generation(tmp_path / "receipts-free", client=store, bucket="b", prior_index=index)
+        assert "etlReceipts" not in published["families"]["comments"]
+
+
+def store_index(store):
+    from spicy_regs.sources import publication
+
+    return publication.parse_index(store.objects[publication.INDEX_V2_KEY])
+
+
+def test_a_retirement_cannot_be_checked_without_the_pin_file(tmp_path, monkeypatch):
+    from spicy_regs import generation_retention
+    from spicy_regs.sources.publication import PublicationError, _require_receipt_archive_pins
+
+    monkeypatch.setattr(generation_retention, "RECEIPT_ARCHIVE", tmp_path / "missing.json")
+    with pytest.raises(PublicationError, match="publish a retirement from a spicy-regs checkout"):
+        _require_receipt_archive_pins("comments", "sha256:" + "ab" * 32, {"comments"})
+
+
+def test_the_mcp_server_serves_no_legacy_meanings_for_a_retired_table(monkeypatch, retire):
+    """A family entry without receipts read as a pre-native generation; a retired table's entry has none by design."""
+    from spicy_regs import mcp_server
+
+    index = {"families": {"federal-register": {"tables": {"federal_register.parquet": {}}}}}
+    monkeypatch.setattr(mcp_server, "_connection_local_selection", lambda cursor: None)
+    monkeypatch.setattr(mcp_server, "_connection_index", lambda cursor: index)
+    entry = {"legacy_column_descriptions": {"docket_ids_json": "The pre-native spelling."}}
+    import duckdb
+
+    with duckdb.connect() as cursor:
+        retire()
+        assert mcp_server._legacy_column_meanings(cursor, "federal_register", entry) == entry[
+            "legacy_column_descriptions"]
+        retire("federal_register")
+        assert mcp_server._legacy_column_meanings(cursor, "federal_register", entry) == {}
+
+
+@pytest.mark.parametrize("path", ["restore", "base-family"])
+def test_a_regulatory_path_that_still_reads_receipts_refuses_a_retired_table_by_name(tmp_path, monkeypatch, retire,
+                                                                                    path):
+    """Not the retired route: these paths read a table's receipts, and say so instead of crashing on none."""
+    from spicy_regs.pipelines.regulatory_publication import restore_dataset
+    from spicy_regs.pipelines.rollups.regulatory_base import DocumentsFamily
+
+    monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
+    retire("documents")
+    table = pa.table({"document_id": ["D-1"], "title": ["one"]})
+    if path == "restore":
+        pq.write_table(table, tmp_path / "documents.parquet")
+        with pytest.raises(ValueError, match="documents has retired receipts; the regulatory restore still reads them"):
+            restore_dataset(tmp_path, "documents", tmp_path / "restored.parquet")
+    else:
+        (tmp_path / ".selected").mkdir()
+        pq.write_table(table, tmp_path / ".selected" / "documents.parquet")
+        with pytest.raises(ValueError, match="documents has retired receipts; the base regulatory family still reads"):
+            DocumentsFamily(output_dir=tmp_path).build(tmp_path)
+
+
+def test_a_selection_says_whose_receipts_are_retired():
+    from spicy_regs.selected_generations import SelectedDataset
+
+    held = SelectedDataset("documents", (), Path("r.parquet"), "g")
+    assert held.required_receipts("a reader") == Path("r.parquet")
+    with pytest.raises(ValueError, match="comments has retired receipts; a reader still reads them"):
+        SelectedDataset("comments", (), None, None).required_receipts("a reader")

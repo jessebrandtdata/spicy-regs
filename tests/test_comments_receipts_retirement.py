@@ -319,6 +319,15 @@ def test_a_comments_generation_leaves_receipts_once_marked_and_never_takes_them_
     with pytest.raises(ValueError, match="Registered datasets require ETL receipts"):
         publish_generation(generation, client=store, bucket="b", prior_index=prior)
     marked("comments", "comments_index")
+    # The archive pin must name the live generation (the last with receipts) before receipts may go (ss-ag1j).
+    from spicy_regs.sources.publication import PublicationError
+    from tests.test_receipts_retired import _pin, pin_archive
+
+    live = before["artifactDigest"]
+    pin_archive(monkeypatch, tmp_path, {name: _pin("comments", "sha256:" + "ab" * 32) for name in datasets_of(before)})
+    with pytest.raises(PublicationError, match=f"comments generation {live}, but docs/pins/receipt-archive.json pins"):
+        publish_generation(generation, client=store, bucket="b", prior_index=prior)
+    pin_archive(monkeypatch, tmp_path, {name: _pin("comments", live) for name in datasets_of(before)})
     retired = publish_generation(generation, client=store, bucket="b", prior_index=prior)
     after = retired["families"]["comments"]
     assert "etlReceipts" not in after
@@ -330,3 +339,7 @@ def test_a_comments_generation_leaves_receipts_once_marked_and_never_takes_them_
     assert after["tables"]["comments.parquet"]["columns"] == before["tables"]["comments.parquet"]["columns"]
     # The archive is untouched: the prior generation's receipt member is still stored under its own prefix.
     assert before["prefix"] + "/etl_receipts.parquet" in store.objects
+
+
+def datasets_of(entry):
+    return entry["etlReceipts"]["datasets"]

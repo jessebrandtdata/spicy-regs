@@ -4,7 +4,7 @@ Each family switches once: the receipt route it publishes today is replaced by a
 rows into the prior public table. Before the switch both routes build the same night from the same prior and inputs
 with upload skipped, and this module says what differs:
 
-- :func:`table_differences`: schema, row count, rows (``EXCEPT ALL`` both ways) and row order on the key;
+- :func:`table_differences`: schema, row count, rows (``EXCEPT ALL`` both ways) and row order on a unique key;
 - :func:`promoted_differences`: each promoted column against the copy the receipt route's own receipts hold;
 - :func:`receipt_free_prior`: the prior as the plain route is given it, with no receipts file to open at all;
 - :func:`receipt_files`: every receipts file a route left in its build or output.
@@ -34,11 +34,25 @@ def _literal(path: Path) -> str:
     return "'" + str(path).replace("'", "''") + "'"
 
 
+#: Receipt copies written per Arrow batch while they are read; the comparison itself runs in DuckDB.
+BATCH_ROWS = 10_000
+
+
+def _require_unique(con, relation: str, key: Sequence[str], label: str) -> None:
+    """Refuse a key that does not name one row: rows sharing it could trade places and still compare equal."""
+    columns = ", ".join(_quoted(name) for name in key)
+    [(rows, keys)] = con.sql(f"SELECT count(*), count(DISTINCT row({columns})) FROM {relation}").fetchall()
+    if rows != keys:
+        raise ValueError(f"{label}: ({', '.join(key)}) names {keys:,} of {rows:,} rows; compare on the whole row "
+                         "identity")
+
+
 def table_differences(actual: Path, expected: Path, *, key: Sequence[str]) -> list[str]:
     """What separates two Parquet tables for a reader; empty when they are the same table.
 
-    Schema (names, types, order), row count, every row both ways (``EXCEPT ALL``, so a duplicated row counts), and
-    the key of the row at every position (the order a reader paging the file sees).
+    Schema (names, types, order), row count, every row both ways (``EXCEPT ALL``), and the key of the row at every
+    position (the order a reader paging the file sees). ``key`` must name one row in each table, or the comparison
+    refuses: two rows sharing a key could swap places unseen.
     """
     import duckdb
     import pyarrow.parquet as pq
@@ -52,6 +66,8 @@ def table_differences(actual: Path, expected: Path, *, key: Sequence[str]) -> li
     columns = ", ".join(_quoted(name) for name in names)
     one, other = (f"read_parquet({_literal(path)}, file_row_number=true)" for path in (actual, expected))
     with duckdb.connect() as con:
+        _require_unique(con, one, key, str(actual))
+        _require_unique(con, other, key, str(expected))
         counts = con.sql(f"SELECT (SELECT count(*) FROM {one}), (SELECT count(*) FROM {other})").fetchone()
         assert counts is not None
         if counts[0] != counts[1]:
@@ -71,35 +87,55 @@ def table_differences(actual: Path, expected: Path, *, key: Sequence[str]) -> li
 
 def promoted_differences(table: Path, receipt_table: Path, receipts: Path, policy, *, generation_id: str,
                          key: Sequence[str], copies: Mapping[str, Callable[[Mapping], Any]],
-                         among: Iterable[tuple] | None = None) -> list[str]:
+                         among: Iterable[tuple] | None = None, shown: int = 20) -> list[str]:
     """Rows of ``table`` whose promoted column differs from the copy the receipt route's receipts hold.
 
     ``receipt_table`` and ``receipts`` are a pair the receipt route published, read through admission
     (``read_with_receipts``); ``copies`` maps each promoted column to the function reading its copy from one
-    admitted row. Rows are matched on ``key``, compared as text so a date and its spelling agree. Every receipt's
-    row must still be in ``table``. ``among`` limits the comparison to those keys: a row re-read since the pair
-    was published may rightly hold a newer value.
+    admitted row. The copies are written to Parquet in Arrow batches as they are read, typed as ``table``'s columns,
+    and compared in DuckDB on ``key``, which must name one row on both sides. Every receipt's row must still be in
+    ``table``. ``among`` limits the value comparison to those keys: a row re-read since the pair was published may
+    rightly hold a newer value. At most ``shown`` rows of each kind are named.
     """
     import tempfile
 
+    import duckdb
+    import pyarrow as pa
     import pyarrow.parquet as pq
 
     from spicy_regs.etl_receipts import read_with_receipts, select_receipts
 
-    def identity(row):
-        return tuple(None if row[name] is None else str(row[name]) for name in key)
-
+    published = pq.read_schema(table)
+    copy_schema = pa.schema([published.field(name) for name in (*key, *copies)])
+    keys = ", ".join(_quoted(name) for name in key)
     with tempfile.TemporaryDirectory(prefix="promoted-") as work:
         scoped = select_receipts(receipts, Path(work) / "scoped.parquet", dataset=policy.dataset)
-        held = {identity(row): {name: read(row) for name, read in copies.items()}
-                for row in read_with_receipts([receipt_table], [scoped], policy, generation_id=generation_id)}
-    wanted = None if among is None else {tuple(None if v is None else str(v) for v in k) for k in among}
-    rows = {identity(row): row for row in pq.read_table(table, columns=[*key, *copies]).to_pylist()}
-    problems = [f"{missing} has a receipt and no row" for missing in sorted(set(held) - set(rows), key=str)]
-    for found, copy in sorted(held.items(), key=lambda item: str(item[0])):
-        if found in rows and (wanted is None or found in wanted):
-            problems.extend(f"{found} {name}: {rows[found][name]!r} != receipt {copy[name]!r}"
-                            for name in copies if rows[found][name] != copy[name])
+        held = Path(work) / "copies.parquet"
+        with pq.ParquetWriter(held, copy_schema) as writer:
+            batch: list[dict] = []
+            for row in read_with_receipts([receipt_table], [scoped], policy, generation_id=generation_id):
+                batch.append({**{name: row[name] for name in key}, **{name: read(row) for name, read in copies.items()}})
+                if len(batch) == BATCH_ROWS:
+                    writer.write_table(pa.Table.from_pylist(batch, schema=copy_schema))
+                    batch.clear()
+            if batch:
+                writer.write_table(pa.Table.from_pylist(batch, schema=copy_schema))
+        with duckdb.connect() as con:
+            rows, copy = f"read_parquet({_literal(table)})", f"read_parquet({_literal(held)})"
+            _require_unique(con, rows, key, str(table))
+            _require_unique(con, copy, key, "the receipt copies")
+            scope = ""
+            if among is not None:
+                con.register("among", pa.Table.from_pylist([dict(zip(key, item, strict=True)) for item in among],
+                                                            schema=pa.schema([published.field(name) for name in key])))
+                scope = f" SEMI JOIN among USING ({keys})"
+            problems = [f"{found} has a receipt and no row" for found in con.sql(
+                f"SELECT {keys} FROM {copy} c ANTI JOIN {rows} t USING ({keys}) ORDER BY ALL LIMIT {shown}").fetchall()]
+            for name in copies:
+                column = _quoted(name)
+                problems += [f"{found[:-2]} {name}: {found[-2]!r} != receipt {found[-1]!r}" for found in con.sql(
+                    f"SELECT {keys}, t.{column}, c.{column} FROM {rows} t JOIN {copy} c USING ({keys}){scope} "
+                    f"WHERE t.{column} IS DISTINCT FROM c.{column} ORDER BY ALL LIMIT {shown}").fetchall()]
     return problems
 
 
