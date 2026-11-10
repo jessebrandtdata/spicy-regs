@@ -16,6 +16,8 @@ import importlib
 import pkgutil
 import shutil
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
 import spicy_regs.pipelines.rollups as rollups
@@ -26,6 +28,7 @@ from spicy_regs.pipelines.rollups.agency_stats import AgencyStatsRollup
 from spicy_regs.pipelines.rollups.base import RollupPipeline
 from spicy_regs.pipelines.rollups.discovery_signals import DiscoverySignalsRollup
 from spicy_regs.pipelines.rollups.feed_summary import FeedSummaryRollup
+from spicy_regs.pipelines.rollups.regulatory_base import _BaseTableFamily
 from spicy_regs.sources import publication as pub
 from spicy_regs.sources import r2
 from spicy_regs.transforms.regulations_receipts import PARENT_PINNED_SUMMARIES
@@ -111,31 +114,56 @@ def test_the_summaries_are_the_four_named_and_none_has_an_installed_policy():
     assert not PARENT_PINNED_SUMMARIES & installed_policies().keys()
 
 
-def test_a_rollup_that_states_no_receipts_publishes_no_table_with_an_installed_policy():
-    """The refusal of ss-nxew, held for every scheduled rollup before a hosted run meets it.
+#: The base table families, each with the dataset it publishes. They declare no policy: each states it while it
+#: builds, assigning it on the class (``_BaseTableFamily.validate_native_output``), so the class attribute of these
+#: five differs before and after a build in the same process. Nothing below reads it to recognise them.
+BASE_FAMILIES = {
+    "dockets": "dockets", "documents": "documents", "docket-attributes": "docket_attributes",
+    "document-attributes": "document_attributes", "comment-attributes": "comment_attributes",
+}
 
-    An installed policy makes receipts mandatory at admission, so a rollup that passes none cannot publish such a
-    table. This reads class declarations only: the five base families below state their policy while they build
-    (``_BaseTableFamily.validate_native_output``), which no declaration shows.
-    """
+
+def _scheduled_rollups():
+    """Every rollup class the package defines; a test module's stand-in class is no scheduled writer."""
     for module in pkgutil.iter_modules(rollups.__path__):
         importlib.import_module(f"{rollups.__name__}.{module.name}")
 
-    def scheduled(cls):
+    def subclasses(cls):
         for subclass in cls.__subclasses__():
-            yield from (subclass, *scheduled(subclass))
+            yield from (subclass, *subclasses(subclass))
 
-    installed, unstated = installed_policies(), {}
-    for cls in set(scheduled(RollupPipeline)):
-        # Only the package's own rollups: a test module's stand-in class is no scheduled writer.
-        if (not cls.__module__.startswith(rollups.__name__ + ".") or "name" not in vars(cls)
-                or not cls.generation_tables or cls.receipt_policies
+    return {cls for cls in subclasses(RollupPipeline)
+            if cls.__module__.startswith(rollups.__name__ + ".") and "name" in vars(cls)}
+
+
+def test_a_rollup_with_no_receipt_route_publishes_no_table_with_an_installed_policy():
+    """The refusal of ss-nxew, held for every scheduled rollup before a hosted run meets it.
+
+    An installed policy makes receipts mandatory at admission. A rollup has a receipt route when its class declares
+    policies, when it passes them itself (``generation_kwargs``, the court families), or when it is a base table
+    family, recognised by its base class whether or not one has built yet (``BASE_FAMILIES``).
+    """
+    installed, no_route = installed_policies(), {}
+    assert {rollup for rollup, _, _ in SUMMARIES} <= _scheduled_rollups()
+    for cls in _scheduled_rollups():
+        if (issubclass(cls, _BaseTableFamily) or not cls.generation_tables or cls.receipt_policies
                 or cls.generation_kwargs is not RollupPipeline.generation_kwargs):
             continue
         tables = [key.removesuffix(".parquet") for key in cls.outputs or (cls.output,)]
         if registered := sorted(installed.keys() & tables):
-            unstated[cls.name] = registered
-    assert unstated == {
-        "dockets": ["dockets"], "documents": ["documents"], "docket-attributes": ["docket_attributes"],
-        "document-attributes": ["document_attributes"], "comment-attributes": ["comment_attributes"],
-    }
+            no_route[cls.name] = registered
+    assert no_route == {}
+    assert {cls.name: cls.output.removesuffix(".parquet") for cls in _scheduled_rollups()
+            if issubclass(cls, _BaseTableFamily)} == BASE_FAMILIES
+
+
+@pytest.mark.parametrize("family", sorted(BASE_FAMILIES))
+def test_a_base_family_states_its_installed_policy_when_it_builds(tmp_path, monkeypatch, family):
+    """The route the guard above takes on trust, held for each of the five whatever was built before."""
+    [cls] = [rollup for rollup in _scheduled_rollups() if rollup.name == family]
+    monkeypatch.setattr(cls, "receipt_policies", ())  # the build assigns on the class; this undoes it afterwards
+    owner = cls.__new__(cls)
+    pq.write_table(pa.table({owner.key(): ["A-1"]}), tmp_path / cls.output)
+    owner.validate_native_output(tmp_path / cls.output)
+    [stated] = owner.receipt_policies
+    assert stated.descriptor() == installed_policies()[BASE_FAMILIES[family]].descriptor()
