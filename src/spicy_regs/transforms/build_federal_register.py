@@ -18,8 +18,8 @@ fresh row replaces the row of its dated key, so corrections republished under
 the same number on another date stay distinct rows, and every other row is
 carried as published. A carried row keeps the mapping of the run that last read
 it, except ``rin``, which the merge derives on every row; any other mapping
-change reaches old rows only through a full re-read (``FR_SINCE=1994``). A
-document the mapping refuses fails the run: there is no receipt to refuse it
+change reaches old rows only through a full re-read (``FR_SINCE=1994-01-01``).
+A document the mapping refuses fails the run: there is no receipt to refuse it
 into.
 
 ``rin`` is the one column not fetched: the first Regulation Identifier Number
