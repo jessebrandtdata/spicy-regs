@@ -32,8 +32,9 @@ def generation(tmp_path, name, tables, *, read=None):
     evidence = CaptureEvidence(tmp_path / f"{name}-build", FAMILY)
     evidence.retain_bytes(f"the original {name} was built from".encode(), stage="fixture-original", raw_source=True)
     directory = tmp_path / name
-    index = publication.parse_index(read[0]) if read else None
+    index = None
     if read:
+        index = publication.parse_index(read[0])
         evidence.inherit_pinned_root(index, read[1])
     artifact = build_generation(directory, family=FAMILY, files=files, expected_keys=[path.name for path in files],
                                 inputs=evidence.inputs(), read_snapshot=index)
