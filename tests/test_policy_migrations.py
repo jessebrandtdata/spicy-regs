@@ -157,3 +157,52 @@ def test_live_check_names_a_published_policy_missing_from_the_ledger(monkeypatch
                         lambda base, entry: (b"", {"spec": {"etlReceipts": {"policies": roots[entry]}}}))
     [problem] = policy_migrations.published_policies_unrecorded("https://example.invalid")
     assert problem.startswith("b: published bill_cosponsors fixture/9")
+
+
+def _staged(tmp_path, name):
+    """A copy of the ledger and of one installed declaration, for the generator to rewrite."""
+    from spicy_regs.policy_migrations import LEDGER
+
+    root = tmp_path / "installed"
+    root.mkdir()
+    source = Path(__file__).parents[1] / "src/spicy_regs"
+    (root / f"{name}.json").write_text((source / f"etl_policies/{name}.json").read_text())
+    (tmp_path / LEDGER).write_text((source / LEDGER).read_text())
+    return tmp_path / LEDGER, root
+
+
+def test_the_generator_records_a_promotion_with_its_predecessor_as_read(tmp_path):
+    from scripts.update_etl_policy_declarations import record_migrations
+
+    ledger_path, root = _staged(tmp_path, "bill_cosponsors")
+    current = installed_policies()["bill_cosponsors"]
+    promoted = replace(current, subject_schema=current.subject_schema.append(pa.field("added", pa.string())),
+                       policy_version="congress-subjects/9")
+    # A changed schema under the label it shipped under is refused: receipts name a policy by its version.
+    with pytest.raises(ValueError, match="changed under congress-subjects/1; give it a new policy_version"):
+        record_migrations({"bill_cosponsors": replace(promoted, policy_version=current.policy_version).descriptor()},
+                          {}, ledger_path=ledger_path, installed=root)
+    record_migrations({"bill_cosponsors": promoted.descriptor()}, {}, ledger_path=ledger_path, installed=root)
+    recorded = json.loads(ledger_path.read_text())
+    assert recorded["bill_cosponsors"] == {"earlier": [current.descriptor()], "installed": descriptor_digest(promoted)}
+    installed = {**installed_policies(), "bill_cosponsors": promoted}
+    assert unreadable_shipped_policies(installed, recorded) == []
+    # Unchanged on a second run; the rest of the ledger untouched.
+    record_migrations({"bill_cosponsors": promoted.descriptor()}, {}, ledger_path=ledger_path, installed=root)
+    assert json.loads(ledger_path.read_text()) == recorded == {**ledger(), "bill_cosponsors": recorded["bill_cosponsors"]}
+
+
+def test_the_generator_marks_a_replay_only_when_asked_and_only_for_a_change(tmp_path):
+    from scripts.update_etl_policy_declarations import record_migrations
+
+    ledger_path, root = _staged(tmp_path, "bill_cosponsors")
+    current = installed_policies()["bill_cosponsors"]
+    promoted = replace(current, policy_version="congress-subjects/9",
+                       subject_schema=current.subject_schema.append(pa.field("added", pa.string(), nullable=False)))
+    with pytest.raises(ValueError, match="names datasets whose policy did not change: \\['bill_actions'\\]"):
+        record_migrations({"bill_cosponsors": promoted.descriptor()}, {"bill_actions": "x"},
+                          ledger_path=ledger_path, installed=root)
+    record_migrations({"bill_cosponsors": promoted.descriptor()}, {"bill_cosponsors": "the new column is NOT NULL"},
+                      ledger_path=ledger_path, installed=root)
+    [earlier] = json.loads(ledger_path.read_text())["bill_cosponsors"]["earlier"]
+    assert earlier[REPLAY_REQUIRED] == "the new column is NOT NULL"
