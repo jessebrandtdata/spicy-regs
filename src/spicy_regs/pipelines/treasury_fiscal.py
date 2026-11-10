@@ -14,10 +14,9 @@ import json
 from datetime import date
 from pathlib import Path
 
-from rulespec_artifacts import LocalMemberSource, Producer
-
 from spicy_regs.contract_types import described_schema
-from spicy_regs.generations import build_generation, implementation_id
+from spicy_regs.generations import build_generation
+from spicy_regs.pipelines.raw_releases import ReleaseBlobs, admit_release, merged_scopes, open_raw, raw_original
 from spicy_regs.source_evidence import JOURNAL, CaptureEvidence, acquisition_evidence
 from spicy_regs.transforms.build_treasury_fiscal import SCHEMAS, build_treasury_fiscal
 
@@ -93,64 +92,17 @@ def acquire(selections, report_dates, output_dir: Path, *, transport=None) -> di
     return {"releases": list(releases.values()), "reports": reports}
 
 
-class _ReleaseBlobs:
-    """Raw originals are only verified and read; derived release members go to a local store.
-
-    Building a release from raw therefore never writes to the archive.
-    """
-
-    def __init__(self, raw, local):
-        self.raw, self.local, self.derived = raw, local, set()
-
-    def put_blob(self, blob_ref, byte_size, chunks):
-        from spicy_docs.storage.blobs import SourceNativeBlobWrite
-
-        try:
-            self.raw.describe_blob(blob_ref, byte_size)
-        except FileNotFoundError:
-            self.derived.add(blob_ref)
-            return self.local.put_blob(blob_ref, byte_size, chunks)
-        return SourceNativeBlobWrite(blob_ref, byte_size, True, 0)
-
-    def open(self, blob_ref):
-        return (self.local if blob_ref in self.derived else self.raw).open(blob_ref)
-
-
 def release_readers(selection: dict, destination: Path, *, store):
-    """Publish one derived source release per captured scope over raw originals and admit it.
-
-    Producer and clock come from the code and the captures, so the same
-    selection and code rebuild the same release digest.
-    """
-    from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher, SourceNativeReleaseReader
+    """Publish one derived source release per captured scope over raw originals and admit it."""
     from spicy_docs.sources.treasury_fiscal_profile import TREASURY_FISCAL_PROFILE, iter_retained_pages
-    from datetime import UTC, datetime
 
-    implementation = implementation_id()
-    producer = Producer("spicy-docs", implementation, "urn:spicy-regs:source-native-release-verifier", "2.0",
-                        implementation)
-    from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
-
-    blobs = _ReleaseBlobs(store, LocalSourceNativeBlobStore(Path(destination) / "blobs"))
-    readers = []
-    for index, scope in enumerate(selection["releases"]):
-        observed = sorted(datetime.fromisoformat(capture["observed_at"]).astimezone(UTC)
-                          for capture in scope["captures"])
-        published = SourceNativeReleasePublisher(
-            TREASURY_FISCAL_PROFILE, blob_store=blobs, clock=lambda last=observed[-1]: last,
-        ).publish(
-            iter_retained_pages(scope, blob_source=blobs),
-            destination=Path(destination) / str(index),
-            build=SourceNativeReleaseBuild(
-                query_scope=scope, producer=producer,
-                started_at=observed[0].replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-            ),
-        )
-        readers.append(SourceNativeReleaseReader(
-            LocalMemberSource(published.root), blob_source=blobs, profile=TREASURY_FISCAL_PROFILE,
-            accepted_verifier_implementation_ids=frozenset({implementation}), expected_pin=published.artifact.pin,
-        ))
-    return readers
+    blobs = ReleaseBlobs(store, Path(destination) / "blobs")
+    return [
+        admit_release(TREASURY_FISCAL_PROFILE, iter_retained_pages(scope, blob_source=blobs), scope,
+                      Path(destination) / str(index), blobs=blobs,
+                      observed=[capture["observed_at"] for capture in scope["captures"]])
+        for index, scope in enumerate(selection["releases"])
+    ]
 
 
 def build(readers, output_dir: Path, *, debt_dates, report_dates, reports):
@@ -202,24 +154,17 @@ def build(readers, output_dir: Path, *, debt_dates, report_dates, reports):
 
 def merge_selections(selections) -> dict:
     """Combine capture selections; one scope or report per identity, never a silent override."""
-    releases, reports = {}, {}
+    selections, reports = list(selections), {}
     for selection in selections:
-        for scope in selection["releases"]:
-            key = json.dumps(scope, sort_keys=True)
-            if key in releases:
-                raise ValueError("A Treasury capture scope was selected twice")
-            releases[key] = scope
         for report_date, report in selection["reports"].items():
             if reports.setdefault(report_date, report) != report:
                 raise ValueError("Two Treasury report controls name the same issue")
-    return {"releases": list(releases.values()), "reports": reports}
+    return {"releases": merged_scopes(selections), "reports": reports}
 
 
 def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path | None = None):
     """Rebuild every selected release from raw originals, then the ordinary generation."""
-    from spicy_docs.storage.raw_archive import CentralRawArchiveStore, default_raw_archive_root
-
-    store = CentralRawArchiveStore(archive_root or default_raw_archive_root(), create=False)
+    store = open_raw(archive_root)
     output_dir = Path(output_dir)
     readers = release_readers(selection, output_dir / "source-releases", store=store)
     dates = {}
@@ -228,11 +173,9 @@ def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path
         dates.setdefault(dataset == "debt_to_penny", set()).add(date.fromisoformat(scope["selection"]["record_date"]))
     reports = {}
     for report_date, report in selection["reports"].items():
-        described = store.describe_blob(report["sha256"], report["byte_size"])
-        if described["encoding"] != "raw":
-            raise ValueError("Treasury report control must be a raw-encoded original")
-        reports[date.fromisoformat(report_date)] = {"url": report["url"], "sha256": report["sha256"],
-                                                    "path": str(store.root / described["object"])}
+        reports[date.fromisoformat(report_date)] = {
+            "url": report["url"], "sha256": report["sha256"],
+            "path": str(raw_original(store, report["sha256"], report["byte_size"]))}
     return build(readers, output_dir, debt_dates=dates.get(True, set()), report_dates=dates.get(False, set()),
                  reports=reports)
 

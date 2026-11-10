@@ -2,10 +2,14 @@
 
 from copy import deepcopy
 import hashlib
+from io import BytesIO
 import json
 from typing import Any
 from pathlib import Path
+from xml.sax.saxutils import escape, quoteattr
+from zipfile import ZipFile
 
+import httpx
 import pyarrow.parquet as pq
 import pytest
 from rulespec_artifacts import ArtifactPin
@@ -16,6 +20,7 @@ from spicy_regs.pipelines import ofac as pipeline
 from spicy_regs.sources import publication
 from spicy_regs.transforms import build_ofac as module
 from tests.generation_fakes import Store
+from tests.published_paths import local_paths
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/ofac/enhanced-excerpts.json").read_text())
 EXCERPTS = FIXTURE["samples"]
@@ -285,3 +290,80 @@ def test_concurrent_output_is_preserved_and_install_can_retry(tmp_path, monkeypa
     entities, snapshots = read(module.build_ofac([Reader()], tmp_path))
     assert entities and snapshots[0]["entity_count"] == len(entities)
     assert unrelated.read_bytes() == b"unrelated"
+
+
+def _xml(node):
+    """One fixture element as XML in the export's default namespace."""
+    name = node["name"].removeprefix(module.NAMESPACE)
+    attributes = "".join(f" {key}={quoteattr(value)}" for key, value in node["attributes"])
+    body = "".join(escape(item) if isinstance(item, str) else _xml(item) for item in node["content"])
+    return f"<{name}{attributes}>{body}</{name}>"
+
+
+def export_zip(selected="sdn"):
+    """A small official-shaped export: the reviewed publication metadata and first entity of one list."""
+    _root, metadata, _container, entity = EXCERPTS[selected]["records"]
+    document = (f'<sanctionsData xmlns="{module.NAMESPACE[1:-1]}">{_xml(metadata["element"])}'
+                f'<referenceValues/><entities>{_xml(entity["element"])}</entities></sanctionsData>')
+    body = BytesIO()
+    with ZipFile(body, "w") as archive:
+        archive.writestr("SDN_ENHANCED.XML" if selected == "sdn" else "CONS_ENHANCED.XML", document)
+    return body.getvalue()
+
+
+def test_acquire_retains_the_export_in_raw_and_builds_from_its_capture(tmp_path, monkeypatch, capsys):
+    """The ZIP lands in the raw archive bound to the official URL; the build reads it from there."""
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore, iter_acquisition_receipts
+
+    official = "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN_ENHANCED.ZIP"
+    signed = ("https://wc2h-sls-prod-public-published.s3.us-gov-west-1.amazonaws.com/Published/a/2026-11-09/b/"
+              "SDN_ENHANCED.ZIP")
+    archive = export_zip()
+    digest = "sha256:" + hashlib.sha256(archive).hexdigest()
+    requests = []
+
+    def serve(request):
+        requests.append(str(request.url).split("?")[0])
+        if str(request.url) == official:
+            return httpx.Response(302, headers={"location": signed + "?X-Amz-Signature=temporarysignature"})
+        return httpx.Response(200, content=archive, headers={"content-type": "application/zip"})
+
+    selection = pipeline.acquire(["sdn"], tmp_path / "acquire", transport=httpx.MockTransport(serve))
+    assert requests == [official, signed]
+    (scope,) = selection["releases"]
+    assert scope["selected_list"] == "sdn" and scope["member_name"] == "SDN_ENHANCED.XML"
+    assert {key: scope["capture"][key] for key in ("request_url", "response_sha256", "byte_size")} == {
+        "request_url": official, "response_sha256": digest, "byte_size": len(archive)}
+    raw = tmp_path / "central-raw"  # the archive every test is given
+    assert CentralRawArchiveStore(raw, create=False).describe_blob(digest, len(archive))["encoding"] == "raw"
+    receipts = [document for _path, document in iter_acquisition_receipts(raw)]
+    files = [(row["source_url"], row.get("original_location"), row["sha256"])
+             for document in receipts for row in document["files"]]
+    # One receipt of the response as the redirect target sent it, one binding the same bytes to the official URL.
+    assert sorted(files, key=lambda row: row[1] or "") == [
+        (signed + "?X-Amz-Signature=<redacted>", None, digest[7:]), (official, official, digest[7:])]
+    assert "temporarysignature" not in json.dumps(receipts)
+    assert not list((tmp_path / "acquire").rglob("download-*"))
+
+    captures = tmp_path / "captures.json"
+    captures.write_text(json.dumps(selection))
+    output = tmp_path / "build"
+    monkeypatch.setattr("sys.argv", ["ofac", "build", "--captures", str(captures), "--output-dir", str(output)])
+    pipeline.main()
+    built = json.loads(capsys.readouterr().out)
+    evidence = Path(built["sourceEvidence"])
+    (entity,), (snapshot,) = read([output / "generation" / f"{table}.parquet" for table in module.SCHEMAS])
+    assert (entity["entity_id"], entity["identity_id"]) == ("36", "4375")
+    assert json.loads(entity["primary_names_json"]) == ["AEROCARIBBEAN AIRLINES"]
+    assert json.loads(entity["source_locator_json"])["request_url"] == official
+    assert (snapshot["data_as_of_raw"], snapshot["entity_count"]) == ("2026-10-15T00:00:00", 1)
+    assert snapshot["observed_at"] == scope["capture"]["observed_at"]
+    (retained,) = [event for line in (evidence / "journal.jsonl").read_text().splitlines()
+                   if (event := json.loads(line))["event"] == "retained-file"]
+    assert (retained["original_location"], retained["sha256"]) == (official, digest)
+    assert local_paths(output / "generation", evidence, also=(str(tmp_path),)) == []
+    index = publication.publish_generation(
+        output / "generation", client=Store(), bucket="fixture",
+        prior_index=publication.empty_index(), evidence_directories=(evidence,),
+    )
+    assert index["families"]["ofac-sanctions"]["artifactDigest"] == built["artifactDigest"]

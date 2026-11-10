@@ -33,15 +33,34 @@ An absent later observation is not a legal delisting event. This integration
 does not reconstruct history before the selected captures or resolve names
 to real-world identities.
 
-Use a selection JSON with `sources` containing each admitted release's
-`release`, `blobs`, `logicalId`, `artifactDigest` and
-`verifierImplementationId`. Its `archives` object maps each original
-`sha256:…` digest to the retained ZIP path:
+`acquire` downloads each selected list's official export through the
+maintained `CaptureEvidence` transport, so the ZIP lands once in the central
+raw archive with a receipt. OFAC answers the export URL with a redirect to a
+temporary signed location; the receipt of the response names that location
+with its signature removed, and a second receipt binds the same bytes to the
+official export URL. The command writes a capture selection: each snapshot as
+its OFAC scope (the list, and the request URL, SHA-256, observation time and
+size of its ZIP).
 
 ```sh
-python -m spicy_regs.pipelines.ofac \
-  --selection "$OFAC_SELECTION" --output-dir "$OFAC_OUTPUT"
+python -m spicy_regs.pipelines.ofac acquire --list sdn --list consolidated \
+  --output-dir "$RUN_DIR" --captures-out captures.json
+python -m spicy_regs.pipelines.ofac build \
+  --captures captures.json --output-dir "$OFAC_OUTPUT"
 ```
+
+`build --captures` admits one source release per scope into
+`$OFAC_OUTPUT/source-releases` from the raw original (verified, never
+written) and builds the generation from exactly those snapshots. Admission
+reads every entity and is the slow step (11 minutes for the 2026-11-09 SDN
+list). A release is rebuilt on every build, and its digest, which is the
+snapshot's identity, follows the code that admitted it. To build over releases
+admitted earlier and kept on disk, pass `--selection` instead: a JSON with
+`sources` containing each release's `release`, `blobs`, `logicalId`,
+`artifactDigest` and `verifierImplementationId`, and an `archives` object
+mapping each original `sha256:…` digest to the retained ZIP path. The refresh
+sequence through publication is in
+[local-family-refresh.md](local-family-refresh.md).
 
 The builder requires fresh output paths and refuses failed, discarded,
 incomplete, repeated or contradictory selected observations. It stages both
