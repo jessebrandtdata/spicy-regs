@@ -49,10 +49,11 @@ All run through `uv run --frozen fill-comment-fields …` (locally,
 **Plan** splits the ETL manifest's comment keys into 20,000-key chunks per
 agency. A plan is named by the manifest digest and the record shape, so a
 newer manifest adds only the keys since and a new shape is a new plan. The
-shape is `s3` since 2026-10-03: `attachments_json` as SpicyDocs b19b092
-extracts it. The 2026-09-28 parts are `s2`. `plan` and `read` refuse to run
-under a SpicyDocs that drops withheld attachments, since its `s3` parts
-would hold `s2`'s values.
+shape is `s4` since 2026-11-10: `attachments_json` as SpicyDocs 0.85.0
+extracts it, each entry ending with its `attachment_id`. The 2026-09-28 parts
+are `s2`, the 2026-10-03 ones `s3` (b19b092, no id). `plan` and `read` refuse
+to run under a SpicyDocs that drops withheld attachments or their ids, since
+its `s4` parts would hold an earlier shape's values.
 
 **Read** writes one part per chunk. Each part row holds:
 
@@ -119,12 +120,14 @@ A read row fills a catalog cell only when all of these hold:
 
 One rule replaces a value, in `attachments_json` only (`ADDITIVE`). Under
 the same version and agreement, a read replaces the held list when it only
-adds to it: the read is in the extract's own spelling, and with its
-renditions that have no `url`, the entries left with none and each entry's
-restriction and `attachment_id` (SpicyDocs 0.85.0) removed
-(`downloadable_attachments`), it equals the held value
-byte for byte. That removal is exactly the rule before b19b092, so a list
-read before it is replaced by the same record's full list. Any other read
+adds to it (`only_adds_attachments`): the read is in the extract's own
+spelling and, with what a later extract added taken out, equals the held
+value byte for byte, as either earlier extract spelled it. Each entry's
+`attachment_id` removed is the 0.54.0 (b19b092) to 0.84.0 spelling
+(`without_attachment_ids`). Also removing the renditions that have no `url`,
+the entries left with none and each entry's restriction is the rule before
+b19b092 (`downloadable_attachments`). So a list read in either era is
+replaced by the same record's full list. Any other read
 list that differs from a held one is refused, counted
 (`refused_not_additive_by_column`) and listed in `fill/refusals.parquet`. A
 read that states no list never blanks a held one.
