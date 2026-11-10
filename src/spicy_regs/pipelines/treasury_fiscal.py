@@ -136,10 +136,12 @@ def published_selection(tables) -> dict:
     pages, reports = {}, {}
     for path in tables:
         table = pq.read_table(path)
-        for locator in set(table.column("source_locator_json").to_pylist()):
+        located = table.select(["source_release_digest", "source_locator_json"]).to_pylist()
+        # One scope per source release: a second capture of the same date is its own observation.
+        for release, locator in {tuple(row.values()) for row in located}:
             page = json.loads(locator)
             selection, number = selected_request(page["request_url"])
-            key = (selection.dataset, selection.record_date, selection.page_size)
+            key = (selection.dataset, selection.record_date, selection.page_size, release)
             descriptor = {field: page[field] for field in ("request_url", "response_sha256", "observed_at", "byte_size")}
             if pages.setdefault(key, {}).setdefault(number, descriptor) != descriptor:
                 raise ValueError("Published rows name two captures of one Treasury page")
@@ -149,10 +151,11 @@ def published_selection(tables) -> dict:
                 control = {"url": url, "sha256": digest}
                 if reports.setdefault(issue.isoformat(), control) != control:
                     raise ValueError("Published rows name two report controls for one issue")
-    return {"releases": [
+    return {"releases": sorted((
         {"selection": {"dataset": dataset, "record_date": record_date, "page_size": page_size},
          "captures": [numbered[number] for number in sorted(numbered)]}
-        for (dataset, record_date, page_size), numbered in sorted(pages.items())], "reports": reports}
+        for (dataset, record_date, page_size, _release), numbered in pages.items()), key=_scope_order),
+        "reports": reports}
 
 
 def release_readers(selection: dict, destination: Path, *, store):
@@ -232,8 +235,20 @@ def merge_selections(selections) -> dict:
     return {"releases": merged_scopes(selections), "reports": reports}
 
 
+def _scope_order(scope: dict) -> tuple:
+    """Dataset, record date, then capture: the order releases are built in, whatever order they were selected in."""
+    first = scope["captures"][0]
+    return (scope["selection"]["dataset"], scope["selection"]["record_date"], first["observed_at"],
+            first["response_sha256"])
+
+
 def selected_inputs(selection: dict, destination: Path, *, store):
-    """Rebuild every selected release from raw originals; returns its readers and the build's date and report inputs."""
+    """Rebuild every selected release from raw originals; returns its readers and the build's date and report inputs.
+
+    Releases are built in :func:`_scope_order`, so the tables' row order does not follow the order of the
+    capture files: a generation rebuilt from its own published rows is the same bytes.
+    """
+    selection = {**selection, "releases": sorted(selection["releases"], key=_scope_order)}
     readers = release_readers(selection, destination, store=store)
     dates = {}
     for scope in selection["releases"]:
