@@ -1,8 +1,9 @@
 """Hermetic tests for the Federal Register ingest (no network).
 
-Covers the raw-doc → published-schema mapping (``_shape``), the merge
-semantics of ``build_federal_register``, and the windowing contract the
-transform relies on from the SpicyDocs owner (``iter_federal_register_pages``).
+Covers the raw-doc → published-schema mapping (``_shape``), the observation
+and merge semantics of ``build_federal_register`` and ``merge_federal_register``,
+and the windowing contract the transform relies on from the SpicyDocs owner
+(``iter_federal_register_pages``).
 The owner's own tests pin its cap-split, single-day refusal and retry
 semantics.
 """
@@ -206,6 +207,64 @@ def test_each_run_re_reads_the_last_120_days_so_the_relayed_comment_count_is_not
     merge_federal_register(tmp_path, documents=lambda start: asked.append(start) or iter(()),
                            download_prior=lambda k, p: False)
     assert asked == [date(2026, 9, 30) - timedelta(days=120)]
+
+
+def _prior(tmp_path, *, without=()):
+    """A published prior of three rows, every one stating a stale ``rin``; ``without`` leaves columns out of it."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from spicy_regs.transforms.regulations_shape import subject_schema
+
+    schema = subject_schema("federal_register")
+    rows = [dict.fromkeys(schema.names) | {
+        "document_number": number, "publication_date": "2024-01-01", "title": f"Prior {number}", "rin": "9999-ZZ99",
+        "regulation_id_numbers": rins, "docket_ids": ["EPA-HQ-OAR-2024-0002"], "topics": ["Air pollution control"],
+        "agencies": [{"id": 145, "name": "Environmental Protection Agency", "raw_name": "ENVIRONMENTAL PROTECTION AGENCY",
+                      "parent_id": None, "slug": "environmental-protection-agency"}],
+        "regulations_dot_gov_comments_count": 4, "significant": False,
+        "html_url": f"https://www.federalregister.gov/documents/2024/01/01/{number}/x", "regulations_dot_gov_info_json": "{}",
+    } for number, rins in (("P-two", ["1111-AA11", "2222-BB22"]), ("P-none", []), ("P-null", None))]
+    table = pa.Table.from_pylist(rows, schema=schema)
+    pq.write_table(table.drop_columns(list(without)), tmp_path / "_fr_published.parquet")
+    return {row["document_number"]: row for row in rows}
+
+
+@pytest.mark.parametrize("without", [(), ("rin", "topics")], ids=["published-width", "older-width"])
+def test_rin_is_derived_for_every_row_whatever_the_prior_held(tmp_path, without):
+    """The join key is a projection of the array, derived on carried rows and fresh rows alike, never read back.
+
+    Carried rows keep the mapping of the night that last read them; ``rin`` is the exception, so a stale one (or none,
+    in a prior from before the column) never survives the merge. A prior of another width is mapped again, its
+    other values unchanged, and a column it lacks reads NULL until a re-read fills it.
+    """
+    import pyarrow.parquet as pq
+
+    from spicy_regs.transforms.regulations_shape import subject_schema
+
+    prior = _prior(tmp_path, without=without)
+    fresh = [dict(_RAW_DOC, document_number="F-one", publication_date="2024-03-01")]
+    out = merge_federal_register(tmp_path, since=date(2024, 3, 1), documents=lambda start: iter(fresh),
+                                 download_prior=lambda k, p: False)
+    assert pq.read_schema(out).equals(subject_schema("federal_register"), check_metadata=False)
+    held = {row["document_number"]: row for row in pq.read_table(out).to_pylist()}
+    assert held["F-one"]["rin"] == "2060-AV12"
+    assert held["P-two"]["rin"] == "1111-AA11", "the first of several; the array keeps the rest"
+    assert held["P-none"]["rin"] is None and held["P-null"]["rin"] is None
+    for number, row in prior.items():
+        assert {name: value for name, value in held[number].items() if name not in ("rin", *without)} == {
+            name: value for name, value in row.items() if name not in ("rin", *without)}
+        assert all(held[number][name] is None for name in without if name != "rin")
+
+
+def test_a_prior_without_a_column_that_left_receipts_is_refused_before_anything_is_read(tmp_path):
+    """Carried, it would publish NULL where its receipts held a value; nothing else stops it reaching the table."""
+    asked = []
+    _prior(tmp_path, without=("html_url",))
+    with pytest.raises(ValueError, match=r"lacks \['html_url'\], which a generation before 2026-11-10 held only"):
+        merge_federal_register(tmp_path, documents=lambda start: asked.append(start) or iter(()),
+                               download_prior=lambda k, p: False)
+    assert asked == [] and not (tmp_path / "federal_register.parquet").exists()
 
 
 def _links(tmp_path, records):

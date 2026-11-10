@@ -79,6 +79,9 @@ def rows(path):
     return {(row["document_number"], row["publication_date"]): row for row in pq.read_table(path).to_pylist()}
 
 
+#: The v1 prior lacks every column that left receipts; carried, its rows would publish NULL for them.
+V1_REFUSAL = (r"lacks \['html_url', 'pdf_url', 'body_html_url', 'source_sha256', 'regulations_dot_gov_info_json'\], "
+              r"which a generation before 2026-11-10 held only in its receipts")
 #: A Register row's identity, and a link row's: a printed label may repeat, so its position is part of it.
 KEY = ("document_number", "publication_date")
 LINK_KEY = ("docket_id", *KEY, "docket_source_ordinal")
@@ -207,7 +210,7 @@ def test_the_plain_route_refuses_a_prior_published_before_the_promoted_columns(t
     root.mkdir()
     shutil.copyfile(FIXTURE / "prior/federal_register.parquet", root / "federal_register.parquet")
     serve(monkeypatch, tmp_path, "night-1")
-    with pytest.raises(ValueError, match="lacks the columns its receipts held"):
+    with pytest.raises(ValueError, match=V1_REFUSAL):
         FederalRegisterRollup(output_dir=root).run()
     assert not (root / "generations").exists() or not list((root / "generations").iterdir())
 
@@ -407,7 +410,7 @@ def test_both_hosted_jobs_merge_at_the_pinned_public_table_and_publish_no_receip
     before = index()["families"]["federal-register"]
     serve(monkeypatch, tmp_path, "night-1")
     monkeypatch.setenv("R2_PUBLIC_URL", "https://example.test")
-    with pytest.raises(ValueError, match="lacks the columns its receipts held"):
+    with pytest.raises(ValueError, match=V1_REFUSAL):
         FederalRegisterRollup(output_dir=tmp_path / "early", skip_upload=False).run()
     assert index()["families"]["federal-register"] == before
 
