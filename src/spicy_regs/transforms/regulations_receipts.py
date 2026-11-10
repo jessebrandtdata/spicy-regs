@@ -53,6 +53,7 @@ CARRY_DATASETS = frozenset(IDENTITIES) - {"comments"}
 #: Aggregates their scheduled rollups rebuild whole from published parents and publish without receipts (ss-nxew).
 #: The generation pins each parent it read (``spec.parents``); a row receipt would hold the row again and witness
 #: only that copy. No policy is installed for them, so admission asks for no receipt member.
+#: ``policy(name)`` and ``build_native_rollup`` below still build receipts for the four; only tests call that path.
 PARENT_PINNED_SUMMARIES = frozenset({"agency_monthly_volume", "agency_stats", "discovery_signals", "feed_summary"})
 
 NULLABLE_IDENTITIES = {
