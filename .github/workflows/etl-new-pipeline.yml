@@ -125,6 +125,7 @@ jobs:
           SWEEP_BUDGET=
           SWEEP_START=
           if [ "$EVENT" = "schedule" ] && [ "$RUN" = "true" ]; then
+            # The sweep's own R2 state (--sweep-resume, run_sweep) overrides this start once it exists.
             # Begin where the latest scheduled sweep stopped at its budget and wrap to the first
             # batch. A batch that merges new comment rows took 79.4 minutes (run 42674437011), so
             # sweeps that always began at the first batch would never reach the later ones. This
@@ -237,7 +238,9 @@ jobs:
           if [ -n "$SINCE_YEAR" ]; then ARGS+=(--since-year "$SINCE_YEAR"); fi
           if [ "$BATCH" = "all" ]; then
             ARGS+=(--sweep --batch-count "$BATCH_COUNT")
-            if [ -n "$SWEEP_BUDGET_MINUTES" ]; then ARGS+=(--sweep-budget-minutes "$SWEEP_BUDGET_MINUTES"); fi
+            # A scheduled sweep also resumes from its own R2 state, written at each batch's start and finish: a run
+            # killed by the time limit leaves no artifact, and would otherwise send the next sweep back to batch 0.
+            if [ -n "$SWEEP_BUDGET_MINUTES" ]; then ARGS+=(--sweep-budget-minutes "$SWEEP_BUDGET_MINUTES" --sweep-resume); fi
             if [ -n "$SWEEP_START_BATCH" ]; then ARGS+=(--sweep-start-batch "$SWEEP_START_BATCH"); fi
           elif [ "$BATCH" != "-1" ]; then
             ARGS+=(--batch-number "$BATCH" --batch-count "$BATCH_COUNT")
