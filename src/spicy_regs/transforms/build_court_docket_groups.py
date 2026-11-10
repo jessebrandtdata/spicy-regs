@@ -160,10 +160,13 @@ def build_court_docket_groups(output_dir: Path, *, dockets_file: Path, native_fi
     output_dir.mkdir(parents=True, exist_ok=True)
     dump = CourtListenerLocalDump(native_file, columns=_NATIVE_COLUMNS, work_dir=output_dir)
     courts = pa.array(sorted({court for court, _ in keys}), pa.string())
+    # Only a published key's records and its neighbours' reach Python: a few thousand of the courts' millions.
+    looked_up = pa.array(sorted(f"{court}\x1f{number}" for court, number in keys | wanted.keys()), pa.string())
     for batch in dump.iter_batches():
         batch = batch.filter(pc.is_in(batch.column("court_id"), value_set=courts))
         scanned += batch.num_rows
-        for row in batch.to_pylist():
+        key_text = pc.binary_join_element_wise(batch.column("court_id"), batch.column("docket_number"), "\x1f")
+        for row in batch.filter(pc.is_in(key_text, value_set=looked_up)).to_pylist():
             key = (row["court_id"], row["docket_number"])
             if key in keys and row["id"] in published_ids:
                 candidates[key].append(row)
