@@ -109,6 +109,17 @@ def _ddl(schema):
     return ', '.join('"' + name.replace('"', '""') + '" ' + dtype for name, dtype in described_schema(schema))
 
 
+def _layout(dataset):
+    """Row-group targets for a whole-row copy of ``dataset``: bounded for comments, DuckDB's default otherwise.
+
+    DuckDB 1.5.5 cuts a row group at 122,880 rows whatever its bytes, and the writer then holds that group's
+    strings again in buffers it cannot spill. In the published comments (26,418,078 rows, 61 GB uncompressed)
+    122,880 consecutive rows hold up to 1.1 GiB and ``text_content`` alone up to 866 MiB. The bounded layout cuts
+    a group once 16 MB is buffered; the most one 2,048-row scan chunk can add is 158 MiB.
+    """
+    return ExportResources() if dataset == 'comments' else None
+
+
 def _copy(con, sql, path, *, resources: ExportResources | None = None, parameters=None):
     from .iceberg import _sql_str
     options = 'FORMAT PARQUET, COMPRESSION ZSTD'
@@ -182,9 +193,9 @@ def _stage(con, source, dataset, work, generation, *, prior_receipts=None, bulk=
     has_prior = prior_receipts is not None and con.execute(f'SELECT 1 FROM {prior_receipts} LIMIT 1').fetchone() is not None
     if has_prior:
         source_query = f'SELECT s.*, w.receipt AS _prior_receipt FROM {source} s LEFT JOIN {prior_receipts} w USING ("{key}")'
-    # Reuse comments layout targets before its private receipt writer reads
-    # these wide strings. Preserve the caller's connection and ordering settings.
-    _copy(con, source_query, source_path, resources=ExportResources() if dataset == 'comments' else None)
+    # Its private receipt writer reads these wide strings next. The caller's connection
+    # and ordering settings are preserved.
+    _copy(con, source_query, source_path, resources=_layout(dataset))
     def observations():
         from spicy_regs.etl_receipts import exact_json
         for i, row in enumerate(_rows(source_path)):
@@ -786,9 +797,12 @@ def export_pair(con, record_type, output_dir, *, generation_id, snapshot=None):
             raise ValueError('Native catalog has no qualified initialization receipt')
         if snapshot is not None and iceberg._read_pair_snapshot(con, record_type) != snapshot:
             raise RuntimeError('Catalog snapshot changed before paired export; retry')
-        _copy(con, f'SELECT * FROM {qualified(record_type)}', subjects)
+        # Both copies hold every comments row, and Arrow readers follow each. Unbounded, the subject copy
+        # failed on the 3 GB hosted mirror growing one dictionary to 576 MiB (run 42730512414, ss-7flp).
+        _copy(con, f'SELECT * FROM {qualified(record_type)}', subjects, resources=_layout(dataset))
         raw_receipts = Path(temporary) / 'receipts.parquet'
-        _copy(con, f"SELECT * FROM {receipts_table()} WHERE dataset='{dataset}'", raw_receipts)
+        _copy(con, f"SELECT * FROM {receipts_table()} WHERE dataset='{dataset}'", raw_receipts,
+              resources=_layout(dataset))
         write_rows((rebind_receipt(row, generation_id=generation_id) for row in _rows(raw_receipts)),
                    receipts, RECEIPT_SCHEMA)
         for _ in read_with_receipts([subjects], [receipts], policy(dataset), generation_id=generation_id):

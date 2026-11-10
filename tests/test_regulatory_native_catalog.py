@@ -266,6 +266,65 @@ def test_pair_export_preserves_generation_and_processing(con, tmp_path):
     assert 'export-1' in (tmp_path / 'generation.json').read_text()
 
 
+def test_comments_pair_export_bounds_the_row_groups_of_both_copies(con, tmp_path):
+    """The mirror's connection (insertion order released) gets the row and byte targets on subjects and receipts.
+
+    Hosted run 42730512414 failed in the subject copy, which carried neither (ss-7flp).
+    """
+    from spicy_regs.duckdb_settings import ExportResources
+    layout = ExportResources()
+    layout.configure(con, tmp_path / 'spill')
+    expected = source(con)
+    iceberg.replace_rows(con, COMMENT, 'source')
+    copies = []
+
+    class Recorded:
+        def execute(self, sql, *args):
+            if sql.startswith('COPY '):
+                copies.append(sql)
+            return con.execute(sql, *args)
+
+    selected = native.export_pair(Recorded(), COMMENT, tmp_path / 'pair', generation_id='export-1')
+    subjects, receipts = copies
+    assert f'FROM {native.qualified(COMMENT)})' in subjects and str(selected.subjects[0]) in subjects
+    assert f'FROM {native.receipts_table()} ' in receipts
+    for statement in copies:
+        assert statement.endswith(f"ROW_GROUP_SIZE {layout.row_group_rows}, "
+                                  f"ROW_GROUP_SIZE_BYTES '{layout.row_group_bytes}')")
+    from spicy_regs.transforms.regulations_receipts import read_internal
+    assert list(read_internal(selected)) == [expected]
+
+
+def test_comments_pair_export_fits_a_memory_limit_the_default_row_group_exceeds(tmp_path, monkeypatch):
+    """Sparse wide text under a small limit: the default row group runs out of memory, the comments layout fits.
+
+    The hosted failure at a twentieth of its size. DuckDB 1.5.5 buffers 122,880 rows whatever their bytes, then
+    grows one string dictionary in 32 MiB steps, holding the old and the new buffer together: 64 + 96 MiB here
+    against 143 MiB, 544 + 576 MiB against 2.7 GiB in run 42730512414 (ss-7flp). The comments layout cuts a row
+    group once 16 MB is buffered, so no dictionary here passes 32 MiB.
+    """
+    import pyarrow.parquet as pq
+    from spicy_regs.duckdb_settings import ExportResources
+
+    rows = 30_000
+    with duckdb.connect() as limited:
+        limited.execute(f"ATTACH '{tmp_path / 'catalog.duckdb'}' AS reg_catalog")
+        ExportResources(memory='150MB').configure(limited, tmp_path / 'spill')
+        native.ensure_native(limited, COMMENT)
+        limited.execute(f"INSERT INTO {native.qualified(COMMENT)} (comment_id, text_content) SELECT 'c' || i, "
+                        f"CASE WHEN i % 20 = 0 THEN repeat(md5(i::VARCHAR), 1650) END FROM range({rows}) t(i)")
+        # These subjects have no receipts: writing them through the catalog took 3.8 GB for 74 MB of text.
+        monkeypatch.setattr(native, 'read_with_receipts', lambda *args, **kwargs: ())
+        with monkeypatch.context() as unbounded:
+            unbounded.setattr(native, '_layout', lambda dataset: None)
+            with pytest.raises(duckdb.OutOfMemoryException):
+                native.export_pair(limited, COMMENT, tmp_path / 'unbounded', generation_id='export-1')
+        selected = native.export_pair(limited, COMMENT, tmp_path / 'pair', generation_id='export-1')
+    written = pq.ParquetFile(selected.subjects[0]).metadata
+    assert written.num_rows == rows
+    assert max(written.row_group(i).total_byte_size for i in range(written.num_row_groups)) < 32 * 2**20
+
+
 def test_explicit_scope_replacement_retains_removed_evidence(con):
     from spicy_regs.etl_receipts import resolve_receipt_witness
     source(con)
