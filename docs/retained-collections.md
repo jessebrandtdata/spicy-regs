@@ -62,6 +62,34 @@ row has a witness pointing to its source capture and native record position.
 A table with no rows still has a schema-bearing empty Parquet subject and a
 zero-row entry in `build.json`; release packaging must preserve that distinction.
 
+## Refresh from the archive
+
+`spicy_regs.pipelines.administration_policy` is the maintained caller around
+that builder. `acquire` reads each selected administration's metadata file at
+one full archive commit through the `CaptureEvidence` transport, so every file
+lands in the central raw archive with a receipt, and writes a capture
+selection (commit, URL, SHA-256, size and observation time per file). Given
+the published statements table, it reads every administration of that table
+too and compares bytes: an unchanged file keeps its published capture, so its
+`statement_id` values stay as published, and a changed file takes the new
+commit's capture in its place. A new administration file is named explicitly.
+
+```sh
+python -m spicy_regs.pipelines.administration_policy acquire \
+  --commit "$ARCHIVE_COMMIT" --prior-statements "$PUBLISHED/administration_policy_statements.parquet" \
+  --output-dir "$RUN_DIR" --captures-out captures.json
+python -m spicy_regs.pipelines.administration_policy build \
+  --captures captures.json --output-dir "$POLICY_OUTPUT"
+```
+
+`build` writes the builder manifest over the raw originals, builds the
+candidate in `$POLICY_OUTPUT/candidate` and admits its tables and receipts as
+`$POLICY_OUTPUT/generation`. The generation pins a source-evidence artifact
+that names each selected file's commit, URL, digest and observation time. That
+evidence carries no file body: the archive states no licence, so the bodies
+stay in the raw archive. The refresh sequence through publication is in
+[local-family-refresh.md](local-family-refresh.md).
+
 ## Qualification and release
 
 Compare all selected statement JSON with the maintained reader, verify every
