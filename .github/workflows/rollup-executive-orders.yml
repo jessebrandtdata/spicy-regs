@@ -1,0 +1,23 @@
+name: Rollup — executive_order_observations
+# Weekdays at 14:29 UTC, after the Federal Register's 06:00 ET publication and its API's morning update. A run
+# lists every order the API serves (two traversals of 90-day windows from 1994) and publishes nothing, green,
+# when no order was added, changed or removed. Bodies are fetched only for orders the published generation lacks;
+# its own bodies are restored from published source evidence. Nothing here needs a workstation.
+on:
+  schedule:
+    - cron: '29 14 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      skip_upload:
+        description: 'Skip R2 upload (dry run)'
+        required: false
+        default: true
+        type: boolean
+jobs:
+  run:
+    uses: ./.github/workflows/_rollup.yml
+    secrets: inherit
+    with:
+      command: run-rollup-executive-orders
+      skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
+      timeout_minutes: 90

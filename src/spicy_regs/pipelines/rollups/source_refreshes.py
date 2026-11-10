@@ -1,4 +1,4 @@
-"""Hosted refreshes of the four source families that were refreshed by hand.
+"""Hosted refreshes of the source families that were refreshed by hand.
 
 Each rollup acquires through its family pipeline's own capture functions with the run's source evidence, so
 every downloaded byte is in that evidence and is uploaded to R2 before the family pointer moves: a hosted
@@ -12,13 +12,13 @@ from datetime import UTC, date, datetime, timedelta
 from os import getenv
 from pathlib import Path
 
-from spicy_regs.pipelines import administration_policy, grants_opportunities, ofac, treasury_fiscal
+from spicy_regs.pipelines import administration_policy, executive_orders, grants_opportunities, ofac, treasury_fiscal
 from spicy_regs.pipelines.raw_releases import (
     journal_snapshot_releases, published_before, restore_originals, snapshot_readers,
 )
 from spicy_regs.pipelines.rollups.base import RollupPipeline, Unchanged, make_rollup_app
 from spicy_regs.sources import r2, retained_collections
-from spicy_regs.transforms import build_grants_opportunities, build_ofac, build_treasury_fiscal
+from spicy_regs.transforms import build_executive_orders, build_grants_opportunities, build_ofac, build_treasury_fiscal
 
 #: How many days back a Grants.gov run looks for the newest daily export before it reports the source as stalled.
 GRANTS_LOOKBACK_DAYS = 7
@@ -155,7 +155,28 @@ class TreasuryFiscalRollup(SourceRefreshRollup):
         return tuple(files)
 
 
+class ExecutiveOrdersRollup(SourceRefreshRollup):
+    """Publish every executive order the Federal Register API serves, keeping the published rows' bodies."""
+
+    name = "executive-orders"
+    output = build_executive_orders.OUTPUT
+    #: An injected listing fetch (URL to bytes); ``None`` uses the Federal Register owner's client.
+    fetch = None
+
+    def build(self, output_dir: Path) -> Path:
+        evidence = self.evidence
+        (table,) = self.published_tables(output_dir / "published")
+        prior = executive_orders.prior_rows(table)
+        selection = executive_orders.capture(evidence, prior=prior, results=output_dir / "body-captures",
+                                             through=datetime.now(UTC).date(), fetch=self.fetch,
+                                             transport=self.transport)
+        if "bodies" not in selection:
+            raise Unchanged(f"the API lists the {len(prior)} published orders unchanged")
+        return executive_orders.retain_and_build(selection, output_dir, evidence, prior=prior)
+
+
 ofac_sanctions_app = make_rollup_app(OfacSanctionsRollup)
 grants_opportunities_app = make_rollup_app(GrantsOpportunitiesRollup)
 administration_policy_app = make_rollup_app(AdministrationPolicyRollup)
 treasury_fiscal_app = make_rollup_app(TreasuryFiscalRollup)
+executive_orders_app = make_rollup_app(ExecutiveOrdersRollup)

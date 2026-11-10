@@ -24,7 +24,8 @@ from spicy_regs.sources import publication, r2
 from spicy_regs.sources.publication import PublicationError
 
 #: Families refreshed by hand. A family with a hosted workflow is published by that workflow, never from here.
-LOCAL_FAMILIES = frozenset({"administration-policy", "grants-opportunities", "ofac-sanctions", "treasury-fiscal"})
+LOCAL_FAMILIES = frozenset({"administration-policy", "executive-orders", "grants-opportunities", "ofac-sanctions",
+                            "treasury-fiscal"})
 RAW_ROOT_ENV = "SPICYGOV_RAW_ROOT"
 #: Either one loosens the publisher's shrink guard (``r2._assert_upload_safe``).
 SHRINK_OVERRIDES = ("R2_ALLOW_SHRINK", "R2_MIN_SIZE_RATIO")
