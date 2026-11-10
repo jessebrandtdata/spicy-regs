@@ -143,11 +143,29 @@ class NoReceiptReads:
         return getattr(self._con, name)
 
 
+def summary(**stated):
+    """Iceberg table metadata whose pinned snapshot states ``stated`` in its summary, as the live catalog's do."""
+    return {"current-snapshot-id": PINNED.snapshot_id,
+            "snapshots": [{"snapshot-id": PINNED.snapshot_id, "summary": {"operation": "append", **stated}}]}
+
+
+def as_iceberg(monkeypatch, metadata):
+    """The local catalog read as the remote one: its table metadata is ``metadata``."""
+    monkeypatch.setattr(native, "_remote_catalog", lambda con: True)
+    monkeypatch.setattr(iceberg, "_table_metadata", lambda con, rt, **kw: metadata)
+
+
 def receipts_free_route(connect, output: Path, monkeypatch):
-    """The export the mirror runs now, with every receipt reader and writer made to fail."""
+    """The export the mirror runs now, with every receipt reader and writer made to fail.
+
+    The snapshot's summary states its rows, as every comments snapshot on the live catalog did on 2026-11-09, so
+    the completeness check needs no receipt either.
+    """
     from spicy_regs import etl_bulk, etl_receipts
 
     with monkeypatch.context() as guarded:
+        as_iceberg(guarded, summary(**{"total-records": str(len(ROWS)), "total-delete-files": "0",
+                                       "total-position-deletes": "0"}))
         guarded.setattr(iceberg, "_connect", lambda: NoReceiptReads(connect()))
         guarded.setattr(iceberg, "_read_pair_snapshot", lambda con, rt, **kw: PINNED)  # metadata, not rows
         guarded.setattr(iceberg, "_receipt_metadata", lambda *a, **kw: pytest.fail("read receipt metadata"))
@@ -210,6 +228,53 @@ def test_the_receipts_free_export_equals_the_receipt_routes_table(catalog, tmp_p
     assert rows["FAA-1-0005"]["comment_text"] == "Plain text, é😀 kept"
 
 
+def export_logging(output, monkeypatch, connect):
+    """Run the export against the fixture's catalog; return its completeness line, or raise its refusal."""
+    from loguru import logger
+
+    lines = []
+    sink = logger.add(lambda message: lines.append(message.record["message"]), level="INFO")
+    try:
+        monkeypatch.setattr(iceberg, "_connect", connect)
+        monkeypatch.setattr(iceberg, "_read_pair_snapshot", lambda con, rt, **kw: PINNED)
+        iceberg.export_public_comments(output, COMMENT, snapshot=PINNED, resources=RESOURCES)
+    finally:
+        logger.remove(sink)
+    [line] = [line for line in lines if line.startswith("Comments export: copied")]
+    return line
+
+
+def test_a_copy_short_of_the_writers_count_refuses_with_both_numbers(catalog, tmp_path, monkeypatch):
+    """A partial read loses rows no published ID ever held; the writer's count is what can see it."""
+    as_iceberg(monkeypatch, summary(**{"total-records": str(len(ROWS) + 1), "total-delete-files": "0",
+                                       "total-position-deletes": "0"}))
+    with pytest.raises(RuntimeError, match=rf"copied {len(ROWS)} rows but snapshot 41 holds {len(ROWS) + 1} "
+                                           r"by its Iceberg summary"):
+        export_logging(tmp_path / "out", monkeypatch, catalog)
+    assert not list((tmp_path / "out").rglob("*.parquet"))
+
+
+@pytest.mark.parametrize("stated", [
+    {"total-delete-files": "0"},  # no total-records: the field is optional in Iceberg
+    {"total-records": str(len(ROWS) + 3), "total-delete-files": "2", "total-position-deletes": "3"},
+    None,  # not an Iceberg catalog: no metadata at all
+], ids=["fields-absent", "delete-files", "not-iceberg"])
+def test_without_a_usable_summary_the_accepted_receipts_count(catalog, tmp_path, monkeypatch, stated):
+    if stated is not None:
+        as_iceberg(monkeypatch, summary(**stated))
+    line = export_logging(tmp_path / "out", monkeypatch, catalog)
+    assert line == (f"Comments export: copied {len(ROWS)} rows; snapshot 41 holds {len(ROWS)} by its accepted "
+                    "receipts (the snapshot's summary states no usable count)")
+
+
+def test_the_receipt_count_refuses_a_row_deleted_outside_the_writer(catalog, tmp_path, monkeypatch):
+    with catalog() as con:
+        con.execute(f"DELETE FROM {native.qualified(COMMENT)} WHERE comment_id = 'FAA-1-0005'")
+    with pytest.raises(RuntimeError, match=rf"copied {len(ROWS) - 1} rows but snapshot 41 holds {len(ROWS)} "
+                                           r"by its accepted receipts"):
+        export_logging(tmp_path / "out", monkeypatch, catalog)
+
+
 def test_a_comments_generation_leaves_receipts_once_declared_and_never_takes_them_back(catalog, tmp_path, monkeypatch):
     """Publication against the fake bucket: the prior generation with receipts, then the receipts-free one.
 
@@ -253,9 +318,14 @@ def test_a_comments_generation_leaves_receipts_once_declared_and_never_takes_the
     with pytest.raises(PublicationError, match="keeps its table and publishes no receipts"):
         publish_generation(generation, client=store, bucket="b", prior_index=prior,
                            retired_receipt_datasets=RETIRED_RECEIPT_DATASETS | {"comment_attributes"})
-    after = publish_generation(generation, client=store, bucket="b", prior_index=prior,
-                               retired_receipt_datasets=RETIRED_RECEIPT_DATASETS)["families"]["comments"]
+    retired = publish_generation(generation, client=store, bucket="b", prior_index=prior,
+                                 retired_receipt_datasets=RETIRED_RECEIPT_DATASETS)
+    after = retired["families"]["comments"]
     assert "etlReceipts" not in after
+    # Never back: the receipt route's generation, published again over it, is refused while the declaration stands.
+    with pytest.raises(PublicationError, match="keeps its table and publishes no receipts"):
+        publish_generation(tmp_path / "prior", client=store, bucket="b", prior_index=retired,
+                           retired_receipt_datasets=RETIRED_RECEIPT_DATASETS)
     assert {key: value["rows"] for key, value in after["tables"].items()} == {
         "comments.parquet": len(ROWS), "comments_index.parquet": table(expected["index"]).num_rows}
     assert after["tables"]["comments.parquet"]["columns"] == before["tables"]["comments.parquet"]["columns"]
