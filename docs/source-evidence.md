@@ -101,23 +101,33 @@ The artifact root, member manifest and journal are stored under
 `source-evidence/<artifact-digest>/`. Each blob member `blobs/sha256/<hex>` is
 stored once, at `source-evidence/blobs/sha256/<hex>`, and shared by every
 artifact that cites the same bytes. A daily run that re-captures an unchanged
-source therefore sends, stores and reads back only its new bytes and small
-metadata. Consumers resolve a `source-evidence` input with the same public base
+source therefore sends and stores only its new bytes and small metadata. Consumers resolve a `source-evidence` input with the same public base
 URL: `blobs/` members under `source-evidence/`, all other members under the
 artifact's digest prefix, then admit it with the input's expected pin.
 Artifacts published before September 25, 2026 keep their blobs under their own
 prefix and stay readable there.
 
-A blob is created only from bytes whose SHA-256 equals its key, with
-Content-MD5 on every request and a create-only condition, and admission reads
-it back once. A blob that already exists is not downloaded again when its
-stored size and ETag equal those of the locally admitted bytes; rulespec then
-admits the artifact over those local bytes. Any other existing object is read
-back and refused unless its bytes match. This check cannot see a same-size
-replacement that also reproduces the MD5-based ETag, storage corruption that
-leaves the ETag unchanged, or a replacement between the check and a later
-reader's download. The shared prefix must be written only by this publisher.
-A full audit can still read every blob and admit it.
+A blob is created only from bytes whose SHA-256 equals its key, by one
+create-only request that carries the Content-MD5 of the buffer sent. Storage
+refuses a body that differs from that checksum and never overwrites an
+existing object. The blob is not downloaded again when storage answers the
+write with that buffer's MD5 as the ETag. A blob that already exists is not
+downloaded when its stored size and ETag equal those of the locally admitted
+bytes. Rulespec then admits the artifact over those local bytes. Every other
+blob is read back once and refused unless its bytes match: a multipart blob,
+a key that another writer or a retried request created first, an existing
+object with another identity, and a write answered without the expected ETag.
+Blob requests and read-backs run eight at a time.
+
+A hash that storage computed shows what storage received. These checks
+cannot see storage that kept other bytes than it hashed, a same-size
+replacement that also reproduces the MD5-based ETag, an object that decays or
+is removed after its write, or a replacement between the check and a later
+reader's download. Until November 2026 each new blob was read back once during
+admission, which could see such a fault only in the minutes between the write
+and that read. The shared prefix must be written only by this publisher.
+Readers hash every blob against its key, and a full audit can still read every
+blob and admit it.
 
 The reusable workflow always uploads `output/source-evidence/` with the run
 audit, on success and failure. The directory is outside hidden `.builds/`

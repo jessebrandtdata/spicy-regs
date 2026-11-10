@@ -64,6 +64,8 @@ PART_BYTES = 64 * 1024 * 1024
 EVIDENCE_PREFIX = "source-evidence"
 #: Concurrent blob requests while publishing evidence, as r2.py bounds its uploads.
 EVIDENCE_WORKERS = 8
+#: Bytes per read when a stored evidence blob is read back, so eight concurrent read-backs hold eight chunks.
+_READ_BACK_CHUNK = 1024 * 1024
 #: An evidence manifest lists every retained body and its journal every
 #: capture, so both grow with a run's reads (house communications' 1,043
 #: captures: a 261 KB manifest and a 588 KB journal, 2026-09-26). Rulespec
@@ -1138,8 +1140,14 @@ def _put_immutable(client, bucket: str, key: str, path: Path, *, sha256: str | N
     _put_immutable_stream(client, bucket, key, lambda: path.open("rb"), path.stat().st_size, sha256=sha256)
 
 
-def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) -> None:
-    """Conditional bounded upload from any supported original-byte reader."""
+def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) -> bool:
+    """Conditional bounded upload from any supported original-byte reader.
+
+    ``True`` only when this call created the object with one PUT and storage answered with the MD5 of the very
+    buffer sent as its ETag (a store-verified creation). ``False`` leaves the stored bytes unknown to the caller:
+    the key already held an object (including this call's own retried request), the upload was multipart, or the
+    answer named another ETag or none.
+    """
     from botocore.exceptions import ClientError
 
     if size > PART_BYTES * 10_000:
@@ -1162,12 +1170,14 @@ def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) 
             body = checked(raw)
         assert_content_address()
         try:
-            client.put_object(Bucket=bucket, Key=key, **_IMMUTABLE_HEADERS, **body, ContentLength=size,
-                              IfNoneMatch="*")
+            created = client.put_object(Bucket=bucket, Key=key, **_IMMUTABLE_HEADERS, **body, ContentLength=size,
+                                        IfNoneMatch="*")
         except ClientError as exc:
             if not _precondition(exc):
                 raise
-        return
+            return False
+        # ``body`` holds the one buffer that was read, hashed and sent; its Content-MD5 is that buffer's MD5.
+        return isinstance(created, Mapping) and created.get("ETag") == f'"{base64.b64decode(body["ContentMD5"]).hex()}"'
 
     def upload_parts(upload_id: str) -> list[dict]:
         parts = []
@@ -1187,6 +1197,7 @@ def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) 
         return parts
 
     _create_multipart(client, bucket, key, upload_parts)
+    return False
 
 
 def verify_stored_member(client, bucket: str, member: Member, open_local: Callable[[], ContextManager[BinaryIO]]
@@ -1283,9 +1294,9 @@ class _EvidenceMembers:
     """Admission source for one evidence artifact whose blobs live in the shared prefix.
 
     Metadata members come from ``source-evidence/<digest>/``. Each
-    ``blobs/sha256/<hex>`` member comes from the locally admitted copy when the
-    stored object's size and ETag already equal those bytes (``trusted``), and
-    otherwise directly from the shared remote prefix.
+    ``blobs/sha256/<hex>`` member comes from the locally admitted copy when
+    storage is already proven to hold those bytes (``trusted``, see
+    :func:`publish_evidence`), and otherwise directly from the shared remote prefix.
     """
 
     def __init__(self, client, bucket: str, prefix: str, local, blobs: set[str], trusted: set[str]):
@@ -1305,24 +1316,35 @@ class _EvidenceMembers:
 
 
 def publish_evidence(client, bucket: str, path: Path, artifact, *, archive_root: Path | None = None) -> None:
-    """Upload one locally admitted evidence artifact, sending and reading back only new blob bytes.
+    """Upload one locally admitted evidence artifact, downloading a blob only when storage's own hash cannot vouch for it.
 
     Blob members are content-addressed, so each is stored once at
     ``source-evidence/blobs/sha256/<hex>`` for every artifact that cites it.
-    A new blob is created from bytes that hash to its key and is read back once
-    before admission. An existing blob whose size and ETag equal the local
-    bytes is not transferred again; any other existing object is read back and
-    refused unless its bytes match. Small metadata stays under the artifact's
-    prefix. Uploads run ``EVIDENCE_WORKERS`` at a time. ``archive_root`` names the
-    evidence's own raw archive when it is not ``SPICYGOV_RAW_ROOT``. After every blob exists
-    and metadata is written, admission streams untrusted remote blobs directly
-    without retaining local verification copies.
+    Admission hashes a blob from its local copy once a hash storage computed
+    itself shows storage holds those bytes:
+
+    * a new blob: one create-only PUT of a buffer that was read once, hashes to
+      the key and carries its Content-MD5, so storage refuses other bytes, and
+      storage's answering ETag is that buffer's MD5;
+    * an existing blob: its stored size and ETag equal the local bytes' (one HEAD).
+
+    Any other blob is read back once, on the same worker, and held to its
+    size and SHA-256: a multipart one (over ``PART_BYTES``), a key another
+    writer or this call's own retried request created first, an existing
+    object with another identity, and an answer without the expected ETag. A
+    blob that fails that read is left to admission, which streams it from
+    storage and refuses the artifact. Small metadata stays under the
+    artifact's prefix. Blob requests run ``EVIDENCE_WORKERS`` at a time.
+    ``archive_root`` names the evidence's own raw archive when it is not
+    ``SPICYGOV_RAW_ROOT``.
     """
+    from collections import Counter
     from concurrent.futures import ThreadPoolExecutor
     from rulespec_artifacts import admit_artifact, iter_member_descriptors
     from spicy_regs.source_evidence import EvidenceMemberSource
 
     local = EvidenceMemberSource(path, archive_root=archive_root)
+    shared = _S3Members(client, bucket, EVIDENCE_PREFIX)
     prefix = f"{EVIDENCE_PREFIX}/{artifact.pin.artifact_digest.removeprefix('sha256:')}"
     declared = {member.object_key: member for member in iter_member_descriptors(artifact, local)}
     blobs, metadata = [], []
@@ -1335,28 +1357,59 @@ def publish_evidence(client, bucket: str, path: Path, artifact, *, archive_root:
             raise PublicationError(f"Evidence blob {key} is not addressed by its content")
         blobs.append(key)
 
-    def store(key: str) -> bool:
-        """Create the blob if absent; ``True`` when the stored object already equals the local bytes."""
-        stored = _head(client, bucket, f"{EVIDENCE_PREFIX}/{key}")
+    # Until ss-ag8i every new blob was also read back, one at a time inside admission: 104 of the 130 minutes
+    # each 20,000 new Mirrulations originals took in run 42674437011, which the hosted limit then killed.
+    # What the store-verified creation covers, and how:
+    #   bytes damaged or cut short in transit   refused at the write (Content-MD5, Content-Length)
+    #   storage that ignores Content-MD5        its ETag is the MD5 of what it stored, so it differs: read back
+    #   an object already at the key            the create-only PUT is refused, nothing is overwritten: read back
+    #   an answer lost and the PUT retried      the retry is refused as existing: read back
+    #   a multipart blob (composite ETag)       always read back
+    # What only reading the bytes can see, the limits an already-stored blob has had since 2026-09-25:
+    #   storage that hashed the bytes it received but kept others, and an object that decays or is removed or
+    #   replaced after its write. The old read-back saw these only when they happened within the minutes before
+    #   it ran. Every reader still hashes a blob against its key before using it, and a full audit reads them all.
+    # Generation members keep their rule ("S3 success or caller-supplied metadata is not byte-verification
+    # evidence", ``_stage_verified_generation``) and are still read back. The ETag here is neither: storage
+    # computed it from the bytes it received, where a bare 200 or a size the build supplied says nothing about
+    # bytes. It is still weaker than a read, by exactly the limits above.
+    def stored_bytes_match(key: str) -> bool:
+        """Read the stored blob once, in bounded chunks; ``True`` when it has the member's size and SHA-256."""
+        member, digest, size = declared[key], hashlib.sha256(), 0
+        with shared.open(key) as stream:
+            while size <= member.byte_size and (chunk := stream.read(_READ_BACK_CHUNK)):
+                checkpoint()
+                digest.update(chunk)
+                size += len(chunk)
+        return (size, "sha256:" + digest.hexdigest()) == (member.byte_size, member.sha256)
+
+    def store(key: str) -> str | None:
+        """Make storage hold the blob; how its stored bytes were shown equal to the local ones, else ``None``."""
+        remote = f"{EVIDENCE_PREFIX}/{key}"
+        stored = _head(client, bucket, remote)
         if stored is None:
-            _put_immutable_stream(
-                client, bucket, f"{EVIDENCE_PREFIX}/{key}", lambda: local.open(key),
-                declared[key].byte_size, sha256=declared[key].sha256,
-            )
-            return False
-        with local.open(key) as stream:
-            identity = _stream_identity(stream)
-        if (stored["ContentLength"], stored.get("ETag")) == (identity["bytes"], identity["etag"]):
-            return True
-        logger.warning("Stored evidence blob {} differs from its expected identity; reading it back", key)
-        return False
+            if _put_immutable_stream(client, bucket, remote, lambda: local.open(key), declared[key].byte_size,
+                                     sha256=declared[key].sha256):
+                return "created"
+        else:
+            with local.open(key) as stream:
+                identity = _stream_identity(stream)
+            if (stored["ContentLength"], stored.get("ETag")) == (identity["bytes"], identity["etag"]):
+                return "already stored"
+        if stored_bytes_match(key):
+            return "read back"
+        logger.warning("Stored evidence blob {} differs from its content address; admission will refuse it", key)
+        return None
 
     with ThreadPoolExecutor(max_workers=EVIDENCE_WORKERS) as pool:
-        trusted = {key for key, same in zip(blobs, pool.map(store, blobs), strict=True) if same}
+        shown = dict(zip(blobs, pool.map(store, blobs), strict=True))
+    if blobs:
+        logger.info("Evidence blobs: {}", ", ".join(
+            f"{count:,} {how or 'refused'}" for how, count in Counter(shown.values()).most_common()))
     for key in metadata:
         _put_immutable(client, bucket, f"{prefix}/{key}", path / key)
     admit_artifact(
-        _EvidenceMembers(client, bucket, prefix, local, set(blobs), trusted),
+        _EvidenceMembers(client, bucket, prefix, local, set(blobs), {key for key, how in shown.items() if how}),
         expected_pin=artifact.pin,
     )
 
