@@ -40,9 +40,12 @@ env:
 jobs:
   publish:
     runs-on: ${{ inputs.comments_runner }}
-    # Unchanged snapshots verify object versions only. Changed snapshots scan
-    # once into agency staging, sort each agency, then stream the monolith.
-    timeout-minutes: ${{ inputs.promote_v1 && 360 || 180 }}
+    # Unchanged snapshots verify object versions only. A changed snapshot exports
+    # the catalog pair, rebinds and then admits every receipt in Python, stages
+    # by agency, sorts each agency and streams the monolith. The two receipt
+    # passes alone took 37 and 29 minutes for 26.4M rows on an M4 Pro (ss-7flp)
+    # and no hosted run has finished them, so every route gets the hosted maximum.
+    timeout-minutes: 360
 
     steps:
       - name: Check retained original pair before checkout
