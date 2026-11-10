@@ -132,13 +132,15 @@ def test_comments_table_commit_fails_even_when_counts_agree(published, capsys):
     assert "fixed index=1, actual=2" in capsys.readouterr().out
 
 
-def test_shared_receipt_table_write_takes_the_content_path(published, capsys):
-    """Any writer's etl_receipts commit moves the shared table; counts decide (the accepted ~95 s path)."""
+def test_a_shared_receipt_table_write_keeps_the_bound_path(published, capsys):
+    """Comments publish no receipts (ss-juz8): a receipt-only commit leaves the publication current, as the mirror
+    judges it, so no row is read (it cost ~95 s per night on 2026-11-09)."""
     published["receipts_bound"] = False
+    published["catalog_errors"] = ["would only show if the rows were read"]
     assert freshness.main() == 0
-    assert "shared etl_receipts table changed" in capsys.readouterr().out
-    published["catalog_errors"] = ["comments coverage EPA/EPA-1/2026-9: fixed index=1, actual=2"]
-    assert freshness.main() == 1
+    out = capsys.readouterr().out
+    assert "OK: generation" in out and "etl_receipts" not in out
+    assert published["verified"] == []
 
 
 def test_declared_schema_drift_fails_the_bound_path(published, monkeypatch, capsys):
