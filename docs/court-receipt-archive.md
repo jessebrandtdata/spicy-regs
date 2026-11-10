@@ -214,16 +214,56 @@ receipts-free publication.
 
 ## The other court families (planned)
 
-| Family | Cadence | Receipt-only fields | Prior read today | Switch |
-| --- | --- | --- | --- | --- |
-| `court-opinion-clusters` | daily search catch-up; rebuild per export | `source`, `slug`, `absolute_url`, `date_created`, `date_modified`, `ingest_source`, `raw_source_record` (search rows) | rebuild restores the 3.4 GB table through 2.1 GB of receipts; catch-up downloads both and combines receipts | promote these columns; the catch-up appends to the table alone; the rebuild merges in DuckDB at the published table |
-| `courtlistener` (`court_dockets`) | daily | `date_created`, `absolute_url`, `raw_source_record`, the list originals | restores through receipts every night | promote; merge at the published table |
-| `court-docket-groups` | by hand | `edition`, `rule_version`, `match_basis` | none | promote |
-| `court-opinion-pdf-extractions` | by hand | none (`sha1_matches` text is the writer's own) | prior and receipts | mark retired |
+Measured the same way on 2026-11-10 (twelve sampled row groups of the clusters'
+receipts, all four of the dockets'):
 
-The clusters' daily catch-up keeps its place inside the 125-a-day quota in the
-generation's evidence journal (`catchup-selection` / `export-selection`:
-edition and the id reached), not in receipts, so its resume state survives the
-switch unchanged. Each daily family's first receipts-free night must read its
-prior's receipts one last time to fill the new columns, and its pin must be
-written the day it merges.
+| Family | Cadence | Table | Receipts | Receipt-only fields (share of rows holding one) |
+| --- | --- | ---: | ---: | --- |
+| `court-opinion-clusters` | daily search catch-up; rebuild per export | 3.42 GB, 10,177,343 rows | 2.14 GB | `absolute_url`, `slug`, `date_created`, `date_modified` (99 to 100%), `ingest_source`, `source` (100%), `raw_source_record` (0.7%: the search rows, about 2 KB each) |
+| `courtlistener` (`court_dockets`) | daily | 2.1 MB, 11,611 rows | 20.5 MB | `absolute_url`, `date_created` (100%), `raw_source_record` (2.7%) |
+| `court-docket-groups` | by hand | 914 rows | 0.1 MB | `edition`, `rule_version`, `match_basis` |
+| `court-opinion-pdf-extractions` | by hand | 3 rows | 0.02 MB | none (`sha1_matches` text is the writer's own `true`) |
+
+Every receipt in these four is `accepted` too. The clusters' `conversion_inputs`
+(about 3.1 GB uncompressed) is the attorneys prose and the booleans' and
+counts' text, all canonical in the sample, so it is not promoted; the promoted
+fields add an estimated 1.8 GB uncompressed to the clusters table (a few
+hundred MB compressed, not measured). The dockets' `parties_json`,
+`attorneys_json` and `firms_json` are the native lists' own serialisation.
+
+**Where the clusters' catch-up keeps its place.** The daily run decides what to
+do from the published generation's evidence journal: `held_selection` reads the
+inherited `catchup-selection` or `export-selection` event (the export edition
+and the id the table is complete through), and the quota from the account's
+usage endpoint (`courtlistener_resume`). Neither is in receipts, so the switch
+does not move the resume state. What does depend on receipts today, and goes:
+`_published_prior` requires the family's receipt member, the run downloads it
+(2.14 GB) beside the table and combines it with the delta's receipts, and a
+rebuild restores the whole prior through it (the 47 minutes of run
+42727712481) before merging.
+
+Steps, each one pull request that keeps every nightly green:
+
+1. **Clusters.** Promote the fields above (policy `courts/2`). The catch-up
+   downloads the table alone, maps the day's search rows with
+   `court_bulk.write_table` (or the row function: a few hundred rows) and
+   appends; the rebuild maps the new export the same way and merges it at the
+   published table in DuckDB (fresh wins on `cluster_id`, order `date_filed
+   DESC, cluster_id`), so no prior row passes through Python. Its first night
+   must fill the new columns for the 10.2 million carried rows: one last read
+   of the published receipts, joined on `cluster_id` in DuckDB with the same
+   extraction `receipt_copy_differences` uses, then the receipts and the old
+   table are released before the append (peak about 3.4 + 2.1 + 3.7 GB, inside
+   the job's freed disk). Write its pin the day it merges, after that day's
+   04:20 UTC run: the live generation then is the last with receipts.
+2. **Dockets.** Promote `absolute_url`, `date_created`, `raw_source_record`;
+   the nightly downloads the 2 MB table instead of restoring it, selects the
+   unnamed dockets by `parties IS NULL`, and merges at the published table.
+   Its first night reads the receipts once for the new columns. Pin the same
+   day, after 18:30 UTC.
+3. **Docket groups and PDF extractions,** by hand: promote the three groups
+   fields; mark the extractions retired (their `parent_generation_id` is NULL
+   for a receipts-free parent, as for older parents now).
+4. **Delete the court receipt route** (`court_receipts.py`, `court_restore.py`,
+   the receipt half of `court_bulk.py`, `CourtReceiptRollup`, the court branch
+   of the native converter) once no court table is on it.
