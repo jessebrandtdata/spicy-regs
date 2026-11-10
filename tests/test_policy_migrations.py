@@ -252,3 +252,27 @@ def test_the_generator_marks_a_replay_only_when_asked_and_only_for_a_change(tmp_
                       ledger_path=ledger_path, installed=root)
     [earlier] = json.loads(ledger_path.read_text())["bill_cosponsors"]["earlier"]
     assert earlier[REPLAY_REQUIRED] == "the new column is NOT NULL"
+
+
+def test_a_marker_landing_with_promoted_columns_still_reads_the_prior(tmp_path, staged_ledger, monkeypatch):
+    """The plan's route for bill-family and the small Congress families: one change promotes columns and marks the
+    table retired, and that night's run still restores its prior through receipts under the new policy.
+
+    Before, the generator and the guard skipped a marked table, so the promoted policy recorded nothing earlier and
+    that last receipts read refused its own prior.
+    """
+    from scripts.update_etl_policy_declarations import record_migrations
+    from spicy_regs import subject_catalog
+
+    ledger_path, root = _staged(tmp_path, "bill_cosponsors")
+    current = installed_policies()["bill_cosponsors"]
+    promoted = replace(current, subject_schema=current.subject_schema.append(pa.field("source_sha256", pa.string())),
+                       policy_version="congress-subjects/9")
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset({"bill_cosponsors"}))
+    record_migrations({"bill_cosponsors": {**promoted.descriptor(), subject_catalog.RECEIPTS_RETIRED: True}}, {},
+                      ledger_path=ledger_path, installed=root)
+    staged_ledger(ledger_path)
+    assert [descriptor_digest(p) for p in receipt_policies(promoted)] == [
+        descriptor_digest(promoted), descriptor_digest(current)]
+    installed = {**installed_policies(), "bill_cosponsors": promoted}
+    assert unreadable_shipped_policies(installed, json.loads(ledger_path.read_text())) == []

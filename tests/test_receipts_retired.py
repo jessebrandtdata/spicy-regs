@@ -65,7 +65,8 @@ def test_admission_needs_no_receipts_for_a_retired_table_and_refuses_them(retire
         require_registered_receipts({**tables, "fr_docket_links.parquet": {}}, None)
 
 
-def test_the_ledger_guard_leaves_a_retired_tables_entry_as_the_record_of_its_receipts(retire):
+def test_the_ledger_guard_checks_a_retired_table_like_any_other(retire):
+    """A marked table's policy may still change in the commit that marks it; an unrecorded change still fails."""
     from spicy_regs.etl_policy_registry import installed_policies
 
     installed = installed_policies()
@@ -73,9 +74,8 @@ def test_the_ledger_guard_leaves_a_retired_tables_entry_as_the_record_of_its_rec
     installed["federal_register"] = replace(current, subject_schema=current.subject_schema.append(
         pa.field("added_later", pa.string())), policy_version="regulations-native-v9")
     migrations = copy.deepcopy(dict(ledger()))
-    assert [p.split(":")[0] for p in unreadable_shipped_policies(installed, migrations)] == ["federal_register"]
     retire("federal_register")
-    assert unreadable_shipped_policies(installed, migrations) == []
+    assert [p.split(":")[0] for p in unreadable_shipped_policies(installed, migrations)] == ["federal_register"]
 
 
 def test_the_generator_keeps_the_marker_its_installed_file_carries(retire):

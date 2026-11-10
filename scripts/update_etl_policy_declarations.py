@@ -97,19 +97,18 @@ def record_migrations(declared, replays, *, ledger_path=None, installed=None):
     A dataset whose descriptor changes must change its ``policy_version`` too; its previous installed descriptor
     becomes its newest earlier entry, which the new policy reads, unless ``replays`` gives a reason for it (then it is
     replay-required and needs a registered replay, ``policy_migrations.REPLAYS``). A new dataset is recorded as
-    installed. A table whose receipts are retired keeps the entry it has: no prior of it is read through receipts.
+    installed. A table whose receipts are retired is recorded like any other: the change that marks it may also
+    promote columns, and its last night on receipts must still read its prior under the new policy.
     """
     from spicy_regs.etl_receipts import DatasetPolicy
     from spicy_regs.policy_migrations import LEDGER, REPLAY_REQUIRED, descriptor_digest
-    from spicy_regs.subject_catalog import descriptor_of, retired_receipt_datasets
+    from spicy_regs.subject_catalog import descriptor_of
 
     ledger_path = ledger_path or ROOT / 'src/spicy_regs' / LEDGER
     installed = installed or ROOT / 'src/spicy_regs/etl_policies'
     ledger = json.loads(ledger_path.read_text())
     unused = set(replays)
     for name, declaration in sorted(declared.items()):
-        if name in retired_receipt_datasets():
-            continue
         policy = DatasetPolicy.from_descriptor(descriptor_of(declaration))
         digest = descriptor_digest(policy)
         entry = ledger.setdefault(name, {'installed': digest})
@@ -141,8 +140,14 @@ def main(argv=None):
     directory = ROOT / 'src/spicy_regs/etl_policies'
     policies = declarations()
     record_migrations(policies, replays)
+    rewritten = 0
     for name, declared in policies.items():
-        (directory / f'{name}.json').write_text(json.dumps(declared, indent=2) + '\n')
+        path = directory / f'{name}.json'
+        # Only a changed declaration is rewritten, so a run on an unchanged tree rewrites nothing (eight files
+        # written with sorted keys on 2026-10-10, 02987594, differ from this layout in key order alone).
+        if not path.exists() or json.loads(path.read_text()) != declared:
+            path.write_text(json.dumps(declared, indent=2) + '\n')
+            rewritten += 1
     stale = {p.stem for p in directory.glob('*.json')} - policies.keys()
     if stale:
         raise ValueError(f'Unowned installed policy declarations: {sorted(stale)}')
@@ -174,7 +179,7 @@ def main(argv=None):
                          "arrow_schema": base64.b64encode(schema.serialize().to_pybytes()).decode(),
                          "descriptions": {column: prose[column] for column in schema.names}}
     (ROOT / "src/spicy_regs/fec_processing_schemas.json").write_text(json.dumps(payload, indent=2) + "\n")
-    print(f'Updated {len(policies)} explicit policies')
+    print(f'Rewrote {rewritten} of {len(policies)} explicit policies')
 
 if __name__ == '__main__':
     main()
