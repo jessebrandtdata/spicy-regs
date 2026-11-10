@@ -254,6 +254,11 @@ def test_only_the_comment_attributes_family_gets_more_than_thirty_minutes():
     rollup = yaml.safe_load((WORKFLOW.parent / "_rollup.yml").read_text())
     assert rollup[True]["workflow_call"]["inputs"]["timeout_minutes"]["type"] == "number"
     assert rollup["jobs"]["rollup"]["timeout-minutes"] == "${{ inputs.timeout_minutes }}"
+    # Three copies of its 4.2 GiB receipt member do not fit the 14 GB a hosted runner guarantees.
+    assert families["with"]["free_disk"] == "${{ matrix.command == 'run-rollup-comment-attributes' }}"
+    assert rollup[True]["workflow_call"]["inputs"]["free_disk"]["type"] == "boolean"
+    freeing = [step for step in rollup["jobs"]["rollup"]["steps"] if "inputs.free_disk" in str(step.get("if"))]
+    assert freeing and "sudo rm -rf" in freeing[0]["run"]
 
 
 @pytest.mark.parametrize(

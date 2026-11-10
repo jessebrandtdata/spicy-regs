@@ -92,6 +92,10 @@ jobs:
       # Run 42674437011 then spent 10.6 minutes admitting and 9.2 publishing the same generation: about 121
       # in all, never yet run hosted at this size, so 180. The other four stay within 30 (ss-ag8i).
       timeout_minutes: ${{ matrix.command == 'run-rollup-comment-attributes' && 180 || 30 }}
+      # It holds the 4.2 GiB receipt member three times over (selected, scoped, rewritten) beside the table
+      # and the sealed generation: an estimated 13-17 GiB against the 14 GB a hosted runner guarantees.
+      # free_disk removes about 25 GB of preinstalled toolchains first and logs the lowest free disk seen.
+      free_disk: ${{ matrix.command == 'run-rollup-comment-attributes' }}
   mirror:
     needs: base-families
     if: ${{ !cancelled() && (needs.base-families.result == 'success' || inputs.promote_v1 || inputs.comments_only) }}
