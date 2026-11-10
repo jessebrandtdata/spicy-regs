@@ -1,18 +1,21 @@
 """Every dataset policy a generation was published under, and how each earlier one is still read (ss-aj7t, ss-ag1j).
 
 ``policy_migrations.json`` holds, per installed dataset, the digest of its installed ``etl_policies`` file and,
-oldest first, the whole descriptor of every policy it shipped under before. Those are the dataset's shipped
-policies, in order. The installed policy reads each earlier one, and an earlier one reads those before it
-(``earlier_policies``): a row selected under one is admitted and carried forward under its own receipt. An
-entry that also states ``replay_required`` (a reason, kept beside the descriptor and left out of its digest, like
-``subject_catalog.SHARED_LOG``) is still recognised, but its rows cannot become current rows: the next run
-rebuilds them from retained originals (``REPLAYS``).
+oldest first, the whole descriptor of every policy it was published under before. The installed policy reads each
+earlier one, and an earlier one reads those before it (``earlier_policies``): a row selected under one is admitted
+and carried forward under its own receipt. Two markers may stand beside a descriptor, each a reason, left out of
+its digest (like ``subject_catalog.SHARED_LOG``):
 
-This replaced a 316-line ladder of per-version branches over twelve history files (``earlier_receipt_policies``),
-whose answers for every installed policy are frozen in ``tests/fixtures/policy_migrations``. The ledger was seeded
-from the policies the live generations' roots declared (2026-11-09) plus every earlier policy the ladder declared
-readable. ``unreadable_shipped_policies`` is the CI guard: an installed policy the ledger does not record as
-current fails before a nightly meets the old generation (``scripts/update_etl_policy_declarations.py`` records it).
+- ``replay_required``: still recognised, but its rows cannot become current rows; the next run rebuilds them from
+  retained originals (``REPLAYS``).
+- ``unread``: no later policy reads it, so a prior under it is refused; it is recorded so a reader of a generation
+  published under it can still check that generation's shape (``earlier_policy``).
+
+The shipped policies are the earlier entries that are not ``unread``, then the installed one. This replaced a
+316-line ladder of per-version branches over twelve history files (``earlier_receipt_policies``); its answers are
+frozen in ``tests/fixtures/policy_migrations``. ``unreadable_shipped_policies`` is the CI guard: an installed policy
+the ledger does not record as current fails before a nightly meets the old generation
+(``scripts/update_etl_policy_declarations.py`` records it), and ``published_policies_unrecorded`` is the live check.
 """
 
 from __future__ import annotations
@@ -24,14 +27,16 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cache
 from importlib.resources import files
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from spicy_regs.etl_receipts import DatasetPolicy
 
 LEDGER = "policy_migrations.json"
-#: The one key an earlier entry may carry beside its ``DatasetPolicy.descriptor()``.
+#: The keys an earlier entry may carry beside its ``DatasetPolicy.descriptor()``; each states a reason.
 REPLAY_REQUIRED = "replay_required"
+UNREAD = "unread"
+MARKERS = frozenset({REPLAY_REQUIRED, UNREAD})
 
 
 @dataclass(frozen=True)
@@ -79,67 +84,74 @@ def ledger() -> Mapping:
     return json.loads(files("spicy_regs").joinpath(LEDGER).read_text())
 
 
-def _earlier(entry: Mapping) -> list[tuple[str, DatasetPolicy, str | None]]:
-    """``(digest, policy, replay reason)`` for each earlier entry of one dataset's ledger entry, oldest first."""
+class _Entry(NamedTuple):
+    digest: str
+    policy: DatasetPolicy
+    replay: str | None
+    unread: str | None
+
+
+def _entries(entry: Mapping) -> tuple[_Entry, ...]:
+    """Each earlier entry of one dataset's ledger entry, oldest first."""
     from spicy_regs.etl_receipts import DatasetPolicy
 
-    earlier = []
+    found = []
     for declared in entry.get("earlier", ()):
-        policy = DatasetPolicy.from_descriptor({k: v for k, v in declared.items() if k != REPLAY_REQUIRED})
-        earlier.append((descriptor_digest(policy), policy, declared.get(REPLAY_REQUIRED)))
-    return earlier
+        policy = DatasetPolicy.from_descriptor({k: v for k, v in declared.items() if k not in MARKERS})
+        found.append(_Entry(descriptor_digest(policy), policy, declared.get(REPLAY_REQUIRED), declared.get(UNREAD)))
+    return tuple(found)
 
 
 @cache
-def _recorded(dataset: str) -> tuple[str | None, tuple[tuple[str, DatasetPolicy, str | None], ...]]:
+def _recorded(dataset: str) -> tuple[str | None, tuple[_Entry, ...]]:
     entry = ledger().get(dataset, {})
-    return entry.get("installed"), tuple(_earlier(entry))
+    return entry.get("installed"), _entries(entry)
 
 
 def earlier_policies(policy: DatasetPolicy) -> tuple[DatasetPolicy, ...]:
     """The shipped policies before this exact one, newest first; none for a descriptor the ledger does not record.
 
-    A lookup by digest: the installed policy reads every earlier entry and an earlier entry the ones before it. A
-    fixture, a partial writer schema or a changed policy not yet recorded shares a version label at most, and reads
-    nothing it did not ship after.
+    A lookup by digest: the installed policy reads every earlier entry that is not ``unread``, and an earlier entry
+    the ones before it. A fixture, a partial writer schema or a changed policy not yet recorded shares a version
+    label at most, and reads nothing it did not ship after.
     """
     installed, earlier = _recorded(policy.dataset)
     digest = descriptor_digest(policy)
     found = len(earlier) if digest == installed else next(
-        (at for at, (recorded, _, _) in enumerate(earlier) if recorded == digest), None)
-    return () if found is None else tuple(p for _, p, _ in reversed(earlier[:found]))
+        (at for at, entry in enumerate(earlier) if entry.digest == digest), None)
+    return () if found is None else tuple(e.policy for e in reversed(earlier[:found]) if e.unread is None)
 
 
 def earlier_policy(dataset: str, policy_version: str) -> DatasetPolicy:
-    """The recorded earlier policy of ``dataset`` shipped under ``policy_version``."""
-    for _, policy, _ in _recorded(dataset)[1]:
-        if policy.policy_version == policy_version:
-            return policy
-    raise KeyError(f"{dataset} shipped no earlier policy {policy_version} ({LEDGER})")
+    """The recorded earlier policy of ``dataset`` published under ``policy_version``, ``unread`` or not."""
+    for entry in _recorded(dataset)[1]:
+        if entry.policy.policy_version == policy_version:
+            return entry.policy
+    raise KeyError(f"{dataset} recorded no earlier policy {policy_version} ({LEDGER})")
 
 
 def shipped(dataset: str, migrations: Mapping | None = None) -> list[str]:
-    """The descriptor digests ``dataset`` shipped under, in order: its earlier entries, then the installed one."""
+    """The digests a generation of ``dataset`` may still state, in order: its read earlier entries, the installed."""
     entry = (ledger() if migrations is None else migrations).get(dataset)
     if entry is None:
         return []
-    return [digest for digest, _, _ in _earlier(entry)] + [entry["installed"]]
+    return [e.digest for e in _entries(entry) if e.unread is None] + [entry["installed"]]
 
 
 def replay_reason(policy, migrations: Mapping | None = None) -> str | None:
     """Why rows selected under this exact policy are rebuilt rather than carried; ``None`` when they carry."""
-    earlier = _recorded(policy.dataset)[1] if migrations is None else _earlier(migrations.get(policy.dataset, {}))
+    earlier = _recorded(policy.dataset)[1] if migrations is None else _entries(migrations.get(policy.dataset, {}))
     digest = descriptor_digest(policy)
-    return next((reason for recorded, _, reason in earlier if recorded == digest), None)
+    return next((e.replay for e in earlier if e.digest == digest), None)
 
 
 def unreadable_shipped_policies(installed: Mapping | None = None, migrations: Mapping | None = None) -> list[str]:
     """Each installed policy the ledger does not record as current, and each malformed earlier entry.
 
-    Every recorded earlier entry is readable by construction. What can still be wrong: the installed file changed
-    without being recorded (the 2026-11-09 failure, ss-aj7t: a nightly refused its own prior), two shipped
-    descriptors share a version label (receipts name their policy by label), or a replay-required entry has no
-    reason or no code that replays it.
+    Every recorded earlier entry is read unless it says why not. What can still be wrong: the installed file
+    changed without being recorded (the 2026-11-09 failure, ss-aj7t: a nightly refused its own prior), two recorded
+    descriptors share a version label (receipts name their policy by label), or a marker states no reason, or a
+    replay-required entry has no code that replays it.
     """
     from spicy_regs.etl_policy_registry import installed_policies
 
@@ -154,20 +166,19 @@ def unreadable_shipped_policies(installed: Mapping | None = None, migrations: Ma
                             f"{LEDGER}; record it with scripts/update_etl_policy_declarations.py, which keeps the "
                             "previous one as an earlier entry")
             continue
-        if any(declared.get("dataset") != name or set(declared) - {REPLAY_REQUIRED} != set(policy.descriptor())
-               for declared in entry.get("earlier", ())):
-            problems.append(f"{name}: an earlier entry is not a descriptor of this dataset")
+        if any(declared.get("dataset") != name or set(declared) - MARKERS != set(policy.descriptor())
+               or len(MARKERS & set(declared)) > 1 for declared in entry.get("earlier", ())):
+            problems.append(f"{name}: an earlier entry is not a descriptor of this dataset with at most one marker")
             continue
-        earlier = _earlier(entry)
-        versions = [p.policy_version for _, p, _ in earlier] + [policy.policy_version]
+        earlier = _entries(entry)
+        versions = [e.policy.policy_version for e in earlier] + [policy.policy_version]
         if len(set(versions)) != len(versions):
-            problems.append(f"{name}: two shipped descriptors share a policy_version: {versions}")
-        for digest, _, reason in earlier:
-            if reason is None:
-                continue
-            if not str(reason).strip():
-                problems.append(f"{name}: replay-required {digest} states no reason")
-            elif not _registered(name):
+            problems.append(f"{name}: two recorded descriptors share a policy_version: {versions}")
+        for e in earlier:
+            for marker, reason in ((REPLAY_REQUIRED, e.replay), (UNREAD, e.unread)):
+                if reason is not None and not str(reason).strip():
+                    problems.append(f"{name}: {marker} {e.digest} states no reason")
+            if e.replay is not None and str(e.replay).strip() and not _registered(name):
                 problems.append(f"{name}: replay-required in {LEDGER} but no code replays it "
                                 "(policy_migrations.REPLAYS)")
     return problems

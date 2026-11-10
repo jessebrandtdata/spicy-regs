@@ -74,6 +74,22 @@
     "identity_fields": [
      "bill_id",
      "summary_version_code",
+     "action_date"
+    ],
+    "nullable_identity_fields": [],
+    "policy_version": "legislative-documents/1",
+    "receipt_fields": [
+     "raw_source_row"
+    ],
+    "receipt_only": false,
+    "subject_schema": "/////7gBAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAcAAABYAQAADAEAANwAAACsAAAAfAAAAEgAAAAEAAAA1P7//wAAAQIQAAAAKAAAAAQAAAAAAAAADQAAAHN1bW1hcnlfY2hhcnMAAAAIAAwACAAHAAgAAAAAAAABQAAAABT///8AAAEFEAAAACAAAAAEAAAAAAAAAAwAAABzdW1tYXJ5X2h0bWwAAAAADP///0T///8AAAEFEAAAABwAAAAEAAAAAAAAAAsAAAB1cGRhdGVfZGF0ZQA4////cP///wAAAQUQAAAAHAAAAAQAAAAAAAAACwAAAGFjdGlvbl9kZXNjAGT///+c////AAABBRAAAAAcAAAABAAAAAAAAAALAAAAYWN0aW9uX2RhdGUAkP///8j///8AAAEFEAAAACgAAAAEAAAAAAAAABQAAABzdW1tYXJ5X3ZlcnNpb25fY29kZQAAAADI////EAAUAAgABgAHAAwAAAAQABAAAAAAAAEFEAAAABwAAAAEAAAAAAAAAAcAAABiaWxsX2lkAAQABAAEAAAAAAAAAA==",
+    "unread": "Read only by legislative-documents/2, through its registered identity migration (receipt_history.crs_revision_identity_migrations). legislative-documents/3 reads /2 only to identify it as replay-required, so a prior under /1 is refused. Kept so a reader of a /1 generation can check its shape (legislative_documents.recorded_subject)."
+   },
+   {
+    "dataset": "bill_publisher_summaries",
+    "identity_fields": [
+     "bill_id",
+     "summary_version_code",
      "action_date",
      "update_date"
     ],
@@ -260,6 +276,23 @@
   "installed": "sha256:45376e567fec15960c1f2148432e84b906f5327e3d9549a64f7bd4c89cb863f6"
  },
  "committee_reports": {
+  "earlier": [
+   {
+    "dataset": "committee_reports",
+    "identity_fields": [
+     "package_id",
+     "part_id"
+    ],
+    "nullable_identity_fields": [],
+    "policy_version": "legislative-documents/1",
+    "receipt_fields": [
+     "raw_source_row"
+    ],
+    "receipt_only": false,
+    "subject_schema": "/////1AEAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAABQAAADwAwAAsAMAAIADAABQAwAAHAMAAPACAADEAgAAlAIAAGACAAA0AgAAAAIAAMQBAACQAQAAWAEAABABAADUAAAAnAAAAGAAAAA0AAAABAAAAHD8//8AAAEFEAAAABwAAAAEAAAAAAAAAAsAAABwYXJ0X251bWJlcgBg/P//nPz//wAAAQUQAAAAGAAAAAQAAAAAAAAABwAAAHBhcnRfaWQAiPz//8T8//8AAAEFEAAAACgAAAAEAAAAAAAAABcAAABlc3RpbWF0ZV9hYnNlbmNlX3JlYXNvbgDA/P///Pz//wAAAQUQAAAAJAAAAAQAAAAAAAAAEAAAAGxldHRlcl9zaWduYXRvcnkAAAAA9Pz//zD9//8AAAECEAAAACAAAAAEAAAAAAAAAA8AAABsZXR0ZXJfc3Bhbl9lbmQAxP///wAAAAFAAAAAaP3//wAAAQIQAAAALAAAAAQAAAAAAAAAEQAAAGxldHRlcl9zcGFuX3N0YXJ0AAAACAAMAAgABwAIAAAAAAAAAUAAAACs/f//AAABBRAAAAAkAAAABAAAAAAAAAAQAAAAZXN0aW1hdGVfaGVhZGluZwAAAACk/f//4P3//wAAAQUQAAAAIAAAAAQAAAAAAAAADwAAAHJlY2l0YWxfYmlsbF9pZADU/f//EP7//wAAAQYQAAAAKAAAAAQAAAAAAAAAFgAAAHJlcG9ydF9zdGF0ZXNfZXN0aW1hdGUAAAz+//9I/v//AAABBRAAAAAgAAAABAAAAAAAAAAPAAAAYm9keV92ZXJzaW9uX2lkADz+//94/v//AAABBRAAAAAYAAAABAAAAAAAAAAHAAAAYmlsbF9pZABk/v//oP7//wAAAQUQAAAAIAAAAAQAAAAAAAAADQAAAGxhc3RfbW9kaWZpZWQAAACU/v//0P7//wAAAQUQAAAAHAAAAAQAAAAAAAAACwAAAGRhdGVfaXNzdWVkAMD+///8/v//AAABBRAAAAAYAAAABAAAAAAAAAAFAAAAdGl0bGUAAADo/v//JP///wAAAQUQAAAAGAAAAAQAAAAAAAAABwAAAGNoYW1iZXIAEP///0z///8AAAEFEAAAACAAAAAEAAAAAAAAAA0AAAByZXBvcnRfbnVtYmVyAAAAQP///3z///8AAAEFEAAAABwAAAAEAAAAAAAAAAsAAAByZXBvcnRfdHlwZQBs////qP///wAAAQUQAAAAHAAAAAQAAAAAAAAACAAAAGNvbmdyZXNzAAAAAJj////U////AAABBRAAAAAcAAAABAAAAAAAAAAKAAAAY29sbGVjdGlvbgAAxP///xAAFAAIAAYABwAMAAAAEAAQAAAAAAABBRAAAAAgAAAABAAAAAAAAAAKAAAAcGFja2FnZV9pZAAABAAEAAQAAAA=",
+    "unread": "legislative-documents/2 moved the five per-letter columns to committee_report_cbo_letters (ss-uep5) and /3 keys parts by date with no migration of /1 keys, so a prior under /1 is refused. Kept so a reader of a /1 generation can check its shape (legislative_documents.recorded_subject)."
+   }
+  ],
   "installed": "sha256:7267f1aca5061e6c2ed6eab3f30e01bd32b4097b58c259c9ff081adc4d6803f4"
  },
  "committee_reports_document_file_outcomes": {

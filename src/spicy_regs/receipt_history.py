@@ -17,7 +17,7 @@ def crs_revision_identity_migrations(policy, subject_mapper):
     The family's existing mapper interprets the raw date. The previous receipt
     remains immutable; its alias is used only to find a migration predecessor.
     """
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
     from spicy_regs.etl_receipts import decode_exact_json, subject_identity
 
     registered = {

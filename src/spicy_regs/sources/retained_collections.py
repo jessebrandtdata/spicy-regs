@@ -101,8 +101,8 @@ def _code_pins() -> dict:
     receipt_root = Path(inspect.getfile(etl_receipts)).parent
     for name in (
         "etl_bulk.py",
-        "earlier_receipt_policies.py",
-        "navigation_policy_history.json",
+        "policy_migrations.py",
+        "policy_migrations.json",
         "parquet_rows.py",
         "native_types.py",
     ):

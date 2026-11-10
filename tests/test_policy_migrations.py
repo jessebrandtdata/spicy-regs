@@ -12,7 +12,7 @@ from spicy_regs.etl_policy_registry import installed_policies
 from spicy_regs.etl_receipts import DatasetPolicy, receipt_policies
 from spicy_regs.legislative_receipts import policy as legislative_policy
 from spicy_regs.policy_migrations import (
-    REPLAY_REQUIRED, descriptor_digest, earlier_policies, earlier_policy, ledger, replay_reason, shipped,
+    REPLAY_REQUIRED, UNREAD, descriptor_digest, earlier_policies, earlier_policy, ledger, replay_reason, shipped,
     unreadable_shipped_policies,
 )
 from spicy_regs.transforms.regulations_receipts import policy as regulations_policy
@@ -32,54 +32,26 @@ def test_the_ledger_answers_what_the_retired_ladder_answered():
     """Every installed policy, every history-file descriptor and every policy the ladder returned (350 asked).
 
     The answers were frozen from ``earlier_receipt_policies.earlier_policies`` before it was deleted, so a later
-    ledger edit that changes what any of them reads fails here. The ledger stores no digest of its own answer:
-    the fixture's are the ladder's. Deviations are the 24 descriptors no installed policy reaches, each with why.
+    ledger edit that changes what any of them reads fails here. Deviations are the 24 descriptors no installed
+    policy reaches, each with why.
     """
     frozen = _fixture("earlier_receipt_policies_20261110.json")
-    policies = {}
+    recorded = {}
     for name, policy in installed_policies().items():
-        policies[descriptor_digest(policy)] = policy
-        policies.update((descriptor_digest(p), p) for p in earlier_policies(policy))
+        recorded[descriptor_digest(policy)] = policy
+        for declared in ledger()[name].get("earlier", ()):
+            earlier = earlier_policy(name, declared["policy_version"])
+            recorded[descriptor_digest(earlier)] = earlier
     answers, deviations = frozen["answers"], frozen["deviations"]
-    assert set(deviations) <= set(answers) and all(d["why"] for d in deviations.values())
-    reached = set()
+    assert set(recorded) == set(answers) and set(deviations) <= set(answers)
+    assert all(d["why"] for d in deviations.values())
     for digest, (dataset, version, earlier) in answers.items():
-        if digest not in policies:
-            # Asked of the ladder but recorded nowhere now: its two unreachable /1 history entries.
-            assert (dataset, version, earlier) in [("bill_publisher_summaries", "legislative-documents/1", []),
-                                                   ("committee_reports", "legislative-documents/1", [])]
-            continue
-        policy = policies[digest]
+        policy = recorded[digest]
         assert (policy.dataset, policy.policy_version) == (dataset, version)
         expected = deviations[digest]["earlier"] if digest in deviations else earlier
         assert [descriptor_digest(p) for p in earlier_policies(policy)] == expected, (dataset, version)
-        reached.add(digest)
     # Every installed policy is answered exactly as before; only unreachable chain members deviate.
-    assert {descriptor_digest(p) for p in installed_policies().values()} <= reached - set(deviations)
     assert not {descriptor_digest(p) for p in installed_policies().values()} & set(deviations)
-
-
-def test_the_retired_ladder_still_answers_as_frozen():
-    """Holds the fixture to the ladder it was taken from, while both exist: asked about the same 350 policies."""
-    from importlib.resources import files
-
-    from spicy_regs.earlier_receipt_policies import earlier_policies as ladder
-
-    pending = list(installed_policies().values())
-    for package, name in [("spicy_regs", f"{n}_policy_history.json") for n in (
-            "citation_navigation", "crs_detail", "fec_conversion", "fec", "government", "legislative",
-            "native_legal", "navigation", "source_context")] + [("spicy_regs.scorecards", n) for n in (
-            "geography_policy_history.json", "historical_rating_policies.json", "member_link_policy_history.json")]:
-        history = json.loads(files(package).joinpath(name).read_text())
-        pending += [DatasetPolicy.from_descriptor(d) for d in ([history] if "dataset" in history else history.values())]
-    answered = {}
-    while pending:
-        policy = pending.pop()
-        if (digest := descriptor_digest(policy)) not in answered:
-            answered[digest] = [descriptor_digest(p) for p in ladder(policy)]
-            pending += ladder(policy)
-    frozen = _fixture("earlier_receipt_policies_20261110.json")["answers"]
-    assert answered == {digest: earlier for digest, (_, _, earlier) in frozen.items()}
 
 
 def test_no_published_prior_becomes_unreadable():
@@ -132,7 +104,7 @@ def test_a_changed_policy_fails_until_recorded_with_its_predecessor_as_an_earlie
 
 def test_a_registered_replay_still_states_its_reason():
     migrations = copy.deepcopy(dict(ledger()))
-    migrations["bill_publisher_summaries"]["earlier"][0][REPLAY_REQUIRED] = " "
+    migrations["bill_publisher_summaries"]["earlier"][1][REPLAY_REQUIRED] = " "
     assert ["states no reason" in p for p in unreadable_shipped_policies(migrations=migrations)] == [True]
 
 
@@ -160,6 +132,17 @@ def test_lookup_is_by_exact_descriptor():
     assert earlier_policies(DatasetPolicy("unrecorded", pa.schema([]), (), ("raw",), receipt_only=True)) == ()
     with pytest.raises(KeyError, match="no earlier policy"):
         earlier_policy("federal_register", "regulations-native-v3")
+
+
+def test_an_unread_entry_keeps_its_shape_but_is_neither_read_nor_shipped():
+    summaries = installed_policies()["bill_publisher_summaries"]
+    first = earlier_policy("bill_publisher_summaries", "legislative-documents/1")
+    assert descriptor_digest(first) not in {descriptor_digest(p) for p in receipt_policies(summaries)}
+    assert descriptor_digest(first) not in shipped("bill_publisher_summaries")
+    assert earlier_policy("committee_reports", "legislative-documents/1").identity_fields == ("package_id", "part_id")
+    migrations = copy.deepcopy(dict(ledger()))
+    migrations["committee_reports"]["earlier"][0][UNREAD] = ""
+    assert ["committee_reports: unread" in p for p in unreadable_shipped_policies(migrations=migrations)] == [True]
 
 
 def test_live_check_names_a_published_policy_missing_from_the_ledger(monkeypatch):

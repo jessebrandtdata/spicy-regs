@@ -10,9 +10,9 @@ from rulespec_artifacts import ArtifactInput, LocalMemberSource, iter_member_des
 from scripts.prepare_citation_namespace_promotion import prepare
 from scripts.prepare_citation_lineage_successor import prepare_successor
 from spicy_regs import etl_policy_registry, legislative_receipts as receipts
-from spicy_regs.etl_receipts import DatasetPolicy
 from spicy_regs.generations import build_generation
 from spicy_regs.pipelines.rollups.print_citations import PrintCitationsRollup
+from spicy_regs.policy_migrations import earlier_policy
 from spicy_regs.source_evidence import CaptureEvidence, SourceEvidenceError, verify_evidence
 from spicy_regs.sources import publication
 from tests.generation_fakes import Store
@@ -21,8 +21,7 @@ from tests.test_legislative_receipts import retained, row
 
 @pytest.fixture
 def prior(tmp_path, monkeypatch, request):
-    history = Path(receipts.__file__).with_name("citation_navigation_policy_history.json")
-    old_policy = DatasetPolicy.from_descriptor(json.loads(history.read_text())["document_citations"])
+    old_policy = earlier_policy("document_citations", "legislative-documents/1")
     citations = [row("document_citations", document_kind="budget_volume", document_key="BUDGET-2027",
                      text_sha256="sha256:" + "c" * 64, cite_kind="bill_number", target_key="119-hr-1",
                      span_start=str(span), span_end=str(span + 2), matched_text="H.R. 1",

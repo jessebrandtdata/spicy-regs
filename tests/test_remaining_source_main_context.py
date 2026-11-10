@@ -158,9 +158,9 @@ def test_derived_court_parent_fields_refuse_contradictory_or_malformed_declarati
 
 
 def test_exact_old_regulations_pair_rebuilds_promoted_context_without_relabeling(tmp_path):
-    from spicy_regs.etl_receipts import DatasetPolicy, write_dataset
-    history=json.loads((Path(__file__).parents[1]/'src/spicy_regs/source_context_policy_history.json').read_text())
-    prior=DatasetPolicy.from_descriptor(history['lifecycle_events'])
+    from spicy_regs.etl_receipts import write_dataset
+    from spicy_regs.policy_migrations import earlier_policy
+    prior=earlier_policy('lifecycle_events','regulations-native-v1')
     raw=dict(proceeding_id='p',document_id='doc',stage='proposed',event_date=date(2026,1,1),
              source='federal_register',dated_by='publication_date',evidence_id='2026-00001@2026-01-01',joined_by='official_docket')
     shaped=shape_record('lifecycle_events',raw)
@@ -177,11 +177,11 @@ def test_exact_old_regulations_pair_rebuilds_promoted_context_without_relabeling
 
 
 def test_exact_old_opinion_policy_remains_readable_before_parent_context_cutover(tmp_path):
-    from spicy_regs.etl_receipts import DatasetPolicy, write_dataset
+    from spicy_regs.etl_receipts import write_dataset
     from spicy_regs.court_subjects import normalize_court_row
     from spicy_regs.court_receipts import read_court_rows
-    history=json.loads((Path(__file__).parents[1]/'src/spicy_regs/source_context_policy_history.json').read_text())
-    prior=DatasetPolicy.from_descriptor(history['court_opinions'])
+    from spicy_regs.policy_migrations import earlier_policy
+    prior=earlier_policy('court_opinions','courts/1')
     raw=dict(opinion_id='1',cluster_id='2',sha1='a'*40,download_url='https://court.example/1.pdf')
     shaped=normalize_court_row('court_opinions',raw)
     mapped={name:shaped.get(name) for name in prior.input_fields}

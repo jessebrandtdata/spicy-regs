@@ -370,19 +370,25 @@ def map_subject(dataset: str, row: Mapping[str, Any]) -> dict[str, Any] | None:
 
 @cache
 def _earlier_legislative_schema(dataset: str) -> pa.Schema | None:
-    """The exact subject schema an earlier ``legislative_policy_history.json`` policy declared, if one is recorded."""
-    from spicy_regs.etl_receipts import DatasetPolicy
+    """The subject schema of ``dataset``'s recorded ``legislative-documents/1`` policy (``policy_migrations``), if any.
 
-    history = json.loads(files("spicy_regs").joinpath("legislative_policy_history.json").read_text())
-    return DatasetPolicy.from_descriptor(history[dataset]).subject_schema if dataset in history else None
+    A receipt-only /1 has no subject to shape. document_citations and native_legal_references also map through
+    their own /1 shape below; this one keeps exactly the same fields, so applying both changes nothing.
+    """
+    from spicy_regs.policy_migrations import earlier_policy
+
+    try:
+        earlier = earlier_policy(dataset, "legislative-documents/1")
+    except KeyError:
+        return None
+    return None if earlier.receipt_only else earlier.subject_schema
 
 
 @cache
 def _earlier_native_schema() -> pa.Schema:
-    from spicy_regs.etl_receipts import DatasetPolicy
+    from spicy_regs.policy_migrations import earlier_policy
 
-    history = json.loads(files("spicy_regs").joinpath("native_legal_policy_history.json").read_text())
-    return DatasetPolicy.from_descriptor(history["native_legal_references"]).subject_schema
+    return earlier_policy("native_legal_references", "legislative-documents/1").subject_schema
 
 
 def recorded_subject(dataset: str, raw: Mapping[str, Any], subject: Mapping[str, Any], *,
@@ -446,10 +452,9 @@ def recorded_subject(dataset: str, raw: Mapping[str, Any], subject: Mapping[str,
         mapped = {f.name: current[f.name] if f.name in current else _typed(raw.get(f.name), f.type, f.name)
                   for f in earlier_shape}
     if mapped is not None and dataset == "document_citations":
-        history = json.loads(files("spicy_regs").joinpath("citation_navigation_policy_history.json").read_text())
-        from spicy_regs.etl_receipts import DatasetPolicy
+        from spicy_regs.policy_migrations import earlier_policy
 
-        earlier = DatasetPolicy.from_descriptor(history[dataset]).subject_schema
+        earlier = earlier_policy(dataset, "legislative-documents/1").subject_schema
         if set(subject) - {"raw_source_row"} == set(earlier.names):
             # Verify old values under their exact shape; the next writer can
             # promote the retained namespace without relabeling old receipts.

@@ -488,15 +488,15 @@ def test_bulk_restore_uses_retained_schema_for_python_mapped_datasets(tmp_path, 
     assert scans == [dataset] and admissions == [1]
 
 
-def test_earlier_policies_validates_roll_call_votes_current_descriptor():
+def test_earlier_policies_reads_only_for_the_exact_roll_call_votes_descriptor():
     from dataclasses import replace
     from spicy_regs.congress_receipts import policy as congress_policy
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
 
     current = congress_policy("roll_call_votes")
     admitted = earlier_policies(current)
     assert len(admitted) == 1 and admitted[0].policy_version == "congress-subjects/1"
 
+    # A changed descriptor under the current label is not the recorded policy, so it reads nothing earlier.
     tampered = replace(current, subject_schema=current.subject_schema.remove(current.subject_schema.get_field_index("question")))
-    with pytest.raises(ValueError, match="Current roll_call_votes policy differs from the exact declared policy"):
-        earlier_policies(tampered)
+    assert earlier_policies(tampered) == ()

@@ -2142,7 +2142,7 @@
   },
   "sha256:b0c7edd5e9e6d8b2d8dac735cf087fcd2b99394cc6cd9ab8c63e45ec701e14ac": {
    "earlier": [],
-   "why": "No installed policy reads it: the installed /3 reads /2 only (to identify it as replay-required), and /1, which only /2 read, is not a shipped predecessor of /3 and is not recorded."
+   "why": "No installed policy reads it: the installed /3 reads /2 only to identify it as replay-required. /1, which only /2 read, is recorded unread (kept for its shape), and an unread entry is read by no recorded policy."
   },
   "sha256:c6e8263954958d0c1fba0948e184e24d82d4e476e4e4b1badd3fbed3ee6c1f9d": {
    "earlier": [

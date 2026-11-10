@@ -1,6 +1,4 @@
 """New FEC readers admit exact shipped /1 pairs without relabeling old subjects."""
-import json
-from pathlib import Path
 
 import duckdb
 import pyarrow.parquet as pq
@@ -8,21 +6,22 @@ import pytest
 
 from spicy_regs.etl_receipts import DatasetPolicy, ReceiptContext, write_dataset, selected_subject_policy
 from spicy_regs.fec_receipt_adapter import ReceiptAdapter
+from spicy_regs.policy_migrations import earlier_policies, earlier_policy, ledger
 from spicy_regs.subject_catalog import policies
 
-HISTORY=json.loads(Path(__file__).parents[1].joinpath('src/spicy_regs/fec_policy_history.json').read_text())
+#: Each FEC dataset's exact /1, the shape every FEC generation was first published under.
+FIRST=('fec-subject-receipts/1','fec-identity-context-receipts/1')
+HISTORY={name:p.descriptor() for name,entry in ledger().items() for p in [earlier_policy(name,e['policy_version'])
+         for e in entry.get('earlier',()) if e['policy_version'] in FIRST]}
 
 
 @pytest.mark.parametrize('dataset',sorted(HISTORY))
 def test_every_exact_pre_migration_policy_is_supported(dataset):
-    from spicy_regs.earlier_receipt_policies import earlier_policies
     priors=earlier_policies(policies()[dataset])
     assert priors[-1].descriptor()==HISTORY[dataset]
-    conversion_history=json.loads(Path(__file__).parents[1].joinpath('src/spicy_regs/fec_conversion_policy_history.json').read_text())
-    if dataset in conversion_history:
-        assert [prior.descriptor() for prior in priors]==[conversion_history[dataset],HISTORY[dataset]]
-    else:
-        assert len(priors)==1
+    # A /3 dataset also reads the /2 its conversion shipped; the rest read only their /1.
+    assert [p.policy_version.rsplit('/',1)[1] for p in priors]==(
+        ['2','1'] if policies()[dataset].policy_version.endswith('/3') else ['1'])
 
 
 def old_pair(tmp_path, table, row):
@@ -90,11 +89,9 @@ def test_selected_priors_restores_old_committee_policy_before_new_context_cutove
 
 
 def test_additive_fcc_history_preserves_both_exact_old_declarations():
-    from spicy_regs.earlier_receipt_policies import earlier_policies
     from spicy_regs.transforms.government_receipts import POLICIES
-    history=json.loads(Path(__file__).parents[1].joinpath('src/spicy_regs/navigation_policy_history.json').read_text())
-    assert [p.descriptor() for p in earlier_policies(POLICIES['fcc_filings'])]==[
-        history['fcc_filings_v2'],history['fcc_filings']]
+    assert earlier_policies(POLICIES['fcc_filings'])==tuple(
+        earlier_policy('fcc_filings',f'government-sources/{n}') for n in (2,1))
 
 
 def test_shared_schema_does_not_admit_a_changed_complete_identity(tmp_path, monkeypatch):

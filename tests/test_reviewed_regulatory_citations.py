@@ -1,12 +1,11 @@
 """Published source namespaces and exact historical citation replay."""
 import hashlib
-import json
 
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from spicy_regs.etl_receipts import DatasetPolicy, ReceiptContext, read_with_receipts, selected_subject_policy, write_dataset
+from spicy_regs.etl_receipts import ReceiptContext, read_with_receipts, selected_subject_policy, write_dataset
 from spicy_regs.explorer_navigation import declarations, published_navigation, target_keys
 from spicy_regs.legislative_documents import map_subject, recorded_subject
 from spicy_regs.legislative_receipts import policy, write_legislative_outputs, restore_prior
@@ -81,11 +80,10 @@ def test_citation_refuses_wrong_scope_unqualified_rule_and_unresolved(change):
 
 
 def test_old_citation_policy_stays_readable_without_relabeling(tmp_path):
-    from importlib.resources import files
+    from spicy_regs.policy_migrations import earlier_policy
 
     source = citation()
-    history = json.loads(files('spicy_regs').joinpath('citation_navigation_policy_history.json').read_text())
-    old = DatasetPolicy.from_descriptor(history['document_citations'])
+    old = earlier_policy('document_citations', 'legislative-documents/1')
     mapped = map_subject('document_citations', source)
     assert mapped is not None
     original_subject = {name: mapped[name] for name in old.subject_schema.names}
