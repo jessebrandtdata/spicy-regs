@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 from spicy_regs.receipt_switch import promoted_differences, receipt_files, receipt_free_prior, table_differences
 
@@ -35,10 +36,6 @@ def test_every_kind_of_difference_is_named(tmp_path):
     changed = _write(table.set_column(table.schema.get_field_index("title"), "title", pa.array(titles)),
                      tmp_path / "changed.parquet")
     assert table_differences(changed, TABLE, key=KEY) == ["1 rows only in the first", "1 rows only in the second"]
-    # A duplicated row EXCEPT ALL counts, which EXCEPT would not.
-    doubled = _write(pa.concat_tables([table, table.slice(0, 1)]), tmp_path / "doubled.parquet")
-    assert table_differences(doubled, TABLE, key=KEY)[:2] == [f"{table.num_rows + 1:,} rows against "
-                                                             f"{table.num_rows:,}", "1 rows only in the first"]
     # The same rows in another order: only the positions differ.
     reordered = _write(table.take(list(range(1, table.num_rows)) + [0]), tmp_path / "reordered.parquet")
     assert table_differences(reordered, TABLE, key=KEY) == [f"{table.num_rows:,} positions hold a different key"]
@@ -87,3 +84,20 @@ def test_the_plain_route_is_handed_no_receipts_file_and_any_left_behind_is_found
     (tmp_path / "work").mkdir()
     shutil.copyfile(FIXTURE / "prior/etl_receipts.parquet", tmp_path / "work" / "etl_receipts.parquet")
     assert receipt_files(tmp_path) == [tmp_path / "work" / "etl_receipts.parquet"]
+
+
+def test_a_key_that_does_not_name_one_row_is_refused(tmp_path):
+    """Two rows sharing the key could trade places and still compare equal, so such a key is never accepted."""
+    table = pq.read_table(TABLE)
+    # Two rows with one publication date, swapped: keyed on the date alone, every position would still agree.
+    dates = table["publication_date"].to_pylist()
+    first = next(i for i in range(len(dates) - 1) if dates[i] == dates[i + 1])
+    swapped = _write(table.take([*range(first), first + 1, first, *range(first + 2, table.num_rows)]),
+                     tmp_path / "swapped.parquet")
+    with pytest.raises(ValueError, match=r"\(publication_date\) names .* rows; compare on the whole row identity"):
+        table_differences(swapped, TABLE, key=("publication_date",))
+    assert table_differences(swapped, TABLE, key=KEY) == ["2 positions hold a different key"]
+    # A duplicated row is refused the same way rather than counted.
+    doubled = _write(pa.concat_tables([table, table.slice(0, 1)]), tmp_path / "doubled.parquet")
+    with pytest.raises(ValueError, match="compare on the whole row identity"):
+        table_differences(doubled, TABLE, key=KEY)

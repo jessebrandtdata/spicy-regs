@@ -79,9 +79,9 @@ def rows(path):
     return {(row["document_number"], row["publication_date"]): row for row in pq.read_table(path).to_pylist()}
 
 
-#: A Register row's key, and the links' (each link row at its position, as the receipt route wrote them).
+#: A Register row's identity, and a link row's: a printed label may repeat, so its position is part of it.
 KEY = ("document_number", "publication_date")
-LINK_KEY = ("docket_id", *KEY)
+LINK_KEY = ("docket_id", *KEY, "docket_source_ordinal")
 
 
 def assert_same_table(actual, expected):
