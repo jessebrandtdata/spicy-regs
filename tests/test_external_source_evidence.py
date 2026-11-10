@@ -520,8 +520,6 @@ EVIDENCE_EXEMPT = {
     "DocumentAttributesFamily": "republishes the ETL's own working copy; the ETL's Mirrulations reads are the source reads",
     "CommentAttributesFamily": "republishes the working copy the comment re-read and the ETL's Mirrulations reads write",
     "CfrSectionsRollup": _UNWIRED,
-    "CourtCitationsRollup": _UNWIRED,
-    "CourtOpinionsRollup": _UNWIRED,
     "FecCommitteesRollup": _UNWIRED + "; its captures live only as an expiring workflow artifact",
     "FecSourceCatalogRollup": _UNWIRED,
     "PressReleasesRollup": _UNWIRED,
