@@ -223,7 +223,7 @@ def test_a_retired_parent_without_a_reader_for_its_mapper_refuses_by_name(tmp_pa
     root.mkdir()
     (root / "bill_cosponsors.parquet").write_bytes(REGISTER.read_bytes())
     retire("bill_cosponsors")
-    with pytest.raises(ValueError, match="bill_cosponsors: its receipts are retired and its mapper declares no reader"):
+    with pytest.raises(ValueError, match="bill_cosponsors: its receipts are retired and its mapper has no reader"):
         SelectedPriors(tmp_path / "probe", root=root, public_url="").get("bill_cosponsors")
 
 
