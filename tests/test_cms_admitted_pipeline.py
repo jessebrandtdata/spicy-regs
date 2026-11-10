@@ -16,6 +16,7 @@ from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_regs.pipelines import cms_drug_spending, cms_medicaid, cms_part_b, cms_part_d
 from tests.test_cms_part_b import EXCERPTS
 from tests.test_cms_part_d import raw
+from tests.published_paths import local_paths
 
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
 IMPLEMENTATION = "git+https://example.test/cms@" + "a" * 40
@@ -120,6 +121,7 @@ def test_admitted_release_through_pipeline(tmp_path, program, policy, pipeline):
     reader = open_reader(published, blobs, policy)
     artifact, evidence = pipeline.build(reader, tmp_path / "output", year=2024)
     assert artifact.pin.artifact_digest and evidence.exists()
+    assert local_paths(tmp_path / "output" / "generation", evidence, also=(str(tmp_path),)) == []
     assert reader.collection_outcome["acquisitionPolicyVersion"] == policy
     assert reader.pin == published.artifact.pin
 

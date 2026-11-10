@@ -56,6 +56,14 @@ from spicy_regs.pipelines.base import Pipeline
 from spicy_regs.sources import r2
 
 
+class Unchanged(Exception):
+    """``build`` found the source holds nothing the published generation lacks.
+
+    ``run`` then builds and publishes nothing and returns normally, so a scheduled run on a day without
+    news is green. Raise it only once every byte acquired is known to be published already.
+    """
+
+
 class RollupPipeline(Pipeline):
     """A single materialized rollup, run standalone from the base tables on R2."""
 
@@ -153,6 +161,10 @@ class RollupPipeline(Pipeline):
             self._run_tables(output_dir)
             if self.deferred_failure is not None:
                 raise self.deferred_failure
+        except Unchanged as unchanged:
+            if self.source_evidence:
+                self.source_evidence.finish()
+            logger.info("Rollup {}: {}; nothing built or published", self.name, unchanged)
         except BaseException as error:
             if self.source_evidence:
                 self.source_evidence.finish(error)

@@ -47,14 +47,30 @@ do not establish a unit for every amount; no USD assumption is added.
 
 ## Local build and query
 
-The command acquires nothing and changes no public selection:
+`acquire` reads the size and ETag the publisher states for one dated export,
+then downloads it bound to that version through the maintained
+`CaptureEvidence` transport, so the ZIP lands once in the central raw archive
+with a receipt. An export republished between the two requests is refused. The
+command writes a capture selection: each snapshot as its Grants.gov scope (the
+export date, and the request URL, SHA-256, observation time and size of its
+ZIP).
 
 ```sh
-python -m spicy_regs.pipelines.grants_opportunities \
-  --selection "$GRANTS_SELECTION_JSON" --output-dir "$GRANTS_OUTPUT"
+python -m spicy_regs.pipelines.grants_opportunities acquire \
+  --snapshot-date 2026-11-09 --output-dir "$RUN_DIR" --captures-out captures.json
+python -m spicy_regs.pipelines.grants_opportunities build \
+  --captures captures.json --output-dir "$GRANTS_OUTPUT"
 ```
 
-The selection lists admitted source releases and their exact retained ZIPs:
+`build --captures` admits one source release per scope into
+`$GRANTS_OUTPUT/source-releases` from the raw original (verified, never
+written) and builds the generation. Admission is the slow step (5 minutes for
+the 2026-11-09 export). Neither command changes a public selection; the
+refresh sequence through publication is in
+[local-family-refresh.md](local-family-refresh.md).
+
+To build over releases admitted earlier and kept on disk, pass `--selection`
+instead of `--captures`. It lists those releases and their exact retained ZIPs:
 
 ```json
 {
@@ -74,10 +90,13 @@ The selection lists admitted source releases and their exact retained ZIPs:
 ### Release selection on refresh
 
 `spicy_regs.pipelines.grants_opportunities.main` is the maintained refresh
-caller. Its `--selection` file is the complete input set for one new generation;
-it neither discovers the latest export nor appends the preceding table. The
-builder already writes every selected release. Keep this one selection mechanism
-rather than introducing another revision key or history table.
+caller. The capture selections or the `--selection` file given to `build` are
+the complete input set for one new generation; `build` neither discovers the
+latest export nor appends the preceding table. The builder already writes every
+selected release. Keep this one selection mechanism rather than introducing
+another revision key or history table. A release admitted again from its
+capture by later code has a new digest, so a history that must keep an earlier
+release's digest selects that kept release with `--selection`.
 
 For a single-snapshot query, select the exact admitted release of interest. For
 declared release history, retain the preceding selection file, add the next

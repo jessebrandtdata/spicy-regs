@@ -19,7 +19,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from rulespec_artifacts import LocalMemberSource, admit_artifact
 
-from scripts.qualification_store import DiskStore
+from spicy_regs.sources.disk_store import DiskStore
 from scripts.retained_qualification_support import (
     assert_pin, phase, serve,
     compare_files, capture_code_pins, mcp_controls, verify_code_pins,

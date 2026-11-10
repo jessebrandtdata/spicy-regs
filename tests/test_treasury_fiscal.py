@@ -488,3 +488,49 @@ def test_acquire_records_receipt_scopes_and_rebuilds_identical_releases_from_raw
     cells = pq.read_table(tmp_path / "first" / (module.CELLS + ".parquet")).to_pylist()
     assert {json.loads(row["source_locator_json"])["observed_at"] for row in cells} == {
         selection["releases"][1]["captures"][0]["observed_at"]}
+
+
+def test_listed_debt_dates_are_captured_and_a_published_generation_names_its_own_captures(tmp_path):
+    """A refresh needs no kept capture file: new debt days come from the listing, the rest from published rows."""
+    report = b"%PDF-1.7 retained statement"
+    listing = [{"report_date": "2026-09-30", "report_group_id": "5",
+                "path": "/static-data/published-reports/mts/MonthlyTreasuryStatement_202609.pdf"}]
+    requests = []
+
+    def serve(request):
+        requests.append(request.url.params.get("filter", request.url.path.rsplit("/", 1)[-1]))
+        if request.url.path.endswith(".pdf"):
+            return httpx.Response(200, content=report, headers={"content-type": "application/pdf"})
+        if request.url.path.endswith("/publishedfiles"):
+            return httpx.Response(200, json=listing)
+        if request.url.params["filter"] == "record_date:gt:2026-10-15":
+            assert (request.url.params["sort"], request.url.params["fields"]) == ("record_date", "record_date")
+            return httpx.Response(200, json={"data": [{"record_date": "2026-10-16"}], "meta": {"total-count": 1}})
+        dataset = request.url.path.rsplit("/", 1)[-1]
+        name = f"{dataset}-{request.url.params['filter'].removeprefix('record_date:eq:')}"
+        return httpx.Response(200, content=(FIXTURES / (name + ".json")).read_bytes(),
+                              headers={"content-type": "application/json"})
+
+    selection = pipeline.acquire(
+        [("mts_table_1", date(2026, 9, 30)), ("mts_table_2", date(2026, 9, 30))], [date(2026, 9, 30)],
+        tmp_path / "acquire", debt_after=date(2026, 10, 15), transport=httpx.MockTransport(serve))
+    assert requests[0] == "record_date:gt:2026-10-15" and "record_date:eq:2026-10-16" in requests
+    assert [(scope["selection"]["dataset"], scope["selection"]["record_date"]) for scope in selection["releases"]] == [
+        ("mts_table_1", "2026-09-30"), ("mts_table_2", "2026-09-30"), ("debt_to_penny", "2026-10-16")]
+
+    pipeline.build_from_captures(selection, tmp_path / "first")
+    derived = pipeline.published_selection(sorted((tmp_path / "first" / "generation").glob("treasury_*.parquet")))
+    assert sorted(derived["releases"], key=json.dumps) == sorted(selection["releases"], key=json.dumps)
+    assert derived["reports"] == {"2026-09-30": {
+        key: selection["reports"]["2026-09-30"][key] for key in ("url", "sha256")}}
+    pipeline.build_from_captures(derived, tmp_path / "second")
+    for name in module.SCHEMAS:
+        first, second = (pq.read_table(tmp_path / run / "generation" / f"{name}.parquet").to_pylist()
+                         for run in ("first", "second"))
+        assert first == second and first
+
+    def too_many(request):
+        return httpx.Response(200, json={"data": [{"record_date": "2026-10-16"}], "meta": {"total-count": 101}})
+
+    with pytest.raises(ValueError, match="more new debt dates than one run selects"):
+        pipeline.acquire([], [], tmp_path / "long-gap", debt_after=date(2026, 5, 1), transport=httpx.MockTransport(too_many))

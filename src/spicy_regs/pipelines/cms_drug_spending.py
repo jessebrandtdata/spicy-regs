@@ -65,6 +65,8 @@ def build(reader, output_dir: Path, *, year: int, label, family, measures, schem
                         stage="cms-source-" + capture["role"],
                         evidence_blob_ref=ref,
                         source_url=capture["request_url"],
+                        # Not the staging path: this journal is published.
+                        original_location=capture["request_url"],
                     )
                     if saved.get("sha256") != ref or saved.get("byte_size") != capture["byte_size"]:
                         raise ValueError(f"CMS {label} retained evidence differs from its selection")

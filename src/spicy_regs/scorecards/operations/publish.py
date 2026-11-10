@@ -12,7 +12,6 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from importlib.metadata import version
 import json
-import os
 from pathlib import Path
 import subprocess
 
@@ -74,13 +73,7 @@ def main(argv=None):
     if artifact.root["spec"].get("readSnapshot") != prior:
         raise ValueError("Preparation read snapshot differs from the verified generation")
     load_dotenv(args.env_file)
-    client = r2.get_r2_client()
-    bucket = os.environ.get("R2_BUCKET_NAME", "spicy-regs")
-    if (
-        bucket != "spicy-regs"
-        or client.meta.endpoint_url != "https://174055408ff1560e60601c4d12c561c4.r2.cloudflarestorage.com"
-    ):
-        raise ValueError("Deployment account or bucket differs from the verified target")
+    client, bucket = r2.verified_target_client()
     before, _ = publication._stored_index(client, bucket)
     (args.output / "before.json").write_text(json.dumps(before, indent=2) + "\n")
     evidence = (Path(prepared["evidence_directory"]),) if prepared.get("evidence_directory") else ()
@@ -115,7 +108,7 @@ def main(argv=None):
         "provider_version": version("spicy-docs"),
         "preparation_sha256": sha256(args.preparation.read_bytes()).hexdigest(),
         "other_family_changes_during_publication": unexpected,
-        "public_index_url": "https://data.spicygov.ai/publication.v2.json",
+        "public_index_url": f"{r2.VERIFIED_PUBLIC_URL}/{publication.INDEX_V2_KEY}",
         "source_network_requests": 0,
         "receipt_only_table_migrations": sorted(set(args.receipt_only_table)),
     }

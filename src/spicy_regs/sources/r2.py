@@ -180,6 +180,25 @@ def get_r2_client():
     )
 
 
+#: The one deployment an operator publish command may write, and where its readers fetch it.
+VERIFIED_BUCKET = "spicy-regs"
+VERIFIED_ENDPOINT = "https://174055408ff1560e60601c4d12c561c4.r2.cloudflarestorage.com"
+VERIFIED_PUBLIC_URL = "https://data.spicygov.ai"
+
+
+def verified_target_client():
+    """An R2 client and its bucket, refused unless both are the verified deployment target.
+
+    A hand-run publish reads its account from the operator's environment; a stray ``R2_ENDPOINT`` or
+    ``R2_BUCKET_NAME`` would otherwise send a reviewed generation to another account's bucket.
+    """
+    client = get_r2_client()
+    bucket = getenv("R2_BUCKET_NAME", VERIFIED_BUCKET)
+    if bucket != VERIFIED_BUCKET or client.meta.endpoint_url != VERIFIED_ENDPOINT:
+        raise ValueError("Deployment account or bucket differs from the verified target")
+    return client, bucket
+
+
 def _get_remote_size(client, bucket: str, remote_key: str) -> int | None:
     """Return the remote object's size in bytes, or ``None`` when it is absent.
 

@@ -33,15 +33,43 @@ An absent later observation is not a legal delisting event. This integration
 does not reconstruct history before the selected captures or resolve names
 to real-world identities.
 
-Use a selection JSON with `sources` containing each admitted release's
-`release`, `blobs`, `logicalId`, `artifactDigest` and
-`verifierImplementationId`. Its `archives` object maps each original
-`sha256:…` digest to the retained ZIP path:
+`acquire` downloads each selected list's official export through the
+maintained `CaptureEvidence` transport, so the ZIP lands once in the central
+raw archive with a receipt. OFAC answers the export URL with a redirect to a
+temporary signed location; the receipt of the response names that location
+with its signature removed, and a second receipt binds the same bytes to the
+official export URL. The command writes a capture selection: each snapshot as
+its OFAC scope (the list, and the request URL, SHA-256, observation time and
+size of its ZIP).
 
 ```sh
-python -m spicy_regs.pipelines.ofac \
-  --selection "$OFAC_SELECTION" --output-dir "$OFAC_OUTPUT"
+python -m spicy_regs.pipelines.ofac acquire --list sdn --list consolidated \
+  --output-dir "$RUN_DIR" --captures-out captures.json
+python -m spicy_regs.pipelines.ofac build \
+  --captures captures.json --output-dir "$OFAC_OUTPUT"
 ```
+
+`build --captures` admits one source release per scope into
+`$OFAC_OUTPUT/source-releases` from the raw original (verified, never
+written) and builds the generation from exactly those snapshots. Admission
+reads every entity and is the slow step (11 minutes for the 2026-11-09 SDN
+list). A release is rebuilt on every build, and its digest, which is the
+snapshot's identity, follows the code that admitted it. To build over releases
+admitted earlier and kept on disk, pass `--selection` instead: a JSON with
+`sources` containing each release's `release`, `blobs`, `logicalId`,
+`artifactDigest` and `verifierImplementationId`, and an `archives` object
+mapping each original `sha256:…` digest to the retained ZIP path. The refresh
+sequence through publication is in
+[local-family-refresh.md](local-family-refresh.md).
+
+The 2026-10-20 generation
+`sha256:30353c6e00d9a6d374b6862cc6c4774e9171eb95b5b3d921aba8f362315804d1`
+holds the first accepted snapshots: SDN ZIP
+`b1a309ce7249d8fa64d3123b79add447efcb35fa569090c92b6f030b075cbc18` and
+consolidated ZIP
+`e918fe525b61cee24b400cba1d07e32cba7bb4bd9c87555dca056e7c84767d22`. A later
+refresh that selects only new snapshots replaces them in the public table;
+naming the generation here keeps its tables on R2 under the retention rule.
 
 The builder requires fresh output paths and refuses failed, discarded,
 incomplete, repeated or contradictory selected observations. It stages both

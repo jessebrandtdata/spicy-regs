@@ -127,9 +127,21 @@ writes a capture selection: each source release as its Fiscal Data scope (the
 selection and the descriptors of every page, copied from the receipts) plus
 each report's URL and digest.
 
+`--debt-after 2026-10-16` also captures every Debt to the Penny date the
+publisher lists after that date (the listing is captured too); more than 100
+listed dates are refused rather than cut short.
+
+A build needs the captures of everything it publishes, not only the new ones.
+`published-captures` writes that selection from a local copy of the published
+generation: every row names the page it came from and every statement row its
+report control. It needs all three tables, so it serves generations published
+since `treasury_statement_classification_cells` joined the family (ss-lq21).
+
 ```sh
+python -m spicy_regs.pipelines.treasury_fiscal published-captures \
+  --generation "$PUBLISHED_GENERATION" --captures-out published.json
 python -m spicy_regs.pipelines.treasury_fiscal build \
-  --captures captures.json [--captures more.json] --output-dir "$TREASURY_OUTPUT"
+  --captures captures.json [--captures published.json] --output-dir "$TREASURY_OUTPUT"
 ```
 
 The build publishes one source release per scope into

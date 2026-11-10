@@ -8,7 +8,7 @@ import pyarrow.parquet as pq
 import pytest
 from botocore.exceptions import ClientError
 
-from scripts.qualification_store import DiskStore
+from spicy_regs.sources.disk_store import DiskStore
 from spicy_regs.generations import build_generation
 from spicy_regs.sources import publication
 
