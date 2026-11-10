@@ -181,6 +181,43 @@ was written at 09:41 UTC; before a day's export exists, `acquire` for that date
 fails with HTTP 403 and the day before is the newest. The published table then
 holds this snapshot only.
 
+## executive-orders
+
+Mirror it first (`--family executive-orders`, under 1 MB). `acquire` lists
+every order the Federal Register API serves (268 requests, 5 MB, under a
+minute) and fetches a body only for an order the live generation lacks or holds
+as failed, about 0.9 seconds a request. The orders the live generation holds
+keep their published bodies, which the shared raw archive already has. The
+build takes under a minute; a publish uploads about 40 MB.
+
+```sh
+$UV python -m spicy_regs.pipelines.executive_orders acquire --read-index "$LIVE_INDEX" \
+  --output-dir "$WORK/eo-acquire" --captures-out "$WORK/eo-captures.json"
+$UV python -m spicy_regs.pipelines.executive_orders build --captures "$WORK/eo-captures.json" \
+  --read-index "$LIVE_INDEX" --output-dir "$WORK/eo-build"
+```
+
+`acquire` prints how many orders were added, changed and removed. When all three
+are 0 it prints `"nothingNew": true`, fetches no body, and `build` refuses the
+selection: there is nothing to publish. Rerunning `acquire` into the same
+`--output-dir` keeps the bodies it already fetched. An order the publisher has
+not touched keeps its published row byte for byte, so compare the build with
+the live table by `source_record_id`: only added, changed and removed orders
+should differ. [How the family acquires and builds](executive-orders.md).
+
+The first refresh after 2026-10-20 adds every year at once. The 2026-11-10
+rehearsal fetched 1,335 bodies in 1,593 requests (the 257 orders from before
+2000 and one from 2010 have no publisher XML and come from GovInfo HTML), about
+24 minutes and 15 MB. The 239 published rows kept their pointers and text; they
+differ from the live rows only in `text_derivation_version` (002 to 004; SpicyDocs
+derives byte-identical text) and the new `source_sha256` column. Ten orders
+from 2015 to 2021 build as `source_failed`: SpicyDocs' XML validator refuses
+their FRDOC marker.
+
+The hosted `rollup-executive-orders.yml` runs on weekdays; it restores the
+published bodies from R2 source evidence and publishes nothing when nothing is
+new.
+
 ## After a publish
 
 Nothing in the repository fails when these go stale; each is prose or a
