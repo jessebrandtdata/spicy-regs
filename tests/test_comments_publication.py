@@ -378,6 +378,29 @@ def _member(path, rows: int, row_group: int):
     return {"rows": rows}
 
 
+def test_every_receipt_admission_in_the_mirror_is_bounded_by_its_resources(published, monkeypatch):
+    """The paired export's admission and the generation's each insert byte-sized slices under the mirror's limits.
+
+    Hosted run 42738947666 admitted the exported subjects as one statement at the bulk default (4 threads, 4GB)
+    and ran out of memory encoding an 89 MiB comment beside 2.8 GiB of other rows (ss-7flp).
+    """
+    from spicy_regs import etl_bulk
+    _, _, root, _ = published
+    admissions = []
+    scan = etl_bulk._scan
+
+    def recorded(con, *args, **kwargs):
+        limits = con.execute("SELECT current_setting('threads'), current_setting('memory_limit')").fetchone()
+        admissions.append((kwargs.get("bounded_insert", False), *limits))
+        return scan(con, *args, **kwargs)
+
+    monkeypatch.setattr(etl_bulk, "_scan", recorded)
+    assert mirror.publish_comments_mirror(root, resources=ExportResources("512MB", 2), skip_upload=True)
+    # At least the export's receipts and subjects, then the generation's receipts, comments and index.
+    assert len(admissions) >= 5
+    assert set(admissions) == {(True, 2, "488.2 MiB")}
+
+
 def test_a_receipt_whose_agency_rows_do_not_sum_to_the_monolith_is_refused(tmp_path):
     files = {"comments.parquet": _member(tmp_path / "comments.parquet", 3, 2),
              "comments_index.parquet": _member(tmp_path / "comments_index.parquet", 1, 1),

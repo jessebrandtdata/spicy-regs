@@ -278,8 +278,19 @@ def publish_comments_mirror(output_dir: Path, *, resources: ExportResources | No
     The caller holds comments-catalog-write for the whole operation. Fixed public
     keys are not an atomic generation. Advance the receipt only after all files
     upload and their public bytes match; any interruption stays retryable.
+
+    Every receipt admission inside (the paired export's, the generation's) runs under ``resources`` as explicit
+    bulk limits, which also makes it insert byte-sized slices. As one statement at the bulk default, the exported
+    subjects ran out of memory at 3.7 GiB: 2,000-row batches on four threads, one holding an 89 MiB comment whose
+    JSON encoding alone reserves 1 GiB (hosted run 42738947666, ss-7flp).
     """
+    from spicy_regs.etl_bulk import bulk_limits
     resources = resources or ExportResources()
+    with bulk_limits(threads=resources.threads, memory_limit=resources.memory):
+        return _publish(output_dir, resources, skip_upload, force, prepared_export, prepared_reader, prepared_snapshot)
+
+
+def _publish(output_dir, resources, skip_upload, force, prepared_export, prepared_reader, prepared_snapshot) -> bool:
     rt = RECORD_TYPES["comments"]
     prepared = (prepared_export, prepared_reader, prepared_snapshot)
     native_only = False
