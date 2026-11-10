@@ -151,8 +151,15 @@ Entries link to the pull request that introduced the change.
   scheduled run fills them for every row from the prior generation's receipts,
   the only copy for the 99% of rows whose API response was never retained.
   `source_sha256` names the retained API page a row was last read from and is
-  NULL on a row not read since. Policies move to `regulations-native-v3` and
-  `-v2`; the earlier ones stay readable, so nothing is replayed.
+  NULL on a row not read since; it changes nightly on every row in the
+  120-day re-read window, so compare generations without it. `pdf_url` stays
+  NULL on about 33,500 rows where the Register serves no PDF. Policies move to
+  `regulations-native-v3` and `-v2`; the earlier ones stay readable, so nothing
+  is replayed. **The first night's `federal_register` job takes about 55 to 80
+  minutes instead of 29**: the prior's schema differs, so the restore reads it
+  by row once (28.7 and 56.2 minutes of restore on the two earlier hosted
+  nights that did, 2026-10-31 and 11-01). The checks to run afterwards are in
+  [docs/federal-register-receipt-archive.md](docs/federal-register-receipt-archive.md).
 
 - **`fr_docket_links` and the rulemaking materializer read the published
   Federal Register tables, not their receipts** (ss-vse3, step 2). The links
@@ -161,7 +168,11 @@ Entries link to the pull request that introduced the change.
   records the table as its parent. The materializer reads `federal_register`
   and `fr_docket_links` as published and gives its stages the Register's lists
   as JSON text; its manifest records each one's publication pin and no receipt
-  pair. Both tables still publish receipts.
+  pair. The materializer is scheduled, not manual: `_regulations-refresh.yml`
+  runs it inside the ETL refresh, so the first refresh after the merge takes
+  this path unattended. Both tables still publish receipts. Run alone before
+  the Register job has published its promoted columns, the links workflow
+  refuses with a message saying so.
 
 - **A rollup can declare that a published table no longer has receipts**
   (ss-vse3). `retired_receipt_datasets` on a rollup lets exactly those
