@@ -286,3 +286,92 @@ def test_the_rulemaking_stages_read_the_published_table_as_they_read_the_restore
             name: stated(name, restored[key][name]) for name in columns}, key
     stage_text("federal_register", staged)  # already text: left alone
     assert rows(staged) == text
+
+
+def test_receipts_leave_a_published_table_only_by_a_declared_retirement_and_never_return(tmp_path, monkeypatch, remote):
+    """``retired_receipt_datasets`` at publication: refused undeclared, accepted once declared, then one-way.
+
+    The generations are the fixture's tables published directly, with the installed policy set as it stands on
+    each side of the switch; no rollup runs here.
+    """
+    from spicy_regs import etl_policy_registry
+    from spicy_regs.generations import build_generation
+    from spicy_regs.sources import publication
+    from spicy_regs.sources.publication import PublicationError
+
+    index = stored(remote, monkeypatch)
+    publish_prior(remote, monkeypatch, tmp_path)
+    installed = etl_policy_registry.installed_policies()
+    retired = frozenset({"federal_register"})
+
+    def publish(name, table, *, receipts=None, policies=None, declared=retired):
+        """``policies`` installs the pair's policy; none leaves the table unregistered, as after the switch."""
+        with monkeypatch.context() as at_the_switch:
+            at_the_switch.setattr(etl_policy_registry, "installed_policies", lambda: {
+                **{key: value for key, value in installed.items() if key != "federal_register"},
+                **{policy.dataset: policy for policy in policies or ()}})
+            (tmp_path / name).with_suffix(".table").mkdir()
+            table = Path(shutil.copyfile(table, (tmp_path / name).with_suffix(".table") / "federal_register.parquet"))
+            build_generation(tmp_path / name, family="federal-register", files=[table],
+                             expected_keys=["federal_register.parquet"],
+                             **({"receipt_path": receipts, "receipt_policies": policies,
+                                 "receipt_generation_id": MANIFEST["prior"]["generationId"]} if receipts else {}))
+            return publication.publish_generation(tmp_path / name, client=remote, bucket="spicy-regs",
+                                                  prior_index=index(), retired_receipt_datasets=declared)
+
+    before = index()["families"]["federal-register"]
+    with pytest.raises(PublicationError, match="drops required ETL receipts"):
+        publish("undeclared", FIXTURE / "expected/night-1.parquet", declared=frozenset())
+    with pytest.raises(PublicationError, match="keeps its table and publishes no receipts"):
+        publish("no-such-table", FIXTURE / "expected/night-1.parquet", declared=retired | {"fr_docket_links"})
+    assert index()["families"]["federal-register"] == before
+
+    publish("retired", FIXTURE / "expected/night-1.parquet")
+    after = index()["families"]["federal-register"]
+    assert "etlReceipts" not in after and after["tables"]["federal_register.parquet"]["rows"] == 170
+    # The archive is untouched: the prior generation's receipt member is still stored under its own prefix.
+    assert before["prefix"] + "/etl_receipts.parquet" in remote.objects
+    # Inert from here on: the next generation needs nothing, and the declaration still stands.
+    publish("next", FIXTURE / "expected/night-2.parquet")
+    assert index()["families"]["federal-register"]["tables"]["federal_register.parquet"]["rows"] == 177
+
+    # Receipts for a retired dataset are refused for as long as it is declared retired.
+    schema = pq.read_schema(FIXTURE / "prior/federal_register.parquet")
+    from spicy_regs.etl_receipts import receipt_policies
+    from spicy_regs.transforms.regulations_receipts import policy
+
+    [earlier] = [p for p in receipt_policies(policy("federal_register")) if p.subject_schema.equals(schema)]
+    with pytest.raises(PublicationError, match="keeps its table and publishes no receipts"):
+        publish("again", FIXTURE / "prior/federal_register.parquet", receipts=FIXTURE / "prior/etl_receipts.parquet",
+                policies=[earlier])
+
+
+def test_a_retirement_covers_only_the_datasets_it_names(tmp_path):
+    """A family that owns two receipt datasets and retires one may not drop the other with it.
+
+    Nor can it keep receipts for the other alone today: admission requires a receipt member to classify every
+    table beside it (``generations._verify_receipts``), so the tables of one family leave receipts together."""
+    import pyarrow as pa
+
+    from spicy_regs.etl_receipts import DatasetPolicy, ReceiptContext, combine_receipts, write_dataset
+    from spicy_regs.generations import build_generation
+    from spicy_regs.sources.publication import PublicationError, empty_index, publish_generation
+    from tests.generation_fakes import Store
+
+    store, schema = Store(), pa.schema([("id", pa.string())])
+    policies = [DatasetPolicy(name, schema, ("id",), ("held",)) for name in ("kept_table", "retired_table")]
+    held = ReceiptContext("build-1", "row", "test", [{"source_id": "s", "body_version": "1"}])
+    pairs = [write_dataset([({"id": "1", "held": "x"}, held)], tmp_path / p.dataset, p) for p in policies]
+    receipts = combine_receipts([receipt for _, receipt in pairs], tmp_path / "etl_receipts.parquet")
+    tables = [subject for subject, _ in pairs]
+    keys = [p.dataset + ".parquet" for p in policies]
+    build_generation(tmp_path / "first", family="two", files=tables, expected_keys=keys, receipt_path=receipts,
+                     receipt_policies=policies, receipt_generation_id="build-1")
+    index = publish_generation(tmp_path / "first", client=store, bucket="b", prior_index=empty_index())
+    build_generation(tmp_path / "second", family="two", files=tables, expected_keys=keys)
+    with pytest.raises(PublicationError, match="drops required ETL receipts"):
+        publish_generation(tmp_path / "second", client=store, bucket="b", prior_index=index,
+                           retired_receipt_datasets=frozenset({"retired_table"}))
+    with pytest.raises(ValueError, match="Receipt policies must classify every subject output"):
+        build_generation(tmp_path / "third", family="two", files=tables, expected_keys=keys, receipt_path=pairs[0][1],
+                         receipt_policies=policies[:1], receipt_generation_id="build-1")

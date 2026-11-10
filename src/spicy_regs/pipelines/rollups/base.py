@@ -96,6 +96,10 @@ class RollupPipeline(Pipeline):
     #: family's table set may grow. Inert once they are published; never a way to drop one.
     added_tables: ClassVar[tuple[str, ...]] = ()
     receipt_only_tables: ClassVar[tuple[str, ...]] = ()
+    #: Published tables of this rollup that no longer have per-row receipts: the explicit migration publication
+    #: requires before a family's receipt datasets may leave, once (ss-vse3). Each keeps its table. It stays
+    #: declared afterwards, where it refuses a generation that would claim receipts for one again.
+    retired_receipt_datasets: ClassVar[tuple[str, ...]] = ()
     #: Outputs stored as several files, by key, to their partition columns. The build returns each as a directory
     #: named for the table, holding ``<col>=<value>/part-NNNNNN.parquet`` (multi-file design §4.2).
     partitioned: ClassVar[Mapping[str, tuple[str, ...]]] = {}
@@ -316,6 +320,7 @@ class RollupPipeline(Pipeline):
                 evidence_directories=(self.source_evidence.artifact_dir,) if self.source_evidence else (),
                 added_tables=frozenset(self.added_tables),
                 receipt_only_tables=frozenset(self.receipt_only_tables),
+                retired_receipt_datasets=frozenset(self.retired_receipt_datasets),
             )
             from spicy_regs.sources.cloudflare import purge_urls
 

@@ -162,6 +162,11 @@ Entries link to the pull request that introduced the change.
   as JSON text; its manifest records each one's publication pin and no receipt
   pair. Both tables still publish receipts.
 
+- **A rollup can declare that a published table no longer has receipts**
+  (ss-vse3). `retired_receipt_datasets` on a rollup lets exactly those
+  datasets leave the family's receipt ownership once, each keeping its table,
+  and refuses receipts for them afterwards. Nothing declares one yet.
+
 - Prepared native conversions publish by an operator-named receipt digest.
   `--publish-prepared` now requires `--expect-receipt-digest`, the
   `prepared receipt digest` line the preparation printed (never copied from
