@@ -118,6 +118,11 @@ def daily_allowance(body: bytes, wanted: int, *, request_interval: float, reserv
       and will not come back during this run. Spend what is free now, less
       ``reserve``; zero means nothing today.
 
+    Keeping step holds nothing back: it takes every place yesterday's run
+    frees. Other use of the token is then protected only by how far ``wanted``
+    sits below the window's limit, which is the caller's choice, not by
+    ``reserve``.
+
     Shorter windows refill under the pacing. Blocked or unreadable usage defers
     (:func:`_user_windows`); a later 429's Retry-After stays authoritative.
     """
