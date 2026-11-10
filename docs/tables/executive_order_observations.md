@@ -4,9 +4,9 @@
 
 **Executive order text and publisher history**
 
-Every numbered executive order in an explicitly selected complete Federal Register publication year, with retained text, publisher attribution and literal history notes.
+Every executive order the Federal Register API serves, with retained text, publisher attribution and literal history notes.
 
-**Coverage.** Not a range. Designed for complete explicitly selected publication years with every admitted order represented, including explicit body acquisition failures. Full-year source and body qualification and public delivery are pending. The date records this design statement, not a source measurement. *(measured 2026-10-20)*
+**Coverage.** True range. Every executive order the Federal Register API serves, from EO 12890 (published 1994-01-05) on; the API serves no document published before 1994. The last publication date a generation's listing covered is in its file metadata (`parquet_kv_metadata`, key `spicy_regs.executive_orders.coverage`). *(measured 2026-11-10)*
 
 - **Parquet file:** `executive_order_observations.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
@@ -15,10 +15,10 @@ Every numbered executive order in an explicitly selected complete Federal Regist
 
 | Column | Type | Description |
 | --- | --- | --- |
-| `publication_year` | `INTEGER` | Calendar year of Federal Register publication, not the signing year. |
+| `publication_year` | `INTEGER` | Calendar year of Federal Register publication, not the signing year and not a completeness marker. |
 | `executive_order_number` | `VARCHAR` | Exact publisher EO number used for lookup. |
 | `document_number` | `VARCHAR` | Exact Federal Register document number; pair with publication_date for source identity. |
-| `publication_date` | `DATE` | Federal Register publication date; determines membership in the selected year. |
+| `publication_date` | `DATE` | Federal Register publication date. |
 | `signing_date` | `DATE` | Publisher signing date, which may precede the publication year. |
 | `title` | `VARCHAR` | Literal publisher document title. |
 | `president_identifier` | `VARCHAR` | Publisher president identifier; attribution from metadata, not independent signer verification. |
@@ -40,7 +40,8 @@ Every numbered executive order in an explicitly selected complete Federal Regist
 | `body_result_json` | `VARCHAR` | Per-record attempt, source release, request limits, response pins and explicit failure evidence. |
 | `offered_renditions_json` | `VARCHAR` | Literal publisher rendition URLs where present; offered does not establish availability or success. |
 | `source_record_id` | `VARCHAR` | Dated Federal Register source identity, checked against the admitted metadata evidence ledger. |
-| `source_release_logical_id` | `VARCHAR` | Logical identity of the admitted metadata release. |
-| `source_release_digest` | `VARCHAR` | Exact admitted metadata release digest. |
+| `source_release_logical_id` | `VARCHAR` | Logical identity of the admitted metadata release the row was read from; kept while the publisher's record and body result are unchanged. |
+| `source_release_digest` | `VARCHAR` | Exact admitted metadata release digest the row was read from; kept like source_release_logical_id. |
 | `metadata_locator_json` | `VARCHAR` | Original API response digest and row locator from the admitted source evidence ledger. |
 | `raw_metadata_json` | `VARCHAR` | Complete admitted native metadata; preserves missing, null and empty values even where nullable SQL columns collapse them. |
+| `source_sha256` | `VARCHAR` | SHA-256 of the retained API listing page the row was read from (`sha256:<hex>`, the locator's evidenceBlobRef); the bytes are `source-evidence/blobs/sha256/<hex>`. |

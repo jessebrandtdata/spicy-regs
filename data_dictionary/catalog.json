@@ -7755,10 +7755,10 @@
     {
       "table": "executive_order_observations",
       "label": "Executive order text and publisher history",
-      "summary": "Every numbered executive order in an explicitly selected complete Federal Register publication year, with retained text, publisher attribution and literal history notes.",
-      "coverage": "Not a range. Designed for complete explicitly selected publication years with every admitted order represented, including explicit body acquisition failures. Full-year source and body qualification and public delivery are pending. The date records this design statement, not a source measurement.",
-      "kind": "not_a_range",
-      "measured_on": "2026-10-20",
+      "summary": "Every executive order the Federal Register API serves, with retained text, publisher attribution and literal history notes.",
+      "coverage": "True range. Every executive order the Federal Register API serves, from EO 12890 (published 1994-01-05) on; the API serves no document published before 1994. The last publication date a generation's listing covered is in its file metadata (`parquet_kv_metadata`, key `spicy_regs.executive_orders.coverage`).",
+      "kind": "true_range",
+      "measured_on": "2026-11-10",
       "data_quality": null,
       "columns": [
         "publication_year",
@@ -7789,7 +7789,8 @@
         "source_release_logical_id",
         "source_release_digest",
         "metadata_locator_json",
-        "raw_metadata_json"
+        "raw_metadata_json",
+        "source_sha256"
       ]
     },
     {
