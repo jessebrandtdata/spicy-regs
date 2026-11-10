@@ -19,10 +19,17 @@ against a 360-minute limit.
 The published receipts held nothing the table lacks. Footer statistics of all
 4,708 row groups of the live member (26,561,684 rows): `processing_json` and
 `diagnostic_json` are `["dict",[]]` in every row; every comments receipt is a
-`comments-selected-policy-promotion/3` receipt whose witnesses name the
-retained v1 pair; every index receipt is derived from the published file; the
-one non-accepted row is the catalog's initialization marker. No column is
-added to the table.
+`comments-selected-policy-promotion/3` receipt whose witnesses point at the
+v1 pair by a local path and file digest; every index receipt is derived from
+the published file; the one non-accepted row is the catalog's initialization
+marker. No column is added to the table.
+
+Those per-row pointers no longer resolve. The recorded path,
+`corpora/session-reports-2026-10-05/server/reader-navigation-release-20261006/run/comments-original-stage1-retained-pair-admission-20261007/original-v1/`,
+does not exist, and no `original-v1` directory is left under `corpora/` (its
+siblings were emptied on 2026-10-28). The pair's two file digests are recorded
+only in `corpora/session-reports-2026-10-07/comments-efficiency/comments-bulk-fail-fast-findings-20261007.md`.
+The pinned generation keeps the pointers, not what they point at.
 
 ## What stays
 
@@ -39,13 +46,22 @@ published a rejected or refused comments receipt (the live member has none).
 | --- | --- | --- |
 | Rebind every receipt | A receipt row whose digest no longer matches its contents | Receipts are not published, so a damaged one cannot reach a reader. The catalog's own reads still check each digest. |
 | Admit receipts | Duplicate, missing or malformed receipts for a row | `validate_export`: every `comment_id` unique and non-null, `agency_code` non-null, index counts equal per agency, docket and month, every previously published ID kept; plus the 1,000,000-row floor. |
-| Admit subjects | A row whose values differ from what its receipt attests; a table off its declared schema | Values: `replace_native` reads every written row back inside the writing transaction. Schema: the export refuses a catalog whose columns differ from the policy, and the generation is built against each table's declared columns and types. |
+| Admit subjects | Rows and accepted receipts not one to one, which also caught a partial read; a row whose values differ from what its receipt attests; a table off its declared schema | Completeness: the copy must hold the rows the pinned snapshot states in its Iceberg summary or, without a usable summary, as many as its accepted receipts; otherwise the export refuses with both numbers, and its log names the count used. The retained-ID check alone could not see a lost row never published, which on the first run is everything since 2026-10-10. Values: `replace_native` reads every written row back inside the writing transaction. Schema: the export refuses a catalog whose columns differ from the policy, and the generation is built against each table's declared columns and types. |
 | Replay every row | A row the current mapper would not reproduce from its retained input | Dropped. For the 26.4M promotion rows the input was the row itself, so the replay could only refuse after a mapper change; such a change needs a deliberate rewrite of the catalog, not a refused publication. |
 | Pair snapshot | A receipt-only commit during export | The comments table's own identity binds the export and the no-op check. A receipt-only commit (a rejected attempt, a retained refusal) publishes nothing. |
 
-Dropped outright: detecting, at publication, a catalog row changed outside
-`replace_native` (by hand, or by an engine fault after commit). The predecessor
-check still refuses a lost ID; it cannot see a changed value.
+Dropped outright: detecting, at publication, a value changed outside
+`replace_native` (by hand, or by an engine fault after commit). A row inserted
+or deleted outside it is seen only when the receipt count decides, and only if
+no receipt changed with it; the summary counts the table as written. The
+predecessor check still refuses a lost ID.
+
+The export reads no receipt row's contents. It reads the receipt table's
+metadata (the pinned pair's identity) and, only when the snapshot's summary
+gives no usable count, the number of accepted receipts: a scan of about 78 s.
+A summary is usable when it states `total-records` and no delete file; after
+R2's compaction the dockets table stated 45 records beside 51 position
+deletes, so the subtraction is not trusted.
 
 ## Before it can run
 
@@ -133,10 +149,23 @@ on this page: every digest cited here is kept indefinitely.
 
 ## The bare `comments.parquet`
 
-The fixed `comments.parquet` at the bucket root (6.44 GB, last written
-2026-10-03), its agency files and `comments_index.parquet` are rewritten by
-every mirror publication: they are the predecessor whose IDs it must keep, and
-`agency_stats`, `feed_summary` and `org_committee_links` read the root file.
-The 2026-10-10 generation came from the v1 promotion, which wrote only the
-generation, so this route's first publication is the first to refresh them
-since 2026-10-03.
+The fixed `comments.parquet` at the bucket root (6,441,122,905 bytes, last
+written 2026-10-03), its 180 agency files and `comments_index.parquet` are
+rewritten by every mirror publication: they are the predecessor whose IDs it
+must keep, and `agency_stats`, `feed_summary` and `org_committee_links` read
+the root file. The 2026-10-10 generation came from the v1 promotion, which
+wrote only the generation, so this route's first publication is the first to
+refresh them since 2026-10-03.
+
+**Their shape changes for anonymous readers.** Today they hold
+`attachments_json`, the attachment list as JSON text (read from the root
+file's and the FAA file's footers on 2026-11-10). The first receipts-free
+publication writes the generation's shape: `attachments`, a list of structs
+(`title`, `formats`, `attachment_id`, `restrict_reason`, `restrict_reason_type`),
+in its place (18th in the monolith; the agency files have no `agency_code`); every other
+column is unchanged. No scheduled
+reader here uses `attachments_json` from these files. Two manual commands do,
+on local copies of them: `enrich-pdf-text` and `backfill-comment-text` without
+`--use-iceberg`. The scheduled backfill runs both with `--use-iceberg`, which
+reads the catalog. Only the agency files may shrink below half their prior
+size on upload; the monolith and the generation keep the guard.

@@ -144,17 +144,22 @@ Entries link to the pull request that introduced the change.
 
 - **`comments` and `comments_index` publish without ETL receipts** (ss-juz8,
   part of ss-vse3). The comments family's generation has no `etl_receipts.parquet`
-  and its index entry no `etlReceipts`; the two tables keep their columns, and no
-  field moves, since the live receipts held none the table lacks. The mirror
-  copies the pinned catalog table and no longer rebinds, admits or replays its
-  26.5 million receipts: 138.5 of 169.6 measured minutes at full size. A
-  receipt-only catalog commit no longer republishes. The last generation with
-  receipts, the 2026-10-10 one, is pinned in `docs/comments-receipt-archive.md`;
-  the catalog keeps writing its own receipt table. The first receipts-free
-  publication is also the first since 2026-10-03 to refresh the fixed
-  `comments.parquet`, its agency files and `comments_index.parquet`. Requires the installed comments policies to
-  be marked receipts-retired first. `prepare_comments_selected_export.py
+  and its index entry no `etlReceipts`; the generation's two tables keep their
+  columns, and no field moves, since the live receipts held none the table lacks.
+  The mirror copies the pinned catalog table, checks the copy holds every row
+  the snapshot does, and no longer rebinds, admits or replays its 26.5 million
+  receipts: 138.5 of 169.6 measured minutes at full size. A receipt-only catalog
+  commit no longer republishes. The last generation with receipts, the
+  2026-10-10 one, is pinned in `docs/comments-receipt-archive.md`; the catalog
+  keeps writing its own receipt table. Requires the installed comments policies
+  to be marked receipts-retired first. `prepare_comments_selected_export.py
   --publish` (the 2026-10-10 v1 promotion) now refuses.
+  **The fixed files change shape.** The first receipts-free publication is the
+  first since 2026-10-03 to rewrite the bucket-root `comments.parquet` and its
+  180 agency files, which still hold `attachments_json`, the attachment list as
+  JSON text. They take the generation's shape: `attachments`, a list of
+  structs, in the same position, every other column unchanged. A reader of
+  those files that parses `attachments_json` must read `attachments` instead.
 
 - **`federal_register` and `fr_docket_links` publish the fields their receipts
   held** (ss-vse3, step 1 of moving both tables off per-row receipts).
