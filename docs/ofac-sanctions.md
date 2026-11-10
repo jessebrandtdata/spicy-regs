@@ -62,6 +62,15 @@ mapping each original `sha256:…` digest to the retained ZIP path. The refresh
 sequence through publication is in
 [local-family-refresh.md](local-family-refresh.md).
 
+The 2026-10-20 generation
+`sha256:30353c6e00d9a6d374b6862cc6c4774e9171eb95b5b3d921aba8f362315804d1`
+holds the first accepted snapshots: SDN ZIP
+`b1a309ce7249d8fa64d3123b79add447efcb35fa569090c92b6f030b075cbc18` and
+consolidated ZIP
+`e918fe525b61cee24b400cba1d07e32cba7bb4bd9c87555dca056e7c84767d22`. A later
+refresh that selects only new snapshots replaces them in the public table;
+naming the generation here keeps its tables on R2 under the retention rule.
+
 The builder requires fresh output paths and refuses failed, discarded,
 incomplete, repeated or contradictory selected observations. It stages both
 tables before generation admission. Original ZIPs are retained once per
