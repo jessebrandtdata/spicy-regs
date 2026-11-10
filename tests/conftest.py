@@ -51,6 +51,23 @@ class _NoBulkBillText:
 
 
 @pytest.fixture(autouse=True)
+def nothing_published_names_this_machine(request: pytest.FixtureRequest, tmp_path: Path):
+    """After each test, nothing a publish would upload from its folder names this machine's folders (ss-81bv).
+
+    Every test that builds source evidence, a generation or an input proof through the maintained writers is held
+    to it (``tests/published_paths.published_files`` lists what is read). It sees only what a test writes under its
+    own ``tmp_path``, and only this machine's real folders, not a path a fixture made up.
+    """
+    yield
+    if "integration" in request.keywords:
+        return
+    from tests.published_paths import machine_paths, published_machine_paths
+
+    found = published_machine_paths(tmp_path, machine_paths(tmp_path))
+    assert not found, f"Published artefacts name this machine's folders (file, folder): {found}"
+
+
+@pytest.fixture(autouse=True)
 def fresh_owner_admissions() -> None:
     """Start every test with no process-wide owner admission, so a pin reused across tests never skips a check."""
     from spicy_regs import generations

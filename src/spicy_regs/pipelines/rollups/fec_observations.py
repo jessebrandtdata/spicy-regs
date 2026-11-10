@@ -34,8 +34,10 @@ class FecObservationsRollup(RollupPipeline):
         self.manifest = manifest
 
     def build(self, output_dir: Path) -> tuple[Path, ...]:
+        # A selection names where its builder's code lived (a git+file: implementation id), so its published copy
+        # is cut of local folders; ``local_sha256`` is the exact manifest's (ss-81bv).
         retained = (
-            self.source_evidence.retain_file(
+            self.source_evidence.retain_control(
                 self.manifest,
                 stage="retained-fec-selection",
                 coverage="Explicit retained selection; input captures retain their original observation dates.",
@@ -61,7 +63,7 @@ class FecObservationsRollup(RollupPipeline):
         if retained:
             with self.manifest.open("rb") as stream:
                 digest = "sha256:" + hashlib.file_digest(stream, "sha256").hexdigest()
-            if digest != retained["sha256"]:
+            if digest != retained["local_sha256"]:
                 raise ValueError("FEC input manifest changed while building")
         shutil.copyfile(native / "etl_receipts.parquet", output_dir / "etl_receipts.parquet")
         return tuple(native / (p.dataset + ".parquet") for p in self.receipt_policies if not p.receipt_only)
