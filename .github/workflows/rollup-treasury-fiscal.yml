@@ -1,8 +1,10 @@
 name: Rollup — treasury_fiscal
-# Dispatch only until one hosted rehearsal with skip_upload has passed; the schedule to add then is in
-# docs/local-family-refresh.md. A run that finds nothing new publishes nothing and ends green.
+# Daily after the US business day: on 2026-11-10 Treasury listed the day's Debt to the Penny row between
+# 21:21 and 21:41 UTC. A run that finds nothing new publishes nothing and ends green.
 # Built here: each newly listed Debt to the Penny day joins the published generation.
 on:
+  schedule:
+    - cron: '43 22 * * *'
   workflow_dispatch:
     inputs:
       skip_upload:
