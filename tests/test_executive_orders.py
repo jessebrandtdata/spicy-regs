@@ -202,9 +202,11 @@ def test_hosted_run_reuses_published_bodies_and_ends_green_when_nothing_is_new(t
     assert publisher.bodies == ["95-3000"]
 
     first.write_bytes((generation / module.OUTPUT).read_bytes())
+    publisher.bodies = []
     source_refreshes.ExecutiveOrdersRollup(output_dir=tmp_path / "unchanged").run()
-    assert not (tmp_path / "unchanged" / "generations").exists() or not any(
-        (tmp_path / "unchanged" / "generations").iterdir())
+    assert not (tmp_path / "unchanged" / "generations").exists() and publisher.bodies == []
+    (outcome,) = (tmp_path / "unchanged").glob("source-evidence/*/run-outcome.json")
+    assert json.loads(outcome.read_bytes())["outcome"] == "complete"
 
 
 def test_rollup_has_a_console_script_and_a_weekday_workflow():
