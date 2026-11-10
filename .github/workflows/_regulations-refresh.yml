@@ -90,8 +90,11 @@ jobs:
       # rewrite and 16 for the selection on 10,000 published rows (2026-11-09), about 99 minutes for today's
       # 26.4M on a hosted runner, which ran the manifest's per-row load 1.53 times slower than that machine.
       # Run 42674437011 then spent 10.6 minutes admitting and 9.2 publishing the same generation: about 121
-      # in all, never yet run hosted at this size, so 180. The other four stay within 30 (ss-ag8i).
-      timeout_minutes: ${{ matrix.command == 'run-rollup-comment-attributes' && 180 || 30 }}
+      # in all, never yet run hosted at this size, so 180. document-attributes rewrites 2.0M receipts the
+      # same way and was cancelled at 30 minutes on its first hosted refresh (run 42769233858, 2026-11-10),
+      # which skipped the mirror; documents took 12 minutes and docket-attributes 7 there, so 90 for it
+      # and 30 for the other three (ss-ag8i).
+      timeout_minutes: ${{ matrix.command == 'run-rollup-comment-attributes' && 180 || matrix.command == 'run-rollup-document-attributes' && 90 || 30 }}
       # It holds the 4.2 GiB receipt member three times over (selected, scoped, rewritten) beside the table
       # and the sealed generation: an estimated 13-17 GiB against the 14 GB a hosted runner guarantees.
       # free_disk removes about 25 GB of preinstalled toolchains first and logs the lowest free disk seen.

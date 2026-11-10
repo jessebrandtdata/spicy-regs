@@ -257,7 +257,7 @@ def test_only_the_comment_attributes_family_gets_more_than_thirty_minutes():
     families = refresh["jobs"]["base-families"]
     assert "run-rollup-comment-attributes" in families["strategy"]["matrix"]["command"]
     assert families["with"]["timeout_minutes"] == (
-        "${{ matrix.command == 'run-rollup-comment-attributes' && 180 || 30 }}"
+        "${{ matrix.command == 'run-rollup-comment-attributes' && 180 || matrix.command == 'run-rollup-document-attributes' && 90 || 30 }}"
     )
     rollup = yaml.safe_load((WORKFLOW.parent / "_rollup.yml").read_text())
     assert rollup[True]["workflow_call"]["inputs"]["timeout_minutes"]["type"] == "number"
