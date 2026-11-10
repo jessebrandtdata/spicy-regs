@@ -97,6 +97,10 @@ EXTERNAL_DATE_CHECKS = (
     # Quarterly: each quarter's statement, and the House posted July-September in November in 2022-2025. The
     # newest quarter held may be one quarter (92 days) plus that posting (61) plus two weeks to refresh old.
     DateCheck("house_disbursements", "report_period_end", 167, "quarter end"),
+    # Refreshed on weekdays, but a day without a new order publishes nothing, so no published value moves daily; a
+    # failed run shows on its own workflow. Orders come irregularly: the longest gap between publication days in
+    # 1994-2026 is 87 days (2009-07-06 to 2009-10-01, measured 2026-11-10), so a refresh that stopped shows here.
+    DateCheck("executive_order_observations", "publication_date", 100, "newest order"),
 )
 
 DATE_CHECKS = BASE_TABLE_CHECKS + EXTERNAL_DATE_CHECKS
@@ -164,8 +168,9 @@ _CMS = Cadence("one CMS drug spending release a year, about June (docs/cms-part-
 
 #: Family age that is not staleness, and when it becomes staleness. A family absent here has no family-level
 #: rule: its tables' date checks above, if it has any, decide; a source period in the rows (house-disbursements'
-#: quarter end) sees what ``publishedAt`` cannot, so it is checked there. uscode-editions and executive-orders
-#: are left out on purpose: both are meant to carry what their publisher serves, so their age is a real gap.
+#: quarter end) sees what ``publishedAt`` cannot, so it is checked there, as executive-orders' newest order is.
+#: uscode-editions and executive-orders are left out on purpose: both are meant to carry what their publisher
+#: serves, so their age is a real gap.
 FAMILY_CADENCE: dict[str, Cadence] = {
     **dict.fromkeys(
         ("retained-sec-comments", "retained-ferc-originals", "retained-cftc-comments", "retained-edis-filings",

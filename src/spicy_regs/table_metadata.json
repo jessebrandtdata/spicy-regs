@@ -22378,21 +22378,21 @@
   "executive_order_observations": {
     "table": "executive_order_observations",
     "label": "Executive order text and publisher history",
-    "summary": "Every numbered executive order in an explicitly selected complete Federal Register publication year, with retained text, publisher attribution and literal history notes.",
-    "coverage": "Not a range. Designed for complete explicitly selected publication years with every admitted order represented, including explicit body acquisition failures. Full-year source and body qualification and public delivery are pending. The date records this design statement, not a source measurement.",
-    "kind": "not_a_range",
-    "measured_on": "2026-10-20",
+    "summary": "Every executive order the Federal Register API serves, with retained text, publisher attribution and literal history notes.",
+    "coverage": "True range. Every executive order the Federal Register API serves, from EO 12890 (published 1994-01-05) on; the API serves no document published before 1994. The last publication date a generation's listing covered is in its file metadata (`parquet_kv_metadata`, key `spicy_regs.executive_orders.coverage`).",
+    "kind": "true_range",
+    "measured_on": "2026-11-10",
     "data_quality": null,
     "columns": [
       {
         "column_name": "publication_year",
         "column_type": "INTEGER",
-        "description": "Calendar year of Federal Register publication, not the signing year."
+        "description": "Calendar year of Federal Register publication, not the signing year and not a completeness marker."
       },
       {
         "column_name": "executive_order_number",
         "column_type": "VARCHAR",
-        "description": "Exact publisher EO number used for lookup."
+        "description": "Exact publisher EO number used for lookup; null where the publisher states none, as for corrections, designations and a few orders the API files under executive orders."
       },
       {
         "column_name": "document_number",
@@ -22402,7 +22402,7 @@
       {
         "column_name": "publication_date",
         "column_type": "DATE",
-        "description": "Federal Register publication date; determines membership in the selected year."
+        "description": "Federal Register publication date."
       },
       {
         "column_name": "signing_date",
@@ -22512,12 +22512,12 @@
       {
         "column_name": "source_release_logical_id",
         "column_type": "VARCHAR",
-        "description": "Logical identity of the admitted metadata release."
+        "description": "Logical identity of the admitted metadata release the row was read from; kept while the publisher's record and body result are unchanged."
       },
       {
         "column_name": "source_release_digest",
         "column_type": "VARCHAR",
-        "description": "Exact admitted metadata release digest."
+        "description": "Exact admitted metadata release digest the row was read from; kept like source_release_logical_id."
       },
       {
         "column_name": "metadata_locator_json",
@@ -22528,6 +22528,11 @@
         "column_name": "raw_metadata_json",
         "column_type": "VARCHAR",
         "description": "Complete admitted native metadata; preserves missing, null and empty values even where nullable SQL columns collapse them."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained API listing page the row was read from (`sha256:<hex>`, the locator's evidenceBlobRef); the bytes are `source-evidence/blobs/sha256/<hex>`."
       }
     ],
     "subject": "reference",

@@ -10979,19 +10979,19 @@ tables:
   executive_order_observations:
     label: Executive order text and publisher history
     subject: reference
-    summary: Every numbered executive order in an explicitly selected complete Federal Register publication year,
-      with retained text, publisher attribution and literal history notes.
-    coverage: Not a range. Designed for complete explicitly selected publication years with every admitted order
-      represented, including explicit body acquisition failures. Full-year source and body qualification and public
-      delivery are pending. The date records this design statement, not a source measurement.
-    measured_on: '2026-10-20'
+    summary: Every executive order the Federal Register API serves, with retained text, publisher attribution and
+      literal history notes.
+    coverage: True range. Every executive order the Federal Register API serves, from EO 12890 (published
+      1994-01-05) on; the API serves no document published before 1994. The last publication date a generation's
+      listing covered is in its file metadata (`parquet_kv_metadata`, key `spicy_regs.executive_orders.coverage`).
+    measured_on: '2026-11-10'
     grain: One dated Federal Register document in the admitted source release; EO number is a lookup value,
       not the sole source identity. History is the publisher's literal notes, not an inferred legal status.
     columns:
-      publication_year: Calendar year of Federal Register publication, not the signing year.
-      executive_order_number: Exact publisher EO number used for lookup.
+      publication_year: Calendar year of Federal Register publication, not the signing year and not a completeness marker.
+      executive_order_number: Exact publisher EO number used for lookup; null where the publisher states none, as for corrections, designations and a few orders the API files under executive orders.
       document_number: Exact Federal Register document number; pair with publication_date for source identity.
-      publication_date: Federal Register publication date; determines membership in the selected year.
+      publication_date: Federal Register publication date.
       signing_date: Publisher signing date, which may precede the publication year.
       title: Literal publisher document title.
       president_identifier: Publisher president identifier; attribution from metadata, not independent signer verification.
@@ -11013,10 +11013,11 @@ tables:
       body_result_json: Per-record attempt, source release, request limits, response pins and explicit failure evidence.
       offered_renditions_json: Literal publisher rendition URLs where present; offered does not establish availability or success.
       source_record_id: Dated Federal Register source identity, checked against the admitted metadata evidence ledger.
-      source_release_logical_id: Logical identity of the admitted metadata release.
-      source_release_digest: Exact admitted metadata release digest.
+      source_release_logical_id: Logical identity of the admitted metadata release the row was read from; kept while the publisher's record and body result are unchanged.
+      source_release_digest: Exact admitted metadata release digest the row was read from; kept like source_release_logical_id.
       metadata_locator_json: Original API response digest and row locator from the admitted source evidence ledger.
       raw_metadata_json: Complete admitted native metadata; preserves missing, null and empty values even where nullable SQL columns collapse them.
+      source_sha256: SHA-256 of the retained API listing page the row was read from (`sha256:<hex>`, the locator's evidenceBlobRef); the bytes are `source-evidence/blobs/sha256/<hex>`.
   fec_financial_profiles:
     label: Reported candidate and committee financial profiles
     subject: campaign_finance

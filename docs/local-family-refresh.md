@@ -1,12 +1,14 @@
 # Refreshing the hand-run families
 
-Four published families are refreshed from a workstation: `treasury-fiscal`,
-`administration-policy`, `ofac-sanctions` and `grants-opportunities`. Each
-hand refresh is the same five steps: acquire, build, dry-run publish, publish, read
-back. What each command does and refuses is in the family's own page
+These published families are refreshed from a workstation: `treasury-fiscal`,
+`administration-policy`, `ofac-sanctions`, `house-disbursements`,
+`grants-opportunities` and `executive-orders`. Each hand refresh is the same
+five steps: acquire, build, dry-run publish, publish, read back. What each
+command does and refuses is in the family's own page
 ([Treasury](treasury-fiscal.md), [administration policy](retained-collections.md),
-[OFAC](ofac-sanctions.md), [Grants](grants-opportunities.md)); this page is only
-the order.
+[OFAC](ofac-sanctions.md), [House](congressional-disbursements.md),
+[Grants](grants-opportunities.md), [executive orders](executive-orders.md));
+this page is only the order.
 
 ## Before any family
 
@@ -217,6 +219,43 @@ was written at 09:41 UTC; before a day's export exists, `acquire` for that date
 fails with HTTP 403 and the day before is the newest. The published table then
 holds this snapshot only.
 
+## executive-orders
+
+Mirror it first (`--family executive-orders`, under 1 MB). `acquire` lists
+every order the Federal Register API serves (268 requests, 5 MB, under a
+minute) and fetches a body only for an order the live generation lacks or holds
+as failed, about 0.9 seconds a request. The orders the live generation holds
+keep their published bodies, which the shared raw archive already has. The
+build takes under a minute; a publish uploads about 40 MB.
+
+```sh
+$UV python -m spicy_regs.pipelines.executive_orders acquire --read-index "$LIVE_INDEX" \
+  --output-dir "$WORK/eo-acquire" --captures-out "$WORK/eo-captures.json"
+$UV python -m spicy_regs.pipelines.executive_orders build --captures "$WORK/eo-captures.json" \
+  --read-index "$LIVE_INDEX" --output-dir "$WORK/eo-build"
+```
+
+`acquire` prints how many orders were added, changed and removed. When all three
+are 0 it prints `"nothingNew": true`, fetches no body, and `build` refuses the
+selection: there is nothing to publish. Rerunning `acquire` into the same
+`--output-dir` keeps the bodies it already fetched. An order the publisher has
+not touched keeps its published row byte for byte, so compare the build with
+the live table by `source_record_id`: only added, changed and removed orders
+should differ. [How the family acquires and builds](executive-orders.md).
+
+The first refresh after 2026-10-20 adds every year at once. The 2026-11-10
+rehearsal fetched 1,335 bodies in 1,593 requests (the 257 orders from before
+2000 and one from 2010 have no publisher XML and come from GovInfo HTML), about
+24 minutes and 15 MB. The 239 published rows kept their pointers and text; they
+differ from the live rows only in `text_derivation_version` (002 to 004; SpicyDocs
+derives byte-identical text) and the new `source_sha256` column. Ten orders
+from 2015 to 2021 build as `source_failed`: SpicyDocs' XML validator refuses
+their FRDOC marker.
+
+The hosted `rollup-executive-orders.yml` runs on weekdays; it restores the
+published bodies from R2 source evidence and publishes nothing when nothing is
+new.
+
 ## After a publish
 
 Nothing in the repository fails when these go stale; each is prose or a
@@ -284,6 +323,7 @@ receive them.
 | `ofac-sanctions` | Downloads the SDN and consolidated exports and publishes them as the two snapshots | Both ZIPs are the published ones |
 | `house-disbursements` | Captures the House's two listing pages and reads the published tables (162 MB); when the pages list a CSV the published rows lack, restores the published originals from R2 evidence, downloads the new ones and rebuilds every quarter | The pages list no new CSV |
 | `grants-opportunities` | Finds the newest daily export of the last seven days and publishes it as the one snapshot | That export date is published |
+| `executive-orders` | Lists every order the API serves, restores the published bodies from R2 evidence and fetches only the bodies the published generation lacks; scheduled on weekdays from the start | No order was added, changed or removed |
 
 The Treasury run needs the three-table generation, so it can start only after
 the first hand refresh above. It adds debt days only: a new monthly statement

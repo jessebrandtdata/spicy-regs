@@ -26,6 +26,7 @@ from spicy_regs.sources.publication import PublicationError
 #: Families refreshed by hand. A family with a hosted workflow is published by that workflow, never from here.
 LOCAL_FAMILIES = frozenset({
     "administration-policy",
+    "executive-orders",
     "grants-opportunities",
     "house-disbursements",
     "ofac-sanctions",
