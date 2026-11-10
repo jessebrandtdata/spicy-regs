@@ -223,7 +223,12 @@ class MirrulationsOriginals:
                     f"{len(missing)} Mirrulations objects would be used without a retained original, "
                     f"e.g. {sorted(missing)[0]}"
                 )
-            self._flush()
+            try:
+                self._flush()
+            except Exception as error:
+                # As in retain(): a failed seal or R2 write is an evidence failure, and every later commit refuses.
+                self.failure = self.failure or f"{type(error).__name__} publishing originals"
+                raise SourceEvidenceError(f"Mirrulations original retention failed: {self.failure}") from error
             self.retained, self._expected = set(), set()
 
     def __enter__(self) -> MirrulationsOriginals:

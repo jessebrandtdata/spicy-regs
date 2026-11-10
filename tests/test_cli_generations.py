@@ -163,6 +163,9 @@ def test_member_failure_retains_prior_current_and_incomplete_evidence(tmp_path, 
                 yield response
 
         monkeypatch.setattr(cli.httpx, "stream", fail)
+        from spicy_regs.sources import publication
+
+        monkeypatch.setattr(publication.time, "sleep", lambda seconds: None)  # the member fetch retries, then refuses
     with pytest.raises(RuntimeError, match="Download incomplete: b"):
         _download(tmp_path, "a", "b")
     assert (tmp_path / "current").resolve() == old

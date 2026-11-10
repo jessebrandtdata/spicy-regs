@@ -23,14 +23,15 @@ def sweep(tmp_path, monkeypatch):
     """Run a five-batch sweep whose manifest load, first pass and batches take the given minutes on a fake clock.
 
     ``first`` is the pass over every agency's dockets and documents; ``started`` lists the comment batches. With
-    ``first_error`` that pass raises it after ``first`` minutes, having recorded a key when ``first_records``. A
-    sweep that raises returns its error in place of the batch it stopped before.
+    ``first_error`` that pass raises it after ``first`` minutes, having recorded a key when ``first_records`` and
+    saved it locally when ``first_saves``. A sweep that raises returns its error in place of the batch it stopped
+    before.
     """
     now = [0.0]
     monkeypatch.setattr(regulations, "monotonic", lambda: now[0])
     monkeypatch.setenv("AGENCIES", "A,B,C,D,E")
 
-    def run(minutes, *, budget, load=5.0, start=0, first=0.0, first_error=None, first_records=False):
+    def run(minutes, *, budget, load=5.0, start=0, first=0.0, first_error=None, first_records=False, first_saves=False):
         started, firsts, begun = [], [], now[0]
 
         def load_manifest(*args, **kwargs):
@@ -45,6 +46,8 @@ def sweep(tmp_path, monkeypatch):
                 now[0] += first * MINUTE
                 if first_records:
                     manifest.record(["raw-data/A/A-1/text-A-1/documents/A-1-0001.json"])
+                if first_saves:  # the local save succeeds; the error stands for the refused upload after it
+                    manifest.save(tmp_path)
                 if first_error is not None:
                     raise first_error
                 return
@@ -100,6 +103,18 @@ def test_a_failed_first_pass_that_recorded_keys_stops_the_sweep(sweep):
     """A later batch's manifest would retire the keys it recorded, so it fails like any batch."""
     refused = OSError("manifest upload refused")
     assert sweep([1] * 5, budget=300, first_error=refused, first_records=True)[:3] == (refused, [], None)
+    # The realistic case: _run saved the manifest locally, then its upload was refused. The keys are no longer
+    # pending, but a later batch's upload of that local file would still retire them.
+    assert sweep([1] * 5, budget=300, first_error=refused, first_records=True, first_saves=True)[:3] == (
+        refused, [], None)
+
+
+def test_an_evidence_failure_in_the_first_pass_stops_the_sweep(sweep):
+    """A refused commit of originals (SourceEvidenceError) is an evidence failure: never caught, like a halt."""
+    from spicy_regs.source_evidence import SourceEvidenceError
+
+    refused = SourceEvidenceError("Mirrulations original retention failed: ClientError publishing originals")
+    assert sweep([1] * 5, budget=300, first_error=refused)[:3] == (refused, [], None)
 
 
 def test_an_original_retention_halt_in_the_first_pass_stops_the_sweep(sweep):
@@ -127,6 +142,29 @@ def test_only_comments_skips_the_first_pass_and_skip_comments_is_that_pass_alone
     # The chunked path stages no attribute rows, so comment batches never take it.
     with pytest.raises(ValueError, match="chunk_size"):
         RegulationsPipeline(output_dir=tmp_path, batch_count=2, use_iceberg=True, chunk_size=10).run_sweep()
+
+
+def test_a_failed_first_pass_with_no_comment_batches_raises_its_own_error(tmp_path, monkeypatch):
+    """With --skip-comments the pass is the whole sweep: nothing runs after it, so its error is not wrapped."""
+    monkeypatch.setenv("AGENCIES", "A,B")
+    monkeypatch.setattr(Manifest, "load", lambda *a, **kw: Manifest.empty())
+    refused = OSError("listing raw-data/A/ refused")
+
+    def fail(self, *, manifest, record_types):
+        raise refused
+
+    monkeypatch.setattr(RegulationsPipeline, "run", fail)
+    with pytest.raises(OSError) as raised:
+        RegulationsPipeline(output_dir=tmp_path, batch_count=2, skip_comments=True).run_sweep()
+    assert raised.value is refused
+
+
+def test_an_empty_list_of_record_types_is_not_every_type(tmp_path, monkeypatch):
+    seen = []
+    monkeypatch.setattr(RegulationsPipeline, "_run", lambda self, manifest, record_types: seen.append(record_types))
+    RegulationsPipeline(output_dir=tmp_path, agency="A", skip_comments=True, enrich_text=False).run(
+        manifest=Manifest.empty(), record_types=[])
+    assert seen == [[]]
 
 
 def test_skip_and_only_comments_together_are_refused():
@@ -184,8 +222,8 @@ def test_cli_passes_the_budget_to_the_sweep_and_refuses_it_elsewhere(monkeypatch
         def __init__(self, **kwargs):
             pass
 
-        def run_sweep(self, *, budget_minutes, start_batch):
-            seen["sweep"] = (budget_minutes, start_batch)
+        def run_sweep(self, *, budget_minutes, start_batch, resume):
+            seen["sweep"] = (budget_minutes, start_batch, resume)
 
         def run(self):
             seen["ran"] = True
@@ -194,12 +232,14 @@ def test_cli_passes_the_budget_to_the_sweep_and_refuses_it_elsewhere(monkeypatch
     monkeypatch.setattr(regulations, "load_dotenv", lambda *a, **k: None)
     with pytest.raises(SystemExit) as exited:
         regulations.app(["--sweep", "--batch-count", "15", "--sweep-budget-minutes", "300", "--sweep-start-batch", "7",
-                         "--skip-upload"])
-    assert exited.value.code == 0 and seen == {"sweep": (300, 7)}
+                         "--sweep-resume", "--skip-upload"])
+    assert exited.value.code == 0 and seen == {"sweep": (300, 7, True)}
     with pytest.raises(ValueError, match="only to --sweep"):
         regulations.main(sweep_budget_minutes=300)
     with pytest.raises(ValueError, match="only to --sweep"):
         regulations.main(sweep_start_batch=7)
+    with pytest.raises(ValueError, match="only to --sweep"):
+        regulations.main(sweep_resume=True)
     assert "ran" not in seen
 
 
@@ -260,7 +300,8 @@ def test_only_a_scheduled_sweep_gets_a_budget_and_its_last_batch_may_run_twice_t
     steps = workflow["jobs"]["etl-new"]["steps"]
     run = next(step for step in steps if step.get("name") == "Run new pipeline")
     assert run["env"]["SWEEP_BUDGET_MINUTES"] == "${{ needs.setup.outputs.sweep_budget_minutes }}"
-    assert 'ARGS+=(--sweep-budget-minutes "$SWEEP_BUDGET_MINUTES")' in run["run"]
+    # Only a scheduled (budgeted) sweep resumes from its R2 state.
+    assert 'ARGS+=(--sweep-budget-minutes "$SWEEP_BUDGET_MINUTES" --sweep-resume)' in run["run"]
     _command, bound, *_ = regulations.app.parse_args(["--sweep", "--batch-count", "15", "--sweep-budget-minutes", "300"])
     assert bound.arguments["sweep_budget_minutes"] == 300
 
@@ -308,6 +349,9 @@ def test_a_stopped_sweep_is_a_warning_on_the_run_page(tmp_path, stopped_before, 
     else:
         assert result.stdout.startswith("::warning title=Sweep stopped at its time budget::Stopped before batch 2 ")
         assert "(0-indexed) of 15" in result.stdout and result.stdout.count("\n") == 1
+        # A red run's consumers are skipped, so the line must not promise they publish.
+        assert ("this run failed, so its consumers do not publish them" in result.stdout) is (status != 0)
+        assert ("this run's consumers publish them" in result.stdout) is (status == 0)
 
 
 @pytest.mark.parametrize(
@@ -404,3 +448,78 @@ def test_a_skipped_retry_asks_for_no_start_batch(tmp_path):
     outputs, calls = setup_outputs(tmp_path, event="schedule", schedule="25 18 * * *", succeeded=[11], stopped={11: 0})
     assert (outputs["run"], outputs["sweep_start_batch"]) == ("false", "")
     assert "--status completed" not in calls
+
+
+@pytest.fixture
+def resumable(tmp_path, monkeypatch):
+    """Sweeps over five one-agency batches that publish to a fake R2; ``kill`` makes that batch die as a hosted kill.
+
+    Each call is a new run (a new pipeline and process), sharing only the fake R2. It returns the batches started
+    and the R2 state left behind.
+    """
+    from tests.regulatory_publication_fakes import install
+
+    remote = install(monkeypatch)
+    monkeypatch.setenv("AGENCIES", "A,B,C,D,E")
+    monkeypatch.setattr(Manifest, "load", lambda *a, **kw: Manifest.empty())
+
+    class Killed(BaseException):
+        """Stands in for the runner's kill: nothing after it runs, as no job step runs after a timeout."""
+
+    def run(*, kill=None, start=0, budget=None):
+        started = []
+
+        def one_pass(self, *, manifest, record_types):
+            if self.batch_number is None:
+                return
+            started.append(self.batch_number)
+            if self.batch_number == kill:
+                raise Killed
+
+        monkeypatch.setattr(RegulationsPipeline, "run", one_pass)
+        pipeline = RegulationsPipeline(output_dir=tmp_path, batch_count=5, use_iceberg=True, skip_upload=False)
+        try:
+            pipeline.run_sweep(budget_minutes=budget, start_batch=start, resume=True)
+        except Killed:
+            pass
+        raw = remote.objects.get(regulations.SWEEP_STATE_KEY)
+        import json
+
+        return started, json.loads(raw) if raw else None
+
+    return run
+
+
+def test_a_killed_run_resumes_at_the_batch_it_was_in(resumable):
+    """Run 42875578221 died inside a batch and left no artifact: the next sweep would have begun at batch 0."""
+    assert resumable(kill=2) == ([0, 1, 2], {"batch_count": 5, "next": 2, "starts": 1})
+    # The artifact-derived start (0 here, as after a kill) is overridden by the state the killed process wrote.
+    assert resumable(start=0) == ([2, 3, 4, 0, 1], {"batch_count": 5, "next": 2, "starts": 0})
+
+
+def test_a_batch_that_never_finishes_is_skipped_once_and_reported(resumable, capsys):
+    resumable(kill=2)
+    assert resumable(kill=2) == ([2], {"batch_count": 5, "next": 2, "starts": 2})
+    # Started by two runs in a row without finishing: this sweep begins after it, says so, and reaches it last.
+    started, state = resumable(kill=2)
+    assert started == [3, 4, 0, 1, 2] and state == {"batch_count": 5, "next": 2, "starts": 1}
+    assert "::error title=Sweep batch skipped once::RuntimeError: batch 2 (0-indexed)" in capsys.readouterr().out
+
+
+def test_a_budget_stop_does_not_count_as_a_start(resumable, monkeypatch):
+    resumable(kill=3)
+    # A sweep with no time for a batch starts none; the state still names batch 3, started once.
+    assert resumable(budget=1) == ([], {"batch_count": 5, "next": 3, "starts": 1})
+    assert resumable()[0] == [3, 4, 0, 1, 2]
+
+
+def test_an_unreadable_state_falls_back_to_the_given_batch(resumable, monkeypatch):
+    from spicy_regs.sources import r2
+
+    monkeypatch.setattr(r2, "get_r2_client", lambda: (_ for _ in ()).throw(OSError("R2 unavailable")))
+    assert resumable(start=3) == ([3, 4, 0, 1, 2], None)
+
+
+def test_a_sweep_that_does_not_publish_neither_reads_nor_writes_the_state(tmp_path):
+    with pytest.raises(ValueError, match="drop --skip-upload"):
+        RegulationsPipeline(output_dir=tmp_path, batch_count=5, use_iceberg=True).run_sweep(resume=True)
