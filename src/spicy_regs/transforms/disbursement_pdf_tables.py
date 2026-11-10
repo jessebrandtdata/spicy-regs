@@ -127,6 +127,17 @@ def pages(source, entry):
         raise ValueError("Disbursement PDF page, record, role or repair population differs from its manifest")
 
 
+def _retain(evidence, path: Path, *, stage: str, **fields) -> str:
+    """Retain one pinned build input and return its local digest; a JSON one is published cut of local paths.
+
+    Reading outputs and reader data (SpicyDocs' correction files among them) pin where this machine read them
+    (ss-81bv); ``retain_control`` binds the cut copy to the exact local bytes.
+    """
+    if path.suffix == ".json":
+        return evidence.retain_control(path, stage=stage, **fields)["local_sha256"]
+    return evidence.retain_file(path, stage=stage, **fields)["sha256"]
+
+
 def build_pdf_tables(
     manifest_path: Path, output_dir: Path, *, evidence, chamber, tables, schemas, rows, profile="ledger"
 ):
@@ -156,11 +167,12 @@ def build_pdf_tables(
     ):
         raise ValueError("Disbursement PDF manifest totals differ from selected source outcomes")
     store = CentralRawArchiveStore(Path(manifest["archive_root"]), create=False)
-    evidence.retain_file(manifest_path, stage=chamber + "-page-reading-manifest")
-    evidence.retain_file(selection, stage=chamber + "-pdf-selection")
+    # These controls name this machine's directories; their published copies are cut to file names (ss-81bv).
+    evidence.retain_control(manifest_path, stage=chamber + "-page-reading-manifest")
+    evidence.retain_control(selection, stage=chamber + "-pdf-selection")
     retained_files = retained_implementation(manifest)
     for artifact in retained_files.values():
-        evidence.retain_file(verify_pin(artifact), stage=chamber + "-reader-implementation")
+        _retain(evidence, verify_pin(artifact), stage=chamber + "-reader-implementation")
     used, partitions, retained_processing = [], set(), set()
     for entry in entries:
         source = sources[entry["id"]]
@@ -175,7 +187,7 @@ def build_pdf_tables(
         for artifact in processing_inputs(source):
             identity = artifact["sha256"], artifact["bytes"]
             if identity not in retained_processing:
-                evidence.retain_file(verify_pin(artifact), stage=chamber + "-structured-page-input")
+                _retain(evidence, verify_pin(artifact), stage=chamber + "-structured-page-input")
                 retained_processing.add(identity)
         if entry["status"] != "read" or (entry["source_sha256"], entry["source_byte_size"]) != (
             source["source_sha256"],
@@ -199,10 +211,9 @@ def build_pdf_tables(
             )
             destination.parent.mkdir(parents=True, exist_ok=True)
             write_rows(rows(source, entry, table), destination, schemas[table])
-        captured = evidence.retain_file(
-            verify_pin(entry["output"]), stage=chamber + "-page-reading", source_id=source["url"]
-        )
-        if captured["sha256"] != entry["output"]["sha256"]:
+        captured = _retain(evidence, verify_pin(entry["output"]), stage=chamber + "-page-reading",
+                           source_id=source["url"])
+        if captured != entry["output"]["sha256"]:
             raise ValueError("Disbursement PDF reading changed during table conversion")
         blob = store.describe_blob(source["source_sha256"], source["source_byte_size"])
         if blob["encoding"] != "raw":
@@ -214,7 +225,9 @@ def build_pdf_tables(
             raw_source=True,
             source_id=source["url"],
             source_url=source["url"],
-            acquisition_evidence=source.get("evidence_directory"),
+            # The publisher's address and the acquisition's run, not this machine's archive and evidence folders.
+            original_location=source["url"],
+            acquisition_run_id=Path(source["evidence_directory"]).name if source.get("evidence_directory") else None,
         )
         used.append(
             {
@@ -224,7 +237,7 @@ def build_pdf_tables(
                 "asset_kind": "pdf",
                 "sha256": source["source_sha256"],
                 "bytes": source["source_byte_size"],
-                "location": str(raw_path.resolve()),
+                "location": source["url"],
             }
         )
     evidence.selected_inputs(

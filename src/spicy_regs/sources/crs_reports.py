@@ -160,7 +160,7 @@ class CrsReportDetailReader:
             if len(body) > 2 * 1024 * 1024 or "sha256:" + hashlib.sha256(body).hexdigest() != digest:
                 raise CrsReportsError("Retained CRS detail differs from its pinned original")
             self.evidence.retain_bytes(body, stage="crs-detail-retained", raw_source=True,
-                                       original_location=str(path), source_sha256=digest)
+                                       original_location=path.name, source_sha256=digest)
             witnesses = [{"source_id": "congress.gov:crs-detail", "source_uri": None,
                           "sha256": digest, "locator": "/CRSReport", "body_version": None}]
             try:

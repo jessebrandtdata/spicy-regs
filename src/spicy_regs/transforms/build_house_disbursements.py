@@ -140,9 +140,10 @@ def build_house_disbursements(manifest_path: Path, output_dir: Path, *, evidence
         raise ValueError("House family requires both selected detail and summary sources")
     store = CentralRawArchiveStore(Path(acquisition["archive_root"]), create=False)
     output_dir.mkdir(parents=True, exist_ok=True)
-    evidence.retain_file(manifest_path, stage="house-normalization-manifest")
-    evidence.retain_file(acquisition_path, stage="house-acquisition-manifest")
-    evidence.retain_file(Path(acquisition["selection"]), stage="house-source-selection")
+    # These controls name this machine's directories; their published copies are cut to file names (ss-81bv).
+    evidence.retain_control(manifest_path, stage="house-normalization-manifest")
+    evidence.retain_control(acquisition_path, stage="house-acquisition-manifest")
+    evidence.retain_control(Path(acquisition["selection"]), stage="house-source-selection")
     used, emitted = [], set()
     for entry in manifest["files"]:
         source = sources[entry["id"]]
@@ -180,7 +181,7 @@ def build_house_disbursements(manifest_path: Path, output_dir: Path, *, evidence
             captured = evidence.retain_file(path, stage="house-normalized-input", source_id=source["url"])
             if captured["sha256"] != receipt["artifacts"][str(path)]["sha256"]:
                 raise ValueError("House normalized input changed during conversion")
-        evidence.retain_file(receipt_path, stage="house-normalization-receipt", source_id=source["url"])
+        evidence.retain_control(receipt_path, stage="house-normalization-receipt", source_id=source["url"])
         blob = store.describe_blob(source["source_sha256"], source["source_byte_size"])
         raw_path = store.root / blob["object"]
         if blob["encoding"] != "raw":
@@ -191,7 +192,9 @@ def build_house_disbursements(manifest_path: Path, output_dir: Path, *, evidence
             raw_source=True,
             source_id=source["url"],
             source_url=source["url"],
-            acquisition_evidence=source["evidence_directory"],
+            # The publisher's address and the acquisition's run, not this machine's archive and evidence folders.
+            original_location=source["url"],
+            acquisition_run_id=Path(source["evidence_directory"]).name,
         )
         used.append(
             {
@@ -201,7 +204,7 @@ def build_house_disbursements(manifest_path: Path, output_dir: Path, *, evidence
                 "asset_kind": "csv",
                 "sha256": source["source_sha256"],
                 "bytes": source["source_byte_size"],
-                "location": str(raw_path.resolve()),
+                "location": source["url"],
             }
         )
     evidence.selected_inputs(
