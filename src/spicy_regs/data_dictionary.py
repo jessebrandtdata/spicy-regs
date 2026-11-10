@@ -1200,16 +1200,18 @@ def load_descriptions(path: Path = DEFAULT_DESCRIPTIONS, *, native: bool = True)
 def selected_dictionary_definitions(index: dict, names: Iterable[str], descriptions_path: Path):
     """Use earlier declarations only for a selected owner explicitly without receipts.
 
-    Unknown owners and any declared receipt member keep native checks. No live
-    field or type is inferred as a supported declaration.
+    Unknown owners and any declared receipt member keep native checks, and so does a table whose receipts are
+    retired: it publishes the native table with no receipt member by design. No live field or type is inferred as a
+    supported declaration.
     """
     from spicy_regs.sources.publication import table_owner
+    from spicy_regs.subject_catalog import retired_receipt_datasets
 
     descriptions = load_descriptions(descriptions_path)
     schemas = expected_schemas()
     legacy_names = {name for name in names
                     if (owner := table_owner(index, name + ".parquet")) is not None
-                    and "etlReceipts" not in owner[1]}
+                    and "etlReceipts" not in owner[1] and name not in retired_receipt_datasets()}
     if legacy_names:
         legacy_descriptions = load_descriptions(descriptions_path, native=False)
         legacy_schemas = expected_schemas(native=False)
@@ -1837,6 +1839,9 @@ def receipt_metadata():
         "diagnostic_json": "Notes about the processing itself, in the same typed form, such as which earlier "
                            "build's receipt for this row was carried forward and what that receipt held.",
     }
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    retired = retired_receipt_datasets()
     return {"table": "etl_receipts", "subject": None, "label": "ETL receipts", "category": "processing_evidence", "kind": "not_a_range",
             "summary": "The paperwork behind each row: what was read to make it, how the processing went, and what "
                        "was kept out of the table's columns.",
@@ -1849,7 +1854,7 @@ def receipt_metadata():
             "columns": [{"column_name": name, "column_type": dtype, "description": prose[name]} for name, dtype in described_schema(RECEIPT_SCHEMA)],
             "datasets": [{"dataset": name, "receipt_only": p.receipt_only, "policy_version": p.policy_version,
                           "identity_columns": list(p.identity_fields), "processing_fields": list(p.receipt_fields)}
-                         for name,p in subject_policies().items()]}
+                         for name,p in subject_policies().items() if name not in retired]}
 
 
 def build_mcp_metadata(descriptions: dict, schemas: dict[str, list[tuple[str, str]]]) -> dict:

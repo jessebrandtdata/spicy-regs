@@ -6,10 +6,13 @@ a table by patching the one function every reader asks (``subject_catalog.retire
 """
 
 import copy
+import hashlib
+import json
 from dataclasses import replace
 from pathlib import Path
 
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
 from spicy_regs import subject_catalog
@@ -83,3 +86,75 @@ def test_the_generator_keeps_the_marker_its_installed_file_carries(retire):
     assert declared["federal_register"][subject_catalog.RECEIPTS_RETIRED] is True
     assert subject_catalog.RECEIPTS_RETIRED not in declared["fr_docket_links"]
     assert subject_catalog.descriptor_of(declared["federal_register"]) == subject_catalog.descriptors()["federal_register"]
+
+
+def test_receipt_lookup_says_the_fields_are_columns_and_reads_nothing(retire):
+    from spicy_regs import receipt_lookup
+
+    assert receipt_lookup.carried_fields("federal_register") is not None
+    retire("federal_register")
+    assert receipt_lookup.carried_fields("federal_register") is None
+    described = receipt_lookup.describe("federal_register", {"columns": []}, available=True)
+    assert described is not None
+    described, meanings = described
+    assert described["available"] is False and "table's own columns" in described["retired"] and meanings == {}
+    with pytest.raises(ValueError, match="no longer publishes per-row ETL receipts.*There is no receipt to read"):
+        receipt_lookup.read_fields(None, table="federal_register", keys=[{}], fields=["html_url"],
+                                   index={"families": {}}, local=None, base_url="", entry={}, plain=str)
+    assert "federal_register" not in receipt_lookup.tables_with_receipts({"families": {}}, None, "")
+
+
+def test_no_receipt_field_declaration_for_a_retired_table(retire):
+    from spicy_regs import receipt_field_declarations
+
+    tables = receipt_field_declarations.record()["tables"]
+    marked = {marker.table for marker in receipt_field_declarations.read_markers()}
+    plain = next(name for name in sorted(tables) if name not in marked)
+    retire(plain)
+    assert plain not in receipt_field_declarations.record()["tables"]
+    # A builder's read marker on a retired table governs nothing: the switch removes it with the receipts.
+    retire(sorted(marked)[0])
+    with pytest.raises(ValueError, match="Read markers name tables with no receipts to read"):
+        receipt_field_declarations.record()
+
+
+def test_the_dictionary_lists_no_receipts_for_a_retired_table_and_checks_it_as_native(retire):
+    from spicy_regs import data_dictionary
+
+    assert "federal_register" in {d["dataset"] for d in data_dictionary.receipt_metadata()["datasets"]}
+    retire("federal_register")
+    assert "federal_register" not in {d["dataset"] for d in data_dictionary.receipt_metadata()["datasets"]}
+    # A family entry with no receipt member is a legacy (pre-receipts) table, except a retired one: that one is the
+    # native table by design and is checked against the native declaration.
+    index = {"families": {"federal-register": {"tables": {"federal_register.parquet": {}}}}}
+    _, schemas = data_dictionary.selected_dictionary_definitions(index, ["federal_register"],
+                                                                 data_dictionary.DEFAULT_DESCRIPTIONS)
+    assert schemas["federal_register"] == data_dictionary.expected_schemas()["federal_register"]
+
+
+def test_the_receipt_adapter_reads_a_retired_table_as_published(tmp_path, retire):
+    import duckdb
+
+    from spicy_regs.fec_receipt_adapter import ReceiptAdapter, published_without_receipts
+
+    key = "federal_register.parquet"
+    (tmp_path / key).write_bytes(REGISTER.read_bytes())  # a local mirror holds a member by its key
+    digest = "sha256:" + hashlib.sha256(REGISTER.read_bytes()).hexdigest()
+    rows = pq.ParquetFile(REGISTER).metadata.num_rows
+    index = {"families": {"federal-register": {"prefix": "generations/federal-register/" + "a" * 64, "tables": {
+        key: {"sha256": digest, "byteSize": REGISTER.stat().st_size, "rows": rows}}}}}
+    adapter = ReceiptAdapter(duckdb.connect(), index, "", local_directory=tmp_path)
+    assert not published_without_receipts(index, "federal_register")
+    with pytest.raises(ValueError, match="require selected native receipts"):
+        list(adapter.selected_rows("federal_register"))
+    retire("federal_register")
+    assert published_without_receipts(index, "federal_register")
+    assert list(adapter.selected_rows("federal_register")) == pq.read_table(REGISTER).to_pylist()
+
+
+def test_readers_of_schema_and_identity_keep_a_retired_table_as_it_was(retire):
+    """explorer_metadata, relationship_views, MCP schemas and the CLI read the declaration's schema and identity."""
+    before = json.dumps(subject_catalog.descriptors()["federal_register"], sort_keys=True)
+    retire("federal_register")
+    assert json.dumps(subject_catalog.descriptors()["federal_register"], sort_keys=True) == before
+    assert not subject_catalog.descriptors()["federal_register"]["receipt_only"]

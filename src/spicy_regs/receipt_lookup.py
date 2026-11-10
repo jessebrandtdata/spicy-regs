@@ -62,15 +62,26 @@ def _declared() -> dict[str, dict]:
     return json.loads(files("spicy_regs").joinpath("receipt_fields.json").read_text(encoding="utf-8"))["tables"]
 
 
+def retired(table: str) -> str | None:
+    """Why ``table`` has no receipt to read once its receipts are retired (``subject_catalog.RECEIPTS_RETIRED``)."""
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    if table not in retired_receipt_datasets():
+        return None
+    return (f"{table} no longer publishes per-row ETL receipts: what they held is in the table's own columns, which "
+            f"query_sql reads. Its last generation with receipts is kept as an archive "
+            f"(docs/pins/receipt-archive.json).")
+
+
 def carried_fields(table: str) -> dict[str, str | None] | None:
     """Each field ``table``'s receipts carry, with the mapping that holds it (``None``: a receipt field itself).
 
     Read from the installed policy on every call: its receipt fields are the fields, and a mapping's declared
     contents are on offer only while the policy still keeps that mapping. ``None`` for a name with no installed
-    row identity (not a table, or processing evidence only).
+    row identity (not a table, or processing evidence only) and for a table whose receipts are retired.
     """
     policy = descriptors().get(table)
-    if policy is None or policy["receipt_only"] or not policy["identity_fields"]:
+    if policy is None or policy["receipt_only"] or not policy["identity_fields"] or retired(table):
         return None
     fields: dict[str, str | None] = dict.fromkeys(policy["receipt_fields"])
     for container, names in _declared().get(table, {}).get("containers", {}).items():
@@ -95,8 +106,10 @@ def describe(table: str, entry: Mapping[str, Any], *, available: bool) -> tuple[
     a field the table holds under another column name (the declaration's ``renamed``, such as a list received as
     ``<column>_json``): the receipt keeps it as received and still answers for it by name, and the table has its
     value. A field the dictionary gives no meaning has none here. ``None`` where the table has no installed row
-    identity.
+    identity. A table whose receipts are retired says so, with no fields and nothing available.
     """
+    if (reason := retired(table)) is not None:
+        return {"tool": TOOL, "available": False, "retired": reason}, {}
     fields = carried_fields(table)
     if fields is None:
         return None
@@ -509,6 +522,8 @@ def read_fields(cursor: Any, *, table: str, keys: Sequence[Any], fields: Sequenc
     ``entry`` is the table's dictionary entry and ``plain`` the server's JSON conversion. Every refusal is a
     ValueError whose text says what is valid.
     """
+    if (reason := retired(table)) is not None:
+        raise ValueError(f"{reason} There is no receipt to read.")
     where = carried_fields(table)
     member = selected_member(index, local, base_url, table, snapshot) if where is not None else None
     if where is None or member is None:
