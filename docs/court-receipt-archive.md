@@ -187,7 +187,7 @@ not this one.
    the archive for good, plus a few GB of decode pieces, staging and two copies
    of a table estimated at 0.6 to 0.7 GB (0.41 GB today plus the promoted
    fields, which take at most the 0.31 GB of the receipts' processing column).
-   Free space on the workstation was 77 GB on 2026-11-10: about 20 GB of
+   Free space on the workstation was 75 to 77 GiB on 2026-11-10: about 20 GiB of
    margin. Memory: DuckDB is held to 4 GB; the decoder's pieces and parse
    workers add to that (not measured; run under the memory watchdog).
 3. **Publish** with `publish-local-generation`, `--expect-prior

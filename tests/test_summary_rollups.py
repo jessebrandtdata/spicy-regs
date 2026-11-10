@@ -139,18 +139,22 @@ def _scheduled_rollups():
 def test_a_rollup_with_no_receipt_route_publishes_no_table_with_an_installed_policy():
     """The refusal of ss-nxew, held for every scheduled rollup before a hosted run meets it.
 
-    An installed policy makes receipts mandatory at admission. A rollup has a receipt route when its class declares
-    policies, when it passes them itself (``generation_kwargs``, the court families), or when it is a base table
-    family, recognised by its base class whether or not one has built yet (``BASE_FAMILIES``).
+    An installed policy makes receipts mandatory at admission, unless it marks them retired
+    (``subject_catalog.RECEIPTS_RETIRED``: the court bulk tables, ss-vse3), when a plain rollup is its route. A rollup
+    has a receipt route when its class declares policies, when it passes them itself (``generation_kwargs``, the
+    court families still on receipts), or when it is a base table family, recognised by its base class whether or
+    not one has built yet (``BASE_FAMILIES``).
     """
-    installed, no_route = installed_policies(), {}
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    installed, no_route = installed_policies().keys() - retired_receipt_datasets(), {}
     assert {rollup for rollup, _, _ in SUMMARIES} <= _scheduled_rollups()
     for cls in _scheduled_rollups():
         if (issubclass(cls, _BaseTableFamily) or not cls.generation_tables or cls.receipt_policies
                 or cls.generation_kwargs is not RollupPipeline.generation_kwargs):
             continue
         tables = [key.removesuffix(".parquet") for key in cls.outputs or (cls.output,)]
-        if registered := sorted(installed.keys() & tables):
+        if registered := sorted(installed & set(tables)):
             no_route[cls.name] = registered
     assert no_route == {}
     assert {cls.name: cls.output.removesuffix(".parquet") for cls in _scheduled_rollups()
