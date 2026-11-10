@@ -184,6 +184,11 @@ def test_hand_build_publishes_the_table_readers_query(tmp_path, monkeypatch):
     kept = {event["sha256"] for event in events if event.get("blob_store") == "central-raw"}
     rows = pq.read_table(tmp_path / "build" / "generation" / module.OUTPUT).to_pylist()
     assert {row["source_sha256"] for row in rows} | {row["body_sha256"] for row in rows} <= kept
+    # Each body result is retained as the row's body_result_json bytes, with the evidence and not as a raw original.
+    results = [event for event in events if event.get("stage") == "executive-order-body-result"]
+    assert all("blob_store" not in event for event in results)
+    assert sorted(event["sha256"] for event in results) == sorted(
+        "sha256:" + hashlib.sha256(row["body_result_json"].encode()).hexdigest() for row in rows)
 
 
 def test_hosted_run_reuses_published_bodies_and_ends_green_when_nothing_is_new(tmp_path, monkeypatch):

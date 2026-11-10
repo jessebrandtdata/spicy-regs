@@ -236,6 +236,8 @@ def build_executive_orders(reader, output_dir: Path, *, body_paths, load_body, e
                 error = ValueError("Retained executive-order body acquisition failed")
                 attach_refused_response(error, result.refused_response)
                 evidence.refusal(error, stage="executive-order-body")
+            # The row's body_result_json byte for byte: a file the pipeline wrote, kept with the evidence, not in the
+            # raw archive. Its bytes are the manifest the loader already parsed, so the file is not read again.
             evidence.retain_bytes(
                 json_value(result.manifest).encode(), stage="executive-order-body-result", source_record_id=identity
             )
