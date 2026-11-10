@@ -1,4 +1,13 @@
-"""One observation per numbered order in a complete Federal Register publication year."""
+"""One observation per executive order the Federal Register API serves, from an admitted all-years release.
+
+The release's scope is every publication date the API serves (``FR_EPOCH`` through the day it was read) under
+the executive-order predicate. That scope is the table's coverage; it is written once, in the Parquet file's
+key-value metadata under ``COVERAGE_KEY``, never per row.
+
+A row's pointers (``POINTERS``) name where its metadata was read: the release, the API page and its locator.
+They move only when the publisher's record or the selected body result changes, so an order the publisher has
+not touched keeps the row it was published with, byte for byte.
+"""
 
 from __future__ import annotations
 
@@ -12,10 +21,16 @@ from types import SimpleNamespace
 import pyarrow as pa
 
 from spicy_regs.parquet_rows import write_rows
+from spicy_regs.transforms.build_federal_register import FR_EPOCH
 
 TABLE = "executive_order_observations"
 OUTPUT = TABLE + ".parquet"
 HISTORY_FIELDS = ("president", "disposition_notes", "executive_order_notes")
+#: Where a row's metadata was read. Kept from the published row while the publisher's record and the body result
+#: are unchanged; ``source_sha256`` is the locator's page digest, the raw original's address.
+POINTERS = ("source_release_logical_id", "source_release_digest", "metadata_locator_json", "source_sha256")
+#: Parquet key-value metadata holding the release's requested scope: what "every order the API serves" meant.
+COVERAGE_KEY = "spicy_regs.executive_orders.coverage"
 SCHEMA = pa.schema(
     [
         ("publication_year", pa.int32()),
@@ -47,12 +62,20 @@ SCHEMA = pa.schema(
         ("source_release_digest", pa.string()),
         ("metadata_locator_json", pa.string()),
         ("raw_metadata_json", pa.string()),
+        ("source_sha256", pa.string()),
     ]
 )
 
 
 def json_value(value):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+
+
+def record_pin(record) -> str:
+    """The content pin of one publisher record: SpicyDocs' canonical record digest."""
+    from spicy_docs.sources.federal_register.native import source_record_digest
+
+    return source_record_digest(record)
 
 
 def _date(value):
@@ -62,6 +85,26 @@ def _date(value):
     if parsed.isoformat() != value:
         raise ValueError("Executive order date must use its exact canonical spelling")
     return parsed
+
+
+def require_all_orders(outcome) -> dict:
+    """The release's scope, refused unless it is every publication date the API serves and complete."""
+    scope, count = outcome.get("requestedScope"), outcome.get("publishedRecordCount")
+    if (
+        not isinstance(scope, dict)
+        or set(scope) != {"publishedFrom", "publishedThrough", "presidentialDocumentType"}
+        or scope["publishedFrom"] != FR_EPOCH.isoformat()
+        or scope["presidentialDocumentType"] != "executive_order"
+        or not isinstance(scope["publishedThrough"], str)
+        or _date(scope["publishedThrough"]) < FR_EPOCH
+        or type(count) is not int
+        or count < 0
+        or outcome.get("failedRecordCount") != 0
+        or outcome.get("discardedObservationCount") != 0
+        or outcome.get("discoveredRecordCount") != count
+    ):
+        raise ValueError("Executive orders require the complete admitted population of every year the API serves")
+    return scope
 
 
 def _body_values(result):
@@ -118,30 +161,32 @@ def _body_values(result):
     }
 
 
-def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, load_body, evidence):
-    """Read admitted metadata and explicit local body results; never acquire a body."""
+def build_executive_orders(reader, output_dir: Path, *, body_paths, load_body, evidence, prior=None):
+    """Read admitted metadata and explicit local body results; never acquire a body.
+
+    ``prior`` maps the published rows by ``source_record_id``. An order whose publisher record (``record_pin``) and
+    body result are unchanged keeps that row's ``POINTERS``, read back from ``evidence.store`` and retained again,
+    so the generation's evidence holds every page a row points to.
+    """
     from spicy_docs.sources.federal_register.native import MAX_PAGE_BYTES, federal_register_source_record_id
 
-    if type(year) is not int or not 1994 <= year <= 9999:
-        raise ValueError("Executive-order publication year is invalid")
-    scope = {
-        "publishedFrom": f"{year}-01-01",
-        "publishedThrough": f"{year}-12-31",
-        "presidentialDocumentType": "executive_order",
-    }
     outcome = reader.collection_outcome
-    count = outcome.get("publishedRecordCount")
-    if (
-        outcome.get("requestedScope") != scope
-        or type(count) is not int
-        or count < 0
-        or outcome.get("failedRecordCount") != 0
-        or outcome.get("discardedObservationCount") != 0
-        or outcome.get("discoveredRecordCount") != count
-    ):
-        raise ValueError("Executive orders require the complete admitted publication-year population")
+    scope = require_all_orders(outcome)
+    count = outcome["publishedRecordCount"]
+    prior = prior or {}
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    def retain_page(ref, *, published):
+        """Retain the API page a row points to once: the release's own, or a published row's from the raw archive."""
+        if published:
+            with evidence.store.open(ref) as stream:
+                body = stream.read(MAX_PAGE_BYTES + 1)
+        else:
+            body = reader.read_evidence(ref, max_bytes=MAX_PAGE_BYTES)
+        saved = evidence.retain_bytes(body, raw_source=True, stage="executive-order-metadata", evidence_blob_ref=ref)
+        if saved.get("sha256") != ref:
+            raise ValueError("Executive-order metadata page differs from the digest its row points to")
 
     def rows():
         seen, retained = set(), set()
@@ -155,25 +200,16 @@ def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, l
                 or locator["sourceRecordId"] != identity
                 or identity in seen
                 or published is None
-                or published.year != year
                 or record.get("type") != "Presidential Document"
                 or record.get("subtype") != "Executive Order"
                 or not isinstance(number, str)
                 or not number.isascii()
                 or not number.isdecimal()
             ):
-                raise ValueError("Executive-order record differs from the selected identity, type or year")
+                raise ValueError("Executive-order record differs from the selected identity or type")
             seen.add(identity)
             if identity not in body_paths:
                 raise ValueError("Executive-order body result is missing; omissions are not successful coverage")
-            ref = locator["evidenceBlobRef"]
-            if ref not in retained:
-                evidence.retain_bytes(
-                    reader.read_evidence(ref, max_bytes=MAX_PAGE_BYTES),
-                    stage="executive-order-metadata",
-                    evidence_blob_ref=ref,
-                )
-                retained.add(ref)
             body_path = body_paths[identity]
             result = load_body(body_path, record=record)
             failure = result.manifest.get("failure")
@@ -207,8 +243,8 @@ def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, l
             for name in ("disposition_notes", "executive_order_notes"):
                 if record.get(name) is not None and not isinstance(record[name], str):
                     raise ValueError("Executive-order history note is not literal text")
-            yield {
-                "publication_year": year,
+            row = {
+                "publication_year": published.year,
                 "executive_order_number": number,
                 "document_number": record["document_number"],
                 "publication_date": published,
@@ -247,8 +283,21 @@ def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, l
                 "metadata_locator_json": json_value(locator),
                 "raw_metadata_json": json_value(record),
             }
+            held = prior.get(identity)
+            carried = (
+                held is not None
+                and held["body_result_json"] == row["body_result_json"]
+                and record_pin(json.loads(held["raw_metadata_json"])) == record_pin(record)
+            )
+            if carried:
+                row.update({name: held[name] for name in POINTERS[:3]})
+            row["source_sha256"] = json.loads(row["metadata_locator_json"])["evidenceBlobRef"]
+            if row["source_sha256"] not in retained:
+                retain_page(row["source_sha256"], published=carried)
+                retained.add(row["source_sha256"])
+            yield row
         if len(seen) != count or set(body_paths) != seen:
-            raise ValueError("Executive-order count or body-result membership differs from the admitted year")
+            raise ValueError("Executive-order count or body-result membership differs from the admitted release")
 
     evidence.event(
         "executive-order-source-release",
@@ -256,4 +305,5 @@ def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, l
         source_artifact_digest=reader.pin.artifact_digest,
         collection_outcome=outcome,
     )
-    return write_rows(rows(), output_dir / OUTPUT, SCHEMA, batch_size=32)
+    coverage = json_value({**scope, "sourceReleaseDigest": reader.pin.artifact_digest})
+    return write_rows(rows(), output_dir / OUTPUT, SCHEMA.with_metadata({COVERAGE_KEY: coverage}), batch_size=32)
