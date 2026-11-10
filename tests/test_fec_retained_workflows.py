@@ -104,8 +104,15 @@ def test_real_release_and_capture_transfer_build_complete_generation(tmp_path, m
     artifact = json.loads((generation / "artifact.json").read_text())
     assert [entry["role"] for entry in artifact["inputs"]] == ["source-evidence"]
     evidence_root = next((tmp_path / "output/source-evidence").glob("*/artifact"))
-    manifest_digest = _digest(manifest)
-    assert (evidence_root / "blobs/sha256" / manifest_digest).read_bytes() == manifest.read_bytes()
+    # The fixture's implementation id is a git+file: URL on its author's machine: published cut, bound by digest.
+    (selection,) = [json.loads(line) for line in (evidence_root / "journal.jsonl").read_text().splitlines()
+                    if '"retained-fec-selection"' in line]
+    assert selection["local_sha256"] == "sha256:" + _digest(manifest)
+    cut = json.loads((evidence_root / selection["blob_member"]).read_bytes())
+    assert cut["collections"][0]["verifier_implementation_id"] == (
+        "git+file://<local>/spicy-docs-fec-interfaces@59f8e4b7360428e49635cb0f4e56d0d802fa651f")
+    exact = json.loads(manifest.read_bytes())["collections"][0]
+    assert cut["collections"][0]["artifact_sha256"] == exact["artifact_sha256"]
 
 
 def test_transfer_relocates_pinned_context_file_without_changing_coverage_facts(tmp_path):
@@ -157,8 +164,9 @@ def test_manifest_change_during_build_refuses_generation_sealing(tmp_path, monke
         FecObservationsRollup(manifest=manifest, output_dir=output).run()
     assert not list(output.glob("generations/*/artifact.json"))
     evidence = next((output / "source-evidence").glob("*/artifact"))
-    digest = hashlib.sha256(original).hexdigest()
-    assert (evidence / "blobs/sha256" / digest).read_bytes() == original
+    (selection,) = [json.loads(line) for line in (evidence / "journal.jsonl").read_text().splitlines()
+                    if '"retained-fec-selection"' in line]
+    assert selection["local_sha256"] == "sha256:" + hashlib.sha256(original).hexdigest()
 
 
 def _load_fixture_rows(tmp_path):

@@ -183,7 +183,7 @@ def build_executive_orders(reader, output_dir: Path, *, year: int, body_paths, l
                 # A retry may replace the path after the provider has read the refusal.
                 evidence.retain_bytes(
                     result.manifest_bytes, stage="executive-order-body-result", source_record_id=identity,
-                    original_location=str(Path(body_path).absolute()),
+                    original_location=Path(body_path).name,
                 )
                 evidence.event(
                     "refusal", stage="executive-order-body", source_record_id=identity,

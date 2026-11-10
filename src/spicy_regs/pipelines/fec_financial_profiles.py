@@ -9,7 +9,7 @@ from pathlib import Path
 
 from spicy_regs.contract_types import described_schema
 from spicy_regs.generations import build_generation
-from spicy_regs.source_evidence import CaptureEvidence
+from spicy_regs.source_evidence import CaptureEvidence, without_local_paths
 from spicy_regs.sources import publication
 from spicy_regs.transforms.build_fec_financial_profiles import OUTPUT, PARENT, SCHEMA, TABLE, build_profiles, json_bytes
 
@@ -24,7 +24,8 @@ def build(selection, output_dir):
     snapshot = publication.parse_index(index_bytes)
     evidence = CaptureEvidence(output_dir, "fec-financial-profiles")
     try:
-        evidence.retain_bytes(json_bytes(selection), stage="profile-selection")
+        # The selection names where this machine read its inputs; the published copy keeps their digests (ss-81bv).
+        evidence.retain_bytes(json_bytes(without_local_paths(selection)), stage="profile-selection")
         evidence.retain_bytes(index_bytes, stage="profile-parent-publication")
         table = output_dir / OUTPUT
         summary = build_profiles(selection, snapshot, table)
