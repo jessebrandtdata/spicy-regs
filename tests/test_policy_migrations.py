@@ -28,30 +28,76 @@ def test_every_installed_policy_is_recorded_current_and_every_earlier_entry_is_w
     assert unreadable_shipped_policies() == []
 
 
-def test_the_ledger_answers_what_the_retired_ladder_answered():
-    """Every installed policy, every history-file descriptor and every policy the ladder returned (350 asked).
+def _frozen_answer_problems(installed):
+    """Each frozen answer of the deleted ladder the ledger no longer records, or answers differently.
 
-    The answers were frozen from ``earlier_receipt_policies.earlier_policies`` before it was deleted, so a later
-    ledger edit that changes what any of them reads fails here. Deviations are the 24 descriptors no installed
+    The ladder was asked about 350 policies (every installed one, every history-file descriptor, every policy it
+    returned) before it was deleted; its answers are frozen in the fixture. Recording a new policy adds to the ledger
+    and must leave every frozen one recorded and answered as before. Deviations are the 24 descriptors no installed
     policy reaches, each with why.
     """
+    from spicy_regs import policy_migrations
+
     frozen = _fixture("earlier_receipt_policies_20261110.json")
     recorded = {}
-    for name, policy in installed_policies().items():
+    for name, policy in installed.items():
         recorded[descriptor_digest(policy)] = policy
-        for declared in ledger()[name].get("earlier", ()):
+        for declared in policy_migrations.ledger()[name].get("earlier", ()):
             earlier = earlier_policy(name, declared["policy_version"])
             recorded[descriptor_digest(earlier)] = earlier
     answers, deviations = frozen["answers"], frozen["deviations"]
-    assert set(recorded) == set(answers) and set(deviations) <= set(answers)
-    assert all(d["why"] for d in deviations.values())
+    problems = [f"{dataset} {version} is no longer recorded" for digest, (dataset, version, _) in answers.items()
+                if digest not in recorded]
     for digest, (dataset, version, earlier) in answers.items():
-        policy = recorded[digest]
-        assert (policy.dataset, policy.policy_version) == (dataset, version)
-        expected = deviations[digest]["earlier"] if digest in deviations else earlier
-        assert [descriptor_digest(p) for p in earlier_policies(policy)] == expected, (dataset, version)
-    # Every installed policy is answered exactly as before; only unreachable chain members deviate.
-    assert not {descriptor_digest(p) for p in installed_policies().values()} & set(deviations)
+        if digest in recorded:
+            policy = recorded[digest]
+            expected = deviations[digest]["earlier"] if digest in deviations else earlier
+            if ((policy.dataset, policy.policy_version) != (dataset, version)
+                    or [descriptor_digest(p) for p in earlier_policies(policy)] != expected):
+                problems.append(f"{dataset} {version} reads differently")
+    return problems
+
+
+def test_the_ledger_answers_what_the_retired_ladder_answered():
+    frozen = _fixture("earlier_receipt_policies_20261110.json")
+    assert set(frozen["deviations"]) <= set(frozen["answers"]) and all(d["why"] for d in frozen["deviations"].values())
+    assert _frozen_answer_problems(installed_policies()) == []
+    # The installed policies of that day were answered exactly as before; only unreachable chain members deviate.
+    assert not {descriptor_digest(p) for p in installed_policies().values()} & set(frozen["deviations"])
+
+
+@pytest.fixture
+def staged_ledger(monkeypatch):
+    """Serve a ledger the generator wrote, to every lookup, for one test."""
+    from spicy_regs import policy_migrations
+
+    def serve(path):
+        monkeypatch.setattr(policy_migrations, "ledger", lambda: json.loads(path.read_text()))
+        policy_migrations._recorded.cache_clear()
+    yield serve
+    policy_migrations._recorded.cache_clear()
+
+
+def test_a_promotion_the_generator_records_keeps_every_frozen_answer(tmp_path, staged_ledger):
+    """The next column promotion must not fail the frozen answers: they are a subset, not the whole ledger."""
+    from scripts.update_etl_policy_declarations import record_migrations
+
+    ledger_path, root = _staged(tmp_path, "federal_register")
+    current = installed_policies()["federal_register"]
+    promoted = replace(current, subject_schema=current.subject_schema.append(pa.field("added", pa.string())),
+                       policy_version="regulations-native-v9")
+    record_migrations({"federal_register": promoted.descriptor()}, {}, ledger_path=ledger_path, installed=root)
+    staged_ledger(ledger_path)
+    installed = {**installed_policies(), "federal_register": promoted}
+    assert _frozen_answer_problems(installed) == []
+    assert [p.policy_version for p in earlier_policies(promoted)] == [
+        "regulations-native-v3", "regulations-native-v2", "regulations-native-v1"]
+    # Dropping a recorded policy, or reordering one, still fails.
+    edited = json.loads(ledger_path.read_text())
+    edited["federal_register"]["earlier"].pop(0)
+    ledger_path.write_text(json.dumps(edited))
+    staged_ledger(ledger_path)
+    assert "federal_register regulations-native-v1 is no longer recorded" in _frozen_answer_problems(installed)
 
 
 def test_no_published_prior_becomes_unreadable():
