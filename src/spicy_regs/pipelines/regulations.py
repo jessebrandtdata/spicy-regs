@@ -32,6 +32,7 @@ from spicy_regs.manifest import Manifest
 from spicy_regs.pipelines.regulations_state import UnresolvedKeys, source_record_type
 from spicy_regs.pipelines.base import Pipeline
 from spicy_regs.pipelines.mirrulations_originals import MirrulationsOriginals
+from spicy_regs.source_evidence import SourceEvidenceError
 from spicy_regs.pipelines.staging import stage_agencies
 from spicy_regs.schemas import RECORD_TYPES, RecordType
 from spicy_regs.sources import iceberg, r2
@@ -136,7 +137,7 @@ class RegulationsPipeline(Pipeline):
     def run(self, *, manifest: Manifest | None = None, record_types: list[RecordType] | None = None) -> None:
         """Run one batch of ``record_types`` (default: the configured ones); local batches may reuse a manifest."""
         self._refuse_comments_without_catalog()
-        record_types = record_types or self._record_types()
+        record_types = self._record_types() if record_types is None else record_types
         if manifest is not None and self.full_refresh:
             raise ValueError("A reused manifest cannot be combined with full_refresh")
         output_dir = self.output_dir or (Path.cwd() / "output")
@@ -212,7 +213,8 @@ class RegulationsPipeline(Pipeline):
         pass is half-recorded: ``_run`` records keys only after their tables and retry
         state are published, the next pass builds in a new directory with new
         originals, and a hosted run restores retry state from the publication index.
-        Original retention halts (``RetentionHalted``) are not caught.
+        Evidence failures are never caught: a retention halt (``RetentionHalted``) or
+        a refused commit of originals (``SourceEvidenceError``) stops the sweep.
 
         With ``budget_minutes``, a batch starts only while the time since the sweep
         began (the first pass included) plus an estimate for one more batch fits the
@@ -253,7 +255,7 @@ class RegulationsPipeline(Pipeline):
                 try:
                     self.run(manifest=manifest, record_types=first)
                 except Exception as error:
-                    if manifest.recorded != recorded:
+                    if not comments or isinstance(error, SourceEvidenceError) or manifest.recorded != recorded:
                         raise
                     first_failure = error
                     logger.opt(exception=error).error("ETL sweep: the dockets and documents pass failed")
@@ -279,7 +281,8 @@ class RegulationsPipeline(Pipeline):
                 self.run(manifest=manifest, record_types=comments)
                 longest = max(longest, monotonic() - batch_started)
             if first_failure is not None:
-                raise RuntimeError("The dockets and documents pass failed; the comment batches ran") from first_failure
+                raise RuntimeError("The dockets and documents pass failed; the comment batches after it ran") \
+                    from first_failure
             return stopped
         finally:
             self.batch_number = None

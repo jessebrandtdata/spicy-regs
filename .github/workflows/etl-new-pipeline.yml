@@ -257,7 +257,12 @@ jobs:
           uv run run-pipeline "${ARGS[@]}" || status=$?
           # A sweep that stopped at its time budget concludes "success"; say so on the run page.
           if [ -f output/sweep-stopped.txt ]; then
-            echo "::warning title=Sweep stopped at its time budget::Stopped before batch $(tr -d '[:space:]' < output/sweep-stopped.txt) (0-indexed) of $BATCH_COUNT. Earlier batches are committed and will be published; the next scheduled sweep begins at that batch."
+            if [ "$status" -eq 0 ]; then
+              PUBLISHED="Earlier batches are committed and this run's consumers publish them"
+            else
+              PUBLISHED="Earlier batches are committed; this run failed, so its consumers do not publish them"
+            fi
+            echo "::warning title=Sweep stopped at its time budget::Stopped before batch $(tr -d '[:space:]' < output/sweep-stopped.txt) (0-indexed) of $BATCH_COUNT. $PUBLISHED; the next scheduled sweep begins at that batch."
           fi
           exit "$status"
 

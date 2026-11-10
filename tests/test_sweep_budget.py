@@ -23,14 +23,15 @@ def sweep(tmp_path, monkeypatch):
     """Run a five-batch sweep whose manifest load, first pass and batches take the given minutes on a fake clock.
 
     ``first`` is the pass over every agency's dockets and documents; ``started`` lists the comment batches. With
-    ``first_error`` that pass raises it after ``first`` minutes, having recorded a key when ``first_records``. A
-    sweep that raises returns its error in place of the batch it stopped before.
+    ``first_error`` that pass raises it after ``first`` minutes, having recorded a key when ``first_records`` and
+    saved it locally when ``first_saves``. A sweep that raises returns its error in place of the batch it stopped
+    before.
     """
     now = [0.0]
     monkeypatch.setattr(regulations, "monotonic", lambda: now[0])
     monkeypatch.setenv("AGENCIES", "A,B,C,D,E")
 
-    def run(minutes, *, budget, load=5.0, start=0, first=0.0, first_error=None, first_records=False):
+    def run(minutes, *, budget, load=5.0, start=0, first=0.0, first_error=None, first_records=False, first_saves=False):
         started, firsts, begun = [], [], now[0]
 
         def load_manifest(*args, **kwargs):
@@ -45,6 +46,8 @@ def sweep(tmp_path, monkeypatch):
                 now[0] += first * MINUTE
                 if first_records:
                     manifest.record(["raw-data/A/A-1/text-A-1/documents/A-1-0001.json"])
+                if first_saves:  # the local save succeeds; the error stands for the refused upload after it
+                    manifest.save(tmp_path)
                 if first_error is not None:
                     raise first_error
                 return
@@ -100,6 +103,18 @@ def test_a_failed_first_pass_that_recorded_keys_stops_the_sweep(sweep):
     """A later batch's manifest would retire the keys it recorded, so it fails like any batch."""
     refused = OSError("manifest upload refused")
     assert sweep([1] * 5, budget=300, first_error=refused, first_records=True)[:3] == (refused, [], None)
+    # The realistic case: _run saved the manifest locally, then its upload was refused. The keys are no longer
+    # pending, but a later batch's upload of that local file would still retire them.
+    assert sweep([1] * 5, budget=300, first_error=refused, first_records=True, first_saves=True)[:3] == (
+        refused, [], None)
+
+
+def test_an_evidence_failure_in_the_first_pass_stops_the_sweep(sweep):
+    """A refused commit of originals (SourceEvidenceError) is an evidence failure: never caught, like a halt."""
+    from spicy_regs.source_evidence import SourceEvidenceError
+
+    refused = SourceEvidenceError("Mirrulations original retention failed: ClientError publishing originals")
+    assert sweep([1] * 5, budget=300, first_error=refused)[:3] == (refused, [], None)
 
 
 def test_an_original_retention_halt_in_the_first_pass_stops_the_sweep(sweep):
@@ -127,6 +142,29 @@ def test_only_comments_skips_the_first_pass_and_skip_comments_is_that_pass_alone
     # The chunked path stages no attribute rows, so comment batches never take it.
     with pytest.raises(ValueError, match="chunk_size"):
         RegulationsPipeline(output_dir=tmp_path, batch_count=2, use_iceberg=True, chunk_size=10).run_sweep()
+
+
+def test_a_failed_first_pass_with_no_comment_batches_raises_its_own_error(tmp_path, monkeypatch):
+    """With --skip-comments the pass is the whole sweep: nothing runs after it, so its error is not wrapped."""
+    monkeypatch.setenv("AGENCIES", "A,B")
+    monkeypatch.setattr(Manifest, "load", lambda *a, **kw: Manifest.empty())
+    refused = OSError("listing raw-data/A/ refused")
+
+    def fail(self, *, manifest, record_types):
+        raise refused
+
+    monkeypatch.setattr(RegulationsPipeline, "run", fail)
+    with pytest.raises(OSError) as raised:
+        RegulationsPipeline(output_dir=tmp_path, batch_count=2, skip_comments=True).run_sweep()
+    assert raised.value is refused
+
+
+def test_an_empty_list_of_record_types_is_not_every_type(tmp_path, monkeypatch):
+    seen = []
+    monkeypatch.setattr(RegulationsPipeline, "_run", lambda self, manifest, record_types: seen.append(record_types))
+    RegulationsPipeline(output_dir=tmp_path, agency="A", skip_comments=True, enrich_text=False).run(
+        manifest=Manifest.empty(), record_types=[])
+    assert seen == [[]]
 
 
 def test_skip_and_only_comments_together_are_refused():
@@ -308,6 +346,9 @@ def test_a_stopped_sweep_is_a_warning_on_the_run_page(tmp_path, stopped_before, 
     else:
         assert result.stdout.startswith("::warning title=Sweep stopped at its time budget::Stopped before batch 2 ")
         assert "(0-indexed) of 15" in result.stdout and result.stdout.count("\n") == 1
+        # A red run's consumers are skipped, so the line must not promise they publish.
+        assert ("this run failed, so its consumers do not publish them" in result.stdout) is (status != 0)
+        assert ("this run's consumers publish them" in result.stdout) is (status == 0)
 
 
 @pytest.mark.parametrize(
