@@ -12,6 +12,7 @@ import yaml
 import spicy_regs.pipelines.regulations as regulations
 from spicy_regs.manifest import Manifest
 from spicy_regs.pipelines import RegulationsPipeline
+from spicy_regs.pipelines.mirrulations_originals import RetentionHalted
 
 WORKFLOW = Path(__file__).parents[1] / ".github/workflows/etl-new-pipeline.yml"
 MINUTE = 60.0
@@ -19,27 +20,47 @@ MINUTE = 60.0
 
 @pytest.fixture
 def sweep(tmp_path, monkeypatch):
-    """Run a five-batch sweep whose manifest load and batches take the given minutes on a fake clock."""
+    """Run a five-batch sweep whose manifest load, first pass and batches take the given minutes on a fake clock.
+
+    ``first`` is the pass over every agency's dockets and documents; ``started`` lists the comment batches. With
+    ``first_error`` that pass raises it after ``first`` minutes, having recorded a key when ``first_records``. A
+    sweep that raises returns its error in place of the batch it stopped before.
+    """
     now = [0.0]
     monkeypatch.setattr(regulations, "monotonic", lambda: now[0])
     monkeypatch.setenv("AGENCIES", "A,B,C,D,E")
 
-    def run(minutes, *, budget, load=5.0, start=0):
-        started = []
+    def run(minutes, *, budget, load=5.0, start=0, first=0.0, first_error=None, first_records=False):
+        started, firsts, begun = [], [], now[0]
 
         def load_manifest(*args, **kwargs):
             now[0] += load * MINUTE
             return Manifest.empty()
 
-        def batch(self, *, manifest):
+        def one_pass(self, *, manifest, record_types):
+            names = [record_type.name for record_type in record_types]
+            if self.batch_number is None:
+                assert not started and names == ["dockets", "documents"] and self._agencies() == list("ABCDE")
+                firsts.append(now[0])
+                now[0] += first * MINUTE
+                if first_records:
+                    manifest.record(["raw-data/A/A-1/text-A-1/documents/A-1-0001.json"])
+                if first_error is not None:
+                    raise first_error
+                return
+            assert firsts and names == ["comments"]
             started.append(self.batch_number)
             now[0] += minutes[self.batch_number] * MINUTE
 
         monkeypatch.setattr(Manifest, "load", load_manifest)
-        monkeypatch.setattr(RegulationsPipeline, "run", batch)
+        monkeypatch.setattr(RegulationsPipeline, "run", one_pass)
         pipeline = RegulationsPipeline(output_dir=tmp_path, batch_count=5, use_iceberg=True)
-        stopped = pipeline.run_sweep(budget_minutes=budget, start_batch=start)
-        assert pipeline.batch_number is None
+        try:
+            stopped = pipeline.run_sweep(budget_minutes=budget, start_batch=start)
+        except Exception as error:
+            stopped = error
+        assert firsts == [begun + load * MINUTE]  # right after the manifest, before any batch
+        assert (pipeline.batch_number, pipeline.skip_comments, pipeline.only_comments) == (None, False, False)
         marker = tmp_path / regulations.SWEEP_STOPPED_NAME
         return stopped, started, marker.read_text() if marker.exists() else None, now[0] / MINUTE
 
@@ -50,6 +71,68 @@ def test_sweep_stops_before_the_batch_its_longest_batch_says_will_not_fit(sweep)
     # Starts at 5, 55 and 155 minutes. At 225 one more batch is estimated at the longest so far, 100: past 300.
     stopped, started, marker, ended = sweep([50, 100, 70, 10, 10], budget=300)
     assert (stopped, started, marker, ended) == (3, [0, 1, 2], "3\n", 225)
+
+
+def test_every_agencys_documents_come_first_and_spend_the_budget_without_raising_the_estimate(sweep):
+    """On 2026-11-10 the documents of 12 of the 15 batches still ended on 10-03, waiting behind comment batches."""
+    # The first pass runs 5-105. Batches start at 105, 155 and 205, each estimated at the 80-minute floor; the
+    # 100-minute pass is not a batch, or the third would be estimated past 300. At 255, 255 + 80 is past 300.
+    assert sweep([50, 50, 50, 50, 50], budget=300, first=100) == (3, [0, 1, 2], "3\n", 255)
+    # A first pass that leaves less than the floor starts no batch; its documents are still committed.
+    assert sweep([1, 1, 1, 1, 1], budget=300, first=220)[:3] == (0, [], "0\n")
+
+
+def test_a_failed_first_pass_that_recorded_nothing_lets_the_comment_batches_run_then_fails(sweep, capsys):
+    """One agency failing in the dockets and documents pass must not starve comments, and must stay visible."""
+    refused = OSError("listing raw-data/FAA/ refused")
+    # The pass fails at 105. Batches start at 105, 155 and 205 under the same budget; at 255 the sweep stops before
+    # batch 3, writes its marker for the next sweep, and only then raises.
+    error, started, marker, ended = sweep([50] * 5, budget=300, first=100, first_error=refused)
+    assert (started, marker, ended) == ([0, 1, 2], "3\n", 255)
+    assert isinstance(error, RuntimeError) and error.__cause__ is refused
+    assert "::error title=Dockets and documents pass failed" in capsys.readouterr().out
+    # Every batch ran: no marker, and the run still fails.
+    error, started, marker, _ = sweep([1] * 5, budget=None, first_error=refused)
+    assert (started, marker) == ([0, 1, 2, 3, 4], None) and error.__cause__ is refused
+
+
+def test_a_failed_first_pass_that_recorded_keys_stops_the_sweep(sweep):
+    """A later batch's manifest would retire the keys it recorded, so it fails like any batch."""
+    refused = OSError("manifest upload refused")
+    assert sweep([1] * 5, budget=300, first_error=refused, first_records=True)[:3] == (refused, [], None)
+
+
+def test_an_original_retention_halt_in_the_first_pass_stops_the_sweep(sweep):
+    """No object is used without its kept original: a halted retention is never caught."""
+    with pytest.raises(RetentionHalted):
+        sweep([1] * 5, budget=300, first_error=RetentionHalted("R2 refused the evidence write"))
+
+
+@pytest.mark.parametrize(
+    ("scope", "passes"),
+    [({}, [None, 0, 1]), ({"only_comments": True}, [0, 1]), ({"skip_comments": True}, [None])],
+)
+def test_only_comments_skips_the_first_pass_and_skip_comments_is_that_pass_alone(tmp_path, monkeypatch, scope,
+                                                                                 passes):
+    monkeypatch.setenv("AGENCIES", "A,B")
+    monkeypatch.setattr(Manifest, "load", lambda *a, **kw: Manifest.empty())
+    seen = []
+    monkeypatch.setattr(RegulationsPipeline, "run", lambda self, *, manifest, record_types: seen.append(
+        (self.batch_number, [record_type.name for record_type in record_types])))
+    pipeline = RegulationsPipeline(output_dir=tmp_path, batch_count=2, use_iceberg=True, **scope)
+    assert pipeline.run_sweep() is None
+    assert seen == [(batch, ["dockets", "documents"] if batch is None else ["comments"]) for batch in passes]
+    assert (pipeline.skip_comments, pipeline.only_comments) == (
+        scope.get("skip_comments", False), scope.get("only_comments", False))
+    # The chunked path stages no attribute rows, so comment batches never take it.
+    with pytest.raises(ValueError, match="chunk_size"):
+        RegulationsPipeline(output_dir=tmp_path, batch_count=2, use_iceberg=True, chunk_size=10).run_sweep()
+
+
+def test_skip_and_only_comments_together_are_refused():
+    """The sweep ran no pass at all and exited 0 for this combination; a single run read no comments."""
+    with pytest.raises(ValueError, match="exclude each other"):
+        RegulationsPipeline(batch_count=2, use_iceberg=True, skip_comments=True, only_comments=True)
 
 
 def test_the_estimate_is_never_below_the_floor(sweep):
@@ -80,13 +163,17 @@ def test_a_resumed_sweep_begins_at_its_start_batch_and_wraps_to_the_first(sweep,
 def test_a_failed_batch_still_stops_the_sweep_with_no_marker(tmp_path, monkeypatch):
     monkeypatch.setenv("AGENCIES", "A,B,C")
     monkeypatch.setattr(Manifest, "load", lambda *a, **kw: Manifest.empty())
+    passes = []
 
-    def fail(self, *, manifest):
+    def fail(self, *, manifest, record_types):
+        passes.append(self.batch_number)
         raise OSError("checkpoint publication failed")
 
     monkeypatch.setattr(RegulationsPipeline, "run", fail)
     with pytest.raises(OSError):
         RegulationsPipeline(output_dir=tmp_path, batch_count=3, use_iceberg=True).run_sweep(budget_minutes=300)
+    # The first pass recorded nothing, so the first comment batch ran; its failure ends the sweep.
+    assert passes == [None, 0]
     assert not (tmp_path / regulations.SWEEP_STOPPED_NAME).exists()
 
 
@@ -184,29 +271,38 @@ def test_a_stopped_sweep_leaves_an_artifact_and_still_lets_the_consumers_publish
     names = [step.get("name") for step in steps]
     stopped = next(step for step in steps if step.get("name") == "Record a sweep that stopped at its budget")
     assert names.index("Record a sweep that stopped at its budget") > names.index("Run new pipeline")
-    assert stopped["if"] == f"hashFiles('output/{regulations.SWEEP_STOPPED_NAME}') != ''"
+    # Also after a failed dockets and documents pass, which fails the job once the batches stopped at the budget.
+    assert stopped["if"] == f"${{{{ !cancelled() && hashFiles('output/{regulations.SWEEP_STOPPED_NAME}') != '' }}}}"
     assert stopped["with"] == {"name": "sweep-stopped", "path": f"output/{regulations.SWEEP_STOPPED_NAME}",
                                "retention-days": 7, "overwrite": True}
-    # The stop is a clean exit, so the job succeeds and the consumers that need it run.
-    assert workflow["jobs"]["refresh-consumers"]["needs"] == ["setup", "etl-new"]
+    # The stop is a clean exit, so the job succeeds and the consumers that need it run; a failed job skips them.
+    consumers = workflow["jobs"]["refresh-consumers"]
+    assert consumers["needs"] == ["setup", "etl-new"] and "always()" not in consumers["if"]
 
 
+@pytest.mark.parametrize("status", [0, 1])
 @pytest.mark.parametrize("stopped_before", ["2", None])
-def test_a_stopped_sweep_is_a_warning_on_the_run_page(tmp_path, stopped_before):
-    """A budget stop concludes "success"; the lines after the pipeline command, run as written, announce it."""
+def test_a_stopped_sweep_is_a_warning_on_the_run_page(tmp_path, stopped_before, status):
+    """A budget stop is announced, also when a failed first pass then fails the step with the pipeline's status.
+
+    The lines from the pipeline command on run as written, against a stub ``uv`` that exits with ``status``.
+    """
     import subprocess
 
     workflow = yaml.safe_load(WORKFLOW.read_text())
     run = next(step for step in workflow["jobs"]["etl-new"]["steps"] if step.get("name") == "Run new pipeline")
-    command = 'uv run run-pipeline "${ARGS[@]}"\n'
-    assert run["run"].count(command) == 1
-    after = "set -euo pipefail\n" + run["run"].split(command)[1]
+    assert run["run"].count('uv run run-pipeline "${ARGS[@]}" || status=$?\n') == 1
+    after = "set -euo pipefail\nARGS=(--sweep)\n" + run["run"][run["run"].index("status=0\n"):]
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "uv").write_text(f"#!/bin/sh\nexit {status}\n")
+    (bin_dir / "uv").chmod(0o755)
     (tmp_path / "output").mkdir()
     if stopped_before is not None:
         (tmp_path / "output" / regulations.SWEEP_STOPPED_NAME).write_text(f"{stopped_before}\n")
     result = subprocess.run(["bash", "-c", after], cwd=tmp_path, capture_output=True, text=True,
-                            env={"PATH": "/usr/bin:/bin", "BATCH_COUNT": "15"})
-    assert result.returncode == 0, result.stderr
+                            env={"PATH": f"{bin_dir}:/usr/bin:/bin", "BATCH_COUNT": "15"})
+    assert result.returncode == status, result.stderr
     if stopped_before is None:
         assert result.stdout == ""
     else:

@@ -35,17 +35,21 @@ ROLLUPS = {
     "house_disbursements_app": rollups.HouseDisbursementsRollup,
     "fec_financial_profiles_app": rollups.FecFinancialProfilesRollup,
 }
+#: The refreshes whose hosted build path has passed a rehearsal, and the schedule each has run on since.
+SCHEDULED = {"treasury-fiscal": "43 22 * * *"}
 
 
 @pytest.mark.parametrize("app, rollup", ROLLUPS.items(), ids=lambda value: getattr(value, "name", value))
-def test_each_refresh_has_a_console_script_and_a_dispatch_only_workflow(app, rollup):
+def test_each_refresh_has_a_console_script_and_a_workflow_scheduled_only_once_rehearsed(app, rollup):
     scripts = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text())["project"]["scripts"]
     command = f"run-rollup-{rollup.name}"
     assert scripts[command] == f"spicy_regs.pipelines.rollups.source_refreshes:{app}"
     assert all(key.removesuffix(".parquet") in dd.TABLES for key in rollup.outputs or (rollup.output,))
     workflow = yaml.safe_load((WORKFLOWS / f"rollup-{rollup.name}.yml").read_text())
     # A schedule starts running the day it reaches main: none until a hosted rehearsal has passed.
-    assert set(workflow[True]) == {"workflow_dispatch"}
+    cron = SCHEDULED.get(rollup.name)
+    assert set(workflow[True]) == {"workflow_dispatch"} | ({"schedule"} if cron else set())
+    assert workflow[True].get("schedule") == ([{"cron": cron}] if cron else None)
     assert workflow[True]["workflow_dispatch"]["inputs"]["skip_upload"]["default"] is True
     run = workflow["jobs"]["run"]
     assert (run["uses"], run["secrets"], run["with"]["command"]) == ("./.github/workflows/_rollup.yml", "inherit", command)
