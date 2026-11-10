@@ -10,22 +10,42 @@ from spicy_docs.sources.federal_register.body_acquisition import FederalRegister
 from spicy_docs.sources.federal_register.body_captures import capture_body, load_body_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 
-from spicy_regs.pipelines.executive_orders import build
 from spicy_regs.source_evidence import CaptureEvidence, EvidenceMemberSource
 from spicy_regs.transforms.build_executive_orders import build_executive_orders
-from tests.test_executive_orders import Reader, captured, record
+from tests.test_executive_orders import Reader, record
+
+ORDER = record("94-290", "12890", "1994-01-05")
 
 
-@pytest.mark.parametrize("string_paths", [False, True], ids=["path-objects", "json-string-paths"])
+def xml(number):
+    return f"<PRESDOCU><P>Example.</P><FRDOC>[FR Doc. {number} Filed 1-2-94; 8:45 am]</FRDOC></PRESDOCU>".encode()
+
+
+def captured(directory, reader):
+    """One acquired body result per record, served by a fake publisher."""
+    paths = {}
+    for item in reader.records:
+        number = item["record"]["document_number"]
+        with FederalRegisterBodyAcquirer(
+            budget=FederalRegisterBodyBudget(2, 4096, 4096, 1, 0),
+            transport=httpx.MockTransport(lambda request, number=number: httpx.Response(
+                200, headers={"Content-Type": "application/xml"}, stream=httpx.ByteStream(xml(number)))),
+        ) as client:
+            path = directory / number / "result.json"
+            capture_body(path, record=item["record"], source_pin=reader.pin.as_dict(), acquirer=client)
+        paths[item["sourceRecordId"]] = path
+    return paths
+
+
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("mixed", [False, True], ids=["all-refused", "mixed"])
-def test_saved_access_refusal_aborts_and_preserves_previous_output(tmp_path, status, mixed, string_paths):
-    reader = Reader([record(), record("2025-00002", "14134")] if mixed else [record()])
+def test_saved_access_refusal_aborts_and_preserves_previous_output(tmp_path, status, mixed):
+    reader = Reader([ORDER, record("95-1001", "12945", "1995-01-20")] if mixed else [ORDER])
     paths = captured(tmp_path / "good", reader)
     output = tmp_path / "output"
     evidence = CaptureEvidence(output, "executive-orders")
-    previous = build_executive_orders(reader, output, year=2025, body_paths=paths,
-                                     load_body=load_body_capture, evidence=evidence)
+    previous = build_executive_orders(reader, output, body_paths=paths, load_body=load_body_capture,
+                                      evidence=evidence)
     before = previous.read_bytes()
     evidence.finish()
     selected = reader.records[-1]
@@ -36,21 +56,17 @@ def test_saved_access_refusal_aborts_and_preserves_previous_output(tmp_path, sta
         transport=httpx.MockTransport(lambda request: httpx.Response(status, content=b"Access denied")),
     ) as acquirer:
         with pytest.raises(CredentialRefusedError):
-            capture_body(path, record=selected["record"],
-                         source_pin=reader.pin.as_dict(), acquirer=acquirer)
+            capture_body(path, record=selected["record"], source_pin=reader.pin.as_dict(), acquirer=acquirer)
     saved = path.read_bytes()
     manifest = json.loads(saved)
     assert manifest["failure"]["credential_refused"] is True
     assert manifest["failure"]["status_code"] == status
     assert manifest["captures"] == []  # The provider deliberately excludes denied response bodies.
     paths[selected["sourceRecordId"]] = path
-    if string_paths:
-        # The normal CLI reads this mapping from JSON, so every value is a string.
-        paths = {identity: str(value) for identity, value in paths.items()}
     retry_evidence = CaptureEvidence(output, "executive-orders")
     with pytest.raises(CredentialRefusedError, match="explicit retry") as refused:
-        build_executive_orders(reader, output, year=2025, body_paths=paths,
-                               load_body=load_body_capture, evidence=retry_evidence)
+        build_executive_orders(reader, output, body_paths=paths, load_body=load_body_capture,
+                               evidence=retry_evidence)
     retry_evidence.finish(refused.value)
     assert previous.read_bytes() == before
     assert path.read_bytes() == saved
@@ -61,16 +77,10 @@ def test_saved_access_refusal_aborts_and_preserves_previous_output(tmp_path, sta
     denial = next(event for event in events if event.get("reason_code") == "access_refused")
     assert denial["status_code"] == status
     assert denial["body_retained"] is False
-    candidate = tmp_path / "generation-attempt"
-    with pytest.raises(CredentialRefusedError, match="explicit retry"):
-        build(reader, candidate, year=2025, body_paths=paths)
-    assert not (candidate / "generation").exists()
-    assert previous.read_bytes() == before
 
 
 def test_overlapping_retry_retains_the_manifest_that_caused_the_refusal(tmp_path):
-    source = record()
-    reader = Reader([source])
+    reader = Reader([ORDER])
     identity = reader.records[0]["sourceRecordId"]
     path = tmp_path / "body" / "result.json"
     output = tmp_path / "build"
@@ -81,7 +91,7 @@ def test_overlapping_retry_retains_the_manifest_that_caused_the_refusal(tmp_path
         transport=httpx.MockTransport(lambda request: httpx.Response(next(statuses), content=b"Access denied")),
     ) as acquirer:
         with pytest.raises(CredentialRefusedError, match="401"):
-            capture_body(path, record=source, source_pin=reader.pin.as_dict(), acquirer=acquirer)
+            capture_body(path, record=ORDER, source_pin=reader.pin.as_dict(), acquirer=acquirer)
         original = path.read_bytes()
 
         def load_then_retry(selected, *, record):
@@ -92,11 +102,13 @@ def test_overlapping_retry_retains_the_manifest_that_caused_the_refusal(tmp_path
                              retry_failed=True)
             return result
 
-        with pytest.raises(CredentialRefusedError, match="explicit retry"):
-            build(reader, output, year=2025, body_paths={identity: str(path)}, load_body=load_then_retry)
+        evidence = CaptureEvidence(output, "executive-orders")
+        with pytest.raises(CredentialRefusedError, match="explicit retry") as refused:
+            build_executive_orders(reader, output, body_paths={identity: path}, load_body=load_then_retry,
+                                   evidence=evidence)
+        evidence.finish(refused.value)
 
     assert json.loads(path.read_bytes())["failure"]["status_code"] == 403
-    assert not (output / "generation").exists()
     assert not (output / "executive_order_observations.parquet").exists()
     journal, = output.glob("source-evidence/*/artifact/journal.jsonl")
     events = [json.loads(line) for line in journal.read_text().splitlines()]
@@ -109,18 +121,16 @@ def test_overlapping_retry_retains_the_manifest_that_caused_the_refusal(tmp_path
 
 
 def test_real_provider_capture_uses_injected_aware_clock(tmp_path):
-    source = record()
     now = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
-    body = b"<PRESDOCU><P>Example.</P><FRDOC>[FR Doc. 2025-00001 Filed 1-2-25; 8:45 am]</FRDOC></PRESDOCU>"
     path = tmp_path / "result.json"
-    reader = Reader([source])
+    reader = Reader([ORDER])
     with FederalRegisterBodyAcquirer(
         budget=FederalRegisterBodyBudget(2, 4096, 4096, 1, 0), clock=lambda: now,
         transport=httpx.MockTransport(lambda request: httpx.Response(
-            200, headers={"Content-Type": "application/xml"}, stream=httpx.ByteStream(body))),
+            200, headers={"Content-Type": "application/xml"}, stream=httpx.ByteStream(xml("94-290")))),
     ) as acquirer:
-        capture_body(path, record=source, source_pin=reader.pin.as_dict(), acquirer=acquirer)
-    loaded = load_body_capture(path, record=source)
+        capture_body(path, record=ORDER, source_pin=reader.pin.as_dict(), acquirer=acquirer)
+    loaded = load_body_capture(path, record=ORDER)
     assert loaded.outcome == "acquired"
-    assert loaded.captures[0].body == body
+    assert loaded.captures[0].body == xml("94-290")
     assert datetime.fromisoformat(loaded.captures[0].observed_at.replace("Z", "+00:00")) == now

@@ -188,3 +188,30 @@ def test_publish_holds_the_target_and_raw_root_then_reads_back_publicly(tmp_path
     assert replaced["status"] == "published_public_readback"
     assert replaced["prior"]["artifactDigest"] == "sha256:" + digest
     assert replaced["tables"]["debt.parquet"] == {**replaced["tables"]["debt.parquet"], "rows": 3, "priorRows": 2}
+
+
+def test_only_publisher_originals_must_be_in_the_shared_archive(tmp_path, monkeypatch):
+    """A build's own control files and normalized inputs stay with its evidence; a missing original still refuses.
+
+    A House build cites three run-local files per quarter beside each original (ss-coca): counting them as
+    originals refused every such build.
+    """
+    shared = {"root": tmp_path / "central-raw"}  # where conftest's SPICYGOV_RAW_ROOT put the build's originals
+    monkeypatch.setattr("spicy_docs.storage.raw_archive.default_raw_archive_root", lambda: shared["root"])
+    selection, normalized = tmp_path / "selection.json", tmp_path / "normalized.csv"
+    selection.write_text(json.dumps({"files": [{"url": "https://example.gov/q2.csv"}]}))
+    normalized.write_text("amount\n1.00\n")
+    evidence = CaptureEvidence(tmp_path / "build", FAMILY)
+    evidence.retain_bytes(b"the publisher's quarter", stage="fixture-original", raw_source=True)
+    evidence.retain_control(selection, stage="fixture-selection")
+    evidence.retain_file(normalized, stage="fixture-normalized-input")
+    evidence.finish()
+    monkeypatch.delenv("SPICYGOV_RAW_ROOT")
+
+    command._require_shared_raw((evidence.artifact_dir,))
+    # The pointer names an archive that lacks the original: refused, counting the original alone.
+    shared["root"] = tmp_path / "another-shared"
+    shared["root"].mkdir()
+    (evidence.directory / ARCHIVE_REFERENCE).write_text(json.dumps({"root": str(shared["root"])}))
+    with pytest.raises(publication.PublicationError, match=r"^1 cited original\(s\) are not in the shared raw archive"):
+        command._require_shared_raw((evidence.artifact_dir,))

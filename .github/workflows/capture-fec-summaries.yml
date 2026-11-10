@@ -1,0 +1,50 @@
+name: Capture FEC summary CSVs
+# FEC rewrites candidate_summary_<cycle>.csv and committee_summary_<cycle>.csv every day under one URL (about
+# 10:15 UTC on 2026-11-10), so a day not captured cannot be fetched again. This keeps each day's bytes: the
+# runner's raw archive is scratch, so with publish_evidence the sealed evidence, both originals and an index of
+# the run go to R2's source-evidence/, which retention never deletes. It builds and publishes no table.
+# Dispatch only until one run with publish_evidence has passed; then add, beside workflow_dispatch:
+#   schedule:
+#     - cron: '45 11 * * *'
+# A closed cycle's files keep changing after it ends (post-election and year-end reports): keep 2026 when 2028
+# is added.
+on:
+  workflow_dispatch:
+    inputs:
+      publish_evidence:
+        description: 'Send the captured evidence to R2 (otherwise it is discarded with the runner)'
+        required: false
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: capture-fec-summaries
+  cancel-in-progress: false
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Capture both summary CSVs of each cycle
+        env:
+          SPICYGOV_RAW_ROOT: ${{ runner.temp }}/raw
+          PUBLISH_EVIDENCE: ${{ inputs.publish_evidence }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: |
+          ARGS=(--cycle 2026 --output-dir "$RUNNER_TEMP/capture" --captures-out "$RUNNER_TEMP/captures.json")
+          if [ "$PUBLISH_EVIDENCE" = "true" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+            ARGS+=(--publish-evidence)
+          fi
+          uv run --frozen python -m spicy_regs.pipelines.fec_financial_profiles acquire "${ARGS[@]}"

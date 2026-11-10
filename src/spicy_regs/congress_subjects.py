@@ -159,7 +159,7 @@ INPUT_COLUMNS = {
         'bioguide_id bioguide_previous_json lis_id fec_ids_json icpsr_id govtrack_id votesmart_id '
         'opensecrets_id wikidata_id name_first name_last other_names_json term_count first_term_start '
         'last_term_end current_term_type current_term_state current_term_party current_term_district '
-        'roster observed_at name_nickname'
+        'roster observed_at name_nickname name_middle name_suffix name_official_full'
     .split()),
     'nominations': tuple(
         'nomination_id citation congress number part_number description organization received_date is_civilian '

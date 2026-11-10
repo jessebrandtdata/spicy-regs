@@ -1,4 +1,4 @@
-"""The hosted refreshes of the four once hand-run families: wiring, raw retention and the no-change exit."""
+"""The hosted refreshes of the once hand-run families: wiring, raw retention and the no-change exit."""
 
 from datetime import UTC, datetime, timedelta
 import hashlib
@@ -32,18 +32,23 @@ ROLLUPS = {
     "administration_policy_app": rollups.AdministrationPolicyRollup,
     "ofac_sanctions_app": rollups.OfacSanctionsRollup,
     "grants_opportunities_app": rollups.GrantsOpportunitiesRollup,
+    "house_disbursements_app": rollups.HouseDisbursementsRollup,
 }
+#: The refreshes whose hosted build path has passed a rehearsal, and the schedule each has run on since.
+SCHEDULED = {"treasury-fiscal": "43 22 * * *"}
 
 
 @pytest.mark.parametrize("app, rollup", ROLLUPS.items(), ids=lambda value: getattr(value, "name", value))
-def test_each_refresh_has_a_console_script_and_a_dispatch_only_workflow(app, rollup):
+def test_each_refresh_has_a_console_script_and_a_workflow_scheduled_only_once_rehearsed(app, rollup):
     scripts = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text())["project"]["scripts"]
     command = f"run-rollup-{rollup.name}"
     assert scripts[command] == f"spicy_regs.pipelines.rollups.source_refreshes:{app}"
     assert all(key.removesuffix(".parquet") in dd.TABLES for key in rollup.outputs or (rollup.output,))
     workflow = yaml.safe_load((WORKFLOWS / f"rollup-{rollup.name}.yml").read_text())
     # A schedule starts running the day it reaches main: none until a hosted rehearsal has passed.
-    assert set(workflow[True]) == {"workflow_dispatch"}
+    cron = SCHEDULED.get(rollup.name)
+    assert set(workflow[True]) == {"workflow_dispatch"} | ({"schedule"} if cron else set())
+    assert workflow[True].get("schedule") == ([{"cron": cron}] if cron else None)
     assert workflow[True]["workflow_dispatch"]["inputs"]["skip_upload"]["default"] is True
     run = workflow["jobs"]["run"]
     assert (run["uses"], run["secrets"], run["with"]["command"]) == ("./.github/workflows/_rollup.yml", "inherit", command)
@@ -244,3 +249,55 @@ def test_published_evidence_restores_the_originals_a_runner_lacks(tmp_path):
     assert restore_originals(store, [digest], "https://data.example", max_bytes=64, transport=transport) == 0
     with pytest.raises(ValueError, match="differs from its address"):
         restore_originals(store, ["sha256:" + "0" * 64], "https://data.example", max_bytes=64, transport=transport)
+
+
+def test_house_rebuilds_from_restored_originals_when_the_house_lists_a_quarter(tmp_path, monkeypatch):
+    """A runner's raw archive starts empty: the published originals come back from R2 evidence, the new quarter
+    from the House, and the published quarter rebuilds value for value."""
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+
+    from spicy_regs.pipelines import house_disbursements as house
+    from tests import test_house_disbursements as fixture
+
+    monkeypatch.setenv("SPICYGOV_RAW_ROOT", str(tmp_path / "raw"))
+    house.build(fixture.normalized(tmp_path), tmp_path / "first")
+    workstation = CentralRawArchiveStore(tmp_path / "raw", create=False)
+    monkeypatch.setenv("SPICYGOV_RAW_ROOT", str(tmp_path / "runner-raw"))
+
+    def download_members(key, directory):
+        shutil.copytree(tmp_path / "first" / "generation" / key.removesuffix(".parquet"),
+                        directory / key.removesuffix(".parquet"))
+
+    monkeypatch.setattr(rollups.r2, "download_members", download_members)
+    q2 = {kind: fixture.ROOT_URL + f"q2-{kind}.csv" for kind in ("detail", "summary")}
+    bodies: dict[str, bytes] = {q2["detail"]: (b"ORGANIZATION,PROGRAM,SORT SUBTOTAL DESCRIPTION,SORT SEQUENCE,TRANSACTION DATE,"
+                             b"DATA SOURCE,DOCUMENT,VENDOR NAME,PERFORM START DT,PERFORM END DT,DESCRIPTION,AMOUNT\r\n"
+                             b"Office,Program,Travel,DETAIL,2-Apr-20,AP,00032,Payee,2-Apr-20,3-Apr-20,Travel,5.00\r\n"),
+              q2["summary"]: b"ORGANIZATION,PROGRAM,DESCRIPTION,YTD AMOUNT,QTD AMOUNT\r\nOffice,Program,Travel,5.00,5.00\r\n"}
+    requests = []
+
+    def serve(request):
+        requests.append(str(request.url))
+        if "/source-evidence/blobs/sha256/" in request.url.path:
+            with workstation.open("sha256:" + request.url.path.rsplit("/", 1)[-1]) as stream:
+                return httpx.Response(200, content=stream.read())
+        return httpx.Response(200, content=bodies[str(request.url)], headers={"Content-Type": "text/csv"})
+
+    monkeypatch.setattr(rollups.HouseDisbursementsRollup, "transport", httpx.MockTransport(serve))
+    fixture._listing(monkeypatch, (fixture.ROOT_URL + "detail.csv", "detail", "2020-01-01", "2020-03-31"))
+    rollups.HouseDisbursementsRollup(output_dir=tmp_path / "unchanged").run()
+    assert generations(tmp_path / "unchanged") == [] and requests == []
+
+    fixture._listing(monkeypatch, *((url, kind, "2020-04-01", "2020-06-30") for kind, url in q2.items()))
+    rollups.HouseDisbursementsRollup(output_dir=tmp_path / "hosted").run()
+    assert sum("/source-evidence/blobs/" in url for url in requests) == 2 and set(q2.values()) <= set(requests)
+    generation, events = published(tmp_path / "hosted")
+    for table in house.TABLES.values():
+        after = fixture._table_rows(generation, table)
+        assert {row["report_quarter"] for row in after} == {1, 2}
+        assert [{**row, "normalization_receipt_sha256": None} for row in after if row["report_quarter"] == 1] == [
+            {**row, "normalization_receipt_sha256": None}
+            for row in fixture._table_rows(tmp_path / "first" / "generation", table)]
+    stages = {event.get("stage") for event in events}
+    assert {"house-acquisition-journal", "house-csv-original"} <= stages
+    assert sum(event.get("blob_store") == "central-raw" for event in events) == 4

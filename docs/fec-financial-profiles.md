@@ -45,7 +45,7 @@ Use the normal installed command:
 build-fec-financial-profiles --selection selection.json --output-dir ./profiles
 ```
 
-The equivalent module is `python -m spicy_regs.pipelines.fec_financial_profiles`.
+The equivalent module command is `python -m spicy_regs.pipelines.fec_financial_profiles build`.
 The selection supplies:
 
 - `scope_id` and an even `cycle`.
@@ -75,3 +75,25 @@ Local fixture acceptance does not establish actual source reconciliation, public
 publication or SpicyGov delivery. Each must be recorded separately for the exact
 selected generation. The capture timestamp states the snapshot's age, not a
 claim that a current FEC web page still has the same values.
+
+## Capture the summary CSVs
+
+FEC rewrites `candidate_summary_<cycle>.csv` and `committee_summary_<cycle>.csv`
+every day under the same URL, so a day that is not captured cannot be fetched
+again. `acquire` saves both files of each named cycle into the shared raw archive,
+each with its acquisition receipt, before anything reads them, and writes the
+capture record (URL, SHA-256, size and observation time of each):
+
+```sh
+python -m spicy_regs.pipelines.fec_financial_profiles acquire --cycle 2026 \
+  --output-dir "$WORK/fec-summaries" --captures-out "$WORK/fec-summaries.json"
+```
+
+`.github/workflows/capture-fec-summaries.yml` runs the same capture on a hosted
+runner. Its raw archive is scratch, so `--publish-evidence` seals the run's
+evidence and sends it, both originals and an index row per file
+(`source-evidence/indexes/fec-summaries/`) to R2, which retention never deletes.
+
+A capture does not change the profiles. They are a selection over the published
+fec-query summary table (`source_table_generation`, the generation's recorded
+parent), so newer summaries reach them only through a rebuilt fec-query.

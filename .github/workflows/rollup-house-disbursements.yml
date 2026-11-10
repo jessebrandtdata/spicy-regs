@@ -1,0 +1,22 @@
+name: Rollup — house_disbursements, house_disbursements_summary
+# Dispatch only until one hosted rehearsal with skip_upload has passed; the schedule to add then is in
+# docs/local-family-refresh.md. A run that finds nothing new publishes nothing and ends green.
+# Built here when the House lists a CSV the published generation lacks: the published originals (0.92 GB) come
+# back from R2 evidence, every quarter is normalized again (4 minutes, under 1 GB of memory, on a workstation
+# 2026-11-10) and the tables rebuilt; about 5 GB of runner disk at the peak.
+on:
+  workflow_dispatch:
+    inputs:
+      skip_upload:
+        description: 'Skip R2 upload (dry run)'
+        required: false
+        default: true
+        type: boolean
+jobs:
+  run:
+    uses: ./.github/workflows/_rollup.yml
+    secrets: inherit
+    with:
+      command: run-rollup-house-disbursements
+      skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
+      timeout_minutes: 60

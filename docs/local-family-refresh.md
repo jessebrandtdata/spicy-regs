@@ -1,12 +1,14 @@
 # Refreshing the hand-run families
 
-Four published families are refreshed from a workstation: `treasury-fiscal`,
-`administration-policy`, `ofac-sanctions` and `grants-opportunities`. Each
-hand refresh is the same five steps: acquire, build, dry-run publish, publish, read
-back. What each command does and refuses is in the family's own page
+These published families are refreshed from a workstation: `treasury-fiscal`,
+`administration-policy`, `ofac-sanctions`, `house-disbursements`,
+`grants-opportunities` and `executive-orders`. Each hand refresh is the same
+five steps: acquire, build, dry-run publish, publish, read back. What each
+command does and refuses is in the family's own page
 ([Treasury](treasury-fiscal.md), [administration policy](retained-collections.md),
-[OFAC](ofac-sanctions.md), [Grants](grants-opportunities.md)); this page is only
-the order.
+[OFAC](ofac-sanctions.md), [House](congressional-disbursements.md),
+[Grants](grants-opportunities.md), [executive orders](executive-orders.md));
+this page is only the order.
 
 ## Before any family
 
@@ -39,7 +41,9 @@ rehearsal build from being published:
 - they refuse evidence whose `source-archive.json` pointer is missing or names
   another archive than the shared one;
 - they refuse when any original the evidence journal cites is absent from the
-  shared archive, whatever the pointer says.
+  shared archive, whatever the pointer says. An original is a capture or a file
+  retained with `raw_source=True`; a selection, manifest, receipt or normalized
+  input the build wrote for itself is published with its evidence instead.
 
 The last check is by name: it does not re-hash the originals, and it cannot
 tell a scratch build from a real one once the same originals have also been
@@ -164,6 +168,40 @@ The published table then holds these two snapshots only. Their ZIPs stay in
 the raw archive and in R2 source evidence, which retention never deletes. What
 happens to the replaced generation's tables is under "After a publish".
 
+## house-disbursements
+
+The House posts each quarter's statement about two months after it ends
+(July-September in November). Measured on a loaded workstation on 2026-11-10,
+rebuilding the published 84 files: `select` 25 seconds, `acquire` 32 seconds
+(0.92 GB read from the raw archive, nothing downloaded), `normalize` 4 minutes
+and under 1 GB of memory, `build` 4.5 minutes, the dry run 31 seconds; about
+4.3 GB of scratch.
+
+```sh
+SPICY_REGS_R2_URL=https://data.spicygov.ai $UV spicy-regs mirror "$WORK/live" --family house-disbursements
+$UV python -m spicy_regs.pipelines.house_disbursements select --generation "$LIVE_HOUSE" \
+  --output-dir "$WORK/house-select"
+$UV python -m spicy_regs.pipelines.congressional_disbursements acquire \
+  --selection "$WORK/house-select/selection.json" --reuse "$WORK/house-select/reuse.json" \
+  --output "$WORK/house-acquire"
+$UV python -m spicy_regs.pipelines.congressional_disbursements normalize \
+  --acquisition "$WORK/house-acquire/acquisition.json" --output "$WORK/house-normalized"
+$UV python -m spicy_regs.pipelines.house_disbursements build \
+  --normalization "$WORK/house-normalized/manifest.json" --read-index "$LIVE_INDEX" --output "$WORK/house-build"
+```
+
+`select` writes the selection behind the published rows plus each CSV the
+House's current and archive pages list beside them (both pages are captured
+into the raw archive first), and the `--reuse` map that reads the published
+originals from the raw archive. It prints what it added: nothing added means
+nothing to publish. A listed revision of a published quarter refuses; select
+it by hand. A new file the normalizer cannot read stays `parse-failed` and the
+build refuses; review its bytes and pass `--source-options`
+([congressional-disbursements.md](congressional-disbursements.md)). The build
+prints `directory` and `source_evidence`, the `$GENERATION` and `$EVIDENCE` of
+the publish steps. Every quarter is normalized again and every partition is
+rewritten, because each row names its run's normalization receipt.
+
 ## grants-opportunities
 
 Acquire takes about 15 seconds (78 MB). The build takes about 6 minutes, nearly
@@ -180,6 +218,46 @@ $UV python -m spicy_regs.pipelines.grants_opportunities build \
 was written at 09:41 UTC; before a day's export exists, `acquire` for that date
 fails with HTTP 403 and the day before is the newest. The published table then
 holds this snapshot only.
+
+## executive-orders
+
+Mirror it first (`--family executive-orders`, under 1 MB). `acquire` lists
+every order the Federal Register API serves (268 requests, 5 MB, under a
+minute) and fetches a body only for an order the live generation lacks or holds
+as failed, about 0.9 seconds a request. The orders the live generation holds
+keep their published bodies, which the shared raw archive already has. The
+build takes under a minute; a publish uploads about 40 MB.
+
+```sh
+$UV python -m spicy_regs.pipelines.executive_orders acquire --read-index "$LIVE_INDEX" \
+  --output-dir "$WORK/eo-acquire" --captures-out "$WORK/eo-captures.json"
+$UV python -m spicy_regs.pipelines.executive_orders build --captures "$WORK/eo-captures.json" \
+  --read-index "$LIVE_INDEX" --output-dir "$WORK/eo-build"
+```
+
+`acquire` prints how many orders were added, changed and removed. When all three
+are 0 it prints `"nothingNew": true`, fetches no body, and `build` refuses the
+selection: there is nothing to publish. Rerunning `acquire` into the same
+`--output-dir` keeps the bodies it already fetched. An order the publisher has
+not touched keeps its published row byte for byte, so compare the build with
+the live table by `source_record_id`: only added, changed and removed orders
+should differ. [How the family acquires and builds](executive-orders.md).
+
+The first refresh after 2026-10-20 adds every year at once. The 2026-11-10
+rehearsal fetched 1,335 bodies in 1,593 requests (the 257 orders from before
+2000 and one from 2010 have no publisher XML and come from GovInfo HTML), about
+24 minutes and 15 MB. The 239 published rows kept their pointers and text; they
+differ from the live rows only in `text_derivation_version` (002 to 004; SpicyDocs
+derives byte-identical text) and the new `source_sha256` column. Ten orders
+from 2015 to 2021 build as `source_failed`: SpicyDocs' XML validator refuses
+their FRDOC marker. SpicyDocs 0.85.0 reads that split marker. A held failed
+order is fetched again by the next `acquire` (or hosted run) that finds any
+order added, changed or removed, into a fresh `--output-dir`; one that finds
+nothing new fetches no body, so the failed ones stay failed until then.
+
+The hosted `rollup-executive-orders.yml` runs on weekdays; it restores the
+published bodies from R2 source evidence and publishes nothing when nothing is
+new.
 
 ## After a publish
 
@@ -234,6 +312,8 @@ Each family also has a hosted workflow, `rollup-<family>.yml`, that runs
 `run-rollup-<family>` through the shared `_rollup.yml`. They are dispatch-only
 until one hosted run with `skip_upload` (the default when dispatched) has
 passed for each; a schedule starts running the day it reaches main.
+`treasury-fiscal` passed its rehearsal on 2026-11-10 (it built and admitted the
+generation with the newly listed debt day) and has run daily at 22:43 UTC since.
 
 A hosted runner has no shared raw archive. Each run downloads through its
 generation's source evidence, and publication uploads every evidence blob to
@@ -246,7 +326,9 @@ receive them.
 | `treasury-fiscal` | Reads the published generation's captures from its rows, restores their bytes from R2 evidence, adds each Debt to the Penny day listed after the newest published one | No later day is listed |
 | `administration-policy` | Reads every published administration's file at the archive's current commit | No file's bytes differ |
 | `ofac-sanctions` | Downloads the SDN and consolidated exports and publishes them as the two snapshots | Both ZIPs are the published ones |
+| `house-disbursements` | Captures the House's two listing pages and reads the published tables (162 MB); when the pages list a CSV the published rows lack, restores the published originals from R2 evidence, downloads the new ones and rebuilds every quarter | The pages list no new CSV |
 | `grants-opportunities` | Finds the newest daily export of the last seven days and publishes it as the one snapshot | That export date is published |
+| `executive-orders` | Lists every order the API serves, restores the published bodies from R2 evidence and fetches only the bodies the published generation lacks; scheduled on weekdays from the start | No order was added, changed or removed |
 
 The Treasury run needs the three-table generation, so it can start only after
 the first hand refresh above. It adds debt days only: a new monthly statement
@@ -258,12 +340,12 @@ Schedules to add once the rehearsals pass, each beside `workflow_dispatch`:
 # rollup-grants-opportunities.yml: two hours after the 2026-11-09 export was written (09:41 UTC)
   schedule:
     - cron: '47 11 * * *'
-# rollup-treasury-fiscal.yml: after the US business day
-  schedule:
-    - cron: '43 21 * * *'
 # rollup-ofac-sanctions.yml
   schedule:
     - cron: '17 22 * * *'
+# rollup-house-disbursements.yml: weekly; a quarter posts about two months after it ends
+  schedule:
+    - cron: '29 13 * * 1'
 # rollup-administration-policy.yml
   schedule:
     - cron: '13 23 * * *'

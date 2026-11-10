@@ -1,9 +1,12 @@
 """Hermetic tests for the same-case docket groups side table, on real rows of CourtListener's 2026-06-30 edition.
 
 Each fixture is a published key's native records plus the same court's dockets numbered within five serials of it,
-copied from the native edition (``round6/impl-C2/m5/fixture_rows.parquet``).
+copied from the native edition (``round6/impl-C2/m5/fixture_rows.parquet``), written back in the export's own
+dialect so the build reads them through the same reader as the real ``dockets-<date>.csv.bz2``.
 """
 from __future__ import annotations
+
+import bz2
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -24,6 +27,21 @@ def _row(court, number, docket_id, pacer, name, filed, defendant=None):
 def _neighbours(court, numbers_and_ids):
     return [_row(court, number, f"n-{court}-{number}", pacer, "Neighbour v. Case", "2020-01-01")
             for number, pacer in numbers_and_ids]
+
+
+def _export(rows) -> bytes:
+    """``rows`` as CourtListener writes an export: every value quoted with backslash escapes, NULL unquoted empty.
+
+    The reader finds records by a newline, a quote and a digit, which the real export's leading numeric ``id`` gives;
+    these fixtures' ids are not all numeric, so a leading row number stands in for it.
+    """
+    def value(text):
+        return "" if text is None else '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+    lines = ["seq," + ",".join(_NATIVE)]
+    lines += [",".join([value(str(number)), *(value(row[column]) for column in _NATIVE)])
+              for number, row in enumerate(rows, 1)]
+    return bz2.compress(("\n".join(lines) + "\n").encode())
 
 
 # almd 2:24-cv-00567: a docket object CourtListener created in 2020 with PACER id "16", reused for this 2024 case.
@@ -62,12 +80,13 @@ def _build(tmp_path, published, neighbours=()):
     """Run the real build: ``published`` rows are the selection, ``neighbours`` only live in the native edition."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     string = pa.string()
-    dockets, native = tmp_path / "court_dockets.parquet", tmp_path / "dockets.parquet"
+    dockets, native = tmp_path / "court_dockets.parquet", tmp_path / "dockets-2026-06-30.csv.bz2"
     pq.write_table(pa.Table.from_pylist(
         [{"cl_docket_id": r["id"], "court_id": r["court_id"], "docket_number": r["docket_number"]} for r in published],
         schema=pa.schema([("cl_docket_id", string), ("court_id", string), ("docket_number", string)])), dockets)
-    pq.write_table(pa.Table.from_pylist([*published, *neighbours], schema=pa.schema([(c, string) for c in _NATIVE])),
-                   native)
+    # Another court's dockets: the build reads the whole export and keeps only the published keys' courts.
+    native.write_bytes(_export([*published, *neighbours, _row("zzz", "1:20-cv-00001", "77", "1", "Other v. Court",
+                                                                "2020-01-01")]))
     out = build_court_docket_groups(tmp_path / "out", dockets_file=dockets, native_file=native, edition="2026-06-30")
     table = pq.read_table(out)
     assert table.schema == SCHEMA
@@ -185,13 +204,18 @@ def test_the_rollup_writes_a_generation_whose_parent_is_the_court_dockets_it_rea
 
     from spicy_regs.pipelines.rollups.court_docket_groups import CourtDocketGroupsRollup
 
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+
     _build(tmp_path / "inputs", CLEMENTS, ALMD)
     out = tmp_path / "run"
     out.mkdir()
     dockets = (tmp_path / "inputs" / "court_dockets.parquet").read_bytes()
     (out / "court_dockets.parquet").write_bytes(dockets)
-    CourtDocketGroupsRollup(native_file=tmp_path / "inputs" / "dockets.parquet", edition="2026-06-30",
-                            output_dir=out).run()
+    # The export is read where the raw archive (conftest's SPICYGOV_RAW_ROOT) keeps it, by its digest.
+    export = (tmp_path / "inputs" / "dockets-2026-06-30.csv.bz2").read_bytes()
+    digest = "sha256:" + hashlib.sha256(export).hexdigest()
+    CentralRawArchiveStore(tmp_path / "central-raw").put_blob(digest, len(export), [export])
+    CourtDocketGroupsRollup(native_sha256=digest, edition="2026-06-30", output_dir=out).run()
     (root,) = (out / "generations").glob("*/artifact.json")
     spec = json.loads(root.read_text())["spec"]
     assert spec["family"] == "court-docket-groups"
@@ -207,8 +231,10 @@ def test_the_rollup_refuses_a_missing_edition_or_an_undated_one(tmp_path):
 
     from spicy_regs.pipelines.rollups.court_docket_groups import CourtDocketGroupsRollup
 
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore
+
+    CentralRawArchiveStore(tmp_path / "central-raw")  # an archive without that export
     with pytest.raises(FileNotFoundError):
-        CourtDocketGroupsRollup(native_file=tmp_path / "absent.parquet", edition="2026-06-30")
-    (tmp_path / "dockets.parquet").touch()
+        CourtDocketGroupsRollup(native_sha256="sha256:" + "0" * 64, edition="2026-06-30")
     with pytest.raises(ValueError, match="YYYY-MM-DD"):
-        CourtDocketGroupsRollup(native_file=tmp_path / "dockets.parquet", edition="june")
+        CourtDocketGroupsRollup(native_sha256="sha256:" + "0" * 64, edition="june")

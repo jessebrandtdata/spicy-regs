@@ -20,7 +20,8 @@ def _text(path: Path, *, whole: bool = True) -> str:
     if path.suffix == ".parquet":
         try:
             if whole:
-                table = pq.read_table(path)
+                # The file's own columns: a hive-partitioned member also repeats its directory's key in the file.
+                table = pq.read_table(path, partitioning=None)
                 return json.dumps([table.to_pylist(), str(table.schema.metadata)], default=str)
             return str(pq.read_metadata(path).metadata)
         except (pa.ArrowInvalid, OSError):
