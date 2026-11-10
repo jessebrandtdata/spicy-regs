@@ -117,28 +117,30 @@ def test_cli_passes_the_budget_to_the_sweep_and_refuses_it_elsewhere(monkeypatch
 
 
 def setup_outputs(tmp_path, *, event, schedule="", batch="", timeout="", succeeded=(), stopped=None, latest="",
-                  stopped_before=""):
+                  stopped_before="", artifact_file="sweep-stopped.txt"):
     """Run the setup step's shell as written against a stub ``gh``; its outputs and the calls it made.
 
-    ``succeeded``: today's successful scheduled runs. ``stopped``: sweep-stopped artifacts per run id.
-    ``latest``: the latest completed scheduled run. Its sweep-stopped artifact names batch ``stopped_before``;
-    with none, the download fails as ``gh`` does.
+    ``succeeded``: today's successful scheduled runs. ``stopped``: sweep-stopped artifacts per run id, or
+    ``"fail"`` for a question ``gh`` cannot answer. ``latest``: the latest completed scheduled run, or ``"fail"``
+    for a list that fails. Its sweep-stopped artifact holds ``artifact_file`` naming batch ``stopped_before``;
+    with none, the download exits 1 as ``gh`` does.
     """
     import subprocess
 
     workflow = yaml.safe_load(WORKFLOW.read_text())
     bin_dir, calls, output = tmp_path / "bin", tmp_path / "gh-calls", tmp_path / "github_output"
     bin_dir.mkdir()
-    artifacts = " ".join(f"*runs/{run_id}/artifacts*) echo {count};;" for run_id, count in (stopped or {}).items())
+    artifacts = " ".join(f"*runs/{run_id}/artifacts*) {'exit 1' if count == 'fail' else f'echo {count}'};;"
+                         for run_id, count in (stopped or {}).items())
     listed = "".join(f"{run_id}\\n" for run_id in succeeded)
     (bin_dir / "gh").write_text(f"""#!/bin/sh
 echo "$*" >> "{calls}"
 case "$*" in
   *"--status success"*) printf "{listed}";;
-  *"--status completed"*) echo "{latest}";;
+  *"--status completed"*) {'echo partial; exit 1' if latest == "fail" else f'echo "{latest}"'};;
   {artifacts}
   "run download"*) [ -n "{stopped_before}" ] || exit 1
-    while [ "$1" != "--dir" ]; do shift; done; echo "{stopped_before}" > "$2/sweep-stopped.txt";;
+    while [ "$1" != "--dir" ]; do shift; done; echo "{stopped_before}" > "$2/{artifact_file}";;
   *) exit 1;;
 esac
 """)
@@ -180,7 +182,7 @@ def test_a_stopped_sweep_leaves_an_artifact_and_still_lets_the_consumers_publish
     assert names.index("Record a sweep that stopped at its budget") > names.index("Run new pipeline")
     assert stopped["if"] == f"hashFiles('output/{regulations.SWEEP_STOPPED_NAME}') != ''"
     assert stopped["with"] == {"name": "sweep-stopped", "path": f"output/{regulations.SWEEP_STOPPED_NAME}",
-                               "retention-days": 7}
+                               "retention-days": 7, "overwrite": True}
     # The stop is a clean exit, so the job succeeds and the consumers that need it run.
     assert workflow["jobs"]["refresh-consumers"]["needs"] == ["setup", "etl-new"]
 
@@ -193,6 +195,7 @@ def test_a_stopped_sweep_leaves_an_artifact_and_still_lets_the_consumers_publish
         ("25 18 * * *", [11], {11: 0}, "false"),  # one covered every batch
         ("25 18 * * *", [11], {11: 1}, "true"),  # the only success stopped at its budget: batches remain
         ("25 18 * * *", [11, 12], {11: 1, 12: 0}, "false"),
+        ("25 18 * * *", [11], {11: "fail"}, "true"),  # an unanswered question does not cancel the retry
     ],
 )
 def test_retry_sweep_is_skipped_only_after_a_sweep_that_covered_every_batch(
@@ -209,6 +212,7 @@ def test_retry_sweep_is_skipped_only_after_a_sweep_that_covered_every_batch(
         return
     assert "--event schedule --status success" in calls
     covered = next((index for index, run_id in enumerate(succeeded) if stopped[run_id] == 0), len(succeeded))
+    assert outputs["sweep_start_batch"] == ("0" if run == "true" else "")
     asked = [run_id for run_id in succeeded if f"repos/owner/repo/actions/runs/{run_id}/artifacts" in calls]
     assert asked == succeeded[: covered + 1]  # each success is asked until one covered every batch
 
@@ -227,22 +231,33 @@ def test_only_the_comment_attributes_family_gets_more_than_thirty_minutes():
 
 
 @pytest.mark.parametrize(
-    ("latest", "stopped_before", "start"),
+    ("latest", "stopped_before", "artifact_file", "start"),
     [
-        ("", "", "0"),  # no earlier scheduled sweep
-        ("77", "", "0"),  # the latest covered every batch, failed, or was a skipped retry: it left no artifact
-        ("77", "7", "7"),  # the latest stopped before batch 7
-        ("77", "15", "0"),  # an artifact naming no batch begins at the first
-        ("77", "x", "0"),
+        ("", "", "sweep-stopped.txt", "0"),  # no earlier scheduled sweep
+        # The latest covered every batch, failed, was killed or was a skipped retry: no artifact, and the
+        # download exits 1. Run 42674437011, the latest completed scheduled run on 2026-11-10, is this case.
+        ("77", "", "sweep-stopped.txt", "0"),
+        ("77", "7", "sweep-stopped.txt", "7"),  # the latest stopped before batch 7
+        ("77", "15", "sweep-stopped.txt", "0"),  # an artifact naming no batch begins at the first
+        ("77", "x", "sweep-stopped.txt", "0"),
+        ("77", "7", "another-name.txt", "0"),  # an artifact without the expected file
+        ("fail", "7", "sweep-stopped.txt", "0"),  # the run list fails, having printed something
     ],
 )
-def test_a_scheduled_sweep_begins_where_the_latest_one_stopped(tmp_path, latest, stopped_before, start):
-    """Sweeps that always began at the first batch would never reach the later ones (ss-ag8i)."""
+def test_a_scheduled_sweep_begins_where_the_latest_one_stopped_and_no_lookup_failure_stops_it(
+    tmp_path, latest, stopped_before, artifact_file, start
+):
+    """Sweeps that always began at the first batch would never reach the later ones (ss-ag8i).
+
+    ``setup_outputs`` asserts the step exits 0: whatever the lookup meets, the daily sweep still starts.
+    """
     outputs, calls = setup_outputs(tmp_path, event="schedule", schedule="25 6 * * *", latest=latest,
-                                   stopped_before=stopped_before)
-    assert outputs["sweep_start_batch"] == start
+                                   stopped_before=stopped_before, artifact_file=artifact_file)
+    assert (outputs["run"], outputs["sweep_start_batch"], outputs["batch"]) == ("true", start, "all")
     assert "--event schedule --status completed --limit 1" in calls
-    assert ("run download 77 --name sweep-stopped" in calls) is bool(latest)
+    assert ("run download" in calls) is (latest == "77") and ("run download 77 --name sweep-stopped" in calls) is (
+        latest == "77"
+    )
 
     workflow = yaml.safe_load(WORKFLOW.read_text())
     run = next(step for step in workflow["jobs"]["etl-new"]["steps"] if step.get("name") == "Run new pipeline")

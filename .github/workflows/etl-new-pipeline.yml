@@ -107,8 +107,9 @@ jobs:
             SUCCEEDED=$(gh run list --workflow etl-new-pipeline.yml --event schedule --status success \
               --created ">=$(date -u +%F)" --json databaseId --jq '.[].databaseId')
             for RUN_ID in $SUCCEEDED; do
-              STOPPED=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/artifacts?name=sweep-stopped" --jq .total_count)
-              if [ "$STOPPED" -eq 0 ]; then
+              # An unanswered question counts as "stopped": the retry runs.
+              STOPPED=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/artifacts?name=sweep-stopped" --jq .total_count || true)
+              if [ "$STOPPED" = "0" ]; then
                 echo "Scheduled sweep $RUN_ID covered every batch today; the retry sweep is not needed."
                 RUN=false
                 break
@@ -121,14 +122,17 @@ jobs:
           if [ "$EVENT" = "schedule" ] && [ "$RUN" = "true" ]; then
             # Begin where the latest scheduled sweep stopped at its budget and wrap to the first
             # batch. A batch with new comment rows costs an hour, so sweeps that always began at
-            # the first batch would never reach the later ones. Any other outcome begins at 0.
+            # the first batch would never reach the later ones. This lookup must never stop the
+            # sweep: a list or download that fails, a sweep that left no sweep-stopped artifact
+            # (the download then exits 1) and an artifact without the file all begin at 0.
             SWEEP_START=0
             LAST=$(gh run list --workflow etl-new-pipeline.yml --event schedule --status completed --limit 1 \
-              --json databaseId --jq '.[].databaseId')
-            STOPPED_DIR=$(mktemp -d)
-            # The download fails when that sweep left no sweep-stopped artifact.
-            if [ -n "$LAST" ] && gh run download "$LAST" --name sweep-stopped --dir "$STOPPED_DIR"; then
-              STOPPED_BEFORE=$(tr -d '[:space:]' < "$STOPPED_DIR/sweep-stopped.txt")
+              --json databaseId --jq '.[].databaseId' || true)
+            STOPPED_DIR=$(mktemp -d || true)
+            if printf '%s' "$LAST" | grep -Eq '^[0-9]+$' && [ -n "$STOPPED_DIR" ] \
+              && gh run download "$LAST" --name sweep-stopped --dir "$STOPPED_DIR" \
+              && [ -f "$STOPPED_DIR/sweep-stopped.txt" ]; then
+              STOPPED_BEFORE=$(tr -d '[:space:]' < "$STOPPED_DIR/sweep-stopped.txt" || true)
               if printf '%s' "$STOPPED_BEFORE" | grep -Eq '^[0-9]+$' && [ "$STOPPED_BEFORE" -lt "$BATCH_COUNT" ]; then
                 SWEEP_START="$STOPPED_BEFORE"
               else
@@ -250,6 +254,8 @@ jobs:
           name: sweep-stopped
           path: output/sweep-stopped.txt
           retention-days: 7
+          # A re-run of the job would otherwise fail on the name its first attempt used.
+          overwrite: true
 
       # Successful passes publish raw-read and comment-text retry checkpoints
       # before the manifest, even with zero new rows. Fresh runners restore both.
