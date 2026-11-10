@@ -11,8 +11,8 @@ version is counted and skipped), only into a column the catalog holds as NULL, a
 copy read for that version agrees; copies that disagree on a column are listed in ``fill/conflicts.parquet`` and fill
 nothing in that column. A stated 0 is a value; NULL stays NULL. One rule replaces a held value: in an :data:`ADDITIVE`
 column, under the same version and agreement, a read that only adds to the held value (the held value is the read's
-with the additions taken out, byte for byte) replaces it; any other read value that differs is refused, counted and
-listed in ``fill/refusals.parquet``.
+as an earlier extract spelled it, byte for byte) replaces it; any other read value that differs is refused, counted
+and listed in ``fill/refusals.parquet``.
 
 **Big O.** The table is unpartitioned and R2's compacted files each span most agencies, and DuckDB writes Iceberg
 merge-on-read: a MERGE rewrites nothing in place but writes each changed row anew with a positional delete. A batch
@@ -86,38 +86,68 @@ def read_columns(profile: str) -> tuple[str, ...]:
 READ_COLUMNS = read_columns("all")
 
 
-#: The keys b19b092 adds to an attachment's entry, and only when the record states them.
-_RESTRICTIONS = ("restrictReasonType", "restrictReason")
+#: The key SpicyDocs 0.85.0 adds to every attachment entry: the attachment's own id, NULL where the record states none.
+_ATTACHMENT_ID = "attachment_id"
+#: The keys later extracts add to an attachment's entry: b19b092 the restriction, only when the record states it;
+#: 0.85.0 :data:`_ATTACHMENT_ID`.
+_ADDED_KEYS = ("restrictReasonType", "restrictReason", _ATTACHMENT_ID)
+
+
+def _listed(value: str | None) -> list:
+    """The list ``value`` spells, only in the extract's own spelling (``json.dumps``); raises ValueError otherwise."""
+    listed = json.loads(value or "null")
+    if json.dumps(listed) != value or not isinstance(listed, list):
+        raise ValueError("not an attachment list in the extract's spelling")
+    return listed
+
+
+def without_attachment_ids(value: str | None) -> str | None:
+    """``attachments_json`` less each entry's ``attachment_id``: what SpicyDocs 0.54.0 (b19b092) to 0.84.0 wrote for
+    the same record, every attachment the record lists, withheld ones and url-less renditions included.
+
+    Only removals, keys and order kept; None for a value of any other spelling or shape.
+    """
+    try:
+        return json.dumps([{k: v for k, v in entry.items() if k != _ATTACHMENT_ID} for entry in _listed(value)])
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 
 def downloadable_attachments(value: str | None) -> str | None:
     """``attachments_json`` less what offers no file: every rendition with no ``url``, every entry left with none (a
-    withheld attachment states no ``fileFormats``) and each entry's restriction.
+    withheld attachment states no ``fileFormats``), and each entry's restriction and ``attachment_id``.
 
-    That is what the rule before SpicyDocs b19b092 (2026-03-15 to 0.53.0) wrote for the same record, NULL for no entry,
-    so a held value equal to this is one the read only adds to. Only removals: the value must be in the extract's own
-    spelling (``json.dumps``), and what is kept keeps its keys and order. None for a value of any other spelling or
-    shape, which then equals no held value.
+    That is what the rule before SpicyDocs b19b092 (2026-03-15 to 0.53.0) wrote for the same record, NULL for no entry.
+    Only removals: the value must be in the extract's own spelling (``json.dumps``), and what is kept keeps its keys and
+    order. None for a value of any other spelling or shape, which then equals no held value.
     """
     try:
-        listed = json.loads(value or "null")
-        if json.dumps(listed) != value:
-            return None
         kept = []
-        for entry in listed:
+        for entry in _listed(value):
             formats = [rendition for rendition in entry["formats"] or [] if rendition["url"]]
             if formats:
-                kept.append({**{k: v for k, v in entry.items() if k not in _RESTRICTIONS}, "formats": formats})
+                kept.append({**{k: v for k, v in entry.items() if k not in _ADDED_KEYS}, "formats": formats})
     except (ValueError, TypeError, KeyError, AttributeError):
         return None
     return json.dumps(kept) if kept else None
 
 
-#: Fill columns whose held value a read may replace, each with what takes the read's additions back out. Only
-#: ``attachments_json``: b19b092 lists every attachment a record lists, the rule before it dropped a withheld one and
-#: every rendition without a file, and the ETL rewrites a row only when its ``modify_date`` moves, so a row read
-#: before b19b092 keeps the shorter list until the re-read replaces it.
-ADDITIVE = {"attachments_json": downloadable_attachments}
+#: How each earlier extract spelled a record's list, newest first: a held list in either spelling is one a read of the
+#: same record only adds to.
+_EARLIER_ATTACHMENT_SPELLINGS = (without_attachment_ids, downloadable_attachments)
+
+
+def only_adds_attachments(read: str | None, held: str | None) -> bool:
+    """Whether ``read`` only adds to ``held``: ``held`` is, byte for byte, the read's list as an earlier extract spelled
+    it, before 0.85.0 added each entry's id or before b19b092 listed withheld attachments and url-less renditions."""
+    return held is not None and any(spelling(read) == held for spelling in _EARLIER_ATTACHMENT_SPELLINGS)
+
+
+#: Fill columns whose held value a read may replace, each with whether a read only adds to the held value. Only
+#: ``attachments_json``: b19b092 lists every attachment a record lists (the rule before it dropped a withheld one and
+#: every rendition without a file) and 0.85.0 adds each entry's id, and the ETL rewrites a row only when its
+#: ``modify_date`` moves, so a row read earlier keeps the earlier spelling until the re-read replaces it.
+ADDITIVE = {"attachments_json": only_adds_attachments}
 #: The Iceberg scan's virtual column naming each row's data file.
 FILE_COLUMN = "filename"
 #: Compressed bytes of catalog data files per batch; a larger file is still one batch.
@@ -424,9 +454,10 @@ def prepare(
         # value travels from here: carried through the whole-table join below it doubled that join's time (a
         # stand-in of the 26.3M-row catalog, 2026-10-03: 6.0 s against 13.2 s).
         for c in additive:
-            con.create_function(f"_additive_{c}", ADDITIVE[c], ["VARCHAR"], "VARCHAR", null_handling="special")
+            con.create_function(f"_additive_{c}", ADDITIVE[c], ["VARCHAR", "VARCHAR"], "BOOLEAN",
+                                null_handling="special")
         differing = [f"""SELECT c.comment_id, c.modify_date, '{c}' AS "column",
-                                _additive_{c}(v."{c}") IS NOT DISTINCT FROM c."held_{c}" AS additive,
+                                _additive_{c}(v."{c}", c."held_{c}") AS additive,
                                 c."held_{c}" AS held
                          FROM {catalog} c JOIN {versions} v ON {on_version}
                          WHERE c."held_{c}" IS NOT NULL AND v."{c}" IS NOT NULL AND v."{c}" <> c."held_{c}\""""

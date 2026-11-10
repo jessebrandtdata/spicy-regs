@@ -905,7 +905,7 @@ def test_a_sweep_publishes_every_agencys_dockets_and_documents_before_any_commen
     sweep = RegulationsPipeline(allow_fresh_start=True, output_dir=tmp_output, batch_count=2, use_iceberg=True,
                                 enrich_text=False, skip_upload=False).run_sweep
     if fails:
-        with pytest.raises(RuntimeError, match="the comment batches ran") as raised:
+        with pytest.raises(RuntimeError, match="the comment batches after it ran") as raised:
             sweep()
         assert raised.value.__cause__ is refused
         assert "::error title=Dockets and documents pass failed" in capsys.readouterr().out
@@ -916,6 +916,34 @@ def test_a_sweep_publishes_every_agencys_dockets_and_documents_before_any_commen
     assert merges == [(["comments/EPA.parquet"], published), (["comments/FAA.parquet"], published)]
     retired = set(pl.read_parquet(tmp_output / "manifest.parquet")["key"].to_list())
     assert retired == (set(store) - first_pass if fails else set(store))
+
+
+def test_a_first_pass_whose_manifest_upload_is_refused_stops_the_sweep(tmp_output, monkeypatch, native_publication):
+    """The realistic recorded case: its tables published and its manifest saved locally, then the upload refused.
+
+    A comment batch's upload of that local manifest would retire the pass's keys, so no batch runs.
+    """
+    monkeypatch.setenv("AGENCIES", "EPA,FAA")
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://test.invalid")
+    store = {_docket_key(f"{agency}-2026-0001", agency=agency): dumps(
+        _docket_payload(f"{agency}-2026-0001", "2026-11-09", agency)).encode() for agency in ("EPA", "FAA")}
+    store |= {_comment_key(f"{agency}-2026-0001-0002", f"{agency}-2026-0001", agency): dumps(_comment_payload(
+        f"{agency}-2026-0001-0002", f"{agency}-2026-0001", "2026-11-09T00:00:00Z", agency)).encode()
+        for agency in ("EPA", "FAA")}
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+    monkeypatch.setattr(regulations.r2, "preflight_uploads", lambda out, files: None)
+    refused = OSError("manifest upload refused")
+
+    def upload_file(path, remote_key=None):
+        raise refused
+
+    monkeypatch.setattr(regulations.r2, "upload_file", upload_file)
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", lambda *a, **k: pytest.fail("a comment batch ran"))
+    with pytest.raises(OSError) as raised:
+        RegulationsPipeline(allow_fresh_start=True, output_dir=tmp_output, batch_count=2, use_iceberg=True,
+                            enrich_text=False, skip_upload=False).run_sweep()
+    assert raised.value is refused
+    assert _published_ids(native_publication, "dockets") == ["EPA-2026-0001", "FAA-2026-0001"]
 
 
 @pytest.mark.parametrize("defer", [False, True])

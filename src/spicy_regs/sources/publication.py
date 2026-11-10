@@ -586,6 +586,9 @@ class DownloadedMember:
 
 
 RESUME_STALLS = 5  # consecutive reconnects that add no byte before a member fetch gives up
+#: Each member request's timeout when the caller sets none. httpx's own default is 5 seconds, and the public host
+#: took longer than that to answer one 95 MB member's headers: run 42875578221 (2026-11-10) died on that ReadTimeout.
+MEMBER_REQUEST_TIMEOUT = 60.0
 _STRONG_ETAG = re.compile(r'"[\x21\x23-\x7e\x80-\xff]*"')
 
 
@@ -615,18 +618,20 @@ def _resumable_body(url: str, label: str, headers: Mapping[str, str] | None,
     ETag, admitting only HTTP 206 with the exact remaining ``Content-Range`` and the same ETag (the rules of
     ``explorer_publications._range``). A 200 or 412 answer means the object changed or the range was ignored.
     Resume is gated on a strong ETag rather than on a pin, so a mutable legacy key resumes too; the pin is
-    :class:`_PinnedBody`'s rule. ``RESUME_STALLS`` reconnects in a row without progress, or the caller's runtime
+    :class:`_PinnedBody`'s rule. A transport error before any byte is held (a timeout waiting for the headers)
+    asks again from the start; one mid-body without a strong ETag restarts the body at 0, at most
+    ``RESUME_STALLS`` times. ``RESUME_STALLS`` reconnects in a row without progress, or the caller's runtime
     deadline, end the body. An in-process reconnect is used rather than ``PartialDownload``'s fsync'd checkpoint
     because this contract keeps no state across processes. A 404 before any response was accepted raises
-    :class:`_MemberAbsent`; any other refusal raises ``RuntimeError``.
+    :class:`_MemberAbsent`; any other refusal raises ``RuntimeError``, and is not retried.
     """
-    etag, source, held, stalls, resuming, started = None, None, 0, 0, False, False
+    etag, source, held, stalls, restarts, resuming, started = None, None, 0, 0, 0, False, False
     while True:
         sent = dict(headers or {})
         if resuming:
             sent |= {"Range": f"bytes={held}-", "If-Match": etag, "Accept-Encoding": "identity"}
-        request: dict = {name: value for name, value in (("headers", sent or None),
-                                                         ("timeout", remaining_timeout(timeout)))
+        limit = remaining_timeout(MEMBER_REQUEST_TIMEOUT if timeout is None else timeout)
+        request: dict = {name: value for name, value in (("headers", sent or None), ("timeout", limit))
                          if value is not None}
         start = held
         try:
@@ -662,14 +667,23 @@ def _resumable_body(url: str, label: str, headers: Mapping[str, str] | None,
             return
         except httpx.TransportError as error:
             etag = etag or (_resume_etag(source) if source is not None else None)
-            if etag is None:
-                raise
             stalls = 0 if held > start else stalls + 1
             if stalls >= RESUME_STALLS:
                 raise RuntimeError(f"{label}: {stalls} reconnects without progress at byte {held}") from error
-            logger.warning("{} reset at byte {} ({}); resuming", label, held, type(error).__name__)
+            if held and etag is None:
+                # No strong validator pins a byte range of this body: discard what arrived and ask for all of it.
+                restarts += 1
+                if restarts >= RESUME_STALLS:
+                    raise RuntimeError(f"{label}: {restarts} restarts, and no ETag to resume on") from error
+                logger.warning("{} reset at byte {} ({}) with no ETag to resume on; restarting",
+                               label, held, type(error).__name__)
+                yield None
+                source, held = None, 0
+            else:
+                logger.warning("{} reset at byte {} ({}); {}", label, held, type(error).__name__,
+                               "resuming" if etag else "asking again")
             time.sleep(remaining_timeout(min(30, 2 ** stalls)))
-            resuming = True
+            resuming = etag is not None
 
 
 class _PinnedBody:
@@ -726,8 +740,9 @@ def fetch_member(base_url: str, member: Member, local_path: Path, label: str | N
     """Stream one table file to ``local_path`` through a sibling temp file, checked against its pin when it has one.
 
     ``False`` only when an unpinned (legacy) file is absent (HTTP 404). A missing pinned member, any other status, a
-    transport error that cannot be resumed (``_resumable_body``) or bytes that differ from the pin raise, leaving
-    ``local_path`` untouched and no temp file. ``headers`` and ``timeout`` pass through to each request when given.
+    transport error that outlasts the bounded retries (``_resumable_body``) or bytes that differ from the pin raise,
+    leaving ``local_path`` untouched and no temp file. ``headers`` and ``timeout`` pass through to each request when
+    given; without a ``timeout`` each request has ``MEMBER_REQUEST_TIMEOUT``.
     Each byte is hashed once, as it arrives; a restarted body truncates the temp file and the digest.
     """
     label = label or member.path

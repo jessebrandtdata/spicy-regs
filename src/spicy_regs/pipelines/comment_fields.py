@@ -58,12 +58,15 @@ CHUNK_KEYS = 20_000
 #: The part record's shape; a plan carries it, so a new shape is a new plan. s3 (2026-10-03): ``attachments_json`` as
 #: SpicyDocs b19b092 extracts it, every attachment the record lists, withheld ones included. The s2 parts (the
 #: 2026-09-28 read) hold the rule before it; under s2, ``plan`` on their workdir would add only the keys ingested since
-#: and keep the rest, so the owner's full re-read (2026-10-03) would replace nothing. :func:`require_record_shape`
-#: refuses to plan or read s3 under an extract that drops a withheld attachment.
-RECORD_SHAPE = "s3"
-#: A record listing one withheld attachment (no ``fileFormats``), which an s3 part keeps.
+#: and keep the rest, so the owner's full re-read (2026-10-03) would replace nothing. s4 (2026-11-10): as s3, each entry
+#: ending with its ``attachment_id`` (SpicyDocs 0.85.0), so a read under it starts a plan of its own beside s3's.
+#: :func:`require_record_shape` refuses to plan or read s4 under an extract that drops a withheld attachment or its id.
+RECORD_SHAPE = "s4"
+_PROBE_ATTACHMENT_ID = "0900006400000001"
+#: A record listing one withheld attachment (no ``fileFormats``) with its id, which an s4 part keeps.
 _WITHHELD = {"data": {"id": "PROBE-0000-0001", "attributes": {}}, "included": [
-    {"type": "attachments", "attributes": {"title": "withheld", "fileFormats": None, "restrictReasonType": "Other"}}]}
+    {"id": _PROBE_ATTACHMENT_ID, "type": "attachments",
+     "attributes": {"title": "withheld", "fileFormats": None, "restrictReasonType": "Other"}}]}
 #: The ``data.attributes`` keys ``COMMENT.extract`` maps into the thin row; every other stated key is kept in
 #: ``attributes_json``. ``test_extracted_attributes_are_the_keys_the_extract_reads`` derives this set independently.
 EXTRACTED_ATTRIBUTES = frozenset({
@@ -95,10 +98,14 @@ def part_row(keyed) -> dict:
 
 def require_record_shape(extract=None) -> None:
     """Refuse an extract that reads another shape than :data:`RECORD_SHAPE`: one that drops a withheld attachment
-    (SpicyDocs before b19b092) would write s3 parts holding s2's ``attachments_json``."""
-    if (extract or COMMENT.extract)(_WITHHELD)["attachments_json"] is None:
+    (SpicyDocs before b19b092) or its id (before 0.85.0) would write s4 parts holding s2's or s3's ``attachments_json``."""
+    listed = json.loads((extract or COMMENT.extract)(_WITHHELD)["attachments_json"] or "null")
+    if not listed:
         raise RuntimeError(f"record shape {RECORD_SHAPE} keeps withheld attachments, and this environment's SpicyDocs "
                            "drops them: run from a branch that vendors SpicyDocs with b19b092 (0.54.0 or later)")
+    if listed[0].get("attachment_id") != _PROBE_ATTACHMENT_ID:
+        raise RuntimeError(f"record shape {RECORD_SHAPE} keeps each attachment's id, and this environment's SpicyDocs "
+                           "drops it: run from a branch that vendors SpicyDocs 0.85.0 or later")
 
 
 def _sql(value: str | Path) -> str:
