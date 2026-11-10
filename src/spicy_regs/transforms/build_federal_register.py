@@ -107,12 +107,6 @@ def published_columns() -> tuple[str, ...]:
 _RIN_SQL = "json_extract_string(regulation_id_numbers_json, '$[0]')"
 
 
-def _prior_columns(prior_file: Path, columns: tuple[str, ...]) -> str:
-    """``columns`` as selected from the prior table; one it predates reads NULL."""
-    held = set(pq.read_schema(prior_file).names)
-    return ", ".join(c if c in held else f"CAST(NULL AS VARCHAR) AS {c}" for c in columns)
-
-
 def _prior_max_publication_date(prior_file: Path) -> date | None:
     """Largest ``publication_date`` in the prior table, or None if empty/absent."""
     if not prior_file.exists():
@@ -212,38 +206,22 @@ def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=
 def build_federal_register(
     output_dir: Path,
     *,
-    since: date | None = None,
+    since: date = FR_EPOCH,
     documents: Callable[[date], Iterable[dict]] | None = None,
-    download_prior: Callable[[str, Path], bool] = r2.download,
     evidence=None,
 ) -> Path:
-    """Build ``federal_register.parquet`` (incremental merge with the prior table).
+    """This run's documents published since ``since`` (every one by default), projected, checked, one per dated key.
 
-    ``documents`` is the raw API records published since a date; the default is
-    SpicyDocs' Federal Register acquisition, and a hermetic test passes its own.
-    Only the default names a retained page, so only its rows carry ``source_sha256``.
+    ``documents`` is the raw API records published since a date; the default is SpicyDocs' Federal Register
+    acquisition, and a hermetic test passes its own. Only the default names a retained page, so only its rows carry
+    ``source_sha256``. The prior table is merged in ``merge_federal_register``, at the published columns.
     """
     import duckdb
     from spicy_docs.schemas.federal_register import FEDERAL_REGISTER_COLUMNS, project_federal_register_document
 
     out_file = output_dir / OUTPUT
-    prior_file = output_dir / "_fr_prior.parquet"
     schema = pa.schema([(c, pa.string()) for c in (*FEDERAL_REGISTER_COLUMNS, POINTER)])
-
-    # 1. Pull the prior table (best effort — absence just means full backfill).
-    have_prior = prior_file.exists() or download_prior(OUTPUT, prior_file)
-    if have_prior:
-        logger.info("FR: merging against prior table {}", prior_file)
-    else:
-        logger.info("FR: no prior table found — full backfill from {}", FR_EPOCH)
-
-    # 2. Decide the fetch window start.
-    if since is None:
-        prior_max = _prior_max_publication_date(prior_file) if have_prior else None
-        since = (prior_max - timedelta(days=OVERLAP_DAYS)) if prior_max else FR_EPOCH
     logger.info("FR: fetching documents published since {}", since)
-
-    # 3. Fetch + shape into a "new rows" parquet.
     if documents is not None:
         rows = [project_federal_register_document(doc) for doc in documents(since)]
     else:
@@ -254,9 +232,8 @@ def build_federal_register(
     pq.write_table(table, new_file, compression="zstd")
     logger.info("FR: fetched {:,} documents this run", len(rows))
 
-    # 4. Apply the SpicyDocs public-table primary key (projection 1.1).
-    # The columns and their literal values stay unchanged; this is not an IRI
-    # normalization or an assertion that two dated printings are one matter.
+    # The SpicyDocs public-table primary key (projection 1.1). The columns and their literal values stay unchanged;
+    # this is not an IRI normalization or an assertion that two dated printings are one matter.
     spill_dir = output_dir / ".duckdb_tmp"
     spill_dir.mkdir(exist_ok=True)
     con = duckdb.connect()
@@ -264,34 +241,14 @@ def build_federal_register(
     con.execute("SET preserve_insertion_order=false")
     con.execute("SET threads=2")
     con.execute(f"SET temp_directory='{spill_dir}'")
-
-    # The projection's columns are what both sides carry; a prior that already
-    # has ``rin`` is not read for it, since the projection below recomputes it,
-    # and a column the prior predates (``topics_json``) reads NULL.
     # The pointer rides with each row but is no part of the record: one document read from two pages is one
     # observation, so the conflict check below compares the projection alone.
     cols = ", ".join(FEDERAL_REGISTER_COLUMNS)
-    carried = f"{cols}, {POINTER}"
-    if have_prior:
-        union = (
-            f"SELECT {_prior_columns(prior_file, (*FEDERAL_REGISTER_COLUMNS, POINTER))}, file_row_number AS _row, 0 AS _src "
-            f"FROM read_parquet('{prior_file}', file_row_number=true) "
-            f"UNION ALL BY NAME "
-            f"SELECT {carried}, file_row_number AS _row, 1 AS _src FROM read_parquet('{new_file}', file_row_number=true)"
-        )
-    else:
-        union = (
-            f"SELECT {carried}, file_row_number AS _row, 1 AS _src FROM read_parquet('{new_file}', file_row_number=true)"
-        )
-
     try:
-        # Materialize the prior ∪ fresh union once: the checks, the winner
-        # window and the final COPY each scan it, and re-scanning the wide
-        # abstract/JSON payload columns four times per run was the largest
-        # cost in this rollup.
-        con.execute(f"CREATE TEMP TABLE _union AS {union}")
+        con.execute(f"CREATE TEMP TABLE _fresh AS SELECT {cols}, {POINTER}, file_row_number AS _row "
+                    f"FROM read_parquet('{new_file}', file_row_number=true)")
         invalid = con.execute(
-            """SELECT document_number, publication_date FROM _union
+            """SELECT document_number, publication_date FROM _fresh
                 WHERE document_number IS NULL OR trim(document_number) = ''
                    OR publication_date IS NULL
                    OR try_cast(publication_date AS DATE) IS NULL
@@ -301,34 +258,24 @@ def build_federal_register(
         if invalid:
             raise ValueError(f"Federal Register record lacks a complete canonical identity: {invalid!r}")
         conflict = con.execute(
-            f"""SELECT document_number, publication_date, _src FROM _union
-                GROUP BY document_number, publication_date, _src
+            f"""SELECT document_number, publication_date FROM _fresh
+                GROUP BY document_number, publication_date
                 HAVING count(DISTINCT ({cols})) > 1 LIMIT 1"""
         ).fetchone()
         if conflict:
             raise ValueError(f"Federal Register conflicting observations of the same number/date: {conflict!r}")
-        # Rank positions, not the wide abstract/JSON payloads. A window over
-        # every payload column exceeds the 4GB limit on the retained public
-        # table; selecting positions first keeps the same winner semantics.
-        con.execute(
-            """CREATE TEMP TABLE winners AS
-                SELECT _src, _row FROM (
-                    SELECT _src, _row, row_number() OVER (
-                        PARTITION BY document_number, publication_date ORDER BY _src DESC, _row
-                    ) AS _rn FROM _union
-                ) WHERE _rn = 1"""
-        )
         merged_file = output_dir / "_fr_merged.parquet"
         # Written in the contract's published order; SpicyDocs 0.66.6 lists ``rin`` before its newest fields.
         published = published_columns()
         if sorted(published) != sorted((*FEDERAL_REGISTER_COLUMNS, "rin", POINTER)):
             raise ValueError("Federal Register contract differs from its projection plus the derived rin")
         selected = ", ".join(f"{_RIN_SQL} AS rin" if column == "rin" else column for column in published)
+        # One row per dated key, the first page's: a document on two pages is one observation (checked above).
         con.execute(
             f"""
         COPY (
-            SELECT {selected}
-            FROM _union records JOIN winners USING (_src, _row)
+            SELECT {selected} FROM _fresh
+            QUALIFY row_number() OVER (PARTITION BY document_number, publication_date ORDER BY _row) = 1
             ORDER BY publication_date DESC, document_number
         ) TO '{merged_file}' (FORMAT PARQUET, COMPRESSION ZSTD, ROW_GROUP_SIZE 50000);
             """
@@ -336,13 +283,8 @@ def build_federal_register(
         merged_file.replace(out_file)
     finally:
         con.close()
-
-    # Housekeeping: drop scratch files so they aren't mistaken for outputs.
-    for scratch in (prior_file, new_file):
-        scratch.unlink(missing_ok=True)
-
-    total = pq.ParquetFile(out_file).metadata.num_rows
-    logger.info("Federal Register: {:,} rows", total)
+    new_file.unlink(missing_ok=True)
+    logger.info("Federal Register: {:,} documents observed", pq.ParquetFile(out_file).metadata.num_rows)
     return out_file
 
 
@@ -402,8 +344,7 @@ def merge_federal_register(
         prior_max = _prior_max_publication_date(prior) if have_prior else None
         since = (prior_max - timedelta(days=OVERLAP_DAYS)) if prior_max else FR_EPOCH
     # The night's observations alone (no prior to merge), moved off the table's name before the merge writes it.
-    observed = build_federal_register(output_dir, since=since, documents=documents,
-                                      download_prior=lambda *_: False, evidence=evidence
+    observed = build_federal_register(output_dir, since=since, documents=documents, evidence=evidence
                                       ).replace(output_dir / "_fr_observed.parquet")
     fresh = pa.concat_tables(
         [pa.Table.from_pylist(shape_records("federal_register", batch.to_pylist()), schema=schema)

@@ -62,14 +62,11 @@ def _collision_documents():
 
 
 def test_dated_native_records_survive_and_same_date_correction_replaces(tmp_path):
-    import shutil
-
+    """The merge into the published table (merge_federal_register): fresh wins on the dated key, nothing else moves."""
     import pyarrow.parquet as pq
 
     documents = _collision_documents()
-    out = build_federal_register(
-        tmp_path, documents=lambda start: iter(documents), download_prior=lambda key, path: False
-    )
+    out = merge_federal_register(tmp_path, documents=lambda start: iter(documents), download_prior=lambda k, p: False)
     first = pq.read_table(out).to_pylist()
     assert {(r["document_number"], r["publication_date"]) for r in first} == {
         ("00-111", "2000-01-14"),
@@ -78,15 +75,13 @@ def test_dated_native_records_survive_and_same_date_correction_replaces(tmp_path
     # The correction is a controlled edit to one captured record, not a claim
     # that the publisher changed its title. The date-distinct record is untouched.
     correction = dict(documents[0], title="Corrected housing-credit title")
-    shutil.copyfile(out, tmp_path / "_fr_prior.parquet")
-    build_federal_register(tmp_path, documents=lambda start: iter([correction]), download_prior=lambda key, path: False)
+    merge_federal_register(tmp_path, documents=lambda start: iter([correction]), download_prior=lambda k, p: False)
     corrected = pq.read_table(out).to_pylist()
     assert len(corrected) == 2
     by_date = {r["publication_date"]: r for r in corrected}
     assert by_date["2000-01-14"]["title"] == correction["title"]
     assert by_date["2000-01-18"] == next(r for r in first if r["publication_date"] == "2000-01-18")
-    shutil.copyfile(out, tmp_path / "_fr_prior.parquet")
-    build_federal_register(tmp_path, documents=lambda start: iter([correction]), download_prior=lambda key, path: False)
+    merge_federal_register(tmp_path, documents=lambda start: iter([correction]), download_prior=lambda k, p: False)
     assert pq.read_table(out).to_pylist() == corrected
 
 
@@ -95,7 +90,7 @@ def test_unreviewed_number_collision_is_not_a_special_case(tmp_path):
 
     records = [dict(_RAW_DOC, publication_date=day) for day in ("2024-03-01", "2024-03-02")]
     out = build_federal_register(
-        tmp_path, documents=lambda start: iter(records), download_prior=lambda key, path: False
+        tmp_path, documents=lambda start: iter(records)
     )
     assert pq.read_table(out).num_rows == 2
 
@@ -104,7 +99,7 @@ def test_identical_repeated_observations_collapse_within_the_dated_key(tmp_path)
     import pyarrow.parquet as pq
 
     out = build_federal_register(
-        tmp_path, documents=lambda start: iter([_RAW_DOC, _RAW_DOC]), download_prior=lambda key, path: False
+        tmp_path, documents=lambda start: iter([_RAW_DOC, _RAW_DOC])
     )
     assert pq.read_table(out).num_rows == 1
 
@@ -114,7 +109,7 @@ def test_conflicting_same_date_fetch_refuses_before_output(tmp_path):
     out = tmp_path / "federal_register.parquet"
     out.write_bytes(b"previous output remains untouched")
     with pytest.raises(ValueError, match="conflicting.*same.*date"):
-        build_federal_register(tmp_path, documents=lambda start: iter(records), download_prior=lambda key, path: False)
+        build_federal_register(tmp_path, documents=lambda start: iter(records))
     assert out.read_bytes() == b"previous output remains untouched"
 
 
@@ -124,7 +119,6 @@ def test_unknown_or_noncanonical_date_refuses_before_output(tmp_path, date_value
         build_federal_register(
             tmp_path,
             documents=lambda start: iter([dict(_RAW_DOC, publication_date=date_value)]),
-            download_prior=lambda key, path: False,
         )
     assert not (tmp_path / "federal_register.parquet").exists()
 
@@ -190,75 +184,6 @@ def test_archive_fetch_uses_bounded_top_level_windows():
     assert all(nxt[0] == prev[1] + timedelta(days=1) for prev, nxt in zip(windows, windows[1:]))
 
 
-@pytest.mark.parametrize("prior_width", ["fetched", "published"], ids=["migration-prior", "steady-state-prior"])
-def test_rin_is_derived_for_every_row_whatever_the_priors_width(tmp_path, prior_width):
-    """The join key is a projection of the array, filled on prior rows and fresh rows alike.
-
-    Two priors: the pre-``rin`` width the live table had on 2026-09-19 (the
-    migration case), and the published width carrying a ``rin`` that disagrees
-    with its array (the steady-state case), which must be recomputed rather
-    than read back -- the column is derived every run, never stored as a fact.
-    """
-    import pyarrow as pa
-    import pyarrow.parquet as pq
-
-    columns = FEDERAL_REGISTER_COLUMNS if prior_width == "fetched" else COLUMNS
-    prior_rows = [
-        {
-            "document_number": "P-two",
-            "publication_date": "2024-01-01",
-            "regulation_id_numbers_json": '["1111-AA11", "2222-BB22"]',
-        },
-        {"document_number": "P-none", "publication_date": "2024-01-01", "regulation_id_numbers_json": "[]"},
-        {"document_number": "P-null", "publication_date": "2024-01-01", "regulation_id_numbers_json": None},
-    ]
-    if prior_width == "published":
-        for row in prior_rows:
-            row["rin"] = "9999-ZZ99"  # stale: must not survive the merge
-    schema = pa.schema([(c, pa.string()) for c in columns])
-    pq.write_table(
-        pa.Table.from_pylist([{c: None for c in columns} | r for r in prior_rows], schema=schema),
-        tmp_path / "_fr_prior.parquet",
-    )
-    fresh = [dict(_RAW_DOC, document_number="F-one", publication_date="2024-03-01")]
-
-    out = build_federal_register(
-        tmp_path, since=date(2024, 3, 1), documents=lambda start: iter(fresh), download_prior=lambda k, p: False
-    )
-    table = pq.read_table(out)
-    assert table.schema.names == list(COLUMNS)
-    by_number = {row["document_number"]: row for row in table.to_pylist()}
-    assert by_number["F-one"]["rin"] == "2060-AV12"
-    assert by_number["P-two"]["rin"] == "1111-AA11", "the first of several; the array keeps the rest"
-    assert by_number["P-none"]["rin"] is None
-    assert by_number["P-null"]["rin"] is None
-
-
-def test_a_prior_that_predates_topics_merges_and_fresh_rows_carry_them(tmp_path):
-    """The live table predates ``topics_json`` (2026-09-26): its rows read NULL, re-fetched rows gain topics."""
-    import pyarrow as pa
-    import pyarrow.parquet as pq
-
-    width = [c for c in FEDERAL_REGISTER_COLUMNS if c != "topics_json"]
-    prior = [
-        {"document_number": "P-old", "publication_date": "2024-01-01"},
-        {"document_number": "F-again", "publication_date": "2024-03-01"},
-    ]
-    pq.write_table(pa.Table.from_pylist([dict.fromkeys(width) | row for row in prior],
-                                        schema=pa.schema([(c, pa.string()) for c in width])),
-                   tmp_path / "_fr_prior.parquet")
-    fresh = [dict(_RAW_DOC, document_number="F-again", publication_date="2024-03-01",
-                  topics=["Air pollution control", "Reporting and recordkeeping requirements"])]
-
-    out = build_federal_register(tmp_path, since=date(2024, 3, 1), documents=lambda start: iter(fresh),
-                                 download_prior=lambda k, p: False)
-    table = pq.read_table(out)
-    assert table.schema.names == list(COLUMNS)
-    by_number = {row["document_number"]: row for row in table.to_pylist()}
-    assert by_number["P-old"]["topics_json"] is None
-    assert by_number["F-again"]["topics_json"] == '["Air pollution control", "Reporting and recordkeeping requirements"]'
-
-
 # Round 6, M2: the Register's own regulations.gov link (spicy-docs 0.54.0+chaos.a1b91ce28a2a).
 
 def _linked_records():
@@ -272,10 +197,13 @@ def test_each_run_re_reads_the_last_120_days_so_the_relayed_comment_count_is_not
     import pyarrow as pa
     import pyarrow.parquet as pq
 
-    pq.write_table(pa.Table.from_pylist([{"document_number": "2026-19936", "publication_date": "2026-09-30"}]),
-                   tmp_path / "_fr_prior.parquet")
+    from spicy_regs.transforms.regulations_shape import subject_schema
+
+    schema = subject_schema("federal_register")
+    row = dict.fromkeys(schema.names) | {"document_number": "2026-19936", "publication_date": "2026-09-30"}
+    pq.write_table(pa.Table.from_pylist([row], schema=schema), tmp_path / "_fr_published.parquet")
     asked = []
-    build_federal_register(tmp_path, documents=lambda start: asked.append(start) or iter(()),
+    merge_federal_register(tmp_path, documents=lambda start: asked.append(start) or iter(()),
                            download_prior=lambda k, p: False)
     assert asked == [date(2026, 9, 30) - timedelta(days=120)]
 

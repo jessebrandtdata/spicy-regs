@@ -41,7 +41,7 @@ from spicy_regs.transforms.regulations_shape import (
 )
 
 # Datasets whose retained processing input restores through the private batch reader.
-RESTORE_DATASETS = frozenset({"dockets", "documents", "federal_register", "fr_docket_links"})
+RESTORE_DATASETS = frozenset({"dockets", "documents"})
 #: Datasets whose restore keeps the captured source schema: the batch-restored ones and the typed attribute tables.
 ATTRIBUTE_DATASETS = frozenset({"comment_attributes", "docket_attributes", "document_attributes"})
 SOURCE_SCHEMA_DATASETS = RESTORE_DATASETS | ATTRIBUTE_DATASETS

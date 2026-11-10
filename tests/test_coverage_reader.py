@@ -28,8 +28,6 @@ from spicy_regs.transforms.regulations_receipts import (
     materialize_internal,
     write_held_dataset,
 )
-from tests.test_federal_register_bulk_restore import _source as federal_register_source
-from tests.test_fr_docket_links_bulk_restore import _source as fr_docket_links_source
 
 
 def member(path):
@@ -401,12 +399,10 @@ def route_warnings():
     logger.remove(sink)
 
 
-def _regulatory_input(tmp_path, dataset):
-    if dataset == "federal_register":
-        rows = [{"document_number": "2026-00001", "publication_date": "2026-06-30"}]
-        return federal_register_source(tmp_path, rows)[0]
-    if dataset == "fr_docket_links":
-        return fr_docket_links_source(tmp_path)[0]
+def _regulatory_input(tmp_path, dataset="documents"):
+    """A selected documents pair: the batch-restored dataset these tests exercise (the Register and its links were
+    the example until their receipts retired, ss-vse3)."""
+    assert dataset == "documents"
     schema = pa.schema([("document_id", pa.string()), ("title", pa.string())], metadata={b"dump_date": b"2026-06-30"})
     source = tmp_path / "source.parquet"
     rows = [{"document_id": "D-1", "title": "one"}, {"document_id": "D-2", "title": "two"}]
@@ -425,11 +421,11 @@ def _restore_request(tmp_path, selected, name="restored"):
     }
 
 
-REGULATORY_RESTORES = ["federal_register", "fr_docket_links", "documents"]
+REGULATORY_RESTORES = ["documents"]
 
 
 def test_regulatory_policies_agree_between_the_selected_prior_reader_and_the_materializers():
-    assert RESTORE_DATASETS == {"dockets", "documents", "federal_register", "fr_docket_links"}
+    assert RESTORE_DATASETS == {"dockets", "documents"}
     for dataset in sorted(RESTORE_DATASETS):
         assert bridge.dataset_policy(dataset) == regulations_receipts.policy(dataset)
 
@@ -495,13 +491,13 @@ def test_forced_batch_ineligibility_logs_the_row_route_and_restores_identically(
 
 
 def test_a_subject_schema_other_than_the_declared_one_logs_the_row_route_before_it_refuses(tmp_path, route_warnings):
-    selected = _regulatory_input(tmp_path, "federal_register")
+    selected = _regulatory_input(tmp_path, "documents")
     subject = pq.read_table(selected.subjects[0])
     pq.write_table(subject.append_column("undeclared", pa.nulls(subject.num_rows, pa.string())), selected.subjects[0])
     with pytest.raises(ValueError, match="Subject schema differs from policy"):
         materialize_internal(selected, tmp_path / "refused.parquet", bulk=True)
     assert route_warnings == [
-        f"regulatory restore route=row dataset=federal_register rows={subject.num_rows} reason=subject-schema-differs"
+        f"regulatory restore route=row dataset=documents rows={subject.num_rows} reason=subject-schema-differs"
     ]
 
 
@@ -557,12 +553,6 @@ def _restore_through_selected_priors(tmp_path, selected, route, monkeypatch):
         return f"{type(error).__name__}: {error}"
 
 
-FR_ROWS = [
-    {"document_number": "2026-00001", "publication_date": "2025-06-30", "title": "first"},
-    {"document_number": "2026-00002", "publication_date": "2026-06-30", "title": "second"},
-]
-
-
 @pytest.mark.parametrize("change", ["orphan", "ambiguous", "missing", "digest", "undeclared-policy", "raw"])
 def test_a_corrupted_selected_pair_refuses_identically_on_the_bulk_and_the_row_route(tmp_path, monkeypatch, change):
     """Removing get()'s own admission must not let any corruption through on either restore route."""
@@ -570,7 +560,7 @@ def test_a_corrupted_selected_pair_refuses_identically_on_the_bulk_and_the_row_r
     for route in ("bulk", "row"):
         directory = tmp_path / route
         directory.mkdir()
-        selected = federal_register_source(directory, FR_ROWS)[0]
+        selected = _regulatory_input(directory, "documents")
         _corrupt(selected, change)
         with monkeypatch.context() as patch_route:
             outcomes[route] = _restore_through_selected_priors(directory, selected, route, patch_route)
