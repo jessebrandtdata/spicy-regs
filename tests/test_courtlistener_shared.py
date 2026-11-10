@@ -12,7 +12,6 @@ from __future__ import annotations
 import bz2
 import importlib
 import io
-import json
 import subprocess
 import sys
 from collections.abc import Generator
@@ -22,7 +21,6 @@ from hashlib import sha256
 from pathlib import Path
 from typing import cast
 
-import httpx
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
@@ -284,118 +282,12 @@ def test_source_failure_after_flush_preserves_output_and_original_error(
                 raise OSError("cleanup also failed")
 
     monkeypatch.setattr(module.pq, "ParquetWriter", Writer)
-    kwargs = {"skip_search_catchup": True, "skip_court_scope": True} if kind == "clusters" else {}
+    kwargs = {"skip_court_scope": True} if kind == "clusters" else {}
     with pytest.raises(CourtListenerCsvError, match="expected 4 columns, got 5"):
         getattr(module, f"build_court_opinion_{kind}")(tmp_path, local_file=dump, **kwargs)
     assert closed == [True]
     assert output.read_bytes() == b"previous output stays untouched"
     assert not (tmp_path / f"_{kind}_new.parquet").exists()
-
-
-@pytest.mark.parametrize("failure", ["http", "count", "budget"])
-def test_search_catchup_failure_after_flush_preserves_prior_and_output(tmp_path, monkeypatch, failure):
-    from spicy_regs.sources import courtlistener as source
-    from spicy_docs.sources.courtlistener.search import CourtListenerTraversalBudget
-    from spicy_regs.source_evidence import CaptureEvidence, EvidenceMemberSource
-
-    module = importlib.import_module("spicy_regs.transforms.build_court_opinion_clusters")
-    monkeypatch.setattr(module, "BATCH_ROWS", 1)
-    monkeypatch.setattr(source, "_MAX_REQUESTS_PER_PAGE", 1)
-    monkeypatch.setattr(source, "MIN_REQUEST_INTERVAL_SECONDS", 0)
-    monkeypatch.delenv(source.API_TOKEN_ENV_VAR, raising=False)
-    from spicy_regs.court_receipts import write_court_rows
-    witness = dict(source_id='fixture', source_uri=None, sha256='sha256:' + 'a' * 64,
-                   locator=None, body_version=None)
-    prior = write_court_rows('court_opinion_clusters',
-        [module._shape_bulk({'id': '99', 'case_name': 'Prior case'})], tmp_path, witnesses=[witness])
-    output = tmp_path / module.OUTPUT
-    before = prior.read_bytes(), output.read_bytes()
-    dump = _dump(tmp_path, b'id,docket_id,case_name\n"1","101","Bulk case"\n')
-    written, closed, requests = [], [], []
-    original_writer = module.pq.ParquetWriter
-
-    class Writer:
-        def __init__(self, *args, **kwargs):
-            self.writer = original_writer(*args, **kwargs)
-            self.track = Path(args[0]).name.startswith('.clusters-new-')
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            self.close()
-
-        def write_table(self, table):
-            self.writer.write_table(table)
-            if self.track:
-                written.extend(table.to_pylist())
-
-        def close(self):
-            self.writer.close()
-            if self.track:
-                closed.append(True)
-
-    monkeypatch.setattr(module.pq, "ParquetWriter", Writer)
-    from spicy_docs.sources.courtlistener.search import OPINION_STATUSES, search_url
-
-    # A continuation keeps its selection, and live search carries a token (SpicyDocs 0.66.6).
-    next_url = search_url(kind="o", q="cluster_id:[2 TO 3]", opinion_statuses=OPINION_STATUSES) + "&cursor=catchup-second"
-    monkeypatch.setenv("COURTLISTENER_API_TOKEN", "fixture-token")
-
-    def respond(request):
-        requests.append(request)
-        if len(requests) == 1:
-            assert [row["cluster_id"] for row in written] == ["1"]
-            payload = {"count": 2, "next": next_url, "results": [{"cluster_id": 2, "caseName": "Search case"}]}
-            status = 200
-        else:
-            assert [row["cluster_id"] for row in written] == ["1", "2"]
-            assert list(tmp_path.glob(".clusters-new-*.parquet"))
-            payload = {"count": 3, "next": None, "results": [{"cluster_id": 3}]}
-            status = 500 if failure == "http" else 200
-        return httpx.Response(
-            status,
-            stream=httpx.ByteStream(json.dumps(payload).encode()),
-            headers={"content-type": "application/json"},
-        )
-
-    transport = httpx.MockTransport(respond)
-    monkeypatch.setattr(
-        module,
-        "CourtListenerOpinionSearchReader",
-        lambda **kwargs: source.CourtListenerOpinionSearchReader(transport=transport, api_token="fixture-token", **kwargs),
-    )
-    message = "declared count changed" if failure == "count" else "incomplete: deferred"
-    evidence = CaptureEvidence(tmp_path, 'court-opinion-clusters')
-    with pytest.raises(ValueError, match=message):
-        module.build_court_opinion_clusters(
-            tmp_path, local_file=dump, dump_date=DUMP_DATE, skip_court_scope=True,
-            search_through=3, evidence=evidence,
-            search_budget=CourtListenerTraversalBudget(1 if failure == "budget" else 50, 600),
-        )
-
-    assert len(requests) == (1 if failure == "budget" else 2)
-    assert requests[0].url.params["type"] == "o"
-    # Indexed clusters above the export's highest id, whatever their filing date.
-    assert requests[0].url.params["q"] == "cluster_id:[2 TO 3]" and "filed_after" not in requests[0].url.params
-    if failure != "budget":
-        assert str(requests[1].url) == next_url
-    evidence_source = EvidenceMemberSource(evidence.artifact_dir)
-    retained = []
-    for key in evidence_source.keys():
-        if key.startswith("blobs/sha256/"):
-            with evidence_source.open(key) as stream:
-                retained.append(stream.read())
-    assert any(b'"Search case"' in body for body in retained)
-    events = [json.loads(line) for line in (evidence.artifact_dir / 'journal.jsonl').read_text().splitlines()]
-    refusal = next(event for event in events if event.get('stage') == 'courtlistener-traversal')
-    assert refusal['traversal']['nextUrl'] == next_url
-    if failure == 'budget':
-        assert refusal['allocation']['requestCount'] == 1
-    assert [(row["cluster_id"], row["case_name"]) for row in written] == [("1", "Bulk case"), ("2", "Search case")]
-    assert closed == [True]
-    assert (prior.read_bytes(), output.read_bytes()) == before
-    assert not (tmp_path / "_clusters_new.parquet").exists()
 
 
 @pytest.mark.parametrize(
@@ -407,13 +299,13 @@ def test_search_catchup_failure_after_flush_preserves_prior_and_output(tmp_path,
     ],
     ids=["prior-holds-the-export", "prior-holds-an-older-export", "edition-named"],
 )
-def test_a_prior_holding_the_newest_export_is_only_caught_up(
+def test_a_prior_holding_the_newest_export_reads_no_dump_and_the_build_never_searches(
     tmp_path, monkeypatch, prior_created, named_edition, reads_export, ample_disk_space
 ):
-    """A weekly run re-streamed 7 GiB of unchanged dumps to add a few thousand search rows; it now reads neither."""
+    """A build re-streamed 7 GiB of unchanged dumps for a prior that held them; it reads neither, and never Search."""
     import spicy_docs.sources.courtlistener.bulk as bulk
 
-    monkeypatch.setenv("COURTLISTENER_API_TOKEN", "fixture-token")  # the search catch-up cannot run keyless
+    monkeypatch.delenv("COURTLISTENER_API_TOKEN", raising=False)  # the build makes no Search request, so needs none
     from spicy_docs.sources.courtlistener.listing import BulkObject
 
     module = importlib.import_module("spicy_regs.transforms.build_court_opinion_clusters")
@@ -438,25 +330,16 @@ def test_a_prior_holding_the_newest_export_is_only_caught_up(
         yield {"id": "8", "docket_id": "1", "date_created": "2026-06-30 08:00:00+00"}
 
     monkeypatch.setattr(CourtListenerBulkReader, "iter_records", export)
-    selections = []
-
-    class Search:
-        def __init__(self, **kwargs):
-            selections.append(kwargs)
-
-        def iter_records(self):
-            yield {"cluster_id": 9, "court_id": "dcd", "caseName": "Created after the export"}
-
-    monkeypatch.setattr(module, "CourtListenerOpinionSearchReader", Search)
+    monkeypatch.setattr(
+        "spicy_regs.sources.courtlistener.CourtListenerOpinionSearchReader.iter_records",
+        lambda self: pytest.fail("the bulk build searched; the daily catch-up owns Search (ss-jran)"),
+    )
     out = module.build_court_opinion_clusters(tmp_path, dump_date=DUMP_DATE if named_edition else None)
 
     from spicy_regs.court_receipts import read_court_rows
     rows = {row["cluster_id"]: row for row in read_court_rows(out, dataset="court_opinion_clusters")}
     assert bool(exported) is reads_export
-    assert selections == [{"above": 8 if reads_export else 5, "through": None,
-                           "traversal_budget": None, "evidence": None}]
-    assert sorted(rows) == (["5", "8", "9"] if reads_export else ["5", "9"])
-    assert (rows["9"]["ingest_source"], rows["9"]["court_is_federal"]) == ("search", True)
+    assert sorted(rows) == (["5", "8"] if reads_export else ["5"])
     assert rows["5"]["ingest_source"] == "bulk"
 
 
@@ -482,7 +365,7 @@ def test_receiving_failure_closes_source_iterator(tmp_path, monkeypatch, kind, f
         monkeypatch.setattr(module, "_shape_bulk" if kind == "clusters" else "_shape", fail)
     else:
         monkeypatch.setattr(module.CourtListenerTableWriter, "add", fail)
-    kwargs = {"skip_search_catchup": True, "skip_court_scope": True} if kind == "clusters" else {}
+    kwargs = {"skip_court_scope": True} if kind == "clusters" else {}
     (tmp_path / "unused").touch()
     with pytest.raises(ValueError, match="shaping failed"):
         getattr(module, f"build_court_opinion_{kind}")(tmp_path, local_file=tmp_path / "unused", **kwargs)
@@ -606,7 +489,7 @@ def test_local_table_build_matches_frozen_mapping_by_id(tmp_path, monkeypatch, k
     ]
     records.append({**records[0], "id": "13", "cluster_id": "103", "docket_id": "73"})
     raw = _encode_records(records[:row_count]) if row_count else (",".join(records[0]) + "\n").encode()
-    kwargs = {"skip_search_catchup": True, "skip_court_scope": True} if kind == "clusters" else {}
+    kwargs = {"skip_court_scope": True} if kind == "clusters" else {}
     output = getattr(module, f"build_court_opinion_{kind}")(
         tmp_path,
         local_file=_dump(tmp_path, raw),
@@ -667,7 +550,7 @@ def test_cluster_refused_update_keeps_valid_native_prior(tmp_path, monkeypatch, 
     before = pq.read_table(prior).to_pylist()[0]
     dump = _dump(tmp_path, b'id,docket_id,case_name,citation_count\n"5","101","Rejected","invalid"\n"6","102","New","1"\n')
     result = module.build_court_opinion_clusters(tmp_path, local_file=dump, dump_date=DUMP_DATE,
-                                               skip_court_scope=True, skip_search_catchup=True)
+                                               skip_court_scope=True)
     rows = {row['cluster_id']: row for row in pq.read_table(result).to_pylist()}
     assert rows['5'] == before
     assert rows['6']['case_name'] == 'New'

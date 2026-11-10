@@ -239,14 +239,6 @@ def test_catch_up_requires_token_before_reading_its_prior(selected, monkeypatch)
         delta.catch_up_court_opinion_clusters(work, **kwargs)
 
 
-def test_bulk_build_requires_token_before_reading_unless_search_is_skipped(tmp_path, monkeypatch):
-    build = importlib.import_module("spicy_regs.transforms.build_court_opinion_clusters")
-    monkeypatch.delenv("COURTLISTENER_API_TOKEN", raising=False)
-    monkeypatch.setattr(build.r2, "download", lambda *_: pytest.fail("prior read before the token check"))
-    with pytest.raises(courtlistener.CourtListenerError, match="requires COURTLISTENER_API_TOKEN"):
-        build.build_court_opinion_clusters(tmp_path)
-
-
 @pytest.fixture
 def local_cli(selected, tmp_path, monkeypatch):
     """Exercise the real console app and generation admission; replace only remote inputs."""

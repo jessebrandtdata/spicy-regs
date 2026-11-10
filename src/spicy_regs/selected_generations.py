@@ -112,6 +112,16 @@ class SelectedInputs:
         signature, _ = self.checked[Path(path).absolute()]
         return {"sha256": digest, "byteSize": signature[2]}
 
+    def adopt_download(self, path, downloaded):
+        """Hold a member this session fetched against its pin, without hashing its bytes a second time."""
+        from spicy_regs.local_data import file_signature
+
+        path = Path(path).absolute()
+        signature = file_signature(path)
+        if signature != list(downloaded.state[:5]):
+            raise ValueError("Selected native member changed after its download")
+        self.checked[path] = (signature, downloaded.sha256)
+
     def receipts_pin(self, dataset, path):
         """The pin of the receipt member ``dataset`` was selected from: the published member's for a ranged read.
 

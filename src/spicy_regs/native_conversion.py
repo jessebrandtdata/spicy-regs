@@ -48,6 +48,7 @@ NOTHING_PUBLISHED = "nothing was published; the family's pointer is unchanged"
 #: source, so it journals each one again unchanged; otherwise the next run would treat every held row as never read.
 INHERITED_EVENTS = (
     "congress-index-selection", "scorecard-source-attempt", "crs-discovery", "committee-discovery",
+    "catchup-selection", "export-selection",
 )
 #: The receipt outcomes of a row or observation that converted; any other outcome stops the conversion.
 CONVERTED_OUTCOMES = frozenset({"accepted", "observed"})
