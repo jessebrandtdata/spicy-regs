@@ -1417,7 +1417,8 @@ def publish_evidence_index(client, bucket: str, family: str, path: Path) -> str:
 def publish_generation(directory: Path, *, client, bucket: str, prior_index: Mapping,
                        evidence_directories: tuple[Path, ...] = (), added_tables: frozenset[str] = frozenset(),
                        receipt_only_tables: frozenset[str] = frozenset(), exact_prior: bool = False,
-                       conversion_proof: NativeConversionProof | None = None, before_pointer=None) -> dict:
+                       conversion_proof: NativeConversionProof | None = None, before_pointer=None,
+                       retired_receipt_datasets: frozenset[str] = frozenset()) -> dict:
     """Verify/upload/verify, then compare-and-swap the publication pointer.
 
     Validation and conditional-write refusals preserve the current pointer.
@@ -1426,6 +1427,8 @@ def publish_generation(directory: Path, *, client, bucket: str, prior_index: Map
     ``added_tables`` is an explicit migration: the family's table set may grow by
     exactly those tables. ``receipt_only_tables`` explicitly moves processing
     tables into the shared receipt member; each must have a receipt-only policy.
+    ``retired_receipt_datasets`` is the one way a published table may stop having receipts: each named dataset
+    keeps its table and is never claimed by a receipt member again (:func:`_stage_verified_generation`).
     Prior immutable bytes remain retained. Unreferenced immutable uploads may
     remain and are safe to reuse. A pointer
     moved by another family's writer is reread and this family's entry merged
@@ -1447,6 +1450,7 @@ def publish_generation(directory: Path, *, client, bucket: str, prior_index: Map
         artifact, LocalMemberSource(directory), client=client, bucket=bucket, prior_index=prior_index,
         evidence_directories=evidence_directories, added_tables=added_tables, receipt_only_tables=receipt_only_tables,
         exact_prior=exact_prior, conversion_proof=conversion_proof, before_pointer=before_pointer, local=directory,
+        retired_receipt_datasets=retired_receipt_datasets,
         upload_member=lambda prefix, key: _put_immutable(client, bucket, prefix + "/" + key, directory / key),
     )
 
@@ -1642,6 +1646,7 @@ def _stage_verified_generation(
     receipt_only_tables: frozenset[str] = frozenset(),
     conversion_proof: NativeConversionProof | None = None, members=None,
     _verified_replacement_tables: frozenset[str] = frozenset(),
+    retired_receipt_datasets: frozenset[str] = frozenset(),
 ) -> dict:
     """Check and upload one verified generation without making it visible."""
     from rulespec_artifacts import admit_artifact, iter_member_descriptors
@@ -1688,11 +1693,20 @@ def _stage_verified_generation(
     # ``datasets`` is the family's claim: every index reader gives each listed name one owning family. A shared log
     # is in the receipt member and in the generation's stated policies, and is claimed by no family.
     shared = shared_receipt_logs()
-    if old_family and "etlReceipts" in old_family and "etlReceipts" not in entry:
-        raise PublicationError("Cannot publish a generation that drops required ETL receipts")
+    claimed = set(entry.get("etlReceipts", {}).get("datasets", []))
+    # A retirement is declared, never inferred: the dataset's table stays published, its evidence is the run's
+    # journal and retained originals, and no later generation may claim receipts for it again. The declaration
+    # permits exactly one change, the first generation without them, and refuses a reversal for as long as it
+    # stands. The prior generation's receipt member is not touched; retention decides how long it is kept.
+    if not {name + ".parquet" for name in retired_receipt_datasets} <= set(tables) or retired_receipt_datasets & claimed:
+        raise PublicationError("A retired receipt dataset keeps its table and publishes no receipts")
     # An entry written before logs were shared may still list one; ceasing to list it drops no ownership.
-    if old_family and (set(old_family.get("etlReceipts", {}).get("datasets", []))
-                       - set(entry.get("etlReceipts", {}).get("datasets", [])) - shared):
+    dropped = set((old_family or {}).get("etlReceipts", {}).get("datasets", [])) - claimed - shared
+    # The member itself may go only when every dataset it owned is retired: one holding shared logs alone stays.
+    if (old_family and "etlReceipts" in old_family and "etlReceipts" not in entry
+            and not (dropped and dropped <= retired_receipt_datasets)):
+        raise PublicationError("Cannot publish a generation that drops required ETL receipts")
+    if dropped - retired_receipt_datasets:
         raise PublicationError("Cannot publish a generation that drops receipt dataset ownership")
     _merge_family(index, family, entry)
     evidence = [verify_evidence(path) for path in evidence_directories]
@@ -1763,6 +1777,7 @@ def _publish_verified_generation(
     receipt_only_tables: frozenset[str] = frozenset(), exact_prior: bool = False,
     conversion_proof: NativeConversionProof | None = None,
     before_pointer=None, local: Path | None = None,
+    retired_receipt_datasets: frozenset[str] = frozenset(),
 ) -> dict:
     """Shared publication gates; both callers fully verify their source first.
 
@@ -1777,6 +1792,7 @@ def _publish_verified_generation(
         artifact, source, upload_member=upload_member, client=client, bucket=bucket, index=index,
         evidence_directories=evidence_directories, added_tables=added_tables,
         receipt_only_tables=receipt_only_tables, conversion_proof=conversion_proof,
+        retired_receipt_datasets=retired_receipt_datasets,
     )
     # Each lost race means another writer's pointer write succeeded, so
     # contention resolves in at most one round per concurrent writer.

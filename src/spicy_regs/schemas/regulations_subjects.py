@@ -297,6 +297,8 @@ SOURCE_COLUMNS = {
         ("president_json", "VARCHAR"),
         ("disposition_notes", "VARCHAR"),
         ("executive_order_notes", "VARCHAR"),
+        # The retained API page this row was last read from, as the evidence journal spells it (ss-vse3).
+        ("source_sha256", "VARCHAR"),
     ],
     "feed_summary": [
         ("docket_id", "VARCHAR"),
@@ -488,9 +490,10 @@ RECEIPT_COLUMNS = {
     "dockets": (),
     "document_attributes": (),
     "documents": (),
-    "federal_register": ("html_url", "pdf_url", "body_html_url", "regulations_dot_gov_info_json"),
+    # Public columns since regulations-native-v3 (ss-vse3); ``regulations_shape.PROMOTED_LAST`` gives their place.
+    "federal_register": (),
     "feed_summary": (),
-    "fr_docket_links": ("docket_normalization_rule", "html_url", "pdf_url", "normalized_docket_candidates_json"),
+    "fr_docket_links": ("docket_normalization_rule", "html_url", "pdf_url"),
     "lifecycle_events": (
         "method",
         "actor_id",

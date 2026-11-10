@@ -23,10 +23,16 @@ empty array and NULL both give NULL — while a consumer wanting every RIN of a
 multi-RIN document unnests the array (see docs/regulatory-rins.md).
 ``modify_date`` is not exposed by the REST API, so fresh rows carry NULL for it
 while the merge preserves whatever the prior table had.
+
+``source_sha256`` is the row's pointer to its evidence: the SHA-256 of the
+retained API page it was last read from, spelled as the run's journal spells
+it (``sha256:<hex>``; the bytes are ``source-evidence/blobs/sha256/<hex>``).
+A row no run has read since the column was added holds NULL.
 """
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from datetime import date, timedelta
@@ -39,6 +45,9 @@ from loguru import logger
 from spicy_regs.sources import r2
 
 OUTPUT = "federal_register.parquet"
+
+#: The column naming the retained API page a row was last read from; appended after the contract's columns.
+POINTER = "source_sha256"
 
 # The oldest documents the API serves. A backfill with no prior table starts here.
 FR_EPOCH = date(1994, 1, 1)
@@ -79,14 +88,15 @@ def layer1_main() -> None:
 
 
 def published_columns() -> tuple[str, ...]:
-    """The published width: SpicyDocs' ``federal_register`` contract, the projection plus the derived ``rin``.
+    """The built width: SpicyDocs' ``federal_register`` contract (the projection plus the derived ``rin``), then
+    this builder's page pointer.
 
     A function, not a constant, because base installs import this module
     without the source-readers extra that carries SpicyDocs.
     """
     from spicy_docs.schemas.federal_register import FEDERAL_REGISTER
 
-    return tuple(FEDERAL_REGISTER.columns)
+    return (*FEDERAL_REGISTER.columns, POINTER)
 
 #: ``rin`` as a projection of the array, for every row of the merged table.
 #: ``[]`` and NULL both give NULL: a join key is present or it is not.
@@ -132,8 +142,8 @@ def _federal_register_evidence(output_dir: Path, evidence):
             evidence.finish()
 
 
-def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=None) -> Iterator[dict]:
-    """Yield raw FR document dicts published in ``[since, today]`` through the SpicyDocs owner.
+def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=None) -> Iterator[tuple[str, dict]]:
+    """Yield ``(page SHA-256, raw FR document)`` for documents published in ``[since, today]`` through the SpicyDocs owner.
 
     The owner acquires exact API pages with its cap-safe date-window traversal:
     a window whose ``count`` reaches the 10,000-result cap is split, and a
@@ -173,9 +183,9 @@ def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=
         window = None
         for page in federal_register.iter_federal_register_pages(retained_fetch, query_scope=scope, traversals=1):
             response = federal_register.parse_page_response(page.response_bytes)
-            import hashlib
+            digest = "sha256:" + hashlib.sha256(page.response_bytes).hexdigest()
             evidence.declare_used_inputs(
-                [{"location": page.request_key, "sha256": "sha256:" + hashlib.sha256(page.response_bytes).hexdigest(),
+                [{"location": page.request_key, "sha256": digest,
                   "bytes": len(page.response_bytes), "asset_kind": "json-body"}],
                 scope_id=f"{evidence.family}:successful-source-files", complete=False,
             )
@@ -184,7 +194,8 @@ def _live_federal_register_documents(since: date, *, output_dir: Path, evidence=
                 window = federal_register.federal_register_request_window(page.request_key)
             if not federal_register.federal_register_records_included(response, query_scope=scope, page_window=window):
                 continue
-            yield from response["results"]
+            for document in response["results"]:
+                yield digest, document
 
 
 def build_federal_register(
@@ -199,13 +210,14 @@ def build_federal_register(
 
     ``documents`` is the raw API records published since a date; the default is
     SpicyDocs' Federal Register acquisition, and a hermetic test passes its own.
+    Only the default names a retained page, so only its rows carry ``source_sha256``.
     """
     import duckdb
     from spicy_docs.schemas.federal_register import FEDERAL_REGISTER_COLUMNS, project_federal_register_document
 
     out_file = output_dir / OUTPUT
     prior_file = output_dir / "_fr_prior.parquet"
-    schema = pa.schema([(c, pa.string()) for c in FEDERAL_REGISTER_COLUMNS])
+    schema = pa.schema([(c, pa.string()) for c in (*FEDERAL_REGISTER_COLUMNS, POINTER)])
 
     # 1. Pull the prior table (best effort — absence just means full backfill).
     have_prior = prior_file.exists() or download_prior(OUTPUT, prior_file)
@@ -221,8 +233,11 @@ def build_federal_register(
     logger.info("FR: fetching documents published since {}", since)
 
     # 3. Fetch + shape into a "new rows" parquet.
-    fetch = documents or (lambda start: _live_federal_register_documents(start, output_dir=output_dir, evidence=evidence))
-    rows = [project_federal_register_document(doc) for doc in fetch(since)]
+    if documents is not None:
+        rows = [project_federal_register_document(doc) for doc in documents(since)]
+    else:
+        rows = [project_federal_register_document(doc) | {POINTER: page}
+                for page, doc in _live_federal_register_documents(since, output_dir=output_dir, evidence=evidence)]
     new_file = output_dir / "_fr_new.parquet"
     table = pa.Table.from_pylist(rows, schema=schema) if rows else schema.empty_table()
     pq.write_table(table, new_file, compression="zstd")
@@ -242,17 +257,20 @@ def build_federal_register(
     # The projection's columns are what both sides carry; a prior that already
     # has ``rin`` is not read for it, since the projection below recomputes it,
     # and a column the prior predates (``topics_json``) reads NULL.
+    # The pointer rides with each row but is no part of the record: one document read from two pages is one
+    # observation, so the conflict check below compares the projection alone.
     cols = ", ".join(FEDERAL_REGISTER_COLUMNS)
+    carried = f"{cols}, {POINTER}"
     if have_prior:
         union = (
-            f"SELECT {_prior_columns(prior_file, FEDERAL_REGISTER_COLUMNS)}, file_row_number AS _row, 0 AS _src "
+            f"SELECT {_prior_columns(prior_file, (*FEDERAL_REGISTER_COLUMNS, POINTER))}, file_row_number AS _row, 0 AS _src "
             f"FROM read_parquet('{prior_file}', file_row_number=true) "
             f"UNION ALL BY NAME "
-            f"SELECT {cols}, file_row_number AS _row, 1 AS _src FROM read_parquet('{new_file}', file_row_number=true)"
+            f"SELECT {carried}, file_row_number AS _row, 1 AS _src FROM read_parquet('{new_file}', file_row_number=true)"
         )
     else:
         union = (
-            f"SELECT {cols}, file_row_number AS _row, 1 AS _src FROM read_parquet('{new_file}', file_row_number=true)"
+            f"SELECT {carried}, file_row_number AS _row, 1 AS _src FROM read_parquet('{new_file}', file_row_number=true)"
         )
 
     try:
@@ -292,7 +310,7 @@ def build_federal_register(
         merged_file = output_dir / "_fr_merged.parquet"
         # Written in the contract's published order; SpicyDocs 0.66.6 lists ``rin`` before its newest fields.
         published = published_columns()
-        if sorted(published) != sorted((*FEDERAL_REGISTER_COLUMNS, "rin")):
+        if sorted(published) != sorted((*FEDERAL_REGISTER_COLUMNS, "rin", POINTER)):
             raise ValueError("Federal Register contract differs from its projection plus the derived rin")
         selected = ", ".join(f"{_RIN_SQL} AS rin" if column == "rin" else column for column in published)
         con.execute(

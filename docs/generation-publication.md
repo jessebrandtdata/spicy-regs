@@ -101,6 +101,14 @@ table. Those changes need an explicit migration. Successful empty tables still
 face the existing shrink guard; an intentional destructive replacement requires
 the existing explicit override after reviewing the result.
 
+Nor can a family silently stop publishing receipts for a table. A rollup
+declares `retired_receipt_datasets`; publication then accepts the first
+generation without them, requires each named table to stay published, and
+refuses any later generation that claims receipts for one again. Undeclared,
+the generation is refused. The prior generation's receipt file is not touched.
+A receipt file must still classify every table beside it, so the tables of one
+family leave receipts together.
+
 The Congress.gov archive walker is a partial writer of `bill-family`. Its bill
 update preserves the existing wider columns using the existing merge. It copies
 all sibling tables byte-for-byte from the captured complete family and records

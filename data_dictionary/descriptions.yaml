@@ -997,7 +997,12 @@ tables:
       `regulations_dot_gov_info_json`, which a row read since holds as `'{}'`
       at least. The scheduled run re-reads the last 120 days, so a relayed
       comment count follows the Register's own checks to about the comment
-      period's close.
+      period's close. `html_url`, `pdf_url`, `body_html_url` and
+      `regulations_dot_gov_info_json` are the last columns: they were held
+      beside the table until 2026-11 and are the Register's own values for
+      every row. `source_sha256` names the retained API page a row was last
+      read from and is NULL on a row not read since it was added, which is
+      every document published before the 120-day window of that first run.
     columns_from: spicy_docs
   sam_entities:
     identity_columns: [uei, entity_eft_indicator]

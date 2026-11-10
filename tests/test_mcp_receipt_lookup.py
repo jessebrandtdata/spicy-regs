@@ -139,11 +139,12 @@ def _regulations():
     from spicy_regs.schemas.regulations_subjects import SOURCE_COLUMNS
     from spicy_regs.transforms.regulations_shape import shape_record
 
-    raw = {**dict.fromkeys(name for name, _ in SOURCE_COLUMNS["federal_register"]), "document_number": "2026-12696",
-           "publication_date": "2026-06-25", "html_url": "https://www.federalregister.gov/d/2026-12696",
-           "start_page": "100"}
-    return ("federal_register", {**shape_record("federal_register", raw), "input_metadata": {}},
-            {"html_url": "https://www.federalregister.gov/d/2026-12696", "start_page": "100"})
+    # The Unified Agenda keeps one field beside its table (``url``) and the row as its mapper received it.
+    raw = {**dict.fromkeys(name for name, _ in SOURCE_COLUMNS["unified_agenda"]), "rin": "2060-AV12",
+           "agenda_edition": "202604", "url": "https://www.reginfo.gov/public/do/eAgendaViewRule?RIN=2060-AV12",
+           "major": "No"}
+    return ("unified_agenda", {**shape_record("unified_agenda", raw), "input_metadata": {}},
+            {"url": "https://www.reginfo.gov/public/do/eAgendaViewRule?RIN=2060-AV12", "major": "No"})
 
 
 def _fec_identity():
@@ -220,24 +221,24 @@ def test_a_policy_that_keeps_no_whole_row_mapping_takes_its_fields_off_offer(tmp
     declaration, so nothing here assumes a receipt holds a whole original record."""
     from spicy_regs import subject_catalog
 
-    assert carried("federal_register")["start_page"] == "raw_conversion_inputs"
+    assert carried("unified_agenda")["major"] == "raw_conversion_inputs"
     installed = subject_catalog.descriptors()
-    slim = {**installed["federal_register"],
-            "receipt_fields": [name for name in installed["federal_register"]["receipt_fields"]
+    slim = {**installed["unified_agenda"],
+            "receipt_fields": [name for name in installed["unified_agenda"]["receipt_fields"]
                                if name != "raw_conversion_inputs"] + ["source_row_sha256"]}
-    monkeypatch.setattr(lookup, "descriptors", lambda: {**installed, "federal_register": slim})
+    monkeypatch.setattr(lookup, "descriptors", lambda: {**installed, "unified_agenda": slim})
     table, record, _ = _regulations()
     one_family(tmp_path, monkeypatch, {table: [record]})
-    key = [{"document_number": "2026-12696", "publication_date": "2026-06-25"}]
-    message = refused(table, key, ["start_page"])
-    assert "federal_register receipts do not carry 'start_page'" in message
+    key = [{"rin": "2060-AV12", "agenda_edition": "202604"}]
+    message = refused(table, key, ["major"])
+    assert "unified_agenda receipts do not carry 'major'" in message
     offered = message.split("They carry: ")[1]
-    assert "html_url" in offered and "source_row_sha256" in offered and "document_number" not in offered
+    assert "url" in offered and "source_row_sha256" in offered and "agenda_edition" not in offered
     # A field the policy still declares answers as before, and a newly declared one needs no other declaration.
-    reply = call(table, key, ["html_url", "source_row_sha256"])
-    assert states(reply) == {"html_url": "stated", "source_row_sha256": "null_unmarked"}
+    reply = call(table, key, ["url", "source_row_sha256"])
+    assert states(reply) == {"url": "stated", "source_row_sha256": "null_unmarked"}
     described = _tool_data(server.build_server(), "describe_table", {"table": table})["receipt_fields"]["fields"]
-    assert "source_row_sha256" in described and "start_page" not in described
+    assert "source_row_sha256" in described and "major" not in described
 
 
 def test_a_receipt_written_without_the_mapping_refuses_its_fields_instead_of_calling_them_null(tmp_path, monkeypatch):
@@ -245,13 +246,13 @@ def test_a_receipt_written_without_the_mapping_refuses_its_fields_instead_of_cal
     table, record, _ = _regulations()
     record = {name: value for name, value in record.items() if name != "raw_conversion_inputs"}
     one_family(tmp_path, monkeypatch, {table: [record]})
-    key = [{"document_number": "2026-12696", "publication_date": "2026-06-25"}]
-    message = refused(table, key, ["html_url", "start_page"])
-    assert "federal_register receipts do not carry 'start_page' in this generation" in message
+    key = [{"rin": "2060-AV12", "agenda_edition": "202604"}]
+    message = refused(table, key, ["url", "major"])
+    assert "unified_agenda receipts do not carry 'major' in this generation" in message
     assert "they hold no raw_conversion_inputs" in message
     offered = message.split("They carry: ")[1]
-    assert "html_url" in offered and "start_page" not in offered and "raw_conversion_inputs" not in offered
-    assert states(call(table, key, ["html_url"])) == {"html_url": "stated"}
+    assert "url" in offered and "major" not in offered and "raw_conversion_inputs" not in offered
+    assert states(call(table, key, ["url"])) == {"url": "stated"}
 
 
 # Refusal 3: a key that does not parse for the table's identity is refused, never answered as a miss.
@@ -980,11 +981,13 @@ def test_detail_read_governs_the_lists_the_views_and_the_index_builder_already_t
 
 def test_the_federal_register_marker_names_the_nine_columns_its_dictionary_note_does():
     from spicy_regs.data_dictionary import load_descriptions
-    from spicy_regs.schemas.regulations_subjects import RECEIPT_COLUMNS, SOURCE_COLUMNS
+    from spicy_regs.schemas.regulations_subjects import SOURCE_COLUMNS
+    from spicy_regs.transforms.regulations_shape import subject_schema
 
     governed = declarations.FEDERAL_REGISTER_READ
     assert len(governed) == 9 and set(governed) <= {name for name, _ in SOURCE_COLUMNS["federal_register"]}
-    assert governed[0] in RECEIPT_COLUMNS["federal_register"]
+    # The marker is a public column since regulations-native-v3 (ss-vse3), so a reader can test it in the table.
+    assert governed[0] in subject_schema("federal_register").names
     note = " ".join(load_descriptions()["federal_register"]["data_quality"].split())
     assert "is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`" in note
 

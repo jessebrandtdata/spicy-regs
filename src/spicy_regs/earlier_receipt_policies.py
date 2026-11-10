@@ -232,6 +232,26 @@ def earlier_policies(policy):
         history = json.loads(files("spicy_regs").joinpath("navigation_policy_history.json").read_text())
         return tuple(DatasetPolicy.from_descriptor(history[key]) for key in ("nominations_v2", "nominations"))
     context_history = json.loads(files("spicy_regs").joinpath("source_context_policy_history.json").read_text())
+    if policy.dataset == "federal_register" and policy.policy_version in {"regulations-native-v3", "regulations-native-v2"}:
+        # v3 (ss-vse3) only moves the three URLs and the regulations.gov statement out of receipts and appends
+        # source_sha256. A v2 or v1 row restores from its retained input, which holds those values, so it carries.
+        v2 = DatasetPolicy.from_descriptor(context_history["federal_register_v2"])
+        if policy.policy_version == "regulations-native-v2":
+            if policy.descriptor() != v2.descriptor():
+                raise ValueError("Historical Federal Register policy differs from the exact declared policy")
+            return (DatasetPolicy.from_descriptor(context_history[policy.dataset]),)
+        expected = DatasetPolicy.from_descriptor(json.loads(files("spicy_regs").joinpath(
+            "etl_policies/federal_register.json").read_text()))
+        if policy.descriptor() != expected.descriptor():
+            raise ValueError("Current Federal Register policy differs from the exact declared policy")
+        moved = [name for name in v2.receipt_fields if name in policy.subject_schema.names]
+        previous_schema = policy.subject_schema
+        for name in (*moved, "source_sha256"):
+            previous_schema = previous_schema.remove(previous_schema.get_field_index(name))
+        if (v2.identity_fields != policy.identity_fields or not v2.subject_schema.equals(previous_schema)
+                or set(v2.receipt_fields) != set(policy.receipt_fields) | set(moved)):
+            raise ValueError("Federal Register column promotion changes fields beyond the promoted ones")
+        return (v2, *earlier_policies(v2))
     if policy.dataset in context_history and policy.policy_version in {
         "regulations-native-v2", "courts/2", "scorecards-etl-v2", "scorecards-etl-ratings-v4", "government-sources/3",
     }:

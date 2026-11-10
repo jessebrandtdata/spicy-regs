@@ -506,31 +506,67 @@ def test_cfr_internal_prior_restores_qualified_placement_metadata(tmp_path):
     assert pq.read_schema(internal).metadata == table.schema.metadata
 
 
-def test_v1_federal_register_pair_restores_and_rewrites_under_v2_with_new_fields_null(tmp_path):
-    """A pair written before the SpicyDocs 0.66.6 projection stays readable; v2 only adds three literal columns."""
+@pytest.mark.parametrize("version", ["regulations-native-v2", "regulations-native-v1"])
+def test_earlier_federal_register_pair_restores_and_rewrites_under_v3_with_its_receipt_fields_public(tmp_path, version):
+    """ss-vse3 step 1: a pair published under either earlier policy stays readable, and rewriting it fills the
+    promoted columns from what its receipts hold. v2 is the live policy; v1 predates the three 0.66.6 columns."""
+    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.etl_receipts import write_dataset
+    from spicy_regs.transforms.regulations_shape import PROMOTED_LAST, shape_record
+
+    current = policy("federal_register")
+    earlier = {p.policy_version: p for p in earlier_policies(current)}
+    assert (current.policy_version, list(earlier)) == (
+        "regulations-native-v3", ["regulations-native-v2", "regulations-native-v1"])
+    prior, promoted = earlier[version], PROMOTED_LAST["federal_register"]
+    # Appended: every column the live table publishes keeps its position.
+    assert current.subject_schema.names == [*earlier["regulations-native-v2"].subject_schema.names, *promoted]
+    assert set(promoted) - {"source_sha256"} <= set(prior.receipt_fields)
+    info = '{"regulatory_plan": {"html_url": "https://www.federalregister.gov/regulations/1-A/x", "title": "X"}}'
+    raw = {"document_number": "1", "publication_date": "2026-01-01", "title": "old",
+           "regulation_id_numbers_json": "[]", "docket_ids_json": "[]", "agencies_json": "[]",
+           "html_url": "https://www.federalregister.gov/documents/2026/01/01/1/old", "pdf_url": None,
+           "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/01/01/1.html",
+           "regulations_dot_gov_info_json": info}
+    shaped = shape_record("federal_register", raw)
+    held = {name: shaped.get(name) for name in prior.input_fields}
+    subject, receipts = write_dataset([(held, context("old"))], tmp_path / "old", prior)
+    assert subject is not None and not set(promoted) & set(pq.read_schema(subject).names)
+    original = subject.read_bytes()
+    [restored] = read_internal(ReceiptInput("federal_register", (subject,), receipts, "old"))
+    assert subject.read_bytes() == original and restored == raw
+    new = write(tmp_path, "federal_register", [restored], generation="new", label="new")
+    [row] = pq.read_table(new.subjects[0]).to_pylist()
+    assert {name: row[name] for name in promoted} == {
+        "html_url": raw["html_url"], "pdf_url": None, "body_html_url": raw["body_html_url"],
+        "source_sha256": None, "regulations_dot_gov_info_json": info}
+    assert all(row[name] is None for name in ("president_json", "disposition_notes", "executive_order_notes"))
+    assert row["document_number"] == "1" and row["publication_date"] == "2026-01-01" and row["title"] == "old"
+    assert row["regulations_dot_gov_regulatory_plan_title"] == "X"
+
+
+def test_v1_fr_docket_links_pair_restores_and_rewrites_under_v2_with_its_candidates_public(tmp_path):
+    """ss-vse3 step 1: the live links policy stays readable; v2 only makes the normalizer's candidates public."""
     from spicy_regs.earlier_receipt_policies import earlier_policies
     from spicy_regs.etl_receipts import write_dataset
     from spicy_regs.transforms.regulations_shape import shape_record
 
-    current = policy("federal_register")
+    current = policy("fr_docket_links")
     (prior,) = earlier_policies(current)
     assert (prior.policy_version, current.policy_version) == ("regulations-native-v1", "regulations-native-v2")
-    added = {"president_json", "disposition_notes", "executive_order_notes"}
-    assert set(current.subject_schema.names) - set(prior.subject_schema.names) == added
-    assert set(prior.subject_schema.names) <= set(current.subject_schema.names)
-    raw = {"document_number": "1", "publication_date": "2026-01-01", "title": "old",
-           "regulation_id_numbers_json": "[]", "docket_ids_json": "[]", "agencies_json": "[]"}
-    shaped = shape_record("federal_register", raw)
-    held = {name: shaped.get(name) for name in prior.input_fields}
-    subject, receipts = write_dataset([(held, context("old"))], tmp_path / "old", prior)
+    assert current.subject_schema.names == [*prior.subject_schema.names, "normalized_docket_candidates_json"]
+    raw = {"docket_id": "Docket No. FAA-2007-29334", "docket_source_ordinal": 0, "document_number": "1",
+           "publication_date": "2026-01-01", "normalized_docket_candidates_json": '["FAA-2007-29334"]',
+           "docket_normalization_rule": "rule", "html_url": "https://www.federalregister.gov/d/1", "pdf_url": None}
+    shaped = shape_record("fr_docket_links", raw)
+    subject, receipts = write_dataset(
+        [({name: shaped.get(name) for name in prior.input_fields}, context("old"))], tmp_path / "old", prior)
     assert subject is not None
-    original = subject.read_bytes()
-    [restored] = read_internal(ReceiptInput("federal_register", (subject,), receipts, "old"))
-    assert subject.read_bytes() == original
-    new = write(tmp_path, "federal_register", [restored], generation="new", label="new")
+    [restored] = read_internal(ReceiptInput("fr_docket_links", (subject,), receipts, "old"))
+    assert restored == raw
+    new = write(tmp_path, "fr_docket_links", [restored], generation="new", label="new")
     [row] = pq.read_table(new.subjects[0]).to_pylist()
-    assert all(row[name] is None for name in added)
-    assert row["document_number"] == "1" and row["publication_date"] == "2026-01-01" and row["title"] == "old"
+    assert row["normalized_docket_candidates_json"] == '["FAA-2007-29334"]' and "html_url" not in row
 
 
 def test_v1_unified_agenda_pair_restores_and_rewrites_under_v2_with_related_rins_null(tmp_path):
@@ -607,7 +643,8 @@ def test_native_source_ingest_uses_qualified_fr_prior_and_preserves_dated_record
         "2026-02-01",
         "2026-01-01",
     ]
-    assert "pdf_url" not in pq.read_schema(target / "federal_register.parquet").names
+    assert pq.read_schema(target / "federal_register.parquet").names[-5:] == [
+        "html_url", "pdf_url", "body_html_url", "source_sha256", "regulations_dot_gov_info_json"]
 
 
 def test_native_unified_agenda_source_ingest_keeps_partial_dates_and_prior_editions(tmp_path):
@@ -866,7 +903,6 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
         'documents': [{'document_id': 'EPA-2026-0001-0001', 'docket_id': 'EPA-2026-0001',
                        'agency_code': 'EPA', 'document_type': 'Proposed Rule', 'posted_date': '2026-01-01',
                        'modify_date': '2026-01-01', 'comment_end_date': '2026-03-01', 'title': 'Proposal'}],
-        'federal_register': [], 'fr_docket_links': [],
         'unified_agenda': [{'rin': '1000-AA00', 'agenda_edition': '202510', 'title': 'A rule',
                            'agency_code': '2000', 'rule_stage': 'Proposed Rule', 'timetable_json': '[]',
                            'legal_authority_json': '["5 U.S.C. 301"]', 'cfr_references_json': '["40 CFR 1"]',
@@ -876,6 +912,20 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
     work = tmp_path / 'scheduled'
     work.mkdir()
     remember_selection(work, [SelectedDataset(s.dataset, s.subjects, s.receipts, s.generation_id) for s in inputs])
+    # The two Register tables are read as published (ss-vse3): native lists, no receipt pair. A local run reads
+    # the tables beside it; the stages still get the Register's lists as JSON text.
+    from spicy_regs.transforms.regulations_shape import shape_record
+    published = {
+        'federal_register': {'document_number': '2026-00001', 'publication_date': '2026-01-02', 'title': 'Proposal',
+                             'document_type': 'Proposed Rule', 'docket_ids_json': '["EPA-2026-0001"]',
+                             'regulation_id_numbers_json': '["1000-AA00"]', 'agencies_json': '[]',
+                             'cfr_references_json': '[{"title": 40, "part": 60}]', 'agency_slugs': 'epa'},
+        'fr_docket_links': {'docket_id': 'EPA-2026-0001', 'docket_source_ordinal': 0, 'link_source': 'printed',
+                            'document_number': '2026-00001', 'publication_date': '2026-01-02'},
+    }
+    for name, row in published.items():
+        pq.write_table(pa.Table.from_pylist([shape_record(name, row)], schema=subject_schema(name)),
+                       work / f'{name}.parquet')
     monkeypatch.setattr(r2, 'download', lambda *_: False)
     if loose_prior:
         from spicy_regs.transforms.build_proceedings import COLUMNS
@@ -891,6 +941,14 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
     assert 'authority_refs' in native[0] and 'authority_refs_json' not in native[0]
     manifest = json.loads((work / 'rulemaking-dataset-manifest.json').read_text())
     assert manifest['inputs']['native_inputs']['unified_agenda']['generationId'] == 'g1'
+    # No receipt pair stands behind a published source; with an index its pin would name the generation read.
+    assert manifest['inputs']['native_inputs']['federal_register'] == {}
+    assert set(manifest['inputs']['native_inputs']) == {
+        'dockets', 'documents', 'unified_agenda', 'federal_register', 'fr_docket_links'}
+    staged = pq.read_table(work / 'federal_register.parquet').to_pylist()[0]
+    assert (staged['docket_ids_json'], staged['cfr_references_json'], staged['agency_slugs']) == (
+        '["EPA-2026-0001"]', '[{"title":40,"part":"60","chapter":null}]', 'epa')
+    assert native[0]['fr_document_ids'] == ['2026-00001@2026-01-02'] and native[0]['cfr_refs'] == ['40-60']
     assert manifest['etlReceipts']['generationId'] == 'rulemaking-first'
     assert manifest['artifacts']['etl_receipts.parquet']['visibility'] == 'internal'
     # Simulate the exact pinned previous materialized generation, including receipts.

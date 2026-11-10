@@ -142,6 +142,31 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **`federal_register` and `fr_docket_links` publish the fields their receipts
+  held** (ss-vse3, step 1 of moving both tables off per-row receipts).
+  `federal_register` gains, as its last columns, `html_url`, `pdf_url`,
+  `body_html_url`, `source_sha256` and `regulations_dot_gov_info_json`;
+  `fr_docket_links` gains `normalized_docket_candidates_json`. The first
+  scheduled run fills them for every row from the prior generation's receipts,
+  the only copy for the 99% of rows whose API response was never retained.
+  `source_sha256` names the retained API page a row was last read from and is
+  NULL on a row not read since. Policies move to `regulations-native-v3` and
+  `-v2`; the earlier ones stay readable, so nothing is replayed.
+
+- **`fr_docket_links` and the rulemaking materializer read the published
+  Federal Register tables, not their receipts** (ss-vse3, step 2). The links
+  rollup fetches the pinned `federal_register` table instead of restoring it
+  row by row (307 of that job's 937 s on 2026-11-09); the generation still
+  records the table as its parent. The materializer reads `federal_register`
+  and `fr_docket_links` as published and gives its stages the Register's lists
+  as JSON text; its manifest records each one's publication pin and no receipt
+  pair. Both tables still publish receipts.
+
+- **A rollup can declare that a published table no longer has receipts**
+  (ss-vse3). `retired_receipt_datasets` on a rollup lets exactly those
+  datasets leave the family's receipt ownership once, each keeping its table,
+  and refuses receipts for them afterwards. Nothing declares one yet.
+
 - Prepared native conversions publish by an operator-named receipt digest.
   `--publish-prepared` now requires `--expect-receipt-digest`, the
   `prepared receipt digest` line the preparation printed (never copied from
