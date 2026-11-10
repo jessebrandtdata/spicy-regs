@@ -291,6 +291,48 @@ def test_the_shrink_guard_sums_a_split_tables_members(tmp_path):
                  prior=first)
 
 
+def test_a_partition_is_the_same_partition_whatever_order_its_columns_are_listed_in(tmp_path):
+    """Ticket ss-biqd. The stored index sorts each partition's columns; a new generation lists them in directory order.
+
+    house_disbursements is split by report_year then report_quarter, which is not alphabetical, so all 42 of its
+    partitions read as missing from an identical rebuild. An unchanged table republishes; a dropped quarter refuses,
+    named as its directory spells it.
+    """
+    store = Store()
+
+    def publish(name, quarters, prior=None):
+        source = tmp_path / f"{name}-out" / "spending"
+        for year, quarter in quarters:
+            path = source / f"report_year={year}" / f"report_quarter={quarter}" / "part-000000.parquet"
+            path.parent.mkdir(parents=True)
+            pq.write_table(pa.table({"id": [f"{year}Q{quarter}"], "report_year": [year], "report_quarter": [quarter]}),
+                           path)
+        build_generation(tmp_path / name, family="house", files=[source], expected_keys=("spending.parquet",),
+                         partitioned={"spending.parquet": ("report_year", "report_quarter")}, read_snapshot=prior)
+        return pub.publish_generation(tmp_path / name, client=store, bucket="test",
+                                      prior_index=prior or pub.empty_index())
+
+    def stored():
+        return pub.parse_index(store.objects[pub.INDEX_V2_KEY])["families"]["house"]["tables"]["spending.parquet"]
+
+    first = publish("first", [("2024", "4"), ("2025", "1")])
+    # The two orders this test is about: without both, an unchanged republish would prove nothing.
+    assert stored()["partitionColumns"] == ["report_year", "report_quarter"]
+    assert [list(m["partition"]) for m in stored()["members"]] == [["report_quarter", "report_year"]] * 2
+    assert pub.member_partition(stored()["members"][0]["key"]) == {"report_year": "2024", "report_quarter": "4"}
+    assert list(pub.member_partition(stored()["members"][0]["key"])) == ["report_year", "report_quarter"]
+
+    second = publish("second", [("2024", "4"), ("2025", "1")], prior=first)
+    assert [m["partition"] for m in stored()["members"]] == [
+        {"report_year": "2024", "report_quarter": "4"}, {"report_year": "2025", "report_quarter": "1"}]
+
+    writes = list(store.writes)
+    with pytest.raises(pub.PublicationError, match=(
+            r"^spending\.parquet lacks partitions its prior generation holds: report_year=2024/report_quarter=4$")):
+        publish("third", [("2025", "1"), ("2025", "2")], prior=second)
+    assert store.writes == writes
+
+
 @pytest.mark.parametrize("rows, publishes", [
     ({"118": 1, "119": 300}, True),
     ({"118": 301, "119": 1}, False),  # the table holds more rows than before; congress 119 lost 299 of its 300

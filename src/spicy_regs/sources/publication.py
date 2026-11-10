@@ -1625,9 +1625,9 @@ def _stage_verified_generation(
     # every partition kept its rows and the table its columns (:func:`_keeps_rows_and_columns`, and what it cannot see).
     for key, table in tables.items():
         prior = table_descriptor(index, key)
-        if missing := _partitions(prior) - _partitions(table):
-            raise PublicationError(f"{key} lacks partitions its prior generation holds: "
-                                   + ", ".join("/".join(f"{c}={v}" for c, v in p) for p in sorted(missing)))
+        if prior and (missing := _partitions(prior) - _partitions(table)):
+            raise PublicationError(f"{key} lacks partitions its prior generation holds: " + ", ".join(sorted(
+                "/".join(f"{c}={dict(p)[c]}" for c in prior["partitionColumns"]) for p in missing)))
         if key not in exempt and not (prior and _keeps_rows_and_columns(table, prior)):
             old_size = prior["byteSize"] if prior else _get_remote_size(client, bucket, key)
             _assert_upload_safe(table["byteSize"], old_size, key)
@@ -1907,13 +1907,22 @@ def restore_family(client, bucket: str, family: str, entry: Mapping | None, *, e
     raise PublicationError("Publication changed concurrently; retry the rollback")
 
 
-def _partitions(table: Mapping | None) -> set[tuple[tuple[str, str], ...]]:
-    """The partitions a split table's members hold, as ``(column, value)`` tuples; none for a single file."""
-    return {tuple(member["partition"].items()) for member in (table or {}).get("members", ())}
+def _partition(member: Mapping) -> tuple[tuple[str, str], ...]:
+    """A file's partition as sorted ``(column, value)`` pairs; ``()`` for a single file.
+
+    Sorted because the two sides list the columns differently: the stored index is canonical JSON, which sorts
+    them, and a new generation's entry lists them in directory order.
+    """
+    return tuple(sorted(member.get("partition", {}).items()))
+
+
+def _partitions(table: Mapping) -> set[tuple[tuple[str, str], ...]]:
+    """The partitions a split table's members hold, each as :func:`_partition` keys it; none for a single file."""
+    return {_partition(member) for member in table.get("members", ())}
 
 
 def _partition_rows(table: Mapping) -> dict[tuple[tuple[str, str], ...], int] | None:
-    """Rows per partition, by its sorted ``(column, value)`` pairs, a single file being the one partition ``()``.
+    """Rows per partition, each as :func:`_partition` keys it, a single file being the one partition ``()``.
 
     ``None`` when a file records no row count.
     """
@@ -1921,7 +1930,7 @@ def _partition_rows(table: Mapping) -> dict[tuple[tuple[str, str], ...], int] | 
     for member in table.get("members", (table,)):
         if type(member.get("rows")) is not int:
             return None
-        partition = tuple(sorted(member.get("partition", {}).items()))
+        partition = _partition(member)
         rows[partition] = rows.get(partition, 0) + member["rows"]
     return rows
 

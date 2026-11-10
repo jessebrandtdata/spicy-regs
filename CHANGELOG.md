@@ -19,6 +19,14 @@ Entries link to the pull request that introduced the change.
   reads counts, names and types, so it cannot see values emptied in rows that
   were kept.
 
+- **A split table's partitions are matched whatever order their columns are
+  listed in** (ss-biqd). The stored index sorts each partition's columns and a
+  new generation lists them in directory order, so a table split by
+  `report_year` then `report_quarter` read as missing every partition its prior
+  held: all 42 of `house_disbursements` on the live index. Its next publication
+  would have been refused. A partition that is really missing still refuses, and
+  the message names it as its directory spells it.
+
 - **A new reading of an unchanged print replaces the old one** (ss-fmxo). When a
   derivation changed a print's text digest but its PDF bytes had not changed,
   `document_citations` and `bill_committee_actions` kept every finding under both
