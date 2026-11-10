@@ -227,6 +227,23 @@ def test_a_rollover_publish_failure_halts_before_another_download(tmp_path, monk
     assert len(mirror.gets) == 2, "a GET after a failure is refused before it reaches the mirror"
 
 
+def test_a_commit_whose_publication_fails_is_an_evidence_failure(tmp_path, monkeypatch, r2_store):
+    """The final flush at commit fails as retain()'s does: SourceEvidenceError, and every later commit refuses."""
+    from spicy_regs.sources import publication
+
+    def unavailable(*_args, **_kwargs):
+        raise OSError("R2 unavailable")
+
+    monkeypatch.setattr(publication, "publish_evidence", unavailable)
+    retention = MirrulationsOriginals(tmp_path, mirrulations.BUCKET, publish=True)
+    retention.retain("raw-data/EPA/x.json", b"{}", {})
+    with pytest.raises(SourceEvidenceError, match="OSError publishing originals") as raised:
+        retention.commit(["raw-data/EPA/x.json"])
+    assert isinstance(raised.value.__cause__, OSError) and retention.failure == "OSError publishing originals"
+    with pytest.raises(SourceEvidenceError, match="retention failed"):
+        retention.commit()
+
+
 @pytest.mark.parametrize("option", ["full_refresh", "allow_fresh_start"])
 def test_an_unscoped_whole_mirror_reread_is_refused_before_any_read(tmp_path, monkeypatch, option):
     monkeypatch.setattr(mirrulations, "s3_resource", lambda: pytest.fail("the mirror was read"))
