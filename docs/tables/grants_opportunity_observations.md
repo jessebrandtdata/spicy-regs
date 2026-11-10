@@ -6,7 +6,7 @@
 
 One observation per source notice in a declared Grants.gov daily XML snapshot, with literal eligibility, deadlines, amounts and source revisions.
 
-**Coverage.** Not a range. Designed to retain every admitted record in each explicitly selected daily snapshot. Full real-export qualification and public delivery are pending. The date records this design statement, not a source measurement. Snapshot membership does not establish active/open status, withdrawal, deletion or historical completeness. *(measured 2026-10-20)*
+**Coverage.** Not a range. Every admitted record of each explicitly selected daily export is retained. Each refresh replaces the published snapshot with the export it selects; earlier snapshots are in earlier generations, not in this table. Snapshot membership does not establish active/open status, withdrawal, deletion or historical completeness. *(measured 2026-10-20)*
 
 - **Parquet file:** `grants_opportunity_observations.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
