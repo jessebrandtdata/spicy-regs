@@ -63,19 +63,17 @@ A summary is usable when it states `total-records` and no delete file; after
 R2's compaction the dockets table stated 45 records beside 51 position
 deletes, so the subtraction is not trusted.
 
-## Before it can run
+## What marks the switch
 
-- **The receipts kit marks both policies retired.** `etl_policies/comments.json`
-  and `comments_index.json` stay as the schema declaration, with the kit's
-  "receipts retired" marker, which `require_registered_receipts` must skip.
-  Until then every build is refused at admission, so the mirror refuses first,
-  in seconds: `The installed comments policies still require ETL receipts`.
-- **The dictionary and the MCP server treat a marked family as native.**
-  Today a family without `etlReceipts` is read as legacy
-  (`data_dictionary.selected_dictionary_definitions`, `mcp_server._legacy_column_meanings`):
-  the live check would expect `attachments_json` where the table has
-  `attachments`, and "Deploy data dictionary" would fail from the first
-  receipts-free publication.
+`etl_policies/comments.json` and `comments_index.json` stay as the tables'
+schema declarations and carry `"receipts_retired": true`
+(`subject_catalog.RECEIPTS_RETIRED`), the one owner of retirement (ss-ag1j).
+Admission and every publishing path then accept a generation of the two
+tables without receipts and refuse receipts for them; the dictionary, the MCP
+server's `describe_table` and `read_receipt_fields` read the marked tables as
+current, not legacy. The mirror asks the same rule before any catalog read,
+so a family marked in part refuses in seconds: `The installed comments
+policies still require ETL receipts`.
 
 ## The first publication: checks from the public files
 
@@ -117,7 +115,7 @@ DuckDB: the job log has no `Paired export` line; the generation's
 
 `scripts/rebuild_native_catalog.py` seeds the catalog from the live
 generation's pair and copies its receipts verbatim. Once comments publish
-without receipts it refuses, naming the pinned archive generation below; it
+without receipts it refuses, naming the pinned archive generation; it
 cannot be pointed at that generation, which is older than the live table. A
 rebuild from a receipts-free generation needs a seeding mode that writes one
 promotion-style receipt per row, which is not built. The catalog's own receipt
@@ -125,29 +123,25 @@ table is untouched by this change; this matters only if the catalog is lost.
 
 ## Archive pin
 
-Weekly retention keeps a family's last three generations and any generation a
-file under `docs/` cites by eight or more hex digits of its digest. The last
-comments generation published **with receipts** holds the only complete
-exported copy of those receipts, so it is pinned here. Existing receipt files
-are never deleted by this change.
+The last comments generation published **with receipts** holds the only
+complete exported copy of them. It is pinned, for both datasets, in
+`docs/pins/receipt-archive.json`, the one pin file for every retired table;
+weekly retention keeps a generation a file under `docs/` cites by eight or more
+hex digits, and `tests/test_receipt_archive_pins.py` holds every marked table
+to an entry there that the scan finds. Existing receipt files are never
+deleted by this change.
 
-| Family | Last generation published with receipts | Published |
-| --- | --- | --- |
-| `comments` | `08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1` | 2026-10-10T15:45:23Z |
-
-Its receipt member is `generations/comments/08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1/etl_receipts.parquet`:
-26,561,684 rows (datasets `comments` and `comments_index`), 3,968,509,123
-bytes, `sha256:3a9a9cddb235d5055ae49d8fbe430c61dcce8bcfdec9e14023c7db5adcd9ea0d`,
-receipt generation `comments-v2-c2dd1f166abd441b80eb02373d625c88`. The live
+That generation is the 2026-10-10 one (published 2026-10-10T15:45:23Z). Its
+receipt member holds 26,561,684 rows (datasets `comments` and
+`comments_index`), 3,968,509,123 bytes,
+`sha256:3a9a9cddb235d5055ae49d8fbe430c61dcce8bcfdec9e14023c7db5adcd9ea0d`,
+receipt generation `comments-v2-c2dd1f166abd441b80eb02373d625c88`; the live
 index stated all of this on 2026-11-10, when the generation was still current.
-
 It is the last one because the receipt-route publication started from the
 operator's machine on 2026-11-10 was stopped before it uploaded anything, so
 the next comments publication is this route's. The catalog took these receipts
-in its 2026-11-08 rebuild and keeps writing its own receipt table; this pin
-keeps the exported copy. `tests/test_generation_retention.py` fails if the
-docs scan stops finding the digest. Do not write any other generation's digest
-on this page: every digest cited here is kept indefinitely.
+in its 2026-11-08 rebuild and keeps writing its own receipt table; the pin
+keeps the exported copy.
 
 ## The bare `comments.parquet`
 

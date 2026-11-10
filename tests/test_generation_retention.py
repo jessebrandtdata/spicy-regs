@@ -291,19 +291,3 @@ def test_the_generations_the_hand_refresh_runbook_keeps_are_found_by_the_docs_sc
     # The family pages name their own as well, so one page's edit alone does not unpin a generation.
     assert "docs/ofac-sanctions.md" in named[kept["ofac-sanctions"]]
     assert "docs/grants-opportunities.md" in named[kept["grants-opportunities"]]
-
-
-def test_the_last_comments_generation_with_receipts_is_found_by_the_docs_scan():
-    """Comments publish without receipts from ss-juz8; this generation holds the only exported copy of theirs.
-
-    The digest is written here, not read from the page, so a docs edit that drops or mangles the pin fails.
-    """
-    last = "08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1"  # 2026-10-10T15:45:23Z
-    later = "f" * 64  # a receipts-free successor nothing cites
-    stored = {digest: retention.Generation("comments", digest) for digest in (last, later)}
-    named = retention.note_pins(retention._notes(), stored)
-    assert set(named) == {last}
-    assert "docs/comments-receipt-archive.md" in named[last]
-    page = (retention.DOCS / "comments-receipt-archive.md").read_text()
-    assert f"| `comments` | `{last}` | 2026-10-10T15:45:23Z |" in page
-    assert f"generations/comments/{last}/etl_receipts.parquet" in page

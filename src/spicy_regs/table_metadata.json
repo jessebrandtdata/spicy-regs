@@ -39500,35 +39500,6 @@
         ]
       },
       {
-        "dataset": "comments",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "comment_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "comments_index",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code",
-          "docket_id",
-          "year",
-          "month"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "committee_assignments",
         "receipt_only": false,
         "policy_version": "congress-subjects/2",

@@ -77,17 +77,11 @@ def mark_retired(monkeypatch, *datasets):
     monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset(datasets))
 
 
-def retire_comments_policies(monkeypatch):
-    """Both comments tables marked receipts-retired, as their installed policies are to be (ss-ag1j's marker)."""
-    mark_retired(monkeypatch, "comments", "comments_index")
-
-
 @pytest.fixture
 def publication(tmp_path, monkeypatch):
     snapshot = iceberg.CatalogPairSnapshot("table-uuid", 41, 0, iceberg.CatalogSnapshot("receipts-uuid", 51, 0))
     state: dict = {"snapshot": snapshot, "objects": {}, "index": {"format": "spicy-regs-publication", "version": 2, "families": {}}, "receipt": None, "builds": 0, "uploads": [], "fail": None, "agency": "EPA", "text": "first"}
     monkeypatch.setenv("R2_ACCESS_KEY_ID", "test")
-    retire_comments_policies(monkeypatch)
     monkeypatch.setattr(mirror, "resolve_r2_base_url", lambda: "https://public.example")
     monkeypatch.setattr(mirror, "MIN_EXPECTED_ROWS", 1)
     monkeypatch.setattr(iceberg, "catalog_snapshot", lambda _: state["snapshot"])

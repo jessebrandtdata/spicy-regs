@@ -19,5 +19,6 @@
     "docket_id",
     "year",
     "month"
-  ]
+  ],
+  "receipts_retired": true
 }

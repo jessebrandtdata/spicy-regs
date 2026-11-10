@@ -1,8 +1,8 @@
 """A table whose receipts are retired, through every reader that took "installed policy" to mean "has receipts".
 
 The marker (``subject_catalog.RECEIPTS_RETIRED``) sits beside the table's descriptor in its installed policy file, so
-retiring moves no policy version and no ledger entry. Nothing is marked in the installed files yet; these tests mark
-a table by patching the one function every reader asks (``subject_catalog.retired_receipt_datasets``).
+retiring moves no policy version and no ledger entry. These tests mark (or unmark) a table by patching the one
+function every reader asks (``subject_catalog.retired_receipt_datasets``).
 """
 
 import copy
@@ -29,9 +29,10 @@ def retire(monkeypatch):
     return mark
 
 
-def test_nothing_is_retired_in_the_installed_files_yet():
+def test_the_installed_files_retire_exactly_the_switched_tables():
+    """Comments and their index left receipts first (ss-juz8): the mirror publishes the catalog table alone."""
     subject_catalog.retired_receipt_datasets.cache_clear()
-    assert subject_catalog.retired_receipt_datasets() == frozenset()
+    assert subject_catalog.retired_receipt_datasets() == frozenset({"comments", "comments_index"})
 
 
 def test_the_marker_is_a_tables_and_never_part_of_its_policy():
