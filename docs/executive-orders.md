@@ -71,7 +71,10 @@ and `source_sha256`, the digest of the API page the row was read from) move only
 when the publisher's record or the body result changes. An order the publisher
 has not touched keeps its published row byte for byte; a corrected one gets a
 new row. Every page and body a row points to is retained in the generation's
-source evidence.
+source evidence. The text columns are derived again on every build, so a
+SpicyDocs derivation bump rewrites `text_derivation_version` on every row at
+once (002 to 004 on the 239 rows of 2025, with byte-identical text): a relabel,
+not a change at the publisher.
 
 Ordinary body failures remain rows with `body_status='source_failed'` and null
 text. On 2026-11-10 ten orders from 2015 to 2021 failed this way: SpicyDocs' XML
