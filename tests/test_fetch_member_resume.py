@@ -18,11 +18,12 @@ def pinned(data=DATA):
 
 
 class Reply:
-    """One scripted response: status, headers, the body, and an optional reset after ``fail_after`` bytes."""
+    """One scripted response: status, headers, the body, and an optional ``error`` after ``fail_after`` bytes."""
 
-    def __init__(self, status, body=b'', headers=None, fail_after=None):
+    def __init__(self, status, body=b'', headers=None, fail_after=None, error=None):
         self.status_code, self.body, self.fail_after = status, body, fail_after
         self.headers = httpx.Headers(headers or {})
+        self.error = error or httpx.RemoteProtocolError('peer closed connection without sending complete message body')
 
     def __enter__(self): return self
     def __exit__(self, *args): return False
@@ -32,7 +33,14 @@ class Reply:
         for start in range(0, len(sent), 1000):
             yield sent[start:start + 1000]
         if self.fail_after is not None:
-            raise httpx.RemoteProtocolError('peer closed connection without sending complete message body')
+            raise self.error
+
+
+class Unanswered:
+    """A request whose response headers never arrive: httpx raises its read timeout on entering the stream."""
+
+    def __enter__(self): raise httpx.ReadTimeout('The read operation timed out')
+    def __exit__(self, *args): return False
 
 
 def partial(start, data=DATA, etag=ETAG, **kwargs):
@@ -132,11 +140,62 @@ def test_a_restart_that_progresses_is_not_a_stall(tmp_path, host):
 
 
 @pytest.mark.parametrize('headers', [{}, {'etag': 'W/"v1"'}, {'etag': ETAG, 'content-encoding': 'gzip'}])
-def test_unresumable_response_raises_the_transport_error(tmp_path, host, headers):
-    host.script += [Reply(200, DATA, headers, fail_after=100)]
-    with pytest.raises(httpx.RemoteProtocolError):
+def test_unresumable_response_restarts_from_zero(tmp_path, host, headers):
+    """No strong ETag pins a range: the held bytes are discarded and the whole body is asked for again."""
+    host.script += [Reply(200, DATA, headers, fail_after=100), Reply(200, DATA, headers)]
+    target = tmp_path / 't.parquet'
+    publication.fetch_member('https://fixture.invalid', pinned(), target)
+    assert target.read_bytes() == DATA and sum(host.hashed) == 100 + len(DATA)
+    assert 'Range' not in host.calls[1].get('headers', {}) and host.script == []
+
+
+def test_unresumable_restarts_stop_at_the_cap(tmp_path, host):
+    host.script += [Reply(200, DATA, {}, fail_after=100) for _ in range(publication.RESUME_STALLS)]
+    with pytest.raises(RuntimeError, match='no ETag to resume on'):
         publication.fetch_member('https://fixture.invalid', pinned(), tmp_path / 't.parquet')
-    assert len(host.calls) == 1 and no_temp(tmp_path)
+    assert len(host.calls) == publication.RESUME_STALLS and no_temp(tmp_path)
+
+
+def test_a_timeout_before_the_headers_asks_again(tmp_path, host):
+    """Run 42875578221 died on one ReadTimeout waiting for a member's headers, after httpx's 5-second default."""
+    host.script += [Unanswered(), Reply(200, DATA, {'etag': ETAG})]
+    target = tmp_path / 't.parquet'
+    result = publication.fetch_member('https://fixture.invalid', pinned(), target)
+    assert isinstance(result, publication.DownloadedMember) and result.sha256 == pinned().sha256
+    assert target.read_bytes() == DATA
+    assert [call['timeout'] for call in host.calls] == [publication.MEMBER_REQUEST_TIMEOUT] * 2
+    assert 'headers' not in host.calls[1]  # nothing was held: the same request again, not a range
+
+
+def test_a_timeout_mid_body_resumes_once(tmp_path, host):
+    timeout = httpx.ReadTimeout('The read operation timed out')
+    host.script += [Reply(200, DATA, {'etag': ETAG}, fail_after=3000, error=timeout), partial(3000)]
+    target = tmp_path / 't.parquet'
+    publication.fetch_member('https://fixture.invalid', pinned(), target)
+    assert target.read_bytes() == DATA and sum(host.hashed) == len(DATA)
+    assert host.calls[1]['headers']['Range'] == 'bytes=3000-'
+
+
+def test_a_host_that_always_times_out_stops_at_the_cap(tmp_path, host):
+    host.script += [Unanswered() for _ in range(publication.RESUME_STALLS)]
+    with pytest.raises(RuntimeError, match='without progress') as raised:
+        publication.fetch_member('https://fixture.invalid', pinned(), tmp_path / 't.parquet')
+    assert isinstance(raised.value.__cause__, httpx.ReadTimeout)
+    assert len(host.calls) == publication.RESUME_STALLS and no_temp(tmp_path)
+
+
+def test_a_caller_timeout_is_kept(tmp_path, host):
+    host.script += [Reply(200, DATA, {'etag': ETAG})]
+    publication.fetch_member('https://fixture.invalid', pinned(), tmp_path / 't', timeout=7)
+    assert host.calls[0]['timeout'] == 7
+
+
+def test_bytes_that_differ_from_the_pin_after_a_retry_still_refuse(tmp_path, host):
+    """A retried request is held to the pin like the first: integrity failures are never retried."""
+    host.script += [Unanswered(), Reply(200, DATA[:-1] + b'x', {'etag': ETAG})]
+    with pytest.raises(RuntimeError, match='differs from its pin'):
+        publication.fetch_member('https://fixture.invalid', pinned(), tmp_path / 't.parquet')
+    assert len(host.calls) == 2 and no_temp(tmp_path)
 
 
 def test_unpinned_member_resumes_on_its_etag(tmp_path, host):
