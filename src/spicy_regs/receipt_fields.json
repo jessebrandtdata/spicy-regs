@@ -2747,7 +2747,8 @@
      "significant",
      "president_json",
      "disposition_notes",
-     "executive_order_notes"
+     "executive_order_notes",
+     "source_sha256"
     ]
    },
    "renamed": {
@@ -2760,14 +2761,10 @@
    },
    "meanings": {
     "agencies_json": "The issuing agencies as the Register's agency objects, a JSON array.",
-    "body_html_url": "The document's full-text HTML body; the XML body the Register also serves carries no boilerplate.",
     "cfr_references_json": "The CFR citations the document affects, a JSON array of `{title, part, chapter, citation_url}`.",
     "corrections_json": "The API addresses of the corrections the Register links to this document (its own editorial corrections), a JSON array; `[]` where it links none. NULL on a row not read since the field was first requested (2026-10-03).",
     "docket_ids_json": "The docket labels the document states, a JSON array, as printed (many are agency numbers).",
-    "html_url": "The document's page on federalregister.gov.",
-    "pdf_url": "The document's PDF rendition.",
     "regulation_id_numbers_json": "The Regulation Identifier Numbers the API lists, a JSON array. `[]` on a large share of Rule documents every year, an API limit: some of those state a RIN in the printed text, and some print it inside docket_ids_json.",
-    "regulations_dot_gov_info_json": "The Register's own statement of the regulations.gov docket and document it matched this document to (the API's `regulations_dot_gov_info`), a JSON object exactly as stated: `{}` where the Register states nothing, the time of its check alone where it checked and found nothing, otherwise any of the docket, the document, the comment count, the supporting documents and their titles. NULL on a row not read since the field was first requested (2026-10-03).",
     "topics_json": "The Register's CFR index terms for the document (`topics`), a JSON array; `[]` when it lists none."
    },
    "read_markers": [
@@ -2852,7 +2849,6 @@
     "docket_ids_json": "The full original docket-ID array, retained so consumers can see the other IDs this FR document links to.",
     "docket_normalization_rule": "Digest-pinned owner identifier-normalization rule used to produce candidates.",
     "html_url": "federalregister.gov HTML permalink.",
-    "normalized_docket_candidates_json": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket.",
     "pdf_url": "Federal Register PDF URL.",
     "regulation_id_numbers_json": "RINs (JSON array) claimed by the FR document — the RIN-side join key for a rulemaking."
    }

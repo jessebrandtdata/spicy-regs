@@ -126,6 +126,13 @@ TYPE_OVERRIDES = {
     "documents": {"withdrawn": pa.bool_()},
     "regulatory_agenda_items": {"linked_proceeding_count": pa.int64(), "observation_count": pa.int64()},
 }
+#: Columns that left receipts for the public table (ss-vse3), each appended after every column published before
+#: it, in this order, so no earlier column changes position. ``source_sha256`` is new with them: the retained API
+#: page a row was last read from, NULL on a row not read since.
+PROMOTED_LAST = {
+    "federal_register": ("html_url", "pdf_url", "body_html_url", "source_sha256", "regulations_dot_gov_info_json"),
+    "fr_docket_links": ("normalized_docket_candidates_json",),
+}
 IDENTITIES = {
     "agency_lifecycle_stats": ("agency_code", "stratum"),
     "agency_monthly_volume": ("agency_code", "year", "month", "document_type"),
@@ -338,6 +345,9 @@ def subject_schema(dataset):
         fields.append(pa.field("comment_text", S))
     if dataset == "rule_targets":
         fields.append(pa.field("fr_document_ids", STRINGS))
+    last = PROMOTED_LAST.get(dataset, ())
+    fields = [f for f in fields if f.name not in last] + sorted((f for f in fields if f.name in last),
+                                                                 key=lambda f: last.index(f.name))
     return pa.schema(fields)
 
 

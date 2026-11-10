@@ -1,0 +1,2273 @@
+{
+ "count": 38,
+ "total_pages": 1,
+ "results": [
+  {
+   "abstract": "The U.S. Department of Commerce (Commerce) finds that revocation of the countervailing duty (CVD) order on utility scale wind towers (wind towers) from Malaysia would be likely to lead to continuation or recurrence of countervailable subsidies at the levels indicated in the \"Final Results of Sunset Review\" section of this notice.",
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF COMMERCE",
+     "name": "Commerce Department",
+     "id": 54,
+     "url": "https://www.federalregister.gov/agencies/commerce-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/54",
+     "parent_id": null,
+     "slug": "commerce-department"
+    },
+    {
+     "raw_name": "International Trade Administration",
+     "name": "International Trade Administration",
+     "id": 261,
+     "url": "https://www.federalregister.gov/agencies/international-trade-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/261",
+     "parent_id": 54,
+     "slug": "international-trade-administration"
+    }
+   ],
+   "agency_names": [
+    "Commerce Department",
+    "International Trade Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/30/2026-22245.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "C-557-822"
+   ],
+   "document_number": "2026-22245",
+   "effective_on": null,
+   "end_page": 68494,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/30/2026-22245.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/30/2026-22245/utility-scale-wind-towers-from-malaysia-final-results-of-the-expedited-first-sunset-review-of-the",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-30/pdf/2026-22245.pdf",
+   "publication_date": "2026-10-30",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-30T06:39:01Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68493,
+   "subtype": null,
+   "title": "Utility Scale Wind Towers From Malaysia: Final Results of the Expedited First Sunset Review of the Countervailing Duty Order",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Coast Guard is establishing a temporary moving safety zone around the S.S. UNITED STATES and all vessels involved in its towage through the Mobile River Channel, Mobile Bay, and the Gulf of America. The safety zone is needed to protect personnel, vessels, and the marine environment from potential hazards created by the dead ship tow. Entry of persons and vessels into this zone is prohibited unless specifically authorized by the Captain of the Port (COTP), Sector Mobile.",
+   "action": "Temporary final rule.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF HOMELAND SECURITY",
+     "name": "Homeland Security Department",
+     "id": 227,
+     "url": "https://www.federalregister.gov/agencies/homeland-security-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/227",
+     "parent_id": null,
+     "slug": "homeland-security-department"
+    },
+    {
+     "raw_name": "Coast Guard",
+     "name": "Coast Guard",
+     "id": 53,
+     "url": "https://www.federalregister.gov/agencies/coast-guard",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/53",
+     "parent_id": 227,
+     "slug": "coast-guard"
+    }
+   ],
+   "agency_names": [
+    "Homeland Security Department",
+    "Coast Guard"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/30/2026-22249.html",
+   "cfr_references": [
+    {
+     "chapter": null,
+     "citation_url": null,
+     "part": "165",
+     "title": 33
+    }
+   ],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket Number USCG-2026-0095"
+   ],
+   "document_number": "2026-22249",
+   "effective_on": "2026-11-06",
+   "end_page": 68478,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/30/2026-22249.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/30/2026-22249/safety-zone-ss-united-states-dead-ship-tow-sector-mobile-captain-of-the-port-zone-mobile-al",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-30/pdf/2026-22249.pdf",
+   "publication_date": "2026-10-30",
+   "regulation_id_numbers": [
+    "1625-AA00"
+   ],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-30T06:37:36Z"
+   },
+   "significant": false,
+   "signing_date": null,
+   "start_page": 68477,
+   "subtype": null,
+   "title": "Safety Zone; S.S. UNITED STATES Dead Ship Tow, Sector Mobile Captain of the Port Zone, Mobile, AL",
+   "topics": [
+    "Harbors",
+    "Marine safety",
+    "Navigation (water)",
+    "Reporting and recordkeeping requirements",
+    "Security measures",
+    "Waterways"
+   ],
+   "type": "Rule",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF STATE",
+     "name": "State Department",
+     "id": 476,
+     "url": "https://www.federalregister.gov/agencies/state-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/476",
+     "parent_id": null,
+     "slug": "state-department"
+    }
+   ],
+   "agency_names": [
+    "State Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/30/2026-22252.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Public Notice: 13145"
+   ],
+   "document_number": "2026-22252",
+   "effective_on": null,
+   "end_page": 68594,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/30/2026-22252.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/30/2026-22252/determination-pursuant-to-section-451-of-the-foreign-assistance-act-of-1961",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-30/pdf/2026-22252.pdf",
+   "publication_date": "2026-10-30",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-30T06:33:42Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68594,
+   "subtype": null,
+   "title": "Determination Pursuant to Section 451 of the Foreign Assistance Act of 1961",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "DELAWARE RIVER BASIN COMMISSION",
+     "name": "Delaware River Basin Commission",
+     "id": 112,
+     "url": "https://www.federalregister.gov/agencies/delaware-river-basin-commission",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/112",
+     "parent_id": null,
+     "slug": "delaware-river-basin-commission"
+    }
+   ],
+   "agency_names": [
+    "Delaware River Basin Commission"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/30/2026-22253.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22253",
+   "effective_on": null,
+   "end_page": 68499,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/30/2026-22253.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/30/2026-22253/notice-of-public-hearing-and-business-meeting-november-4-2026-and-december-3-2026",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-30/pdf/2026-22253.pdf",
+   "publication_date": "2026-10-30",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-30T06:31:04Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68498,
+   "subtype": null,
+   "title": "Notice of Public Hearing and Business Meeting November 4, 2026 and December 3, 2026",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "Pursuant to the Privacy Act of 1974, notice is hereby given that the VA is modifying the system of records entitled, \"Individuals Submitting Invoices--Vouchers for Payment and Accounting Transactional Data--VA\" (13VA047). This system is used for payment processing, general accounting, benefit payment authorization for the benefit of veterans and their families, and government and commercial service providers for contract and/or reimbursement expenses.",
+   "action": "Notice of a Modified System of Records.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF VETERANS AFFAIRS",
+     "name": "Veterans Affairs Department",
+     "id": 520,
+     "url": "https://www.federalregister.gov/agencies/veterans-affairs-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/520",
+     "parent_id": null,
+     "slug": "veterans-affairs-department"
+    }
+   ],
+   "agency_names": [
+    "Veterans Affairs Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/30/2026-22254.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-11-30",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. VA-2026-VACO-0001"
+   ],
+   "document_number": "2026-22254",
+   "effective_on": "2026-11-30",
+   "end_page": 68624,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/30/2026-22254.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/30/2026-22254/privacy-act-of-1974-system-of-records",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-30/pdf/2026-22254.pdf",
+   "publication_date": "2026-10-30",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-30T06:38:18Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68621,
+   "subtype": null,
+   "title": "Privacy Act of 1974; System of Records",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Coast Guard is establishing a temporary safety zone for navigable waters of the Gulf of America. The safety zone is needed to protect personnel, vessels, and the marine environment from potential hazards associated with the M/T KALAHARI that will be conducting repairs at anchorage due to both auxiliary boilers being out of service rendering the inert gas system inoperable. Entry of vessels or persons into this zone is prohibited unless specifically authorized by the Captain of the Port, Sector Mobile, or their designated representative.",
+   "action": "Temporary final rule.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF HOMELAND SECURITY",
+     "name": "Homeland Security Department",
+     "id": 227,
+     "url": "https://www.federalregister.gov/agencies/homeland-security-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/227",
+     "parent_id": null,
+     "slug": "homeland-security-department"
+    },
+    {
+     "raw_name": "Coast Guard",
+     "name": "Coast Guard",
+     "id": 53,
+     "url": "https://www.federalregister.gov/agencies/coast-guard",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/53",
+     "parent_id": 227,
+     "slug": "coast-guard"
+    }
+   ],
+   "agency_names": [
+    "Homeland Security Department",
+    "Coast Guard"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/30/2026-22269.html",
+   "cfr_references": [
+    {
+     "chapter": null,
+     "citation_url": null,
+     "part": "165",
+     "title": 33
+    }
+   ],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket Number USCG-2026-0467"
+   ],
+   "document_number": "2026-22269",
+   "effective_on": "2026-10-30",
+   "end_page": 68480,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/30/2026-22269.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/30/2026-22269/safety-zone-mt-kalahari-gulf-of-america-pascagoula-ms",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-30/pdf/2026-22269.pdf",
+   "publication_date": "2026-10-30",
+   "regulation_id_numbers": [
+    "1625-AA00"
+   ],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-30T06:31:31Z"
+   },
+   "significant": false,
+   "signing_date": null,
+   "start_page": 68478,
+   "subtype": null,
+   "title": "Safety Zone; M/T KALAHARI, Gulf of America, Pascagoula, MS",
+   "topics": [
+    "Harbors",
+    "Marine safety",
+    "Navigation (water)",
+    "Reporting and recordkeeping requirements",
+    "Security measures",
+    "Waterways"
+   ],
+   "type": "Rule",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "EXECUTIVE OFFICE OF THE PRESIDENT",
+     "name": "Executive Office of the President",
+     "id": 538,
+     "url": "https://www.federalregister.gov/agencies/executive-office-of-the-president",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/538",
+     "parent_id": null,
+     "slug": "executive-office-of-the-president"
+    }
+   ],
+   "agency_names": [
+    "Executive Office of the President"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/30/2026-22292.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22292",
+   "effective_on": null,
+   "end_page": 68871,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/30/2026-22292.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/30/2026-22292/further-modifying-the-scope-of-products-of-canada-subject-to-the-additional-duties-imposed-to-offset",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-30/pdf/2026-22292.pdf",
+   "publication_date": "2026-10-30",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-30T06:30:48Z"
+   },
+   "significant": null,
+   "signing_date": "2026-10-23",
+   "start_page": 68861,
+   "subtype": "Proclamation",
+   "title": "Further Modifying the Scope of Products of Canada Subject to the Additional Duties Imposed To Offset Canadian Discrimination Against the Commerce of the United States With Respect to Motor Vehicles",
+   "topics": [],
+   "type": "Presidential Document",
+   "volume": 91
+  },
+  {
+   "abstract": "OSHA solicits public comments concerning the proposal to extend the Office of Management and Budget's (OMB) approval of the information collection requirements specified in the Fire Protection in Shipyard Employment Standard.",
+   "action": "Request for public comments.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    },
+    {
+     "raw_name": "Occupational Safety and Health Administration",
+     "name": "Occupational Safety and Health Administration",
+     "id": 386,
+     "url": "https://www.federalregister.gov/agencies/occupational-safety-and-health-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/386",
+     "parent_id": 271,
+     "slug": "occupational-safety-and-health-administration"
+    }
+   ],
+   "agency_names": [
+    "Labor Department",
+    "Occupational Safety and Health Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22014.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-12-28",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. OSHA-2011-0010"
+   ],
+   "document_number": "2026-22014",
+   "effective_on": null,
+   "end_page": 68184,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22014.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22014/fire-protection-in-shipyard-employment-standard-extension-of-the-office-of-management-and-budgets",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22014.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [
+     {
+      "title": "Supporting Statement for the Information Collection Requirements of the Fire Protection in Shipyard Employment Standard (29 CFR Part 1915, Subpart P)1 Office of Management and Budget (OMB) Control No. 1218-0248 (February 2024)",
+      "document_id": "OSHA-2011-0010-0017"
+     },
+     {
+      "title": "Supporting Statement for the Information Collection Requirements of the Fire Protection in Shipyard Employment Standard (29 CFR Part 1915, Subpart P)1 Office of Management and Budget (OMB) Control No. 1218-0248 (November 2020)",
+      "document_id": "OSHA-2011-0010-0014"
+     },
+     {
+      "title": "Supporting Statement for the Information Collection Requirements of the Fire Protection in Shipyard Employment Standard (29 CFR 1915, subpart P)1 (Office of Management and Budget (OMB)) Control No. 1218-0248 (April 2017)",
+      "document_id": "OSHA-2011-0010-0011"
+     },
+     {
+      "title": "Supporting Statement for the Information Collection Requirements of the Standard on Rigging Equipment for Material Handling (29 CFR 1926.251)1 Office of Management and Budget (OMB) Control No. 1218-0233 (April 2017)",
+      "document_id": "OSHA-2011-0010-0008"
+     },
+     {
+      "title": "Information Collection Request (ICR): Fire Protection in Shipyard Employment Standard (29 CFR 1915, Subpart P)",
+      "document_id": "OSHA-2011-0010-0006"
+     },
+     {
+      "title": "Fire Protection in Shipyard Employment (29 CFR part 1915, subpart P). Announcement of the Office of Management and Budget (OMB)Control Numbers Under the Paperwork.",
+      "document_id": "OSHA-2011-0010-0003"
+     },
+     {
+      "title": "SUPPORTING STATEMENT FOR THE INFORMATION COLLECTION REQUIREMENTS OF THE FIRE PROTECTION IN SHIPYARD EMPLOYMENT STANDARD (29 CFR 1915.501-509)1 (OFFICE OF MANAGEMENT AND BUDGET (OMB) CONTROL NO. 1218-0248 (January 2011))",
+      "document_id": "OSHA-2011-0010-0002"
+     }
+    ],
+    "comments_count": 0,
+    "agency_id": "OSHA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=OSHA-2011-0010",
+    "supporting_documents_count": 7,
+    "docket_id": "OSHA-2011-0010",
+    "document_id": "OSHA-2011-0010-0019",
+    "regulation_id_number": null,
+    "title": "Fire Protection in Shipyard Employment (29 CFR part 1915, subpart P)\r\n",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68183,
+   "subtype": null,
+   "title": "Fire Protection in Shipyard Employment Standard; Extension of the Office of Management and Budget's (OMB) Approval of Information Collection (Paperwork) Requirements",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "In accordance with subsection (e)(12) of the Privacy Act of 1974, as amended, the Department of Health and Human Services (HHS), Centers for Medicare & Medicaid Services (CMS), is providing notice of a computer matching program between CMS and participating State-Based Administering Entities (AEs), titled \"Determining Eligibility for Enrollment in Applicable State Health Subsidy Programs Under the Patient Protection and Affordable Care Act\". The matching program supports eligibility determinations for enrollment in applicable State health subsidy programs under the Patient Protection and Affordable Care Act (PPACA), including Qualified Health Plans (QHPs), Medicaid, the Children's Health Insurance Program (CHIP), and Basic Health Programs (BHPs). The matching program also supports implementation of statutory requirements concerning Medicaid community engagement and the prevention of concurrent Medicaid enrollment in more than one State through the Multi-State Enrollment Prevention (MSEP) system.",
+   "action": "Notice of a new matching program.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
+     "name": "Health and Human Services Department",
+     "id": 221,
+     "url": "https://www.federalregister.gov/agencies/health-and-human-services-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/221",
+     "parent_id": null,
+     "slug": "health-and-human-services-department"
+    },
+    {
+     "raw_name": "Centers for Medicare & Medicaid Services",
+     "name": "Centers for Medicare & Medicaid Services",
+     "id": 45,
+     "url": "https://www.federalregister.gov/agencies/centers-for-medicare-medicaid-services",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/45",
+     "parent_id": 221,
+     "slug": "centers-for-medicare-medicaid-services"
+    }
+   ],
+   "agency_names": [
+    "Health and Human Services Department",
+    "Centers for Medicare & Medicaid Services"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22015.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-11-30",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22015",
+   "effective_on": null,
+   "end_page": 68153,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22015.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22015/privacy-act-of-1974-matching-program",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22015.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "CMS",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=CMS_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "CMS_FRDOC_0001",
+    "document_id": "CMS_FRDOC_0001-4475",
+    "regulation_id_number": null,
+    "title": "Recently Posted CMS Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68151,
+   "subtype": null,
+   "title": "Privacy Act of 1974; Matching Program",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Department of Labor (DOL) is submitting this Mine Safety & Health Administration (MSHA)-sponsored information collection request (ICR) to the Office of Management and Budget (OMB) for review and approval in accordance with the Paperwork Reduction Act of 1995 (PRA). Public comments on the ICR are invited.",
+   "action": "Notice of availability; request for comments.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    }
+   ],
+   "agency_names": [
+    "Labor Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22016.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-11-30",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22016",
+   "effective_on": null,
+   "end_page": 68168,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22016.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22016/agency-information-collection-activities-submission-for-omb-review-comment-request-records-of-tests",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22016.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "DOL",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=DOL_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "DOL_FRDOC_0001",
+    "document_id": "DOL_FRDOC_0001-2739",
+    "regulation_id_number": null,
+    "title": "Recently Posted DOL Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68168,
+   "subtype": null,
+   "title": "Agency Information Collection Activities; Submission for OMB Review; Comment Request; Records of Tests and of Examinations of Personnel Hoisting Equipment",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "In this notice, OSHA announces the final decision to expand the scope of recognition for Intertek Testing Services NA, Inc as a Nationally Recognized Testing Laboratory (NRTL).",
+   "action": "Notice.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    },
+    {
+     "raw_name": "Occupational Safety and Health Administration",
+     "name": "Occupational Safety and Health Administration",
+     "id": 386,
+     "url": "https://www.federalregister.gov/agencies/occupational-safety-and-health-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/386",
+     "parent_id": 271,
+     "slug": "occupational-safety-and-health-administration"
+    }
+   ],
+   "agency_names": [
+    "Labor Department",
+    "Occupational Safety and Health Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22017.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. OSHA-2007-0039"
+   ],
+   "document_number": "2026-22017",
+   "effective_on": "2026-10-29",
+   "end_page": 68173,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22017.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22017/intertek-testing-services-na-inc-grant-of-expansion-of-recognition",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22017.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [
+     {
+      "title": "Intertek Testing Services NA, Inc. Application for Expansion (July 2025)",
+      "document_id": "OSHA-2007-0039-0082"
+     },
+     {
+      "title": "Intertek Testing Services NA, Inc. Application for Expansion (June 2024)",
+      "document_id": "OSHA-2007-0039-0081"
+     },
+     {
+      "title": "Intertek Testing Services NA, Inc. Application for Expansion (July 2025)",
+      "document_id": "OSHA-2007-0039-0079"
+     },
+     {
+      "title": "Intertek Testing Services NA,  Inc. Application for Additional Site - Singapore (February 2024)",
+      "document_id": "OSHA-2007-0039-0074"
+     },
+     {
+      "title": "Intertek Testing Services  NA, Inc. Application for Expansion (February 2021)",
+      "document_id": "OSHA-2007-0039-0063"
+     },
+     {
+      "title": "Intertek Testing Services NA, Inc. Expansion Application (October 2023)",
+      "document_id": "OSHA-2007-0039-0061"
+     },
+     {
+      "title": "Intertek Testing Service NA, Inc. Application for Expansion (June 2024)",
+      "document_id": "OSHA-2007-0039-0058"
+     },
+     {
+      "title": "Intertek NRTL Expansion Application (February 2021)",
+      "document_id": "OSHA-2007-0039-0055"
+     },
+     {
+      "title": "Intertek Testing Services SNAP Transition to NRTL Sites",
+      "document_id": "OSHA-2007-0039-0047"
+     },
+     {
+      "title": "ITSNA Amended Application 3 Standards",
+      "document_id": "OSHA-2007-0039-0043"
+     }
+    ],
+    "comments_count": 0,
+    "agency_id": "OSHA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=OSHA-2007-0039",
+    "supporting_documents_count": 35,
+    "docket_id": "OSHA-2007-0039",
+    "document_id": "OSHA-2007-0039-0084",
+    "regulation_id_number": null,
+    "title": "Intertek Testing Services NA Inc. (ITSNA)",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68171,
+   "subtype": null,
+   "title": "Intertek Testing Services NA, Inc.: Grant of Expansion of Recognition",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Department of Labor's (DOL) Employment and Training Administration (ETA) is soliciting comments concerning a proposed extension for the authority to conduct the information collection request (ICR) titled, \"Contribution Operations.\" This comment request is part of continuing Departmental efforts to reduce paperwork and respondent burden in accordance with the Paperwork Reduction Act of 1995 (PRA).",
+   "action": "Notice.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    },
+    {
+     "raw_name": "Employment and Training Administration",
+     "name": "Employment and Training Administration",
+     "id": 133,
+     "url": "https://www.federalregister.gov/agencies/employment-and-training-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/133",
+     "parent_id": 271,
+     "slug": "employment-and-training-administration"
+    }
+   ],
+   "agency_names": [
+    "Labor Department",
+    "Employment and Training Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22018.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-12-28",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22018",
+   "effective_on": null,
+   "end_page": 68168,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22018.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22018/agency-information-collection-activities-comment-request-contribution-operations",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22018.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-29T06:59:38Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68167,
+   "subtype": null,
+   "title": "Agency Information Collection Activities; Comment Request; Contribution Operations",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Department of Labor (DOL), as part of its continuing effort to reduce paperwork and respondent burden, conducts a pre- clearance request for comment to provide the general public and Federal agencies with an opportunity to comment on proposed collections of information in accordance with the Paperwork Reduction Act of 1995. This request helps to ensure that: requested data can be provided in the desired format; reporting burden (time and financial resources) is minimized; collection instruments are clearly understood; and the impact of collection requirements on respondents can be properly assessed. Currently, the DOL Chief Evaluation Office (CEO) is soliciting comments on the information collection for Senior Community Service Employment Program Older Workers Study Impact Evaluation.",
+   "action": "Notice of information collection; request for public comments.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    }
+   ],
+   "agency_names": [
+    "Labor Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22019.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-12-28",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "OMB Control No. 1290-0NEW"
+   ],
+   "document_number": "2026-22019",
+   "effective_on": null,
+   "end_page": 68170,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22019.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22019/new-collection-older-workers-study-impact-evaluation",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22019.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 3,
+    "agency_id": "DOL",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=DOL_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "DOL_FRDOC_0001",
+    "document_id": "DOL_FRDOC_0001-2737",
+    "regulation_id_number": null,
+    "title": "Recently Posted DOL Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-31T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68169,
+   "subtype": null,
+   "title": "New Collection; Older Workers Study Impact Evaluation",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Department of Labor (DOL) is submitting this Mine Safety & Health Administration (MSHA)-sponsored information collection request (ICR) to the Office of Management and Budget (OMB) for review and approval in accordance with the Paperwork Reduction Act of 1995 (PRA). Public comments on the ICR are invited.",
+   "action": "Notice of availability; request for comments.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    }
+   ],
+   "agency_names": [
+    "Labor Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22020.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-11-30",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22020",
+   "effective_on": null,
+   "end_page": 68169,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22020.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22020/agency-information-collection-activities-submission-for-omb-review-comment-request-representative-of",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22020.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "DOL",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=DOL_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "DOL_FRDOC_0001",
+    "document_id": "DOL_FRDOC_0001-2738",
+    "regulation_id_number": null,
+    "title": "Recently Posted DOL Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68168,
+   "subtype": null,
+   "title": "Agency Information Collection Activities; Submission for OMB Review; Comment Request; Representative of Miners, Notification of Legal Identity, and Notification of Commencement of Operations and Closing of Mines",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "In this notice, OSHA grants a permanent variance to Obayashi-- Jay Dee Joint Venture (OJD) related to work in compressed air environments.",
+   "action": "Notice.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    },
+    {
+     "raw_name": "Occupational Safety and Health Administration",
+     "name": "Occupational Safety and Health Administration",
+     "id": 386,
+     "url": "https://www.federalregister.gov/agencies/occupational-safety-and-health-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/386",
+     "parent_id": 271,
+     "slug": "occupational-safety-and-health-administration"
+    }
+   ],
+   "agency_names": [
+    "Labor Department",
+    "Occupational Safety and Health Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22021.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. OSHA-2026-0001"
+   ],
+   "document_number": "2026-22021",
+   "effective_on": "2026-10-29",
+   "end_page": 68183,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22021.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22021/obayashi-jay-dee-joint-venture-cemetery-brook-drain-tunnel-project-grant-of-permanent-variance",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22021.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "OSHA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=OSHA-2026-0001",
+    "supporting_documents_count": 0,
+    "docket_id": "OSHA-2026-0001",
+    "document_id": "OSHA-2026-0001-0002",
+    "regulation_id_number": null,
+    "title": "Cemetery Brook Train Tunnel Variance Application",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68173,
+   "subtype": null,
+   "title": "Obayashi-Jay Dee Joint Venture; Cemetery Brook Drain Tunnel Project; Grant of Permanent Variance",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Department of Labor (DOL), is soliciting comments concerning a proposed revision for the authority to conduct the information collection request (ICR) titled, \"Employer's First Report of Injury or Occupational Illness (LS-202), Employer's Supplementary Report of Accident or Occupational Illness (LS-210).\" This comment request is part of continuing Departmental efforts to reduce paperwork and respondent burden in accordance with the Paperwork Reduction Act of 1995 (PRA).",
+   "action": "Request for public comments.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    },
+    {
+     "raw_name": "Office of Workers' Compensation Programs",
+     "name": "Workers' Compensation Programs Office",
+     "id": 530,
+     "url": "https://www.federalregister.gov/agencies/workers-compensation-programs-office",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/530",
+     "parent_id": 271,
+     "slug": "workers-compensation-programs-office"
+    }
+   ],
+   "agency_names": [
+    "Labor Department",
+    "Workers' Compensation Programs Office"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22022.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-12-28",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22022",
+   "effective_on": null,
+   "end_page": 68185,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22022.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22022/proposed-revision-of-existing-collection-longshore-and-harbor-workers-compensation-act-employers",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22022.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "WCPO",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=WCPO_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "WCPO_FRDOC_0001",
+    "document_id": "WCPO_FRDOC_0001-0447",
+    "regulation_id_number": null,
+    "title": "Recently Posted WCPO Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68184,
+   "subtype": null,
+   "title": "Proposed Revision of Existing Collection; Longshore and Harbor Workers' Compensation Act Employer's First Report of Injury or Occupational Illness (LS-202) and Employer's Supplementary Report of Accident or Occupational Illness (LS-210)",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "OSHA solicits public comments concerning the proposal to extend the Office of Management and Budget's (OMB) approval of the information collection requirements specified in the Grain Handling Facilities Standard.",
+   "action": "Request for public comments.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF LABOR",
+     "name": "Labor Department",
+     "id": 271,
+     "url": "https://www.federalregister.gov/agencies/labor-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/271",
+     "parent_id": null,
+     "slug": "labor-department"
+    },
+    {
+     "raw_name": "Occupational Safety and Health Administration",
+     "name": "Occupational Safety and Health Administration",
+     "id": 386,
+     "url": "https://www.federalregister.gov/agencies/occupational-safety-and-health-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/386",
+     "parent_id": 271,
+     "slug": "occupational-safety-and-health-administration"
+    }
+   ],
+   "agency_names": [
+    "Labor Department",
+    "Occupational Safety and Health Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22023.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-12-28",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. OSHA-2011-0028"
+   ],
+   "document_number": "2026-22023",
+   "effective_on": null,
+   "end_page": 68171,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22023.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22023/grain-handling-facilities-standard-extension-of-the-office-of-management-and-budgets-omb-approval-of",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22023.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [
+     {
+      "title": "Supporting Statement for the Information Collection Requirements of the Grain Handling Facilities Standard (29 CFR 1910.272); OMB Control Number 1218-0206 (October 2026)",
+      "document_id": "OSHA-2011-0028-0021"
+     },
+     {
+      "title": "Supporting Statement for the Information Collection Requirements of the Grain Handling Facilities Standard (29 CFR 1910.272) 1 (OMB) Control No. 1218-0206 (February 2024)",
+      "document_id": "OSHA-2011-0028-0018"
+     },
+     {
+      "title": "Supporting Statement for the Standard on rain Handling Facilities (29 CFR 1910.272)1 (OMB) Control No. 1218-0206 (October 2020)",
+      "document_id": "OSHA-2011-0028-0014"
+     },
+     {
+      "title": "Supporting Statement for the Standard on Grain Handling Facilities (29 CFR 1910.272)1 (OMB) Control No. 1218-0206 (October 2020)",
+      "document_id": "OSHA-2011-0028-0013"
+     },
+     {
+      "title": "Supporting Statement for the Information Collection Requirements of the Standard on Grain Handling Facilities (29 CFR 1910-272)1 Office of Management and Budget (OMB) Control No. 1218-0206 (July 2017)",
+      "document_id": "OSHA-2011-0028-0010"
+     },
+     {
+      "title": "Grain Handling Facilities (29 CFR 1910.272)",
+      "document_id": "OSHA-2011-0028-0005"
+     },
+     {
+      "title": "Grain Handling Facilities (29 CFR 1910.272). Announcement of the Office of Management and Budget (OMB) Control Numbers Under the Paperwork Reduction Act.",
+      "document_id": "OSHA-2011-0028-0003"
+     },
+     {
+      "title": "SUPPORTING STATEMENT FOR THE INFORMATION COLLECTION REQUIREMENTS OF THE STANDARD ON GRAIN HANDLING FACILITIES (29 CFR 1910-272)1 OFFICE OF MANAGEMENT AND BUDGET (OMB) CONTROL NO. 1218-0206 (January 2011) ",
+      "document_id": "OSHA-2011-0028-0002"
+     }
+    ],
+    "comments_count": 0,
+    "agency_id": "OSHA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=OSHA-2011-0028",
+    "supporting_documents_count": 8,
+    "docket_id": "OSHA-2011-0028",
+    "document_id": "OSHA-2011-0028-0020",
+    "regulation_id_number": null,
+    "title": "Grain Handling Facilities (29 CFR 1910.272)",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68170,
+   "subtype": null,
+   "title": "Grain Handling Facilities Standard; Extension of the Office of Management and Budget's (OMB) Approval of Information Collection (Paperwork) Requirements",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "As a result of the determinations by the U.S. Department of Commerce (Commerce) and the U.S. International Trade Commission (ITC) that revocation of the antidumping duty (AD) and countervailing duty (CVD) orders on non-refillable steel cylinders the People's Republic of China (China) would likely lead to the continuation or recurrence of dumping, countervailable subsidies, and material injury to an industry in the United States, Commerce is publishing a notice of continuation of these AD and CVD orders.",
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF COMMERCE",
+     "name": "Commerce Department",
+     "id": 54,
+     "url": "https://www.federalregister.gov/agencies/commerce-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/54",
+     "parent_id": null,
+     "slug": "commerce-department"
+    },
+    {
+     "raw_name": "International Trade Administration",
+     "name": "International Trade Administration",
+     "id": 261,
+     "url": "https://www.federalregister.gov/agencies/international-trade-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/261",
+     "parent_id": 54,
+     "slug": "international-trade-administration"
+    }
+   ],
+   "agency_names": [
+    "Commerce Department",
+    "International Trade Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22024.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "A-570-126, C-570-127"
+   ],
+   "document_number": "2026-22024",
+   "effective_on": null,
+   "end_page": 68111,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22024.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22024/non-refillable-steel-cylinders-from-the-peoples-republic-of-china-continuation-of-antidumping-duty",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22024.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "ITA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=ITA_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "ITA_FRDOC_0001",
+    "document_id": "ITA_FRDOC_0001-12525",
+    "regulation_id_number": null,
+    "title": "Recently Posted ITA Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68110,
+   "subtype": null,
+   "title": "Non-Refillable Steel Cylinders From the People's Republic of China: Continuation of Antidumping Duty Order and Countervailing Duty Order",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "SECURITIES AND EXCHANGE COMMISSION",
+     "name": "Securities and Exchange Commission",
+     "id": 466,
+     "url": "https://www.federalregister.gov/agencies/securities-and-exchange-commission",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/466",
+     "parent_id": null,
+     "slug": "securities-and-exchange-commission"
+    }
+   ],
+   "agency_names": [
+    "Securities and Exchange Commission"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22025.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Release No. 34-106729",
+    "File No. SR-MX2-2026-10"
+   ],
+   "document_number": "2026-22025",
+   "effective_on": null,
+   "end_page": 68201,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22025.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22025/self-regulatory-organizations-mx2-llc-notice-of-filing-and-immediate-effectiveness-of-a-proposed",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22025.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "SEC",
+    "document_id": "SEC-2026-6735-0001",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68198,
+   "subtype": null,
+   "title": "Self-Regulatory Organizations; MX2 LLC; Notice of Filing and Immediate Effectiveness of a Proposed Rule Change To Amend Rule 11.15 (Clearly Erroneous Executions)",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "SECURITIES AND EXCHANGE COMMISSION",
+     "name": "Securities and Exchange Commission",
+     "id": 466,
+     "url": "https://www.federalregister.gov/agencies/securities-and-exchange-commission",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/466",
+     "parent_id": null,
+     "slug": "securities-and-exchange-commission"
+    }
+   ],
+   "agency_names": [
+    "Securities and Exchange Commission"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22026.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Release No. 34-106738",
+    "File No. SR-ICC-2026-009"
+   ],
+   "document_number": "2026-22026",
+   "effective_on": null,
+   "end_page": 68212,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22026.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22026/self-regulatory-organizations-ice-clear-credit-llc-order-approving-proposed-rule-change-relating-to",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22026.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "SEC",
+    "document_id": "SEC-2026-6737-0001",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68207,
+   "subtype": null,
+   "title": "Self-Regulatory Organizations; ICE Clear Credit LLC; Order Approving Proposed Rule Change Relating to the ICE Clear Credit Recovery Plan and ICE Clear Credit Wind-Down Plan",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "SECURITIES AND EXCHANGE COMMISSION",
+     "name": "Securities and Exchange Commission",
+     "id": 466,
+     "url": "https://www.federalregister.gov/agencies/securities-and-exchange-commission",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/466",
+     "parent_id": null,
+     "slug": "securities-and-exchange-commission"
+    }
+   ],
+   "agency_names": [
+    "Securities and Exchange Commission"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22027.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Release No. 34-106731",
+    "File No. SR-FINRA-2026-022"
+   ],
+   "document_number": "2026-22027",
+   "effective_on": null,
+   "end_page": 68196,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22027.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22027/self-regulatory-organizations-financial-industry-regulatory-authority-inc-notice-of-filing-and",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22027.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "SEC",
+    "document_id": "SEC-2026-6733-0001",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68190,
+   "subtype": null,
+   "title": "Self-Regulatory Organizations; Financial Industry Regulatory Authority, Inc.; Notice of Filing and Immediate Effectiveness of a Proposed Rule Change To Amend FINRA Rules To Address Binary Options, Options Whose Payout Is Based on Specified Metrics, and Options Cleared by a Registered Clearing Agency Other Than The Options Clearing Corporation",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "SECURITIES AND EXCHANGE COMMISSION",
+     "name": "Securities and Exchange Commission",
+     "id": 466,
+     "url": "https://www.federalregister.gov/agencies/securities-and-exchange-commission",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/466",
+     "parent_id": null,
+     "slug": "securities-and-exchange-commission"
+    }
+   ],
+   "agency_names": [
+    "Securities and Exchange Commission"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22028.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Release No. 34-106730",
+    "File No. SR-NYSEAMER-2026-94"
+   ],
+   "document_number": "2026-22028",
+   "effective_on": null,
+   "end_page": 68198,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22028.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22028/self-regulatory-organizations-nyse-american-llc-notice-of-filing-and-immediate-effectiveness-of-a",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22028.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "SEC",
+    "document_id": "SEC-2026-6736-0001",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68196,
+   "subtype": null,
+   "title": "Self-Regulatory Organizations; NYSE American LLC; Notice of Filing and Immediate Effectiveness of a Proposed Rule Change To Modify the NYSE American Options Fee Schedule To Modify Pricing for the Customer Best Execution (“CUBE”) Auctions",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "SECURITIES AND EXCHANGE COMMISSION",
+     "name": "Securities and Exchange Commission",
+     "id": 466,
+     "url": "https://www.federalregister.gov/agencies/securities-and-exchange-commission",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/466",
+     "parent_id": null,
+     "slug": "securities-and-exchange-commission"
+    }
+   ],
+   "agency_names": [
+    "Securities and Exchange Commission"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22029.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Release No. 34-106739",
+    "File No. SR-CBOE-2026-082"
+   ],
+   "document_number": "2026-22029",
+   "effective_on": null,
+   "end_page": 68207,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22029.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22029/self-regulatory-organizations-cboe-exchange-inc-notice-of-filing-and-immediate-effectiveness-of-a",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22029.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "SEC",
+    "document_id": "SEC-2026-6734-0001",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68205,
+   "subtype": null,
+   "title": "Self-Regulatory Organizations; Cboe Exchange, Inc.; Notice of Filing and Immediate Effectiveness of a Proposed Rule Change To Remove the Silexx Fees From Its Fee Schedule in Accordance With SEC Exemptive Relief",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "SECURITIES AND EXCHANGE COMMISSION",
+     "name": "Securities and Exchange Commission",
+     "id": 466,
+     "url": "https://www.federalregister.gov/agencies/securities-and-exchange-commission",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/466",
+     "parent_id": null,
+     "slug": "securities-and-exchange-commission"
+    }
+   ],
+   "agency_names": [
+    "Securities and Exchange Commission"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22030.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Release No. 34-106732",
+    "File No. SR-IEX-2026-42"
+   ],
+   "document_number": "2026-22030",
+   "effective_on": null,
+   "end_page": 68204,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22030.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22030/self-regulatory-organizations-investors-exchange-llc-notice-of-filing-and-immediate-effectiveness-of",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22030.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "SEC",
+    "document_id": "SEC-2026-6738-0001",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68201,
+   "subtype": null,
+   "title": "Self-Regulatory Organizations; Investors Exchange LLC; Notice of Filing and Immediate Effectiveness of Proposed Rule Change To Modify the Behavior of Discretionary Peg Orders if They Are Received by the Exchange During a Period of Quote Instability or Quote Imbalance",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": null,
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "RAILROAD RETIREMENT BOARD",
+     "name": "Railroad Retirement Board",
+     "id": 444,
+     "url": "https://www.federalregister.gov/agencies/railroad-retirement-board",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/444",
+     "parent_id": null,
+     "slug": "railroad-retirement-board"
+    }
+   ],
+   "agency_names": [
+    "Railroad Retirement Board"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22031.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22031",
+   "effective_on": null,
+   "end_page": 68190,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22031.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22031/proposed-collection-comment-request",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22031.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "RRB",
+    "document_id": "RRB-2026-0562-0001",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68186,
+   "subtype": null,
+   "title": "Proposed Collection; Comment Request",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The U.S. Department of Commerce (Commerce) is rescinding the administrative review of the antidumping duty (AD) order on certain frozen warmwater shrimp (shrimp) from the People's Republic of China (China). The period of review (POR) is February 1, 2025, through January 31, 2026.",
+   "action": null,
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF COMMERCE",
+     "name": "Commerce Department",
+     "id": 54,
+     "url": "https://www.federalregister.gov/agencies/commerce-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/54",
+     "parent_id": null,
+     "slug": "commerce-department"
+    },
+    {
+     "raw_name": "International Trade Administration",
+     "name": "International Trade Administration",
+     "id": 261,
+     "url": "https://www.federalregister.gov/agencies/international-trade-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/261",
+     "parent_id": 54,
+     "slug": "international-trade-administration"
+    }
+   ],
+   "agency_names": [
+    "Commerce Department",
+    "International Trade Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22032.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "A-570-893"
+   ],
+   "document_number": "2026-22032",
+   "effective_on": null,
+   "end_page": 68109,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22032.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22032/certain-frozen-warmwater-shrimp-from-the-peoples-republic-of-china-rescission-of-antidumping-duty",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22032.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "ITA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=ITA_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "ITA_FRDOC_0001",
+    "document_id": "ITA_FRDOC_0001-12527",
+    "regulation_id_number": null,
+    "title": "Recently Posted ITA Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68107,
+   "subtype": null,
+   "title": "Certain Frozen Warmwater Shrimp From the People's Republic of China: Rescission of Antidumping Duty Administrative Review; 2025-2026",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Gulf Fishery Management Council (Gulf Council) will hold a 1 day in-person meeting of its Ecosystem Technical Committee (ETC).",
+   "action": "Notice of public meeting.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF COMMERCE",
+     "name": "Commerce Department",
+     "id": 54,
+     "url": "https://www.federalregister.gov/agencies/commerce-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/54",
+     "parent_id": null,
+     "slug": "commerce-department"
+    },
+    {
+     "raw_name": "National Oceanic and Atmospheric Administration",
+     "name": "National Oceanic and Atmospheric Administration",
+     "id": 361,
+     "url": "https://www.federalregister.gov/agencies/national-oceanic-and-atmospheric-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/361",
+     "parent_id": 54,
+     "slug": "national-oceanic-and-atmospheric-administration"
+    }
+   ],
+   "agency_names": [
+    "Commerce Department",
+    "National Oceanic and Atmospheric Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22033.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "RTID 0648-XG155"
+   ],
+   "document_number": "2026-22033",
+   "effective_on": null,
+   "end_page": 68113,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22033.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22033/gulf-fishery-management-council-public-meeting",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22033.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-29T06:59:32Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68112,
+   "subtype": null,
+   "title": "Gulf Fishery Management Council; Public Meeting",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "TBL Group, Inc. (TBL Group), a noncarrier holding company that controls multiple interstate motor passenger carriers, has filed an application to acquire control of the member interests in or the primary assets of Horizon Motor Coach, Inc. (Horizon), a federally regulated motor passenger carrier. The Board is tentatively approving and authorizing the transaction. If no opposing comments are timely filed, this notice will be the final Board action.",
+   "action": "Notice tentatively approving and authorizing finance transaction.",
+   "agencies": [
+    {
+     "raw_name": "SURFACE TRANSPORTATION BOARD",
+     "name": "Surface Transportation Board",
+     "id": 481,
+     "url": "https://www.federalregister.gov/agencies/surface-transportation-board",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/481",
+     "parent_id": null,
+     "slug": "surface-transportation-board"
+    }
+   ],
+   "agency_names": [
+    "Surface Transportation Board"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22035.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-12-14",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. MCF 21158"
+   ],
+   "document_number": "2026-22035",
+   "effective_on": "2026-12-15",
+   "end_page": 68221,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22035.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22035/tbl-group-inc-acquisition-of-control-horizon-motor-coach-inc",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22035.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "STB",
+    "document_id": "STB-2026-2938-0001",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68219,
+   "subtype": null,
+   "title": "TBL Group, Inc.-Acquisition of Control-Horizon Motor Coach, Inc.",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "In the Federal Register of October 23, 2026, the OCC published a notice as part of its continuing effort to reduce paperwork and respondent burden, and invited comment on a new information collection, as required by the Paperwork Reduction Act of 1995 (PRA). The OCC proposed a new information collection to comply with the Guiding and Establishing National Innovation for U.S. Stablecoins Act (GENIUS Act or the Act) requirement for entities seeking to issue payment stablecoins in the United States, titled \"Applications for Licensing or Registration to Issue Payment Stablecoins Under the GENIUS Act.\" The SUPPLEMENTARY INFORMATION section contained a typographical error in the effective date for the Act.",
+   "action": "Notice and request for comment; correction.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF THE TREASURY",
+     "name": "Treasury Department",
+     "id": 497,
+     "url": "https://www.federalregister.gov/agencies/treasury-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/497",
+     "parent_id": null,
+     "slug": "treasury-department"
+    },
+    {
+     "raw_name": "Office of the Comptroller of the Currency",
+     "name": "Comptroller of the Currency",
+     "id": 80,
+     "url": "https://www.federalregister.gov/agencies/comptroller-of-the-currency",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/80",
+     "parent_id": 497,
+     "slug": "comptroller-of-the-currency"
+    }
+   ],
+   "agency_names": [
+    "Treasury Department",
+    "Comptroller of the Currency"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22036.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-11-23",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22036",
+   "effective_on": null,
+   "end_page": 68230,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22036.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22036/agency-information-collection-activities-proposed-information-collection-submission-for-omb-review",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22036.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-29T07:07:01Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68229,
+   "subtype": null,
+   "title": "Agency Information Collection Activities: Proposed Information Collection; Submission for OMB Review; Applications for Licensing or Registration To Issue Payment Stablecoins Under the GENIUS Act; Correction",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Federal Communications Commission (FCC or Commission) announces that the Office of Management and Budget (OMB) has approved the information collection requirements under OMB Control Number 3060- 1272, as adopted in the Commission's Report and Order, Order of Proposed Modification, and Order on Reconsideration, FCC 26-46.",
+   "action": "Final rule; announcement of effective date.",
+   "agencies": [
+    {
+     "raw_name": "FEDERAL COMMUNICATIONS COMMISSION",
+     "name": "Federal Communications Commission",
+     "id": 161,
+     "url": "https://www.federalregister.gov/agencies/federal-communications-commission",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/161",
+     "parent_id": null,
+     "slug": "federal-communications-commission"
+    }
+   ],
+   "agency_names": [
+    "Federal Communications Commission"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22037.html",
+   "cfr_references": [
+    {
+     "chapter": null,
+     "citation_url": null,
+     "part": "27",
+     "title": 47
+    }
+   ],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "GN Docket Nos. 18-122 and 25-59",
+    "FCC 26-46",
+    "FR ID 374445"
+   ],
+   "document_number": "2026-22037",
+   "effective_on": "2026-10-29",
+   "end_page": 68057,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22037.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22037/upper-c-band-398-42-ghz-expanding-flexible-use-of-the-37-to-42-ghz-band",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22037.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "comments_count": 0,
+    "agency_id": "FCC",
+    "document_id": "FCC-2026-2939-0004",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68055,
+   "subtype": null,
+   "title": "Upper C-Band (3.98-4.2 GHz); Expanding Flexible Use of the 3.7 to 4.2 GHz Band",
+   "topics": [
+    "Communications common carriers",
+    "Radio",
+    "Reporting and recordkeeping requirements",
+    "Telecommunications"
+   ],
+   "type": "Rule",
+   "volume": 91
+  },
+  {
+   "abstract": "The Rural Housing Service (RHS or the Agency), a Rural Development (RD) agency of the United States Department of Agriculture (USDA), is amending the Single Family Housing Guaranteed Loan Program (SFHGLP) regulation to permit the financing of single family homes with income producing Accessory Dwelling Units (ADUs) and clarify the eligibility of properties with features designed to accommodate home- based operations using non-commercial real estate features.",
+   "action": "Final rule.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF AGRICULTURE",
+     "name": "Agriculture Department",
+     "id": 12,
+     "url": "https://www.federalregister.gov/agencies/agriculture-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/12",
+     "parent_id": null,
+     "slug": "agriculture-department"
+    },
+    {
+     "raw_name": "Rural Housing Service",
+     "name": "Rural Housing Service",
+     "id": 458,
+     "url": "https://www.federalregister.gov/agencies/rural-housing-service",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/458",
+     "parent_id": 12,
+     "slug": "rural-housing-service"
+    }
+   ],
+   "agency_names": [
+    "Agriculture Department",
+    "Rural Housing Service"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22038.html",
+   "cfr_references": [
+    {
+     "chapter": null,
+     "citation_url": null,
+     "part": "3555",
+     "title": 7
+    }
+   ],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. RHS-26-SFH-0100"
+   ],
+   "document_number": "2026-22038",
+   "effective_on": "2026-12-28",
+   "end_page": 68028,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22038.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22038/single-family-housing-guaranteed-loan-program-income-producing-accessory-dwelling-unit-adu",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22038.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "RHS",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=RHS_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "RHS_FRDOC_0001",
+    "document_id": "RHS_FRDOC_0001-0635",
+    "regulation_id_number": null,
+    "title": "Recently Posted RHS Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68025,
+   "subtype": null,
+   "title": "Single Family Housing Guaranteed Loan Program-Income Producing Accessory Dwelling Unit (ADU) Provisions",
+   "topics": [
+    "Administrative practice and procedure",
+    "Business and industry",
+    "Credit",
+    "Environmental impact statements",
+    "Fair housing",
+    "Flood insurance",
+    "Grant programs-housing and community development",
+    "Home improvement",
+    "Housing",
+    "Loan programs-housing and community development",
+    "Low and moderate income housing",
+    "Manufactured homes",
+    "Mortgage insurance",
+    "Mortgages",
+    "Reporting and recordkeeping requirements",
+    "Rural areas"
+   ],
+   "type": "Rule",
+   "volume": 91
+  },
+  {
+   "abstract": "HUD is seeking approval from the Office of Management and Budget (OMB) for the information collection described below. In accordance with the Paperwork Reduction Act, HUD is requesting comments from all interested parties on the proposed collection of information. The purpose of this notice is to allow for 30 days of public comment.",
+   "action": "Notice.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
+     "name": "Housing and Urban Development Department",
+     "id": 228,
+     "url": "https://www.federalregister.gov/agencies/housing-and-urban-development-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/228",
+     "parent_id": null,
+     "slug": "housing-and-urban-development-department"
+    }
+   ],
+   "agency_names": [
+    "Housing and Urban Development Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22039.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-11-30",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. FR-7107-N-25",
+    "OMB Control No.: 2577-0294"
+   ],
+   "document_number": "2026-22039",
+   "effective_on": null,
+   "end_page": 68165,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22039.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22039/30-day-notice-of-proposed-information-collection-moving-to-work-amendment-to-consolidated-annual",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22039.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "HUD",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=HUD-2023-0045",
+    "supporting_documents_count": 0,
+    "docket_id": "HUD-2023-0045",
+    "document_id": "HUD-2023-0045-0003",
+    "regulation_id_number": null,
+    "title": "FR–7070–N–37 30-Day Notice of Proposed Information Collection: Moving to Work Amendment to Consolidated Annual Contributions Contract (ACC)",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68165,
+   "subtype": null,
+   "title": "30-Day Notice of Proposed Information Collection: Moving To Work Amendment to Consolidated Annual Contributions Contract",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "Federal Student Aid (FSA), as required by the Public Health Service Act (the Act), is publishing this list of Health Education Assistance Loan (HEAL) borrowers who have defaulted on their loans as of August 17, 2026. This information is also made available for use by organizations authorized by the Act.",
+   "action": "Notice.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF EDUCATION",
+     "name": "Education Department",
+     "id": 126,
+     "url": "https://www.federalregister.gov/agencies/education-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/126",
+     "parent_id": null,
+     "slug": "education-department"
+    }
+   ],
+   "agency_names": [
+    "Education Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22040.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22040",
+   "effective_on": null,
+   "end_page": 68129,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22040.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22040/list-of-borrowers-who-have-defaulted-on-their-health-education-assistance-loans",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22040.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-29T07:06:29Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68120,
+   "subtype": null,
+   "title": "List of Borrowers Who Have Defaulted on Their Health Education Assistance Loans",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The Department of Veterans Affairs (VA), published a document in the Federal Register of October 1, 2026, concerning the appointment of individuals to serve on the VA's Performance Review Board (PRB) that inadvertently omitted the name of one individual. This document corrects that notice by adding one additional PRB member.",
+   "action": "Notice.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF VETERANS AFFAIRS",
+     "name": "Veterans Affairs Department",
+     "id": 520,
+     "url": "https://www.federalregister.gov/agencies/veterans-affairs-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/520",
+     "parent_id": null,
+     "slug": "veterans-affairs-department"
+    }
+   ],
+   "agency_names": [
+    "Veterans Affairs Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22041.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. VA-2026-VACO-0001"
+   ],
+   "document_number": "2026-22041",
+   "effective_on": null,
+   "end_page": 68231,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22041.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22041/corporate-senior-executive-management-office-notice-of-performance-review-board-members-correction",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22041.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "VA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=VA-2026-VACO-0001",
+    "supporting_documents_count": 0,
+    "docket_id": "VA-2026-VACO-0001",
+    "document_id": "VA-2026-VACO-0001-0481",
+    "regulation_id_number": null,
+    "title": "Notices",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68231,
+   "subtype": null,
+   "title": "Corporate Senior Executive Management Office Notice of Performance Review Board Members; Correction",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "This action proposes to establish Class D airspace extending upward from the surface up to and including 2,500 feet within a 4.4- mile radius of Winter Haven Regional Airport, in Winter Haven, FL, excluding that portion within the Bartow Executive Airport Class D airspace area, as a new air traffic control tower will service the airport. Controlled airspace is necessary for the safety and management of instrument flight rules (IFR) operations at this airport.",
+   "action": "Notice of proposed rulemaking (NPRM).",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF TRANSPORTATION",
+     "name": "Transportation Department",
+     "id": 492,
+     "url": "https://www.federalregister.gov/agencies/transportation-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/492",
+     "parent_id": null,
+     "slug": "transportation-department"
+    },
+    {
+     "raw_name": "Federal Aviation Administration",
+     "name": "Federal Aviation Administration",
+     "id": 159,
+     "url": "https://www.federalregister.gov/agencies/federal-aviation-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/159",
+     "parent_id": 492,
+     "slug": "federal-aviation-administration"
+    }
+   ],
+   "agency_names": [
+    "Transportation Department",
+    "Federal Aviation Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22042.html",
+   "cfr_references": [
+    {
+     "chapter": null,
+     "citation_url": null,
+     "part": "71",
+     "title": 14
+    }
+   ],
+   "comments_close_on": "2026-12-14",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Docket No. FAA-2026-13869",
+    "Airspace Docket No. 26-ASO-18"
+   ],
+   "document_number": "2026-22042",
+   "effective_on": null,
+   "end_page": 68059,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22042.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22042/establishment-of-class-d-airspace-winter-haven-fl",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22042.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [
+    "2120-AA66"
+   ],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "regulatory_plan": {
+     "html_url": "https://www.federalregister.gov/regulations/2120-AA66/airspace-actions",
+     "title": "Airspace Actions"
+    },
+    "comments_count": 1,
+    "agency_id": "FAA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=FAA-2026-13869",
+    "supporting_documents_count": 0,
+    "docket_id": "FAA-2026-13869",
+    "document_id": "FAA-2026-13869-0001",
+    "regulation_id_number": "2120-AA66",
+    "title": "Establish Class D Airspace at Winter Haven Regional Airport (KGIF)",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": false,
+   "signing_date": null,
+   "start_page": 68058,
+   "subtype": null,
+   "title": "Establishment of Class D Airspace; Winter Haven, FL",
+   "topics": [
+    "Airspace",
+    "Incorporation by reference",
+    "Navigation (air)"
+   ],
+   "type": "Proposed Rule",
+   "volume": 91
+  },
+  {
+   "abstract": "In accordance with the Paperwork Reduction Act of 1995 (44 U.S.C. Chapter 35), this notice announces the intention of the United States Department of Agriculture (USDA) to request approval for a revision of a currently approved information collection request for the Agricultural Foreign Investment Disclosure Act of 1978 (AFIDA).",
+   "action": "Notice and request for comments.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF AGRICULTURE",
+     "name": "Agriculture Department",
+     "id": 12,
+     "url": "https://www.federalregister.gov/agencies/agriculture-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/12",
+     "parent_id": null,
+     "slug": "agriculture-department"
+    }
+   ],
+   "agency_names": [
+    "Agriculture Department"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22043.html",
+   "cfr_references": [],
+   "comments_close_on": "2026-12-28",
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22043",
+   "effective_on": null,
+   "end_page": 68104,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22043.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22043/notice-of-request-for-approval-of-a-revision-of-a-currently-approved-information-collection-request",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22043.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "USDA",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=USDA_FRDOC_0001",
+    "supporting_documents_count": 0,
+    "docket_id": "USDA_FRDOC_0001",
+    "document_id": "USDA_FRDOC_0001-3391",
+    "regulation_id_number": null,
+    "title": "Recently Posted USDA Rules and Notices.",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68102,
+   "subtype": null,
+   "title": "Notice of Request for Approval of a Revision of a Currently Approved Information Collection Request",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "The U.S. Department of Transportation announces a public meeting of the U.S. Merchant Marine Academy (USMMA) Board of Visitors (Board).",
+   "action": "Notice of public meeting.",
+   "agencies": [
+    {
+     "raw_name": "DEPARTMENT OF TRANSPORTATION",
+     "name": "Transportation Department",
+     "id": 492,
+     "url": "https://www.federalregister.gov/agencies/transportation-department",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/492",
+     "parent_id": null,
+     "slug": "transportation-department"
+    },
+    {
+     "raw_name": "Office of the Secretary"
+    }
+   ],
+   "agency_names": [
+    "Transportation Department",
+    "Office of the Secretary"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22044.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [],
+   "document_number": "2026-22044",
+   "effective_on": null,
+   "end_page": 68229,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22044.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22044/us-merchant-marine-academy-board-of-visitors-public-meeting",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22044.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "supporting_documents": [],
+    "comments_count": 0,
+    "agency_id": "DOT",
+    "comments_url": "https://www.regulations.gov/docketBrowser?rpp=50&so=DESC&sb=postedDate&po=0&dct=PS&D=DOT-OST-2009-0092",
+    "supporting_documents_count": 0,
+    "docket_id": "DOT-OST-2009-0092",
+    "document_id": "DOT-OST-2009-0092-0574",
+    "regulation_id_number": null,
+    "title": "Federal Registers for Applications, Notices and Orders - Miscellaneous",
+    "checked_regulationsdotgov_at": "2026-10-30T10:55:03Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68229,
+   "subtype": null,
+   "title": "U.S. Merchant Marine Academy Board of Visitors; Public Meeting",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  },
+  {
+   "abstract": "This is notice of an Administrative declaration of a disaster for the state of Indiana dated October 26, 2026. Incident: Severe Storms and Flooding.",
+   "action": "Notice.",
+   "agencies": [
+    {
+     "raw_name": "SMALL BUSINESS ADMINISTRATION",
+     "name": "Small Business Administration",
+     "id": 468,
+     "url": "https://www.federalregister.gov/agencies/small-business-administration",
+     "json_url": "https://www.federalregister.gov/api/v1/agencies/468",
+     "parent_id": null,
+     "slug": "small-business-administration"
+    }
+   ],
+   "agency_names": [
+    "Small Business Administration"
+   ],
+   "body_html_url": "https://www.federalregister.gov/documents/full_text/html/2026/10/29/2026-22045.html",
+   "cfr_references": [],
+   "comments_close_on": null,
+   "correction_of": null,
+   "corrections": [],
+   "docket_ids": [
+    "Disaster Declaration #21995 and #21996",
+    "INDIANA Disaster Number IN-20025"
+   ],
+   "document_number": "2026-22045",
+   "effective_on": null,
+   "end_page": 68213,
+   "executive_order_number": null,
+   "full_text_xml_url": "https://www.federalregister.gov/documents/full_text/xml/2026/10/29/2026-22045.xml",
+   "html_url": "https://www.federalregister.gov/documents/2026/10/29/2026-22045/administrative-declaration-of-a-disaster-for-the-state-of-indiana",
+   "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-29/pdf/2026-22045.pdf",
+   "publication_date": "2026-10-29",
+   "regulation_id_numbers": [],
+   "regulations_dot_gov_info": {
+    "checked_regulationsdotgov_at": "2026-10-29T07:02:44Z"
+   },
+   "significant": null,
+   "signing_date": null,
+   "start_page": 68213,
+   "subtype": null,
+   "title": "Administrative Declaration of a Disaster for the State of Indiana",
+   "topics": [],
+   "type": "Notice",
+   "volume": 91
+  }
+ ]
+}

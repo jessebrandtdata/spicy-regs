@@ -1,0 +1,37 @@
+{
+ "prior": {
+  "family": "federal-register",
+  "artifactDigest": "sha256:f0ce213e8820c8bbb5a66fa8dfe705cc79a4b77a53394c51f984135667df3a96",
+  "generationId": "f59d2b8fd07e45779b2d2e563a1ce86e",
+  "policy_version": "regulations-native-v1",
+  "rows": 164,
+  "cut": "36 of the 221 documents of 2026-10-29/30, 8 edge rows, 120 rows of row group 300"
+ },
+ "pages": {
+  "source_blob": "sha256:985bbeaa2efc18412a8af416554160219f6a19c1147af3158b2732b7b688b49a",
+  "source_request": "documents.json, publication_date 2026-10-29..2026-10-30, 221 results",
+  "night-1": {
+   "sha256": "sha256:fdb8536df6892547c47fddf3604a03674a4b0178bffd6465f21cff3bf7dc0c4c",
+   "records": 24
+  },
+  "night-2": {
+   "sha256": "sha256:9368d5e1f62f32a33168f42da7cde1f62a7b0324176e37abd19ed1a13c5abab6",
+   "records": 38
+  }
+ },
+ "edited": {
+  "page": "night-2",
+  "document_number": "2026-22019",
+  "publication_date": "2026-10-29",
+  "regulations_dot_gov_info": {
+   "comments_count": [
+    0,
+    3
+   ],
+   "checked_regulationsdotgov_at": [
+    "2026-10-30T10:55:03Z",
+    "2026-10-31T10:55:03Z"
+   ]
+  }
+ }
+}

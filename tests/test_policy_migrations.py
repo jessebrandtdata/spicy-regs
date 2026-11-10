@@ -9,6 +9,7 @@ from spicy_regs.etl_policy_registry import installed_policies
 from spicy_regs.etl_receipts import receipt_policies
 from spicy_regs.legislative_receipts import policy as legislative_policy
 from spicy_regs.policy_migrations import descriptor_digest, ledger, replay_reason, unreadable_shipped_policies
+from spicy_regs.transforms.regulations_receipts import policy as regulations_policy
 
 
 def test_every_installed_policy_is_shipped_and_every_earlier_one_is_read_or_replayed():
@@ -46,9 +47,13 @@ def test_summary_v2_is_identified_but_replayed_while_bill_versions_v1_carries():
     current, earlier = receipt_policies(legislative_policy("bill_versions"))
     assert replay_reason(current) is None and replay_reason(earlier) is None
     assert set(ledger()["replay_required"]) == {"bill_publisher_summaries"}
-    # Seeded from the descriptors live generations state (2026-11-09): only these two differ from installed.
+    # Seeded from the descriptors live generations state (2026-11-09), where only the two bill tables differed
+    # from installed. The two Register tables' column promotion (ss-vse3) carries: each earlier row restores from
+    # its retained input, which already holds the promoted values.
     assert {name for name, digests in ledger()["shipped"].items() if len(digests) > 1} == {
-        "bill_versions", "bill_publisher_summaries"}
+        "bill_versions", "bill_publisher_summaries", "federal_register", "fr_docket_links"}
+    for name in ("federal_register", "fr_docket_links"):
+        assert all(replay_reason(p) is None for p in receipt_policies(regulations_policy(name)))
 
 
 def test_live_check_names_a_published_policy_missing_from_the_ledger(monkeypatch):

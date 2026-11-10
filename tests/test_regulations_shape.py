@@ -162,7 +162,10 @@ def test_each_assigned_table_has_explicit_columns_schema_and_identity():
         'comments': {'comment_reference_values_json', 'pdf_extraction_results_json'},
         'documents': {'pdf_extraction_results_json'},
         # The Register's literal president object: absent, JSON null and {} stay distinct (SpicyDocs 0.66.6 contract).
-        'federal_register': {'president_json'},
+        # and its literal regulations.gov statement, public whole since regulations-native-v3 (ss-vse3).
+        'federal_register': {'president_json', 'regulations_dot_gov_info_json'},
+        # SpicyDocs' normalizer output for one printed label, public since regulations-native-v2 (ss-vse3).
+        'fr_docket_links': {'normalized_docket_candidates_json'},
         'proceedings': {'fr_document_joins_json', 'unresolved_fr_references_json'},
         'regulatory_agenda_items': {'unresolved_fr_references_json'},
         'rule_targets': {'fr_references_json'},
@@ -215,7 +218,11 @@ def test_new_register_fields_keep_relations_counts_and_supporting_titles_native(
     assert shaped["regulations_dot_gov_supporting_documents"] == info["supporting_documents"]
     assert shaped["regulations_dot_gov_regulatory_plan_title"] == "Plan"
     assert shaped["raw_conversion_inputs"] == raw
-    assert "regulations_dot_gov_info_json" not in subject_schema("federal_register").names
+    # The statement itself is a public column, whole: the plan's html_url is stated nowhere else (ss-vse3).
+    assert shaped["regulations_dot_gov_info_json"] == json.dumps(info)
+    assert subject_schema("federal_register").names[-5:] == [
+        "html_url", "pdf_url", "body_html_url", "source_sha256", "regulations_dot_gov_info_json"]
+    assert subject_schema("fr_docket_links").names[-2:] == ["link_source", "normalized_docket_candidates_json"]
     info["supporting_documents"][0]["unclassified"] = "retain, then refuse"
     with pytest.raises(RegulationsShapeError):
         shape_record("federal_register", raw | {"regulations_dot_gov_info_json": json.dumps(info)})
