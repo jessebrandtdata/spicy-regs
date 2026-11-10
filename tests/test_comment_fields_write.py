@@ -222,6 +222,56 @@ def test_the_installed_extract_projects_to_the_earlier_rules_value():
     assert cfw.downloadable_attachments(COMMENT.extract(record)["attachments_json"]) == HELD
 
 
+def _identified(listed: str) -> str:
+    """``listed`` as SpicyDocs 0.85.0 spells it: each entry ends with its own ``attachment_id``."""
+    return json.dumps([{**entry, "attachment_id": f"0900006400000{n:03d}"} for n, entry in enumerate(json.loads(listed))])
+
+
+# b19b092-to-0.84.0 lists (no id): one holding a withheld entry, one a rendition with no file.
+_WITHHELD_LISTED = json.dumps([
+    {"title": "Letter", "formats": [_PDF]},
+    {"title": "Study", "formats": None, "restrictReasonType": "Copyrighted", "restrictReason": "Copyrighted material"},
+])
+_URLLESS_LISTED = json.dumps([{"title": "Letter", "formats": [_PDF, {"url": None, "format": "docx", "size": 900}]}])
+
+
+@pytest.mark.parametrize(("held", "read"), [
+    (_WITHHELD_LISTED, _identified(_WITHHELD_LISTED)),  # held by 0.54.0-0.84.0
+    (_URLLESS_LISTED, _identified(_URLLESS_LISTED)),  # held by 0.54.0-0.84.0
+    (LISTED, _identified(LISTED)),  # held by 0.54.0-0.84.0, both at once
+    (HELD, _identified(LISTED)),  # held before b19b092
+    (HELD, LISTED),  # held before b19b092, read by 0.54.0-0.84.0
+], ids=["084-withheld", "084-urlless", "084-both", "pre-b19b092", "pre-b19b092-read-084"])
+def test_a_read_that_only_adds_ids_or_withheld_entries_replaces_either_eras_list(tmp_path, catalog, held, read):
+    """0.85.0 adds each entry's ``attachment_id``: a list held in either earlier spelling is replaced by the full read."""
+    assert cfw.only_adds_attachments(read, held)
+    seed(catalog, [row("A", attachments_json=held)])
+    reads(tmp_path, [{"key": "a", "comment_id": "A", "attachments_json": read}])
+    prepared, written = fill(tmp_path, catalog)
+    assert table(catalog)["A"]["attachments_json"] == read
+    assert (prepared["replaced_by_column"], prepared["refused_not_additive_by_column"], written["rows_changed"]) == (
+        {"attachments_json": 1}, {"attachments_json": 0}, 1)
+
+
+_CHANGED = json.dumps([{**entry, "formats": [{**_PDF, "url": _PDF["url"] + "?v=2"}] if entry["formats"] else None}
+                       for entry in json.loads(_WITHHELD_LISTED)])
+_DROPPED = json.dumps(json.loads(_WITHHELD_LISTED)[:1])
+
+
+@pytest.mark.parametrize(("held", "read"), [
+    (_WITHHELD_LISTED, _identified(_CHANGED)),  # held by 0.54.0-0.84.0; the read changes a file as well as adding ids
+    (HELD, _identified(_CHANGED)),  # held before b19b092; the same read
+    (_WITHHELD_LISTED, _identified(_DROPPED)),  # held by 0.54.0-0.84.0; the read no longer lists the withheld entry
+], ids=["084-changed-file", "pre-b19b092-changed-file", "084-entry-gone"])
+def test_a_read_that_changes_more_than_an_earlier_spelling_is_refused_in_either_era(tmp_path, catalog, held, read):
+    assert not cfw.only_adds_attachments(read, held)
+    seed(catalog, [row("A", attachments_json=held)])
+    reads(tmp_path, [{"key": "a", "comment_id": "A", "attachments_json": read}])
+    prepared, written = fill(tmp_path, catalog)
+    assert table(catalog)["A"]["attachments_json"] == held
+    assert (prepared["refused_not_additive_by_column"], written["rows_changed"]) == ({"attachments_json": 1}, 0)
+
+
 @pytest.mark.parametrize("read", [
     json.dumps([{"title": "Letter", "formats": [{**_PDF, "url": _PDF["url"] + "?v=2"}]}]),  # a changed file
     json.dumps([{"title": "Study", "formats": None, "restrictReasonType": "Copyrighted"}]),  # the held entry gone
