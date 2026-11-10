@@ -3,14 +3,16 @@ name: ETL (new pipeline)
 # One process loads the processed-key manifest and discovers agencies once.
 # Each batch commits its retry checkpoints and manifest before the next starts.
 # A failure stops the sweep and blocks final publication; a fresh runner resumes
-# from the durable checkpoint. Manual single-batch dispatch remains supported.
+# from the durable checkpoint. A scheduled sweep stops starting batches at its
+# time budget and exits cleanly, so the consumers publish the batches it
+# finished. Manual single-batch dispatch remains supported.
 # Callers retain comments-catalog-write through mirror/consumer finalization.
 on:
   schedule:
     - cron: '25 6 * * *'   # daily sweep
     # Retry only: every sweep re-lists all of Mirrulations (29M record files on
-    # 2026-09-25) however little is new, so this exits unless no scheduled
-    # sweep has succeeded today.
+    # 2026-09-25) however little is new, so this exits once a scheduled sweep
+    # has succeeded today without stopping at its time budget.
     - cron: '25 18 * * *'
   workflow_dispatch:
     inputs:
@@ -82,6 +84,7 @@ jobs:
       batch: ${{ steps.gen.outputs.batch }}
       skip_upload: ${{ steps.gen.outputs.skip_upload }}
       timeout_minutes: ${{ steps.gen.outputs.timeout_minutes }}
+      sweep_budget_minutes: ${{ steps.gen.outputs.sweep_budget_minutes }}
     steps:
       - name: Resolve sweep or manual batch
         id: gen
@@ -97,16 +100,28 @@ jobs:
           set -euo pipefail
           RUN=true
           if [ "$EVENT" = "schedule" ] && [ "${SCHEDULE:-}" = '25 18 * * *' ]; then
+            # A sweep that stopped at its time budget succeeds, so its consumers publish, and
+            # leaves a sweep-stopped artifact: batches remain, and the retry is still needed.
             SUCCEEDED=$(gh run list --workflow etl-new-pipeline.yml --event schedule --status success \
-              --created ">=$(date -u +%F)" --json databaseId --jq length)
-            if [ "$SUCCEEDED" -gt 0 ]; then
-              echo "A scheduled sweep already succeeded today; the retry sweep is not needed."
-              RUN=false
-            fi
+              --created ">=$(date -u +%F)" --json databaseId --jq '.[].databaseId')
+            for RUN_ID in $SUCCEEDED; do
+              STOPPED=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/artifacts?name=sweep-stopped" --jq .total_count)
+              if [ "$STOPPED" -eq 0 ]; then
+                echo "Scheduled sweep $RUN_ID covered every batch today; the retry sweep is not needed."
+                RUN=false
+                break
+              fi
+            done
           fi
           echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          SWEEP_BUDGET=
           if [ "$EVENT" = "schedule" ]; then
             TIMEOUT=360
+            # The sweep starts no batch it does not expect to finish by this minute, an hour
+            # inside the limit, so a batch that runs an hour past its estimate still ends
+            # before the job is killed. Run 42674437011 was killed inside its second batch
+            # and published nothing.
+            SWEEP_BUDGET=300
             BATCH_NUMBER=all
             SKIP_UPLOAD=false
           else
@@ -122,6 +137,7 @@ jobs:
           fi
           echo "batch=${BATCH_NUMBER:--1}" >> "$GITHUB_OUTPUT"
           echo "timeout_minutes=$TIMEOUT" >> "$GITHUB_OUTPUT"
+          echo "sweep_budget_minutes=$SWEEP_BUDGET" >> "$GITHUB_OUTPUT"
           echo "skip_upload=$SKIP_UPLOAD" >> "$GITHUB_OUTPUT"
 
   etl-new:
@@ -166,6 +182,7 @@ jobs:
           AGENCY: ${{ inputs.agency }}
           SINCE_YEAR: ${{ inputs.since_year }}
           BATCH: ${{ needs.setup.outputs.batch }}
+          SWEEP_BUDGET_MINUTES: ${{ needs.setup.outputs.sweep_budget_minutes }}
           FULL_REFRESH: ${{ inputs.full_refresh }}
           ALLOW_FRESH_START: ${{ inputs.allow_fresh_start }}
           SKIP_UPLOAD: ${{ needs.setup.outputs.skip_upload }}
@@ -183,6 +200,7 @@ jobs:
           if [ -n "$SINCE_YEAR" ]; then ARGS+=(--since-year "$SINCE_YEAR"); fi
           if [ "$BATCH" = "all" ]; then
             ARGS+=(--sweep --batch-count "$BATCH_COUNT")
+            if [ -n "$SWEEP_BUDGET_MINUTES" ]; then ARGS+=(--sweep-budget-minutes "$SWEEP_BUDGET_MINUTES"); fi
           elif [ "$BATCH" != "-1" ]; then
             ARGS+=(--batch-number "$BATCH" --batch-count "$BATCH_COUNT")
           fi
@@ -196,6 +214,16 @@ jobs:
           ARGS+=(--scratch-originals)
           echo "Running: uv run run-pipeline ${ARGS[*]}"
           uv run run-pipeline "${ARGS[@]}"
+
+      # The sweep writes this file only when it stopped at its time budget. The
+      # 18:25 retry reads the artifact's presence as "batches remain".
+      - name: Record a sweep that stopped at its budget
+        if: hashFiles('output/sweep-stopped.txt') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: sweep-stopped
+          path: output/sweep-stopped.txt
+          retention-days: 7
 
       # Successful passes publish raw-read and comment-text retry checkpoints
       # before the manifest, even with zero new rows. Fresh runners restore both.
