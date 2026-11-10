@@ -23,6 +23,7 @@ from spicy_regs.source_evidence import (
     local_path_name,
     without_local_paths,
 )
+from tests.published_paths import machine_paths, published_machine_paths
 
 URL = "https://download.example.gov/disbursements/2016Q1-detail.csv"
 
@@ -197,3 +198,37 @@ def test_two_paths_with_one_file_name_cannot_be_cut_apart():
         without_local_paths({"/Users/someone/a/x.csv": 1, "/Users/someone/b/x.csv": 2})
     cut = without_local_paths({"/tmp/a/x.csv": ["/tmp/a/y.csv", 3, URL]})
     assert cut == {"<local>/x.csv": ["<local>/y.csv", 3, URL]}
+
+
+def test_the_publication_guard_reads_every_published_kind_and_only_those(tmp_path_factory, monkeypatch):
+    """The suite-wide guard (conftest) is not blind: a machine folder in each published file kind is found."""
+    root = tmp_path_factory.mktemp("guard")
+    folders = machine_paths(root)
+    leak = str(root / "work" / "a.json")
+    artifact = root / "output" / "source-evidence" / "run" / "artifact"
+    (artifact / "blobs" / "sha256").mkdir(parents=True)
+    (artifact / "journal.jsonl").write_text(json.dumps({"event": "retained-file", "original_location": leak}) + "\n")
+    (artifact / "blobs" / "sha256" / ("b" * 64)).write_text(json.dumps({"selection": leak}))
+    generation = root / "output" / "generation"
+    generation.mkdir()
+    (generation / "artifact.json").write_text("{}")
+    (generation / "members.json").write_text("{}")
+    pq.write_table(pa.table({"id": [1]}).replace_schema_metadata({"source": leak}), generation / "t.parquet")
+    pq.write_table(pa.table({"witness": [leak]}), generation / "etl_receipts.parquet")
+    proof = root / "output" / "generation-inputs" / "family" / "digest"
+    proof.mkdir(parents=True)
+    (proof / "inputs.json").write_text(json.dumps({"locations": [leak]}))
+    # Local-only records are not published and are not read: a raw archive receipt and a run outcome.
+    (root / "central-raw").mkdir()
+    (root / "central-raw" / "receipt.json").write_text(json.dumps({"path": leak}))
+    (artifact.parent / "run-outcome.json").write_text(json.dumps({"path": leak}))
+    found = published_machine_paths(root, folders)
+    assert sorted({name for name, _ in found}) == [
+        "output/generation-inputs/family/digest/inputs.json",
+        "output/generation/t.parquet",
+        "output/source-evidence/run/artifact/blobs/sha256/" + "b" * 64,
+        "output/source-evidence/run/artifact/journal.jsonl",
+    ]
+    # Receipt rows are read once the receipts stop naming build folders (published_paths.WHOLE_RECEIPTS).
+    monkeypatch.setattr("tests.published_paths.WHOLE_RECEIPTS", 8 * 1024 * 1024)
+    assert "output/generation/etl_receipts.parquet" in {name for name, _ in published_machine_paths(root, folders)}
