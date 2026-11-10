@@ -35,8 +35,9 @@ def published_files(generation: Path) -> list[dict]:
     columns = ["source_file_id", "source_url", "source_sha256", "report_period_start", "report_period_end",
                "source_encoding"]
     for kind, table in TABLES.items():
-        rows = ds.dataset(generation / table, format="parquet").to_table(columns=columns)
-        for identity, url, sha256, start, end, encoding in sorted({tuple(row.values()) for row in rows.to_pylist()}):
+        # One distinct row per source file, found in Arrow: millions of rows name a few dozen files.
+        rows = ds.dataset(generation / table, format="parquet").to_table(columns=columns).group_by(columns).aggregate([])
+        for identity, url, sha256, start, end, encoding in sorted(tuple(row.values()) for row in rows.to_pylist()):
             files.append({"id": identity, "chamber": "house", "format": "csv", "kind": kind, "url": url,
                           "period_start": start.isoformat(), "period_end": end.isoformat(),
                           "source_sha256": sha256, "encoding": encoding})
