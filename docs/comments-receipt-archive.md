@@ -110,21 +110,33 @@ by this change; this matters only if the catalog is lost.
 Weekly retention keeps a family's last three generations and any generation a
 file under `docs/` cites by eight or more hex digits of its digest. The last
 comments generation published **with receipts** holds the only complete
-exported copy of those receipts, so it is pinned here before the first
-receipts-free publication. Existing receipt files are never deleted by this
-change.
+exported copy of those receipts, so it is pinned here. Existing receipt files
+are never deleted by this change.
 
 | Family | Last generation published with receipts | Published |
 | --- | --- | --- |
-| `comments` | **TO FILL before the first receipts-free publication: the full artifact digest** | |
+| `comments` | `08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1` | 2026-10-10T15:45:23Z |
 
-To fill: once the comments publication run from the operator's machine on
-2026-11-10 has finished, read `families.comments.artifactDigest` and
-`publishedAt` from `publication.v2.json`, confirm that entry still lists
-`etlReceipts` with datasets `comments` and `comments_index`, and write the 64
-hex digits and the instant into the table. If another publication with
-receipts lands before this change merges, pin that one instead. The
-2026-10-10 generation needs no pin: the catalog took its receipts in the
-2026-11-08 rebuild, and the generation pinned here exports them again. Do not
-write any other generation's digest on this page: every digest cited here is
-kept indefinitely.
+Its receipt member is `generations/comments/08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1/etl_receipts.parquet`:
+26,561,684 rows (datasets `comments` and `comments_index`), 3,968,509,123
+bytes, `sha256:3a9a9cddb235d5055ae49d8fbe430c61dcce8bcfdec9e14023c7db5adcd9ea0d`,
+receipt generation `comments-v2-c2dd1f166abd441b80eb02373d625c88`. The live
+index stated all of this on 2026-11-10, when the generation was still current.
+
+It is the last one because the receipt-route publication started from the
+operator's machine on 2026-11-10 was stopped before it uploaded anything, so
+the next comments publication is this route's. The catalog took these receipts
+in its 2026-11-08 rebuild and keeps writing its own receipt table; this pin
+keeps the exported copy. `tests/test_generation_retention.py` fails if the
+docs scan stops finding the digest. Do not write any other generation's digest
+on this page: every digest cited here is kept indefinitely.
+
+## The bare `comments.parquet`
+
+The fixed `comments.parquet` at the bucket root (6.44 GB, last written
+2026-10-03), its agency files and `comments_index.parquet` are rewritten by
+every mirror publication: they are the predecessor whose IDs it must keep, and
+`agency_stats`, `feed_summary` and `org_committee_links` read the root file.
+The 2026-10-10 generation came from the v1 promotion, which wrote only the
+generation, so this route's first publication is the first to refresh them
+since 2026-10-03.

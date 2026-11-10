@@ -149,8 +149,10 @@ Entries link to the pull request that introduced the change.
   copies the pinned catalog table and no longer rebinds, admits or replays its
   26.5 million receipts: 138.5 of 169.6 measured minutes at full size. A
   receipt-only catalog commit no longer republishes. The last generation with
-  receipts is pinned in `docs/comments-receipt-archive.md`; the catalog keeps
-  writing its own receipt table. Requires the installed comments policies to
+  receipts, the 2026-10-10 one, is pinned in `docs/comments-receipt-archive.md`;
+  the catalog keeps writing its own receipt table. The first receipts-free
+  publication is also the first since 2026-10-03 to refresh the fixed
+  `comments.parquet`, its agency files and `comments_index.parquet`. Requires the installed comments policies to
   be marked receipts-retired first. `prepare_comments_selected_export.py
   --publish` (the 2026-10-10 v1 promotion) now refuses.
 
