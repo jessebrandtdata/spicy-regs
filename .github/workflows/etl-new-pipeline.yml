@@ -5,7 +5,8 @@ name: ETL (new pipeline)
 # A failure stops the sweep and blocks final publication; a fresh runner resumes
 # from the durable checkpoint. A scheduled sweep stops starting batches at its
 # time budget and exits cleanly, so the consumers publish the batches it
-# finished. Manual single-batch dispatch remains supported.
+# finished; the next scheduled sweep begins at the batch it stopped before.
+# Manual single-batch dispatch remains supported.
 # Callers retain comments-catalog-write through mirror/consumer finalization.
 on:
   schedule:
@@ -85,6 +86,7 @@ jobs:
       skip_upload: ${{ steps.gen.outputs.skip_upload }}
       timeout_minutes: ${{ steps.gen.outputs.timeout_minutes }}
       sweep_budget_minutes: ${{ steps.gen.outputs.sweep_budget_minutes }}
+      sweep_start_batch: ${{ steps.gen.outputs.sweep_start_batch }}
     steps:
       - name: Resolve sweep or manual batch
         id: gen
@@ -115,6 +117,26 @@ jobs:
           fi
           echo "run=$RUN" >> "$GITHUB_OUTPUT"
           SWEEP_BUDGET=
+          SWEEP_START=
+          if [ "$EVENT" = "schedule" ] && [ "$RUN" = "true" ]; then
+            # Begin where the latest scheduled sweep stopped at its budget and wrap to the first
+            # batch. A batch with new comment rows costs an hour, so sweeps that always began at
+            # the first batch would never reach the later ones. Any other outcome begins at 0.
+            SWEEP_START=0
+            LAST=$(gh run list --workflow etl-new-pipeline.yml --event schedule --status completed --limit 1 \
+              --json databaseId --jq '.[].databaseId')
+            STOPPED_DIR=$(mktemp -d)
+            # The download fails when that sweep left no sweep-stopped artifact.
+            if [ -n "$LAST" ] && gh run download "$LAST" --name sweep-stopped --dir "$STOPPED_DIR"; then
+              STOPPED_BEFORE=$(tr -d '[:space:]' < "$STOPPED_DIR/sweep-stopped.txt")
+              if printf '%s' "$STOPPED_BEFORE" | grep -Eq '^[0-9]+$' && [ "$STOPPED_BEFORE" -lt "$BATCH_COUNT" ]; then
+                SWEEP_START="$STOPPED_BEFORE"
+              else
+                echo "Sweep $LAST names no batch in 0..$((BATCH_COUNT - 1)); beginning at the first." >&2
+              fi
+            fi
+            echo "This sweep begins at batch $SWEEP_START (0-indexed)."
+          fi
           if [ "$EVENT" = "schedule" ]; then
             TIMEOUT=360
             # The sweep starts no batch it does not expect to finish by this minute, an hour
@@ -138,6 +160,7 @@ jobs:
           echo "batch=${BATCH_NUMBER:--1}" >> "$GITHUB_OUTPUT"
           echo "timeout_minutes=$TIMEOUT" >> "$GITHUB_OUTPUT"
           echo "sweep_budget_minutes=$SWEEP_BUDGET" >> "$GITHUB_OUTPUT"
+          echo "sweep_start_batch=$SWEEP_START" >> "$GITHUB_OUTPUT"
           echo "skip_upload=$SKIP_UPLOAD" >> "$GITHUB_OUTPUT"
 
   etl-new:
@@ -183,6 +206,7 @@ jobs:
           SINCE_YEAR: ${{ inputs.since_year }}
           BATCH: ${{ needs.setup.outputs.batch }}
           SWEEP_BUDGET_MINUTES: ${{ needs.setup.outputs.sweep_budget_minutes }}
+          SWEEP_START_BATCH: ${{ needs.setup.outputs.sweep_start_batch }}
           FULL_REFRESH: ${{ inputs.full_refresh }}
           ALLOW_FRESH_START: ${{ inputs.allow_fresh_start }}
           SKIP_UPLOAD: ${{ needs.setup.outputs.skip_upload }}
@@ -201,6 +225,7 @@ jobs:
           if [ "$BATCH" = "all" ]; then
             ARGS+=(--sweep --batch-count "$BATCH_COUNT")
             if [ -n "$SWEEP_BUDGET_MINUTES" ]; then ARGS+=(--sweep-budget-minutes "$SWEEP_BUDGET_MINUTES"); fi
+            if [ -n "$SWEEP_START_BATCH" ]; then ARGS+=(--sweep-start-batch "$SWEEP_START_BATCH"); fi
           elif [ "$BATCH" != "-1" ]; then
             ARGS+=(--batch-number "$BATCH" --batch-count "$BATCH_COUNT")
           fi
@@ -216,7 +241,8 @@ jobs:
           uv run run-pipeline "${ARGS[@]}"
 
       # The sweep writes this file only when it stopped at its time budget. The
-      # 18:25 retry reads the artifact's presence as "batches remain".
+      # 18:25 retry reads the artifact's presence as "batches remain", and the
+      # next scheduled sweep begins at the batch the file names.
       - name: Record a sweep that stopped at its budget
         if: hashFiles('output/sweep-stopped.txt') != ''
         uses: actions/upload-artifact@v4

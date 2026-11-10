@@ -24,7 +24,7 @@ def sweep(tmp_path, monkeypatch):
     monkeypatch.setattr(regulations, "monotonic", lambda: now[0])
     monkeypatch.setenv("AGENCIES", "A,B,C,D,E")
 
-    def run(minutes, *, budget, load=5.0):
+    def run(minutes, *, budget, load=5.0, start=0):
         started = []
 
         def load_manifest(*args, **kwargs):
@@ -38,7 +38,7 @@ def sweep(tmp_path, monkeypatch):
         monkeypatch.setattr(Manifest, "load", load_manifest)
         monkeypatch.setattr(RegulationsPipeline, "run", batch)
         pipeline = RegulationsPipeline(output_dir=tmp_path, batch_count=5, use_iceberg=True)
-        stopped = pipeline.run_sweep(budget_minutes=budget)
+        stopped = pipeline.run_sweep(budget_minutes=budget, start_batch=start)
         assert pipeline.batch_number is None
         marker = tmp_path / regulations.SWEEP_STOPPED_NAME
         return stopped, started, marker.read_text() if marker.exists() else None, now[0] / MINUTE
@@ -68,6 +68,15 @@ def test_a_sweep_without_a_budget_runs_every_batch_and_clears_an_old_marker(swee
     assert sweep([200, 200, 200, 200, 200], budget=None)[:3] == (None, [0, 1, 2, 3, 4], None)
 
 
+def test_a_resumed_sweep_begins_at_its_start_batch_and_wraps_to_the_first(sweep, tmp_path):
+    assert sweep([1, 1, 1, 1, 1], budget=None, start=3)[:3] == (None, [3, 4, 0, 1, 2], None)
+    # Starts at 5 and 105 minutes; at 205 one more 100-minute batch is past 300: batch 0 is next in the round.
+    assert sweep([100, 100, 100, 100, 100], budget=300, start=3)[:3] == (0, [3, 4], "0\n")
+    for outside in (-1, 5):
+        with pytest.raises(ValueError, match="start_batch"):
+            RegulationsPipeline(output_dir=tmp_path, batch_count=5, use_iceberg=True).run_sweep(start_batch=outside)
+
+
 def test_a_failed_batch_still_stops_the_sweep_with_no_marker(tmp_path, monkeypatch):
     monkeypatch.setenv("AGENCIES", "A,B,C")
     monkeypatch.setattr(Manifest, "load", lambda *a, **kw: Manifest.empty())
@@ -88,8 +97,8 @@ def test_cli_passes_the_budget_to_the_sweep_and_refuses_it_elsewhere(monkeypatch
         def __init__(self, **kwargs):
             pass
 
-        def run_sweep(self, *, budget_minutes):
-            seen["budget"] = budget_minutes
+        def run_sweep(self, *, budget_minutes, start_batch):
+            seen["sweep"] = (budget_minutes, start_batch)
 
         def run(self):
             seen["ran"] = True
@@ -97,21 +106,42 @@ def test_cli_passes_the_budget_to_the_sweep_and_refuses_it_elsewhere(monkeypatch
     monkeypatch.setattr(regulations, "RegulationsPipeline", Pipeline)
     monkeypatch.setattr(regulations, "load_dotenv", lambda *a, **k: None)
     with pytest.raises(SystemExit) as exited:
-        regulations.app(["--sweep", "--batch-count", "15", "--sweep-budget-minutes", "300", "--skip-upload"])
-    assert exited.value.code == 0 and seen == {"budget": 300}
+        regulations.app(["--sweep", "--batch-count", "15", "--sweep-budget-minutes", "300", "--sweep-start-batch", "7",
+                         "--skip-upload"])
+    assert exited.value.code == 0 and seen == {"sweep": (300, 7)}
     with pytest.raises(ValueError, match="only to --sweep"):
         regulations.main(sweep_budget_minutes=300)
+    with pytest.raises(ValueError, match="only to --sweep"):
+        regulations.main(sweep_start_batch=7)
     assert "ran" not in seen
 
 
-def setup_outputs(tmp_path, *, event, schedule="", gh="", batch="", timeout=""):
-    """Run the setup step's shell as written, with ``gh`` replaced by a script; its outputs and the calls it made."""
+def setup_outputs(tmp_path, *, event, schedule="", batch="", timeout="", succeeded=(), stopped=None, latest="",
+                  stopped_before=""):
+    """Run the setup step's shell as written against a stub ``gh``; its outputs and the calls it made.
+
+    ``succeeded``: today's successful scheduled runs. ``stopped``: sweep-stopped artifacts per run id.
+    ``latest``: the latest completed scheduled run. Its sweep-stopped artifact names batch ``stopped_before``;
+    with none, the download fails as ``gh`` does.
+    """
     import subprocess
 
     workflow = yaml.safe_load(WORKFLOW.read_text())
     bin_dir, calls, output = tmp_path / "bin", tmp_path / "gh-calls", tmp_path / "github_output"
     bin_dir.mkdir()
-    (bin_dir / "gh").write_text(f'#!/bin/sh\necho "$*" >> "{calls}"\n{gh}\n')
+    artifacts = " ".join(f"*runs/{run_id}/artifacts*) echo {count};;" for run_id, count in (stopped or {}).items())
+    listed = "".join(f"{run_id}\\n" for run_id in succeeded)
+    (bin_dir / "gh").write_text(f"""#!/bin/sh
+echo "$*" >> "{calls}"
+case "$*" in
+  *"--status success"*) printf "{listed}";;
+  *"--status completed"*) echo "{latest}";;
+  {artifacts}
+  "run download"*) [ -n "{stopped_before}" ] || exit 1
+    while [ "$1" != "--dir" ]; do shift; done; echo "{stopped_before}" > "$2/sweep-stopped.txt";;
+  *) exit 1;;
+esac
+""")
     (bin_dir / "gh").chmod(0o755)
     output.touch()
     env = {
@@ -129,8 +159,8 @@ def test_only_a_scheduled_sweep_gets_a_budget_and_it_ends_an_hour_inside_the_lim
     (tmp_path / "a").mkdir(), (tmp_path / "b").mkdir()
     scheduled, _ = setup_outputs(tmp_path / "a", event="schedule", schedule="25 6 * * *")
     assert (scheduled["timeout_minutes"], scheduled["sweep_budget_minutes"], scheduled["batch"]) == ("360", "300", "all")
-    manual, _ = setup_outputs(tmp_path / "b", event="workflow_dispatch", batch="all", timeout="240")
-    assert manual["sweep_budget_minutes"] == ""
+    manual, calls = setup_outputs(tmp_path / "b", event="workflow_dispatch", batch="all", timeout="240")
+    assert (manual["sweep_budget_minutes"], manual["sweep_start_batch"], calls) == ("", "", "")
 
     workflow = yaml.safe_load(WORKFLOW.read_text())
     assert workflow["jobs"]["setup"]["outputs"]["sweep_budget_minutes"] == "${{ steps.gen.outputs.sweep_budget_minutes }}"
@@ -172,13 +202,10 @@ def test_retry_sweep_is_skipped_only_after_a_sweep_that_covered_every_batch(
     workflow = yaml.safe_load(WORKFLOW.read_text())
     assert workflow["jobs"]["etl-new"]["if"] == "${{ needs.setup.outputs.run == 'true' }}"
     assert workflow["jobs"]["setup"]["permissions"] == {"actions": "read"}
-    listed = "\\n".join(map(str, succeeded))
-    cases = " ".join(f"*runs/{run_id}/artifacts*) echo {count};;" for run_id, count in stopped.items())
-    gh = f'case "$*" in "run list"*) printf "{listed}";; {cases} *) exit 1;; esac'
-    outputs, calls = setup_outputs(tmp_path, event="schedule", schedule=schedule, gh=gh)
+    outputs, calls = setup_outputs(tmp_path, event="schedule", schedule=schedule, succeeded=succeeded, stopped=stopped)
     assert outputs["run"] == run
     if schedule == "25 6 * * *":
-        assert not calls
+        assert "--status success" not in calls
         return
     assert "--event schedule --status success" in calls
     covered = next((index for index, run_id in enumerate(succeeded) if stopped[run_id] == 0), len(succeeded))
@@ -197,3 +224,33 @@ def test_only_the_comment_attributes_family_gets_more_than_thirty_minutes():
     rollup = yaml.safe_load((WORKFLOW.parent / "_rollup.yml").read_text())
     assert rollup[True]["workflow_call"]["inputs"]["timeout_minutes"]["type"] == "number"
     assert rollup["jobs"]["rollup"]["timeout-minutes"] == "${{ inputs.timeout_minutes }}"
+
+
+@pytest.mark.parametrize(
+    ("latest", "stopped_before", "start"),
+    [
+        ("", "", "0"),  # no earlier scheduled sweep
+        ("77", "", "0"),  # the latest covered every batch, failed, or was a skipped retry: it left no artifact
+        ("77", "7", "7"),  # the latest stopped before batch 7
+        ("77", "15", "0"),  # an artifact naming no batch begins at the first
+        ("77", "x", "0"),
+    ],
+)
+def test_a_scheduled_sweep_begins_where_the_latest_one_stopped(tmp_path, latest, stopped_before, start):
+    """Sweeps that always began at the first batch would never reach the later ones (ss-ag8i)."""
+    outputs, calls = setup_outputs(tmp_path, event="schedule", schedule="25 6 * * *", latest=latest,
+                                   stopped_before=stopped_before)
+    assert outputs["sweep_start_batch"] == start
+    assert "--event schedule --status completed --limit 1" in calls
+    assert ("run download 77 --name sweep-stopped" in calls) is bool(latest)
+
+    workflow = yaml.safe_load(WORKFLOW.read_text())
+    run = next(step for step in workflow["jobs"]["etl-new"]["steps"] if step.get("name") == "Run new pipeline")
+    assert run["env"]["SWEEP_START_BATCH"] == "${{ needs.setup.outputs.sweep_start_batch }}"
+    assert 'ARGS+=(--sweep-start-batch "$SWEEP_START_BATCH")' in run["run"]
+
+
+def test_a_skipped_retry_asks_for_no_start_batch(tmp_path):
+    outputs, calls = setup_outputs(tmp_path, event="schedule", schedule="25 18 * * *", succeeded=[11], stopped={11: 0})
+    assert (outputs["run"], outputs["sweep_start_batch"]) == ("false", "")
+    assert "--status completed" not in calls

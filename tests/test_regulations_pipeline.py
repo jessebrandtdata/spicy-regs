@@ -776,10 +776,13 @@ def test_workflow_setup_validates_the_dispatch_inputs(tmp_path: Path, event, bat
 
     workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/etl-new-pipeline.yml").read_text())
     assert workflow["jobs"]["etl-new"]["timeout-minutes"] == "${{ fromJSON(needs.setup.outputs.timeout_minutes) }}"
-    output = tmp_path / "github_output"
+    output, bin_dir = tmp_path / "github_output", tmp_path / "bin"
     output.touch()
+    bin_dir.mkdir()
+    (bin_dir / "gh").write_text("#!/bin/sh\n")  # a scheduled sweep asks for the latest sweep: none here
+    (bin_dir / "gh").chmod(0o755)
     env = {
-        "PATH": "/usr/bin:/bin",
+        "PATH": f"{bin_dir}:/usr/bin:/bin",
         "EVENT": event,
         "BATCH_NUMBER": batch,
         "TIMEOUT_MINUTES": timeout,

@@ -177,7 +177,7 @@ class RegulationsPipeline(Pipeline):
                 "bundled back-fill planned in ticket ss-te3x, or pass --allow-unbounded-originals."
             )
 
-    def run_sweep(self, *, budget_minutes: float | None = None) -> int | None:
+    def run_sweep(self, *, budget_minutes: float | None = None, start_batch: int = 0) -> int | None:
         """Reuse membership and agency discovery; commit every batch before the next.
 
         Stop on failure: continuing with uncommitted in-memory keys could retire
@@ -192,9 +192,16 @@ class RegulationsPipeline(Pipeline):
         batch before it is already committed, so the caller can exit cleanly and
         publish. ``None`` means every batch ran. The hosted limit killed run
         42674437011 (2026-11-09) inside its second batch and nothing was published.
+
+        ``start_batch`` begins the round at that batch and wraps to the first, so a
+        sweep that resumes where the last one stopped still visits every batch once.
+        Sweeps that always began at the first batch would never reach the later ones
+        while a batch with new comment rows costs an hour.
         """
         if self.batch_number is not None or not self.batch_count or self.batch_count < 1 or self.full_refresh:
             raise ValueError("A sweep requires positive batch_count, no batch_number, and no full_refresh")
+        if not 0 <= start_batch < self.batch_count:
+            raise ValueError(f"start_batch {start_batch} is outside 0..{self.batch_count - 1}")
         self._refuse_comments_without_catalog()
         started = monotonic()
         output_dir = self.output_dir or Path.cwd() / "output"
@@ -206,7 +213,7 @@ class RegulationsPipeline(Pipeline):
             self._agencies()  # Refuse an oversized batch before hashing the manifest.
             manifest = Manifest.load(output_dir, allow_fresh_start=self.allow_fresh_start)
             longest = 0.0
-            for batch in range(self.batch_count):
+            for batch in (*range(start_batch, self.batch_count), *range(start_batch)):
                 self.batch_number = batch
                 if not self._agencies():
                     continue
@@ -616,6 +623,11 @@ def main(
         Parameter(help="With --sweep: start no batch that is not expected to finish within this many minutes of "
                        "the sweep's start. Completed batches stay committed and the exit is clean"),
     ] = None,
+    sweep_start_batch: Annotated[
+        int,
+        Parameter(help="With --sweep: begin at this batch (0-indexed) and wrap to the first, to resume a sweep "
+                       "that stopped at its budget"),
+    ] = 0,
     defer_comments_publication: Annotated[
         bool,
         Parameter(help="Caller will finalize the comments mirror after ingestion (workflow use)"),
@@ -676,10 +688,10 @@ def main(
         allow_unbounded_originals=allow_unbounded_originals,
         verbose=verbose,
     )
-    if sweep_budget_minutes is not None and not sweep:
-        raise ValueError("--sweep-budget-minutes applies only to --sweep")
+    if (sweep_budget_minutes is not None or sweep_start_batch) and not sweep:
+        raise ValueError("--sweep-budget-minutes and --sweep-start-batch apply only to --sweep")
     if sweep:
-        pipeline.run_sweep(budget_minutes=sweep_budget_minutes)
+        pipeline.run_sweep(budget_minutes=sweep_budget_minutes, start_batch=sweep_start_batch)
     else:
         pipeline.run()
     if use_iceberg and not skip_upload and not skip_comments and not defer_comments_publication:
