@@ -176,8 +176,8 @@ def test_a_refresh_selects_the_published_files_plus_listed_quarters_and_rebuilds
 
     def serve(request):
         fetched.append(str(request.url))
-        return httpx.Response(200, content={q2["detail"]: detail, q2["summary"]: summary}[str(request.url)],
-                              headers={"Content-Type": "text/csv"})
+        served: dict[str, bytes] = {q2["detail"]: detail, q2["summary"]: summary}
+        return httpx.Response(200, content=served[str(request.url)], headers={"Content-Type": "text/csv"})
 
     acquire_selection(tmp_path / "select/selection.json", tmp_path / "acquired-2", reuse=reuse,
                       transport=httpx.MockTransport(serve))

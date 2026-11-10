@@ -162,11 +162,14 @@ def build_court_docket_groups(output_dir: Path, *, dockets_file: Path, native_fi
     courts = pa.array(sorted({court for court, _ in keys}), pa.string())
     # Only a published key's records and its neighbours' reach Python: a few thousand of the courts' millions.
     looked_up = pa.array(sorted(f"{court}\x1f{number}" for court, number in keys | wanted.keys()), pa.string())
+    # call_function: the type checker cannot see pyarrow.compute's generated wrappers.
+    in_courts, looked_up_keys = pc.SetLookupOptions(value_set=courts), pc.SetLookupOptions(value_set=looked_up)
     for batch in dump.iter_batches():
-        batch = batch.filter(pc.is_in(batch.column("court_id"), value_set=courts))
+        batch = batch.filter(pc.call_function("is_in", [batch.column("court_id")], in_courts))
         scanned += batch.num_rows
-        key_text = pc.binary_join_element_wise(batch.column("court_id"), batch.column("docket_number"), "\x1f")
-        for row in batch.filter(pc.is_in(key_text, value_set=looked_up)).to_pylist():
+        key_text = pc.call_function("binary_join_element_wise",
+                                    [batch.column("court_id"), batch.column("docket_number"), pa.scalar("\x1f")])
+        for row in batch.filter(pc.call_function("is_in", [key_text], looked_up_keys)).to_pylist():
             key = (row["court_id"], row["docket_number"])
             if key in keys and row["id"] in published_ids:
                 candidates[key].append(row)

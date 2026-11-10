@@ -266,7 +266,7 @@ def test_house_rebuilds_from_restored_originals_when_the_house_lists_a_quarter(t
 
     monkeypatch.setattr(rollups.r2, "download_members", download_members)
     q2 = {kind: fixture.ROOT_URL + f"q2-{kind}.csv" for kind in ("detail", "summary")}
-    bodies = {q2["detail"]: (b"ORGANIZATION,PROGRAM,SORT SUBTOTAL DESCRIPTION,SORT SEQUENCE,TRANSACTION DATE,"
+    bodies: dict[str, bytes] = {q2["detail"]: (b"ORGANIZATION,PROGRAM,SORT SUBTOTAL DESCRIPTION,SORT SEQUENCE,TRANSACTION DATE,"
                              b"DATA SOURCE,DOCUMENT,VENDOR NAME,PERFORM START DT,PERFORM END DT,DESCRIPTION,AMOUNT\r\n"
                              b"Office,Program,Travel,DETAIL,2-Apr-20,AP,00032,Payee,2-Apr-20,3-Apr-20,Travel,5.00\r\n"),
               q2["summary"]: b"ORGANIZATION,PROGRAM,DESCRIPTION,YTD AMOUNT,QTD AMOUNT\r\nOffice,Program,Travel,5.00,5.00\r\n"}
