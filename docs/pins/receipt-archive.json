@@ -3,6 +3,12 @@
  "version": 1,
  "basis": "One entry per dataset whose installed policy is marked receipts_retired (subject_catalog.RECEIPTS_RETIRED): the last generation its family published with per-row ETL receipts, which holds the only complete copy of them. Weekly retention keeps every generation a file under docs/ cites by eight or more hex digits, so this file keeps each one for good; tests/test_receipt_archive_pins.py holds every retired dataset to an entry here. Never delete an entry: it is the archive's only pin.",
  "archives": {
+  "comment_attributes": {
+   "family": "comment-attributes",
+   "artifactDigest": "sha256:e5528b66dbe6082e1dff8592ba215018f4ce76cb522934573aac0b2eb04705e1",
+   "publishedAt": "2026-11-10T20:34:09Z",
+   "receipts": "generations/comment-attributes/e5528b66dbe6082e1dff8592ba215018f4ce76cb522934573aac0b2eb04705e1/etl_receipts.parquet"
+  },
   "comments": {
    "family": "comments",
    "artifactDigest": "sha256:08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1",

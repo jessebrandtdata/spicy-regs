@@ -39494,19 +39494,6 @@
         "processing_fields": []
       },
       {
-        "dataset": "comment_attributes",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "comment_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "comment_periods",
         "receipt_only": false,
         "policy_version": "regulations-native-v2",

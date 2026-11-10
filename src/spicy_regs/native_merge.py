@@ -20,6 +20,8 @@ already sit in ``order_by`` order, so the gather is nearly sequential. Receipt w
 O(all rows) is the narrow sort and one pass over each file. The caller admits the result once, as it admits any
 generation; nothing here validates it beyond refusing a subject with no receipt. The prior pair must already be
 admitted, and its receipts scoped to the dataset.
+
+:func:`upsert_subjects` is the same subject merge for a table whose receipts are retired: no receipt is read or written.
 """
 
 from __future__ import annotations
@@ -46,6 +48,15 @@ class Merged(NamedTuple):
     kept: int  # prior subjects the fresh pair did not replace
     replaced: int  # prior subjects it did
     added: int  # fresh subjects with no prior
+
+
+class Upserted(NamedTuple):
+    """:func:`upsert_subjects`'s table and counts: :class:`Merged` without receipts."""
+
+    subjects: Path
+    kept: int
+    replaced: int
+    added: int
 
 
 def _q(name: str) -> str:
@@ -147,6 +158,55 @@ def _order(order_by: Sequence[str]) -> str:
 def _order_columns(order_by: Sequence[str]) -> list[str]:
     return [item.strip().rsplit(" ", 1)[0] if item.strip().upper().endswith((" ASC", " DESC")) else item.strip()
             for item in order_by]
+
+
+def upsert_subjects(
+    schema: pa.Schema,
+    *,
+    identity: Sequence[str],
+    fresh: Path,
+    prior: Path,
+    order_by: Sequence[str],
+    subjects: Path,
+) -> Upserted:
+    """:func:`native_merge`'s subjects for a table whose receipts are retired (ss-vse3): no receipt is read or written.
+
+    The prior table's rows whose ``identity`` the fresh table does not carry, plus the fresh rows, in ``order_by`` order
+    then prior first: the same rows in the same order :func:`native_merge` writes. Identity columns are compared as
+    values (the receipt route compares their digests). Only the narrow keys are sorted; wide rows are gathered by
+    ordinal, as there.
+    """
+    names = schema.names
+    if any(name.startswith("_") for name in names) or not order_by or not set(_order_columns(order_by)) <= set(names):
+        raise ValueError("order_by must name subject columns, and subject columns may not start with _")
+    for path in (fresh, prior):
+        if not pq.read_schema(path).equals(schema):
+            raise ValueError(f"{path.name}: the subjects differ from the table's schema")
+    lit = etl_bulk._literal
+    keys = ", ".join(_q(name) for name in identity)
+    columns = ", ".join(_q(c) for c in dict.fromkeys(_order_columns(order_by)))
+    with etl_bulk.bulk_connection(Path(subjects).parent) as (con, _):
+        con.execute("SET preserve_insertion_order = false")
+        for view, path in (("fresh_s", fresh), ("prior_s", prior)):
+            con.execute(f"CREATE VIEW {view} AS SELECT {keys}, {columns}, file_row_number AS _o "
+                        f"FROM read_parquet({lit(str(path))}, file_row_number = true)")
+            if con.execute(f"SELECT count(*) - count(DISTINCT row({keys})) FROM {view}").fetchone()[0]:
+                raise ValueError(f"{view.removesuffix('_s')} subjects repeat an identity")
+        prior_rows, fresh_rows = (pq.ParquetFile(path).metadata.num_rows for path in (prior, fresh))
+        con.execute(f"CREATE TABLE replaced AS SELECT _o FROM prior_s SEMI JOIN fresh_s USING ({keys})")
+        replaced = con.execute("SELECT count(*) FROM replaced").fetchone()[0]
+        merged = (f"SELECT _so FROM (SELECT 0 AS _src, _o AS _so, {columns} FROM prior_s ANTI JOIN fresh_s USING ({keys}) "
+                  f"UNION ALL SELECT 1, {prior_rows} + _o, {columns} FROM fresh_s) ORDER BY {_order(order_by)}, _src, _so")
+        try:
+            with pq.ParquetWriter(subjects, schema, compression="zstd") as out:
+                written = _gather(con, merged, [prior, fresh], schema, out)
+        except BaseException:
+            Path(subjects).unlink(missing_ok=True)
+            raise
+    if written != prior_rows - replaced + fresh_rows:
+        Path(subjects).unlink(missing_ok=True)
+        raise ValueError(f"upsert wrote {written:,} rows for {prior_rows - replaced:,} kept and {fresh_rows:,} fresh")
+    return Upserted(Path(subjects), prior_rows - replaced, replaced, fresh_rows - replaced)
 
 
 def native_merge(

@@ -56,7 +56,7 @@ def test_both_writer_routes_carry_exact_receipts_and_resolve_only_matching_refus
 def test_attribute_nightly_keeps_historical_refusals_and_refuses_only_new_failures(tmp_path):
     from spicy_regs.pipelines.regulatory_publication import finish_attribute_dataset
     from spicy_regs.selected_generations import SelectedDataset, SelectedInputs, remember_selection
-    dataset = 'comment_attributes'
+    dataset = 'document_attributes'  # comment_attributes publishes without receipts (ss-vse3)
     key, _, _, prior = _seed(tmp_path, dataset)
     root = tmp_path / 'root'
     remember_selection(root, [SelectedDataset(dataset, (prior[0],), prior[1], 'old')])
@@ -94,15 +94,15 @@ def test_attribute_nightly_admits_the_prior_before_copy_or_carry(tmp_path, monke
     from spicy_regs import native_merge
     from spicy_regs.pipelines.regulatory_publication import finish_attribute_dataset
     from spicy_regs.selected_generations import SelectedDataset
-    dataset = 'comment_attributes'
-    _, _, _, prior = _seed(tmp_path, dataset)
+    dataset = 'document_attributes'  # comment_attributes publishes without receipts (ss-vse3)
+    key, _, _, prior = _seed(tmp_path, dataset)
     rows = pq.read_table(prior[1]).to_pylist()
     rows[0]['processor'] = 'changed without a new receipt digest'
     pq.write_table(pa.Table.from_pylist(rows, schema=pq.read_schema(prior[1])), prior[1])
     selected = SelectedDataset(dataset, (prior[0],), prior[1], 'old')
     inputs = SimpleNamespace(select=lambda _: selected, index=None)
     source = tmp_path / 'fresh.parquet'
-    pq.write_table(_table(dataset, [{'comment_id': 'same'}]), source)
+    pq.write_table(_table(dataset, [{key: 'same'}]), source)
     monkeypatch.setattr(native_merge, 'native_merge', lambda *a, **k: pytest.fail('unadmitted prior reached merge'))
     with pytest.raises(ValueError):
         finish_attribute_dataset(tmp_path / 'root', dataset, source, publish=False, inputs=inputs)

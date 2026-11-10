@@ -142,6 +142,19 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **`comment_attributes` publishes without per-row receipts** (ss-vse3). Every
+  comment batch of the Regulations.gov sweep upserted its rows over the
+  26.5-million-row table and spent about 46 minutes on whole-table work
+  whatever it merged (1 row or 60,028), about 33 to 38 of them on receipts:
+  selecting and validating the prior's, merging, admitting and uploading the
+  4.2 GiB member. Its receipts held only each row's contract-shape copy, which
+  the published row implies (checked on 271,550 sampled receipts), so no column
+  is added. A batch now converts its rows with the same writer and upserts them
+  over the published table (`native_merge.upsert_subjects`); the refresh's
+  `run-rollup-comment-attributes` publishes nothing. The last generation with
+  receipts is pinned at merge (`scripts/pin_receipt_archive.py`); the window and
+  checks are in `docs/comment-attributes-receipt-archive.md`.
+
 - **`comments` and `comments_index` publish without ETL receipts** (ss-juz8,
   part of ss-vse3). The comments family's generation has no `etl_receipts.parquet`
   and its index entry no `etlReceipts`; the generation's two tables keep their

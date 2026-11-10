@@ -45,11 +45,12 @@ def _publish(directory, *, inputs):
 
 
 def _remember(root, datasets, directory, generation, *, inputs=None, published=None):
+    """Select what this write built for the rest of the run; ``generation`` is ``None`` for a table without receipts."""
     selections = []
     for dataset in datasets:
         subject = directory / (dataset + '.parquet')
         selections.append(SelectedDataset(dataset, (subject,) if subject.exists() else (),
-                                           directory / 'etl_receipts.parquet', generation))
+                                           directory / 'etl_receipts.parquet' if generation else None, generation))
     remember_selection(root, selections)
     if inputs is not None:
         inputs.cache.update({selected.dataset: selected for selected in selections})
@@ -58,9 +59,11 @@ def _remember(root, datasets, directory, generation, *, inputs=None, published=N
             inputs.index = deepcopy(inputs.index)
             for dataset in datasets:
                 # Advance only families this write committed, preserving the
-                # prior selections actually read for all other datasets.
-                owner = next((name for name, entry in published['families'].items()
-                              if dataset in entry.get('etlReceipts', {}).get('datasets', ())), None)
+                # prior selections actually read for all other datasets. A table
+                # whose receipts are retired is found by its table, not its receipts.
+                owner = (next((name for name, entry in published['families'].items()
+                               if dataset in entry.get('etlReceipts', {}).get('datasets', ())), None) if generation
+                         else (publication.table_owner(published, dataset + '.parquet') or (None,))[0])
                 if owner is None:
                     raise ValueError('Published dataset is absent from its receipt family')
                 inputs.index['families'][owner] = published['families'][owner]
@@ -105,7 +108,7 @@ def _seal(root, dataset, directory, artifact, *, publish, inputs, check_refusals
             if any(value in {'refused', 'error'} for value in batch.column(0).to_pylist()):
                 raise ValueError(f'{dataset}: native conversion refused; checkpoint remains unadvanced')
     published = _publish(directory, inputs=inputs) if publish else None
-    _remember(root, [dataset], directory, artifact.root['spec']['etlReceipts']['generationId'],
+    _remember(root, [dataset], directory, artifact.root['spec'].get('etlReceipts', {}).get('generationId'),
               inputs=inputs, published=published)
     shutil.copyfile(directory / (dataset + ".parquet"), root / (dataset + ".parquet"))
     return directory / (dataset + ".parquet")
@@ -122,6 +125,7 @@ def finish_attribute_dataset(root: Path, dataset: str, fresh: Path, *, publish: 
     from spicy_regs.etl_receipts import select_receipts, validate_receipt_bundle
     from spicy_regs.native_merge import native_merge
     from spicy_regs.native_types import described_schema
+    from spicy_regs.subject_catalog import retired_receipt_datasets
     from spicy_regs.transforms.regulations_receipts import ATTRIBUTE_DATASETS, policy, refusal_identity, write_held_dataset
 
     if dataset not in ATTRIBUTE_DATASETS:
@@ -140,6 +144,9 @@ def finish_attribute_dataset(root: Path, dataset: str, fresh: Path, *, publish: 
     directory = root / "generations" / uuid4().hex
     generation = uuid4().hex
     root.mkdir(parents=True, exist_ok=True)
+    if dataset in retired_receipt_datasets():
+        return _finish_retired_attributes(root, dataset, fresh, prior.subjects[0], directory, family=family,
+                                          generation=generation, publish=publish, inputs=inputs)
     with TemporaryDirectory(dir=root, prefix='.attribute-merge-') as temporary:
         work = Path(temporary)
         scoped = select_receipts(prior.required_receipts('the attribute upsert'), work / 'prior-receipts.parquet',
@@ -165,6 +172,37 @@ def finish_attribute_dataset(root: Path, dataset: str, fresh: Path, *, publish: 
             directory, family=family, files=[merged.subjects], expected_keys=[dataset + ".parquet"],
             schemas={dataset: described_schema(declared.subject_schema)}, publication_status="complete-family",
             receipt_path=merged.receipts, receipt_policies=[declared], receipt_generation_id=generation)
+    return _seal(root, dataset, directory, artifact, publish=publish, inputs=inputs, check_refusals=False)
+
+
+def _finish_retired_attributes(root, dataset, fresh, prior, directory, *, family, generation, publish, inputs):
+    """:func:`finish_attribute_dataset` for a table whose receipts are retired (ss-vse3): a plain table upsert.
+
+    The day's rows are converted by the receipt route's own writer, so their native values are exactly its; its
+    receipts for them are only the refusal check and are never published. The published prior table is never read
+    through receipts: its rows the day did not touch are carried as they are (``native_merge.upsert_subjects``), and
+    the generation states no receipts. What this no longer does, per batch, on comment_attributes' 26.5 million rows:
+    select and validate the prior receipts (about 16 minutes), merge them (most of 5), admit them (most of 12) and
+    upload the 4.2 GiB receipt member (docs/comment-attributes-receipt-archive.md).
+    """
+    from spicy_regs.native_merge import upsert_subjects
+    from spicy_regs.native_types import described_schema
+    from spicy_regs.transforms.regulations_receipts import policy, write_held_dataset
+
+    declared = policy(dataset)
+    with TemporaryDirectory(dir=root, prefix='.attribute-merge-') as temporary:
+        work = Path(temporary)
+        fresh_subjects, fresh_receipts = write_held_dataset(dataset, fresh, work / 'fresh', generation_id=generation,
+                                                            bulk=True, validate=False)
+        for batch in pq.ParquetFile(fresh_receipts).iter_batches(columns=['outcome']):
+            if any(value in {'refused', 'error'} for value in batch.column(0).to_pylist()):
+                raise ValueError(f'{dataset}: native conversion refused; checkpoint remains unadvanced')
+        merged = upsert_subjects(declared.subject_schema, identity=declared.identity_fields, fresh=fresh_subjects,
+                                 prior=prior, order_by=declared.identity_fields, subjects=work / f'{dataset}.parquet')
+        logger.info('{}: {:,} rows kept, {:,} replaced, {:,} added', dataset, merged.kept, merged.replaced, merged.added)
+        artifact = build_generation(
+            directory, family=family, files=[merged.subjects], expected_keys=[dataset + ".parquet"],
+            schemas={dataset: described_schema(declared.subject_schema)}, publication_status="complete-family")
     return _seal(root, dataset, directory, artifact, publish=publish, inputs=inputs, check_refusals=False)
 
 
