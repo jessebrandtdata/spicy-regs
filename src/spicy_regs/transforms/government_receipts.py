@@ -201,6 +201,9 @@ def internal_prior(
             held[0].check()
             if scoped.subjects != (path,):
                 raise ValueError("Government prior differs from the shared native selection")
+            if scoped.receipts is None:
+                raise ValueError(f"{dataset}: its receipts are retired and the government family reads its prior "
+                                 "through receipts; switch this family before reading it here")
             selected, receipt_path, generation_id = scoped.receipts, scoped.receipts, scoped.generation_id
         elif receipt_path is None:
             local = path.parent / BUILD_METADATA

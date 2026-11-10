@@ -158,3 +158,70 @@ def test_readers_of_schema_and_identity_keep_a_retired_table_as_it_was(retire):
     retire("federal_register")
     assert json.dumps(subject_catalog.descriptors()["federal_register"], sort_keys=True) == before
     assert not subject_catalog.descriptors()["federal_register"]["receipt_only"]
+
+
+def test_a_retired_parent_is_selected_as_its_pinned_public_table(tmp_path, monkeypatch, retire):
+    """``SelectedInputs.select`` (remote): no receipt owner and the marker set give the table alone; unmarked refuses."""
+    from spicy_regs.selected_generations import SelectedInputs
+    from spicy_regs.sources import publication
+
+    key = "federal_register.parquet"
+    digest = "sha256:" + hashlib.sha256(REGISTER.read_bytes()).hexdigest()
+    index = {"families": {"federal-register": {"prefix": "generations/federal-register/" + "a" * 64, "tables": {
+        key: {"sha256": digest, "byteSize": REGISTER.stat().st_size, "rows": pq.read_metadata(REGISTER).num_rows}}}}}
+
+    def fetch(base, member, target, path):
+        target.write_bytes(REGISTER.read_bytes())
+        return True
+
+    monkeypatch.setattr(publication, "fetch_member", fetch)
+    with pytest.raises(ValueError, match="requires one ETL receipt generation"):
+        SelectedInputs(tmp_path / "root", tmp_path / "unmarked", index=index, public_url="https://x.invalid").select(
+            "federal_register")
+    retire("federal_register")
+    selected = SelectedInputs(tmp_path / "root", tmp_path / "marked", index=index,
+                              public_url="https://x.invalid").select("federal_register")
+    assert selected is not None and selected.receipts is None and selected.generation_id is None
+    [subject] = selected.subjects
+    assert subject.read_bytes() == REGISTER.read_bytes()
+
+
+def test_a_receipt_route_consumer_reads_a_retired_parent_and_builds_the_same_table(tmp_path, monkeypatch, retire):
+    """Consumers and parents switch in either order: the docket links, still on receipts and declaring no published
+    input, read a retired Register table through ``SelectedPriors`` (its regulations reader) and publish the links
+    the receipt route published from the Register's receipts. Nothing of the Register's receipts exists to read."""
+    from spicy_regs.pipelines.rollups.fr_docket_links import FrDocketLinksRollup
+    from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
+    from spicy_regs.receipt_switch import receipt_files, table_differences
+
+    fixture = REGISTER.parents[1]
+    root = tmp_path / "output"
+    root.mkdir()
+    (root / "federal_register.parquet").write_bytes(REGISTER.read_bytes())  # the plain rollup's local table
+    retire("federal_register")
+    monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
+    monkeypatch.setattr(FrDocketLinksRollup, "published_inputs", ())
+    prior = SelectedPriors(tmp_path / "probe", root=root, public_url="")
+    restored = prior.get("federal_register")
+    assert prior.selections["federal_register"][1:] == (None, None)
+    assert "docket_ids_json" in pq.read_schema(restored).names  # the builder's text shape, not the native lists
+    FrDocketLinksRollup(output_dir=root).run()
+    [generation] = list((root / "generations").iterdir())
+    assert table_differences(generation / "fr_docket_links.parquet", fixture / "expected/links-night-1.parquet",
+                             key=("docket_id", "document_number", "publication_date")) == []
+    parents = json.loads((generation / "artifact.json").read_text())["spec"]["parents"]
+    assert parents["federal_register/subjects/0.parquet"]["sha256"] == "sha256:" + hashlib.sha256(
+        REGISTER.read_bytes()).hexdigest()
+    assert not any(name.startswith("federal_register/etl_receipts") for name in parents)
+    assert [path.name for path in receipt_files(root) if "federal_register" in str(path)] == []
+
+
+def test_a_retired_parent_without_a_reader_for_its_mapper_refuses_by_name(tmp_path, retire):
+    from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
+
+    root = tmp_path / "output"
+    root.mkdir()
+    (root / "bill_cosponsors.parquet").write_bytes(REGISTER.read_bytes())
+    retire("bill_cosponsors")
+    with pytest.raises(ValueError, match="bill_cosponsors: its receipts are retired and its mapper declares no reader"):
+        SelectedPriors(tmp_path / "probe", root=root, public_url="").get("bill_cosponsors")
