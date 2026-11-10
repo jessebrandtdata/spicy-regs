@@ -282,7 +282,7 @@ receive them.
 | `treasury-fiscal` | Reads the published generation's captures from its rows, restores their bytes from R2 evidence, adds each Debt to the Penny day listed after the newest published one | No later day is listed |
 | `administration-policy` | Reads every published administration's file at the archive's current commit | No file's bytes differ |
 | `ofac-sanctions` | Downloads the SDN and consolidated exports and publishes them as the two snapshots | Both ZIPs are the published ones |
-| `house-disbursements` | Captures the House's two listing pages; when they list a CSV the published evidence did not use, restores the published originals from R2 evidence, downloads the new ones and rebuilds every quarter | The pages list no new CSV |
+| `house-disbursements` | Captures the House's two listing pages and reads the published tables (162 MB); when the pages list a CSV the published rows lack, restores the published originals from R2 evidence, downloads the new ones and rebuilds every quarter | The pages list no new CSV |
 | `grants-opportunities` | Finds the newest daily export of the last seven days and publishes it as the one snapshot | That export date is published |
 
 The Treasury run needs the three-table generation, so it can start only after

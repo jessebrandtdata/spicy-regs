@@ -172,11 +172,8 @@ class HouseDisbursementsRollup(SourceRefreshRollup):
 
         evidence = self.evidence
         listed = house_disbursements.listed_links(evidence, transport=self.transport)
-        # The published evidence names every file it used: an unchanged listing needs none of the published tables.
-        selected = evidence.inherited_event("selected-inputs")
-        if selected is not None and {link.url for _, _, link in listed} <= {
-                item["source_id"] for item in selected["manifest"]["used"]}:
-            raise Unchanged("the House lists no CSV the published generation lacks")
+        # The published rows, not the prior evidence's journal, say which files are published: a journal event read
+        # back here would have to be handed on by every native conversion (native_conversion.INHERITED_EVENTS).
         for key in self.outputs:
             r2.download_members(key, output_dir / "published")
         files = house_disbursements.published_files(output_dir / "published")

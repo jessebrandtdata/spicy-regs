@@ -283,13 +283,6 @@ def test_house_rebuilds_from_restored_originals_when_the_house_lists_a_quarter(t
     fixture._listing(monkeypatch, (fixture.ROOT_URL + "detail.csv", "detail", "2020-01-01", "2020-03-31"))
     rollups.HouseDisbursementsRollup(output_dir=tmp_path / "unchanged").run()
     assert generations(tmp_path / "unchanged") == [] and requests == []
-    # With the published evidence's selected inputs at hand, an unchanged listing reads none of the tables.
-    used = {"manifest": {"used": [{"source_id": fixture.ROOT_URL + name} for name in ("detail.csv", "summary.csv")]}}
-    with monkeypatch.context() as published_evidence:
-        publish_as_prior(published_evidence, lambda event, fields: used if event == "selected-inputs" else None)
-        published_evidence.setattr(rollups.r2, "download_members", lambda *_: pytest.fail("read a published table"))
-        rollups.HouseDisbursementsRollup(output_dir=tmp_path / "unchanged-cheap").run()
-    assert generations(tmp_path / "unchanged-cheap") == []
 
     fixture._listing(monkeypatch, *((url, kind, "2020-04-01", "2020-06-30") for kind, url in q2.items()))
     rollups.HouseDisbursementsRollup(output_dir=tmp_path / "hosted").run()
