@@ -70,19 +70,29 @@ def test_invalid_partition_preserves_previous_files(tmp_path, agency):
     assert not list(tmp_path.glob("comments-build-*"))
 
 
+def mark_retired(monkeypatch, *datasets):
+    """Which tables carry the "receipts retired" marker, through the one function every reader asks."""
+    from spicy_regs import subject_catalog
+
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset(datasets))
+
+
+def retire_comments_policies(monkeypatch):
+    """Both comments tables marked receipts-retired, as their installed policies are to be (ss-ag1j's marker)."""
+    mark_retired(monkeypatch, "comments", "comments_index")
+
+
 @pytest.fixture
 def publication(tmp_path, monkeypatch):
     snapshot = iceberg.CatalogPairSnapshot("table-uuid", 41, 0, iceberg.CatalogSnapshot("receipts-uuid", 51, 0))
     state: dict = {"snapshot": snapshot, "objects": {}, "index": {"format": "spicy-regs-publication", "version": 2, "families": {}}, "receipt": None, "builds": 0, "uploads": [], "fail": None, "agency": "EPA", "text": "first"}
     monkeypatch.setenv("R2_ACCESS_KEY_ID", "test")
+    retire_comments_policies(monkeypatch)
     monkeypatch.setattr(mirror, "resolve_r2_base_url", lambda: "https://public.example")
     monkeypatch.setattr(mirror, "MIN_EXPECTED_ROWS", 1)
-    state['catalog_prepared'] = 0
-    def prepare_catalog(_):
-        state['catalog_prepared'] += 1
-    monkeypatch.setattr(mirror, '_prepare_catalog', prepare_catalog)
     monkeypatch.setattr(iceberg, "catalog_snapshot", lambda _: state["snapshot"])
-    monkeypatch.setattr(iceberg, "rows_unchanged_since", lambda rt, pinned: iceberg.catalog_snapshot(rt) == pinned)
+    monkeypatch.setattr(iceberg, "rows_unchanged_since",
+                        lambda rt, pinned: iceberg.catalog_snapshot(rt).subject() == pinned.subject())
     monkeypatch.setattr(mirror.r2, "read_json_object", lambda _: state["receipt"])
     monkeypatch.setattr(mirror.r2, "object_version", lambda key: state["objects"].get(key))
     monkeypatch.setattr(mirror.publication, "public_object_version", lambda url, **_: state["objects"].get(url.removeprefix("https://public.example/")))
@@ -94,8 +104,8 @@ def publication(tmp_path, monkeypatch):
     def publish(directory, **kwargs):
         from spicy_regs.generations import verify_generation
         artifact = verify_generation(directory)
-        entry = {"artifactDigest": artifact.root["artifactDigest"], "tables": artifact.root["spec"]["tables"],
-                 "etlReceipts": artifact.root["spec"]["etlReceipts"]}
+        assert "etlReceipts" not in artifact.root["spec"] and "retired_receipt_datasets" not in kwargs
+        entry = {"artifactDigest": artifact.root["artifactDigest"], "tables": artifact.root["spec"]["tables"]}
         state["index"] = {**state["index"], "families": {"comments": entry}}
         return state["index"]
     monkeypatch.setattr(mirror.publication, "publish_generation", publish)
@@ -103,22 +113,14 @@ def publication(tmp_path, monkeypatch):
     def export(root, rt, **kw):
         state["builds"] += 1
         root.mkdir(parents=True, exist_ok=True)
-        from spicy_regs.etl_receipts import ReceiptContext
-        from spicy_regs.transforms.regulations_receipts import write_records
-        from uuid import uuid4
-        pair = root / ".catalog-pairs" / uuid4().hex
-        generation = "snapshot-" + str(state["snapshot"].snapshot_id)
+        from spicy_regs.transforms.regulations_receipts import policy
+        from spicy_regs.transforms.regulations_shape import shape_record
         row = dict.fromkeys(COMMENT.schema)
         row.update(comment_id="a", agency_code=state["agency"], text_content=state["text"])
-        witness = dict(source_id="fixture", source_uri=None, sha256="sha256:" + "a" * 64,
-                       locator=None, body_version=None)
-        subject, receipts = write_records("comments", [(row, ReceiptContext(generation, "row-a", "fixture", [witness]))], pair)
-        marker = pair / "generation.json"
-        marker.write_text(json.dumps(dict(generation_id=generation, dataset="comments", snapshot=asdict(state["snapshot"]))))
+        subject = pa.Table.from_pylist([shape_record("comments", row)], schema=policy("comments").subject_schema)
         with duckdb.connect() as con:
-            con.register("source", pq.read_table(subject))
-            result = build(con, root, ExportResources("64MB", 1))
-        return {**result, "receipts": receipts, "generation": marker}
+            con.register("source", subject)
+            return build(con, root, ExportResources("64MB", 1))
 
 
     def upload(path, remote_key=None, **kw):
@@ -300,12 +302,12 @@ def published(request, publication, monkeypatch):
     iceberg.merge_comments(catalog / "staging", COMMENT)
     scans = []
     from spicy_regs.sources import regulatory_catalog
-    original_export_pair = regulatory_catalog.export_pair
-    def capture_export(con, rt, directory, **kwargs):
-        scans.append(kwargs["snapshot"])
-        return original_export_pair(con, rt, directory, **kwargs)
-    monkeypatch.setattr(regulatory_catalog, "export_pair", capture_export)
-    monkeypatch.setattr(iceberg, "_read_pair_snapshot", lambda con, rt: state["snapshot"])
+    monkeypatch.setattr(regulatory_catalog, "export_pair", lambda *a, **kw: pytest.fail("exported the receipt pair"))
+
+    def pinned(con, rt, **kwargs):
+        scans.append(state["snapshot"])
+        return state["snapshot"]
+    monkeypatch.setattr(iceberg, "_read_pair_snapshot", pinned)
     monkeypatch.setattr(iceberg, "export_public_comments", _EXPORT)
     monkeypatch.setattr(mirror, "validate_export", lambda *a, **kw: mirror.PublicPredecessor("prior", frozenset({"EPA", "DOT"})))
     assert mirror.publish_comments_mirror(root, resources=ExportResources("64MB", 1))
@@ -378,27 +380,20 @@ def _member(path, rows: int, row_group: int):
     return {"rows": rows}
 
 
-def test_every_receipt_admission_in_the_mirror_is_bounded_by_its_resources(published, monkeypatch):
-    """The paired export's admission and the generation's each insert byte-sized slices under the mirror's limits.
+def test_the_mirror_admits_no_receipt_and_publishes_none(published, monkeypatch):
+    """Receipt admission is gone from the route, so is its memory risk.
 
-    Hosted run 42738947666 admitted the exported subjects as one statement at the bulk default (4 threads, 4GB)
-    and ran out of memory encoding an 89 MiB comment beside 2.8 GiB of other rows (ss-7flp).
+    It was the mirror's largest one: hosted run 42738947666 admitted the exported subjects as one statement and ran
+    out of memory encoding an 89 MiB comment (ss-7flp). The generation states no receipt member.
     """
     from spicy_regs import etl_bulk
-    _, _, root, _ = published
-    admissions = []
-    scan = etl_bulk._scan
-
-    def recorded(con, *args, **kwargs):
-        limits = con.execute("SELECT current_setting('threads'), current_setting('memory_limit')").fetchone()
-        admissions.append((kwargs.get("bounded_insert", False), *limits))
-        return scan(con, *args, **kwargs)
-
-    monkeypatch.setattr(etl_bulk, "_scan", recorded)
+    _, state, root, _ = published
+    monkeypatch.setattr(etl_bulk, "_scan", lambda *a, **kw: pytest.fail("admitted receipts"))
     assert mirror.publish_comments_mirror(root, resources=ExportResources("512MB", 2), skip_upload=True)
-    # At least the export's receipts and subjects, then the generation's receipts, comments and index.
-    assert len(admissions) >= 5
-    assert set(admissions) == {(True, 2, "488.2 MiB")}
+    generation = max((root / ".comments-generations").iterdir(), key=lambda path: path.stat().st_mtime_ns)
+    spec = json.loads((generation / "artifact.json").read_text())["spec"]
+    assert "etlReceipts" not in spec and not (generation / "etl_receipts.parquet").exists()
+    assert set(spec["tables"]) == {"comments.parquet", "comments_index.parquet"}
 
 
 def test_a_receipt_whose_agency_rows_do_not_sum_to_the_monolith_is_refused(tmp_path):
@@ -418,6 +413,47 @@ def test_a_receipt_whose_agency_rows_do_not_sum_to_the_monolith_is_refused(tmp_p
         mirror.check_receipt_rows(tmp_path, files, 3)
 
 
+def test_only_the_agency_files_may_shrink(publication, monkeypatch):
+    """The workflow no longer lifts r2's shrink guard; the mirror lifts it around the agency files alone."""
+    import os
+
+    state, root = publication
+    monkeypatch.delenv("R2_ALLOW_SHRINK", raising=False)
+    seen = []
+    upload, partitions = mirror.r2.upload_file, mirror.r2.upload_comment_partitions
+    publish = mirror.publication.publish_generation
+
+    def note(step, what):
+        seen.append((step, what, os.environ.get("R2_ALLOW_SHRINK")))
+
+    def preflight(output_dir, files):
+        note("preflight", sorted(path.relative_to(output_dir).as_posix() for path in files))
+
+    def upload_file(path, remote_key=None, **kw):
+        note("upload", remote_key or path.name)
+        return upload(path, remote_key, **kw)
+
+    def upload_agency_files(output_dir, files):
+        note("agency files", len(files))
+        return partitions(output_dir, files)
+
+    def publish_generation(directory, **kw):
+        note("generation", None)
+        return publish(directory, **kw)
+
+    monkeypatch.setattr(mirror.r2, "preflight_uploads", preflight)
+    monkeypatch.setattr(mirror.r2, "upload_file", upload_file)
+    monkeypatch.setattr(mirror.r2, "upload_comment_partitions", upload_agency_files)
+    monkeypatch.setattr(mirror.publication, "publish_generation", publish_generation)
+    assert mirror.publish_comments_mirror(root)
+    assert seen[:3] == [("preflight", ["comments.parquet"], None),
+                        ("preflight", ["comments/agency/agency_code=EPA/part-0.parquet", "comments_index.parquet"], "1"),
+                        ("upload", "comments.parquet", None)]
+    assert ("agency files", 1, "1") in seen and ("generation", None, None) in seen
+    assert ("upload", "comments-publication.json", None) in seen
+    assert "R2_ALLOW_SHRINK" not in os.environ
+
+
 def test_a_refused_receipt_uploads_nothing(publication, monkeypatch):
     """The row check runs on the local files before any upload, so a refusal leaves the public files untouched."""
     state, root = publication
@@ -427,9 +463,7 @@ def test_a_refused_receipt_uploads_nothing(publication, monkeypatch):
     assert state["uploads"] == [] and state["receipt"] is None
 
 
-@pytest.mark.parametrize('changed_table', ['subjects', 'receipts'])
-@pytest.mark.parametrize('when', ['before-export', 'paired-export'])
-def test_export_refuses_a_catalog_moved_from_the_pinned_snapshot(tmp_path, monkeypatch, changed_table, when):
+def test_export_refuses_a_comments_table_moved_from_the_pinned_snapshot(tmp_path, monkeypatch):
     from spicy_regs.sources import regulatory_catalog
     def connect():
         con = duckdb.connect()
@@ -438,86 +472,57 @@ def test_export_refuses_a_catalog_moved_from_the_pinned_snapshot(tmp_path, monke
         return con
     monkeypatch.setattr(iceberg, "_connect", connect)
     pinned = iceberg.CatalogPairSnapshot("table-uuid", 41, 0, iceberg.CatalogSnapshot("receipts-uuid", 51, 0))
-    moved = (replace(pinned, snapshot_id=42) if changed_table == 'subjects'
-             else replace(pinned, receipts=replace(pinned.receipts, snapshot_id=52)))
-    snapshots = iter([moved] if when == 'before-export' else [pinned, moved])
-    monkeypatch.setattr(iceberg, "_read_pair_snapshot", lambda con, rt: next(snapshots))
+    monkeypatch.setattr(iceberg, "_read_pair_snapshot", lambda con, rt, **kw: replace(pinned, snapshot_id=42))
     monkeypatch.setattr(iceberg, "_snapshot_query", lambda *a: pytest.fail("scanned a snapshot other than the pinned one"))
-    with pytest.raises(RuntimeError, match="changed before.*export"):
+    with pytest.raises(RuntimeError, match="changed before export"):
         iceberg.export_public_comments(tmp_path, COMMENT, snapshot=pinned)
     assert not list(tmp_path.rglob("*.parquet"))
 
 
-@pytest.mark.parametrize("fault", ["missing", "tampered", "generation", "snapshot"])
-def test_receipt_fault_refuses_before_any_publication(publication, monkeypatch, fault):
+def test_a_table_off_its_declared_schema_refuses_before_any_publication(publication, monkeypatch):
+    """The generation states each table's declared columns and types, the check receipt admission made before."""
     state, root = publication
     export = iceberg.export_public_comments
-    def broken(*args, **kwargs):
+
+    def widened(*args, **kwargs):
         result = export(*args, **kwargs)
-        if fault == "missing":
-            result["receipts"].unlink()
-        elif fault == "tampered":
-            result["receipts"].write_bytes(b"invalid receipt bytes")
-        else:
-            metadata = json.loads(result["generation"].read_text())
-            if fault == "generation":
-                metadata["generation_id"] = ""
-            else:
-                metadata["snapshot"]["snapshot_id"] += 1
-            result["generation"].write_text(json.dumps(metadata))
+        table = pq.read_table(result["comments"])
+        pq.write_table(table.append_column("unexpected", pa.array(["x"] * table.num_rows)), result["comments"])
         return result
-    monkeypatch.setattr(iceberg, "export_public_comments", broken)
-    with pytest.raises((ValueError, OSError)):
+    monkeypatch.setattr(iceberg, "export_public_comments", widened)
+    with pytest.raises(ValueError, match="differs from the declared schema: comments.parquet"):
         mirror.publish_comments_mirror(root)
-    assert state["uploads"] == []
-    assert state["index"]["families"] == {}
+    assert state["uploads"] == [] and state["index"]["families"] == {}
 
 
-def test_mirror_selects_native_catalog_before_pinning_snapshot(publication, tmp_path, monkeypatch):
-    state, _ = publication
-    def snapshot(_):
-        assert state['catalog_prepared'] == 1
-        return state['snapshot']
-    monkeypatch.setattr(iceberg, 'catalog_snapshot', snapshot)
-    mirror.publish_comments_mirror(tmp_path, skip_upload=True)
-    assert state['catalog_prepared'] == 1
+@pytest.mark.parametrize("marked", [(), ("comments",), ("comments_index",)], ids=["none", "comments", "index"])
+def test_the_mirror_refuses_in_seconds_unless_both_tables_are_marked_retired(tmp_path, monkeypatch, marked):
+    """Admission would refuse a receipts-free generation of an unmarked table; a family leaves receipts together."""
+    mark_retired(monkeypatch, *marked)
+    monkeypatch.setattr(iceberg, "catalog_snapshot", lambda _: pytest.fail("read the catalog"))
+    with pytest.raises(RuntimeError, match="still require ETL receipts"):
+        mirror.publish_comments_mirror(tmp_path, skip_upload=True)
 
 
-def test_rejected_only_receipt_append_republishes_unchanged_subjects(publication, monkeypatch):
-    """A source attempt is retained even when it produces no changed subject row."""
-    from spicy_regs.etl_receipts import RECEIPT_SCHEMA, ReceiptContext, failure_receipt
-    from spicy_regs.transforms.regulations_receipts import policy
+def test_the_mirror_never_prepares_or_initializes_the_catalog(publication, tmp_path, monkeypatch):
+    """Initialization reads the shared receipt table for its marker (78 s on 26.5M rows) and may write it."""
+    from spicy_regs.sources import regulatory_catalog
+    monkeypatch.setattr(iceberg, "_connect_for_table", lambda *a: pytest.fail("prepared the catalog for a write"))
+    monkeypatch.setattr(regulatory_catalog, "ensure_native", lambda *a: pytest.fail("initialized the catalog"))
+    assert mirror.publish_comments_mirror(tmp_path, skip_upload=True)
 
+
+def test_a_receipt_only_commit_leaves_the_publication_current(publication):
+    """A rejected attempt or retained refusal moves only the receipt table, which publishes nothing (ss-juz8)."""
     state, root = publication
     assert mirror.publish_comments_mirror(root)
-    before_subject = (root / 'comments.parquet').read_bytes()
-    before_rows = state['receipt']['generation']['etlReceipts']['rows']
-    original_export = iceberg.export_public_comments
-
-    def export_with_rejection(*args, **kwargs):
-        result = original_export(*args, **kwargs)
-        generation = json.loads(result['generation'].read_text())['generation_id']
-        context = ReceiptContext(generation, 'rejected-attempt', 'fixture',
-            [{'source_id': 'comments', 'source_uri': None, 'sha256': 'sha256:' + 'b' * 64,
-              'locator': 'older source revision', 'body_version': None}])
-        failed = failure_receipt(policy('comments'), context, outcome='rejected',
-                                 raw_fields={'raw_source_record': {'comment_id': 'a', 'comment': 'older'}})
-        rows = pq.read_table(result['receipts']).to_pylist()
-        pq.write_table(pa.Table.from_pylist([*rows, failed], schema=RECEIPT_SCHEMA), result['receipts'])
-        return result
-
-    monkeypatch.setattr(iceberg, 'export_public_comments', export_with_rejection)
-    state['snapshot'] = replace(state['snapshot'], receipts=replace(state['snapshot'].receipts, snapshot_id=52))
-    assert mirror.publish_comments_mirror(root)
-    assert state['builds'] == 2
-    assert (root / 'comments.parquet').read_bytes() == before_subject
-    assert state['receipt']['source']['snapshot_id'] == 41
-    assert state['receipt']['source']['receipts']['snapshot_id'] == 52
-    assert state['receipt']['generation']['etlReceipts']['rows'] == before_rows + 1
+    uploads = list(state["uploads"])
+    state["snapshot"] = replace(state["snapshot"], receipts=replace(state["snapshot"].receipts, snapshot_id=52))
     assert not mirror.publish_comments_mirror(root)
+    assert state["builds"] == 1 and state["uploads"] == uploads
 
 
-def test_receipt_only_write_during_export_refuses_before_upload(publication, monkeypatch):
+def test_a_receipt_only_write_during_export_still_publishes(publication, monkeypatch):
     state, root = publication
     original_export = iceberg.export_public_comments
 
@@ -527,7 +532,23 @@ def test_receipt_only_write_during_export_refuses_before_upload(publication, mon
         return result
 
     monkeypatch.setattr(iceberg, 'export_public_comments', changed)
-    with pytest.raises(RuntimeError, match='Catalog changed during export'):
-        mirror.publish_comments_mirror(root)
-    assert state['uploads'] == []
-    assert state['index']['families'] == {}
+    assert mirror.publish_comments_mirror(root)
+    assert state['receipt']['source']['receipts']['snapshot_id'] == 51  # the pair as exported
+
+
+def test_the_mirror_workflow_refuses_the_retired_v1_promotion_before_checkout():
+    """promote_v1 published receipts; the shared refresh still passes its inputs, so the mirror refuses them first."""
+    from pathlib import Path
+
+    import yaml
+
+    workflows = Path(__file__).parents[1] / ".github/workflows"
+    mirror_job = yaml.safe_load((workflows / "_comments-mirror.yml").read_text())["jobs"]["publish"]
+    first = mirror_job["steps"][0]
+    retired = ("promote_v1", "comments_original_pair", "comments_captured_input", "comments_captured_input_sha256",
+               "comments_local_python", "comments_local_python_sha256")
+    assert first["name"] == "Refuse the retired v1 promotion"
+    assert all(f"inputs.{name}" in first["if"] for name in retired) and first["run"].rstrip().endswith("exit 1")
+    assert not any("prepare_comments_selected_export" in str(step) for step in mirror_job["steps"])
+    dispatch = yaml.safe_load((workflows / "publish-comments-mirror.yml").read_text())
+    assert set(dispatch[True]["workflow_dispatch"]["inputs"]) == {"skip_upload", "comments_only", "comments_runner"}
