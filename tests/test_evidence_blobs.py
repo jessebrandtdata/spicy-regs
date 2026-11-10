@@ -4,6 +4,7 @@ from collections import Counter
 from hashlib import sha256
 from io import BytesIO
 import tempfile
+import threading
 
 from botocore.exceptions import ClientError
 import pytest
@@ -36,21 +37,39 @@ def blob_keys(evidence):
 
 
 class Counting(Store):
-    """Counts HEADs per key, and local opens per blob member through ``watch``."""
+    """Counts HEADs per key and the most blobs ever written but not yet read back."""
 
     def __init__(self):
         super().__init__()
-        self.heads = Counter()
+        self.heads, self.unread, self.most_unread, self.lock = Counter(), set(), 0, threading.Lock()
 
     def head_object(self, *, Bucket, Key, ChecksumMode=None):
         self.heads[Key] += 1
         return super().head_object(Bucket=Bucket, Key=Key, ChecksumMode=ChecksumMode)
 
+    def put_object(self, **kwargs):
+        result = super().put_object(**kwargs)
+        if "/blobs/sha256/" in kwargs["Key"]:
+            with self.lock:
+                self.unread.add(kwargs["Key"])
+                self.most_unread = max(self.most_unread, len(self.unread))
+        return result
 
-def test_new_blob_costs_one_head_one_put_and_no_get(tmp_path, monkeypatch):
-    """ss-ag8i: the serial read-back of each new blob was 104 of 130 minutes per 20,000 (run 42674437011)."""
+    def get_object(self, *, Bucket, Key):
+        with self.lock:
+            self.unread.discard(Key)
+        return super().get_object(Bucket=Bucket, Key=Key)
+
+
+def test_new_blob_costs_one_head_one_put_and_one_get_on_its_upload_worker(tmp_path, monkeypatch):
+    """ss-ag8i: reading each new blob back one at a time, after all were sent, was 104 of 130 minutes per 20,000.
+
+    The read-back now follows each blob's own PUT, so a run that dies leaves at most one unread blob per worker,
+    where it could leave a whole 20,000-blob artifact (run 42674437011).
+    """
     (tmp_path / "one").mkdir()
-    directory, evidence = evidence_run(tmp_path, "one", BODY, b"a second response", b"a third response")
+    bodies = [b"response %d" % number for number in range(3 * pub.EVIDENCE_WORKERS)]
+    directory, evidence = evidence_run(tmp_path, "one", *bodies)
     local_opens, opened = Counter(), EvidenceMemberSource.open
 
     def counted(self, object_key):
@@ -61,11 +80,12 @@ def test_new_blob_costs_one_head_one_put_and_no_get(tmp_path, monkeypatch):
     store = Counting()
     publish(store, directory, evidence)
     blobs = blob_keys(evidence)
-    assert len(blobs) == 3
+    assert len(blobs) == len(bodies)
     for key in blobs:
-        assert (store.heads[key], store.writes.count(key), store.reads[key]) == (1, 1, 0)
+        assert (store.heads[key], store.writes.count(key), store.reads[key]) == (1, 1, 1)
         assert store.sent[key] == len(store.objects[key])
         assert sha256(store.objects[key]).hexdigest() == key.rsplit("/", 1)[1]
+    assert 1 <= store.most_unread <= pub.EVIDENCE_WORKERS and not store.unread
     # Each local copy is read for the build's own verification, once to be hashed and sent in one buffer,
     # and once by the admission that binds the artifact to those bytes.
     before_publication = 1
@@ -84,9 +104,9 @@ def test_identical_evidence_uploads_and_reads_back_no_blob_bytes(tmp_path):
     assert second.artifact.pin != first.artifact.pin
     blobs = blob_keys(second)
     assert blobs == blob_keys(first)
-    sent = dict(store.sent)
+    sent, reads = dict(store.sent), dict(store.reads)
     publish(store, second_dir, second, prior)
-    assert all(store.sent[key] == sent[key] and store.reads[key] == 0 for key in blobs)
+    assert all(store.sent[key] == sent[key] and store.reads[key] == reads[key] == 1 for key in blobs)
     assert store.writes[-1] == pub.INDEX_V2_KEY
 
 
@@ -99,8 +119,8 @@ def test_only_the_new_blob_of_a_mixed_run_is_sent_and_verified(tmp_path):
     second_dir, second = evidence_run(tmp_path, "two", BODY, b"a new response")
     [new] = sorted(set(blob_keys(second)) - set(blob_keys(first)))
     publish(store, second_dir, second, prior)
-    assert store.writes.count(new) == 1
-    assert not any(store.reads[key] for key in blob_keys(second))
+    assert store.writes.count(new) == 1 and store.reads[new] == 1
+    assert all(store.reads[key] == 1 for key in blob_keys(first))  # at their own creation, not again
 
 
 def refused(store, directory, evidence, error=ArtifactVerificationError):
@@ -110,15 +130,29 @@ def refused(store, directory, evidence, error=ArtifactVerificationError):
     assert not any(key.startswith("generations/") for key in store.writes)
 
 
-def test_existing_object_with_other_bytes_is_never_overwritten_and_refuses(tmp_path):
+@pytest.mark.parametrize("damage", ["corrupt", "missing"])
+def test_damaged_shared_blob_refuses_before_the_pointer_moves(tmp_path, damage):
+    """An object with other bytes already at the key, or a blob gone when its read-back follows its write."""
     (tmp_path / "one").mkdir()
     directory, evidence = evidence_run(tmp_path, "one", BODY)
-    store = Store()
     [blob] = blob_keys(evidence)
     other = bytes([BODY[0] ^ 1]) + BODY[1:]  # same size, different bytes: only the stored identity can tell
-    store.objects[blob] = other
+
+    class Losing(Store):
+        def put_object(self, **kwargs):
+            result = super().put_object(**kwargs)
+            if damage == "missing" and kwargs["Key"] == blob:
+                del self.objects[blob]
+            return result
+
+    store = Losing()
+    if damage == "corrupt":
+        store.objects[blob] = other
     refused(store, directory, evidence)
-    assert store.objects[blob] == other and blob not in store.writes
+    if damage == "corrupt":
+        assert store.objects[blob] == other and blob not in store.writes  # never overwritten
+    else:
+        assert blob not in store.objects and store.writes.count(blob) == 1
 
 
 @pytest.mark.parametrize("same_bytes", [True, False])
@@ -160,9 +194,11 @@ def test_body_damaged_in_transit_is_refused_by_its_checksum_at_the_write(tmp_pat
     assert blob not in store.objects
 
 
-@pytest.mark.parametrize("answer", ["other-bytes-kept", "no-etag", "foreign-etag"])
-def test_created_blob_is_trusted_only_on_the_md5_of_the_buffer_sent(tmp_path, answer):
-    """Storage's answer is the evidence: anything but the sent buffer's MD5 costs a read of the stored bytes."""
+@pytest.mark.parametrize("answer", ["sent-md5", "other-bytes-kept", "no-etag", "foreign-etag"])
+def test_created_blob_is_read_back_whatever_storage_answers(tmp_path, answer):
+    """Storage's answer to the PUT is logged, never trusted: only the stored bytes decide."""
+    from loguru import logger
+
     (tmp_path / "one").mkdir()
     directory, evidence = evidence_run(tmp_path, "one", BODY)
     [blob] = blob_keys(evidence)
@@ -170,26 +206,37 @@ def test_created_blob_is_trusted_only_on_the_md5_of_the_buffer_sent(tmp_path, an
     class Answering(Store):
         def put_object(self, **kwargs):
             result = super().put_object(**kwargs)
-            if kwargs["Key"] != blob or answer == "other-bytes-kept":
+            if kwargs["Key"] != blob or answer in {"sent-md5", "other-bytes-kept"}:
                 return result  # ``corrupt_key``: storage ignored the checksum and reports what it kept
             return {} if answer == "no-etag" else {"ETag": '"not-an-md5-of-the-body"'}
 
-    store = Answering()
-    if answer == "other-bytes-kept":
-        store.corrupt_key = blob
-        refused(store, directory, evidence)
-        assert store.reads[blob] == 2  # the worker's read-back, then the admission that refuses
-    else:
-        publish(store, directory, evidence)
-        assert store.reads[blob] == 1 and store.objects[blob] == BODY
+    store, lines = Answering(), []
+    sink = logger.add(lambda message: lines.append(message.record["message"]), level="INFO")
+    try:
+        if answer == "other-bytes-kept":
+            store.corrupt_key = blob
+            refused(store, directory, evidence)
+            assert store.reads[blob] == 2  # the worker's read-back, then the admission that refuses
+        else:
+            publish(store, directory, evidence)
+            assert store.reads[blob] == 1 and store.objects[blob] == BODY
+    finally:
+        logger.remove(sink)
     assert store.writes.count(blob) == 1
+    [summary] = [line for line in lines if line.startswith("Evidence blobs: ")]
+    assert summary == "Evidence blobs: " + {
+        "sent-md5": "1 created with the sent MD5 as ETag and read back",
+        "other-bytes-kept": "1 refused",
+        "no-etag": "1 read back",
+        "foreign-etag": "1 read back",
+    }[answer]
 
 
-def test_blob_removed_after_its_write_is_the_stated_limit_of_not_reading_back(tmp_path):
-    """Until ss-ag8i a new blob was read during admission, which saw one removed since its write.
+def test_blob_removed_after_its_read_back_is_not_seen(tmp_path):
+    """The stated limit (docs/source-evidence.md, "Stored blobs"): each blob is checked once, at its write.
 
-    An already-stored blob never had that check (one HEAD, then local bytes), and now a created one has none
-    either: docs/source-evidence.md states the limit. Readers still hash every blob they fetch against its key.
+    Until ss-ag8i a new blob was read during admission, after the metadata was written, so this removal was
+    refused. An already-stored blob never had that later check (one HEAD, then local bytes).
     """
     (tmp_path / "one").mkdir()
     directory, evidence = evidence_run(tmp_path, "one", BODY)
@@ -198,6 +245,7 @@ def test_blob_removed_after_its_write_is_the_stated_limit_of_not_reading_back(tm
 
     def delete(key):
         if key.endswith("/members.json"):
+            assert store.reads[blob] == 1
             store.objects.pop(blob, None)
 
     store.before_put = delete
@@ -216,8 +264,6 @@ def test_upload_refuses_bytes_that_differ_from_their_content_address(tmp_path):
 
 def test_blob_requests_run_concurrently(tmp_path):
     """1,810 serial round trips took 23.5 minutes (bill family, 2026-09-26); two requests must overlap."""
-    import threading
-
     (tmp_path / "one").mkdir()
     directory, evidence = evidence_run(tmp_path, "one", BODY, b"a second response", b"a third response")
     both, arrivals, lock = threading.Barrier(2, timeout=5), [], threading.Lock()
@@ -237,13 +283,11 @@ def test_blob_requests_run_concurrently(tmp_path):
     store = Overlapping()
     publish(store, directory, evidence)
     assert not both.broken, "no two blob requests were in flight together"
-    assert all(store.writes.count(key) == 1 and store.reads[key] == 0 for key in blob_keys(evidence))
+    assert all(store.writes.count(key) == 1 and store.reads[key] == 1 for key in blob_keys(evidence))
 
 
 def test_read_backs_run_concurrently_and_each_blob_is_read_once(tmp_path):
-    """The read-back that remains must not be serial: 0.31 s a blob, one at a time, was 104 minutes per 20,000."""
-    import threading
-
+    """The read-back must not be serial: 0.31 s a blob, one at a time, was 104 minutes per 20,000."""
     (tmp_path / "one").mkdir()
     bodies = (BODY, b"a second response", b"a third response", b"a fourth response")
     directory, evidence = evidence_run(tmp_path, "one", *bodies)
@@ -263,13 +307,10 @@ def test_read_backs_run_concurrently_and_each_blob_is_read_once(tmp_path):
             return super().get_object(Bucket=Bucket, Key=Key)
 
     store = Overlapping()
-    for key in blob_keys(evidence):  # stored by an uploader whose ETag cannot be compared: each needs its bytes read
-        store.objects[key] = read_evidence_member(evidence, key.removeprefix("source-evidence/"))
-        store.etags[key] = '"different-etag-requires-readback"'
     publish(store, directory, evidence)
     assert not both.broken, "no two read-backs were in flight together"
-    assert len(blob_keys(evidence)) == 4 and all(store.reads[key] == 1 for key in blob_keys(evidence))
-    assert not any(key in store.writes for key in blob_keys(evidence))
+    assert len(blob_keys(evidence)) == 4
+    assert all(store.reads[key] == store.writes.count(key) == 1 for key in blob_keys(evidence))
 
 
 @pytest.mark.parametrize("already_present", [False, True])
@@ -319,7 +360,7 @@ def test_blobs_are_read_back_in_bounded_chunks_without_local_scratch(tmp_path, m
     monkeypatch.setattr(tempfile, "TemporaryDirectory", no_scratch)
     publish(store, directory, evidence)
     assert peak <= pub.EVIDENCE_WORKERS and active == 0 and all(body.closed for body in bodies)
-    assert all(store.reads[key] == (1 if already_present else 0) for key in blob_keys(evidence))
+    assert all(store.reads[key] == 1 for key in blob_keys(evidence))
     assert all(store.writes.count(key) == (0 if already_present else 1) for key in blob_keys(evidence))
     assert sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*") if path.is_file()) == local_files
 
@@ -346,9 +387,6 @@ def test_remote_stream_or_membership_failure_closes_body_and_never_publishes(tmp
             return result
 
     store = Failing()
-    if failure == "interrupted-body":  # an existing object whose ETag cannot be compared is read back
-        [blob] = blob_keys(evidence)
-        store.objects[blob], store.etags[blob] = BODY, '"different-etag-requires-readback"'
     if failure == "extra-metadata":
         prefix = "source-evidence/" + evidence.artifact.pin.artifact_digest.removeprefix("sha256:")
         store.objects[prefix + "/undeclared.json"] = b"undeclared"
