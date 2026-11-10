@@ -29,7 +29,8 @@ def restore_dataset(root: Path, dataset: str, destination: Path, *, index=None, 
         selected = inputs.select(dataset)
         if selected is None:
             return False
-        materialize_internal(ReceiptInput(dataset, selected.subjects, selected.receipts, selected.generation_id),
+        receipts = selected.required_receipts("the regulatory restore")
+        materialize_internal(ReceiptInput(dataset, selected.subjects, receipts, selected.generation_id),
                              destination, bulk=True)
         return True
 
@@ -78,7 +79,8 @@ def finish_dataset(root: Path, dataset: str, source: Path, *, publish: bool, inp
         from spicy_regs.etl_receipts import select_receipts, selected_subject_policy, validate_receipt_bundle
         from spicy_regs.transforms.regulations_receipts import policy
         with TemporaryDirectory(prefix='.regulatory-prior-', dir=root) as temporary:
-            scoped = select_receipts(prior.receipts, Path(temporary) / 'receipts.parquet', dataset=dataset)
+            scoped = select_receipts(prior.required_receipts('the regulatory writer'),
+                                     Path(temporary) / 'receipts.parquet', dataset=dataset)
             validate_receipt_bundle({dataset: prior.subjects}, [scoped],
                 [selected_subject_policy(policy(dataset), prior.subjects)], generation_id=prior.generation_id)
     artifact = build_local_generation(
@@ -140,7 +142,8 @@ def finish_attribute_dataset(root: Path, dataset: str, fresh: Path, *, publish: 
     root.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(dir=root, prefix='.attribute-merge-') as temporary:
         work = Path(temporary)
-        scoped = select_receipts(prior.receipts, work / 'prior-receipts.parquet', dataset=dataset)
+        scoped = select_receipts(prior.required_receipts('the attribute upsert'), work / 'prior-receipts.parquet',
+                                 dataset=dataset)
         validate_receipt_bundle({dataset: prior.subjects}, [scoped], [declared], generation_id=prior.generation_id)
         metadata = _attribute_metadata(scoped)
         source = fresh
@@ -196,7 +199,8 @@ def restore_checkpoint(root: Path, dataset: str, *, index=None, inputs=None) -> 
             return []
         if selected.subjects:
             raise ValueError('Checkpoint selection contains subject files')
-        return read_checkpoint(dataset, selected.receipts, generation_id=selected.generation_id)
+        return read_checkpoint(dataset, selected.required_receipts('the checkpoint reader'),
+                               generation_id=selected.generation_id)
 
 
 def finish_checkpoints(root: Path, checkpoints: dict[str, list[dict]], *, publish: bool, witnesses=(), inputs=None):

@@ -311,3 +311,33 @@ def test_the_mcp_server_serves_no_legacy_meanings_for_a_retired_table(monkeypatc
             "legacy_column_descriptions"]
         retire("federal_register")
         assert mcp_server._legacy_column_meanings(cursor, "federal_register", entry) == {}
+
+
+@pytest.mark.parametrize("path", ["restore", "base-family"])
+def test_a_regulatory_path_that_still_reads_receipts_refuses_a_retired_table_by_name(tmp_path, monkeypatch, retire,
+                                                                                    path):
+    """Not the retired route: these paths read a table's receipts, and say so instead of crashing on none."""
+    from spicy_regs.pipelines.regulatory_publication import restore_dataset
+    from spicy_regs.pipelines.rollups.regulatory_base import DocumentsFamily
+
+    monkeypatch.delenv("R2_PUBLIC_URL", raising=False)
+    retire("documents")
+    table = pa.table({"document_id": ["D-1"], "title": ["one"]})
+    if path == "restore":
+        pq.write_table(table, tmp_path / "documents.parquet")
+        with pytest.raises(ValueError, match="documents has retired receipts; the regulatory restore still reads them"):
+            restore_dataset(tmp_path, "documents", tmp_path / "restored.parquet")
+    else:
+        (tmp_path / ".selected").mkdir()
+        pq.write_table(table, tmp_path / ".selected" / "documents.parquet")
+        with pytest.raises(ValueError, match="documents has retired receipts; the base regulatory family still reads"):
+            DocumentsFamily(output_dir=tmp_path).build(tmp_path)
+
+
+def test_a_selection_says_whose_receipts_are_retired():
+    from spicy_regs.selected_generations import SelectedDataset
+
+    held = SelectedDataset("documents", (), Path("r.parquet"), "g")
+    assert held.required_receipts("a reader") == Path("r.parquet")
+    with pytest.raises(ValueError, match="comments has retired receipts; a reader still reads them"):
+        SelectedDataset("comments", (), None, None).required_receipts("a reader")

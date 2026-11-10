@@ -49,6 +49,8 @@ class _BaseTableFamily(RollupPipeline):
         if processing is None:
             raise RuntimeError(f"{self.output}: no selected native generation to publish")
         subjects, receipts, _ = selected.selections[dataset]
+        if receipts is None:
+            raise ValueError(f"{dataset} has retired receipts; the base regulatory family still reads them")
         if len(subjects) != 1:
             raise ValueError("Base regulatory family requires one subject member")
         scoped = select_receipts(receipts, output_dir / ".selected-receipts.parquet", dataset=dataset)
