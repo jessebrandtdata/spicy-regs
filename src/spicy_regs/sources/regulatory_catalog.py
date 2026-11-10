@@ -785,6 +785,7 @@ def export_pair(con, record_type, output_dir, *, generation_id, snapshot=None):
     """Export and qualify one native catalog read, preserving its source witnesses."""
     import json
     from dataclasses import asdict
+    from loguru import logger
     from spicy_regs.transforms.regulations_receipts import ReceiptInput
     from . import iceberg
     output_dir = Path(output_dir)
@@ -799,12 +800,19 @@ def export_pair(con, record_type, output_dir, *, generation_id, snapshot=None):
             raise RuntimeError('Catalog snapshot changed before paired export; retry')
         # Both copies hold every comments row, and Arrow readers follow each. Unbounded, the subject copy
         # failed on the 3 GB hosted mirror growing one dictionary to 576 MiB (run 42730512414, ss-7flp).
+        # Each stage reads the whole population and none reports progress: the hosted comments export ran
+        # 110 minutes without a line before it failed (run 42738947666).
+        logger.info('Paired export of {}: copying subjects', dataset)
         _copy(con, f'SELECT * FROM {qualified(record_type)}', subjects, resources=_layout(dataset))
         raw_receipts = Path(temporary) / 'receipts.parquet'
+        logger.info('Paired export of {}: copying receipts', dataset)
         _copy(con, f"SELECT * FROM {receipts_table()} WHERE dataset='{dataset}'", raw_receipts,
               resources=_layout(dataset))
+        logger.info('Paired export of {}: rebinding {:,} receipts', dataset, pq.ParquetFile(raw_receipts).metadata.num_rows)
         write_rows((rebind_receipt(row, generation_id=generation_id) for row in _rows(raw_receipts)),
                    receipts, RECEIPT_SCHEMA)
+        logger.info('Paired export of {}: admitting and replaying {:,} subjects', dataset,
+                    pq.ParquetFile(subjects).metadata.num_rows)
         for _ in read_with_receipts([subjects], [receipts], policy(dataset), generation_id=generation_id):
             pass
     metadata = {'generation_id': generation_id, 'dataset': dataset}

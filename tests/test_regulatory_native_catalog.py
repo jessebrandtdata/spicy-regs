@@ -266,6 +266,25 @@ def test_pair_export_preserves_generation_and_processing(con, tmp_path):
     assert 'export-1' in (tmp_path / 'generation.json').read_text()
 
 
+def test_pair_export_names_each_stage_as_it_starts(con, tmp_path):
+    """One comment and the initialization marker: a line before each pass over the population, with its size."""
+    from loguru import logger
+    source(con)
+    iceberg.replace_rows(con, COMMENT, 'source')
+    lines = []
+    sink = logger.add(lambda message: lines.append(message.record['message']), level='INFO')
+    try:
+        native.export_pair(con, COMMENT, tmp_path, generation_id='export-1')
+    finally:
+        logger.remove(sink)
+    assert [line for line in lines if line.startswith('Paired export')] == [
+        'Paired export of comments: copying subjects',
+        'Paired export of comments: copying receipts',
+        'Paired export of comments: rebinding 2 receipts',
+        'Paired export of comments: admitting and replaying 1 subjects',
+    ]
+
+
 def test_comments_pair_export_bounds_the_row_groups_of_both_copies(con, tmp_path):
     """The mirror's connection (insertion order released) gets the row and byte targets on subjects and receipts.
 
