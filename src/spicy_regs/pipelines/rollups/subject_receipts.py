@@ -286,6 +286,10 @@ class NativeReceiptLifecycle(RollupPipeline):
 
     output_dir: Path | None
     inputs: ClassVar[tuple[str, ...]]
+    #: The declared inputs read as their pinned published tables, as a plain rollup reads them, and never restored
+    #: through receipts: every field the builder reads is a public column there (ss-vse3). Each is primed into
+    #: the build directory, recorded as a parent, and handed to the builder beside the restored inputs.
+    published_inputs: ClassVar[tuple[str, ...]] = ()
 
     def _new_receipt_work(self, output_dir, snapshot=None):
         from spicy_regs.selected_generations import unique_build_directory
@@ -315,8 +319,12 @@ class NativeReceiptLifecycle(RollupPipeline):
         from spicy_regs.sources import publication
 
         private, prior = self._new_receipt_work(output_dir, snapshot)
-        parents = {}
+        # Only declared inputs: a caller that replaces the builder clears ``inputs`` (the native conversion).
+        parents = self._prime_tables(tuple(key for key in self.inputs if key in self.published_inputs),
+                                     output_dir, snapshot)
         for key in self.inputs:
+            if key in self.published_inputs:
+                continue
             dataset = key.removesuffix(".parquet")
             if prior.get(dataset) is None:
                 raise ValueError(f"Required selected processing input unavailable: {key}")
@@ -409,7 +417,9 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
         candidate = private / "candidate"
         candidate.mkdir()
         for key in self.inputs:
-            if not prior.download(key, work / key):
+            if key in self.published_inputs:
+                shutil.copyfile(output_dir / key, work / key)
+            elif not prior.download(key, work / key):
                 raise ValueError(f"Required selected processing input unavailable: {key}")
         parameters = inspect.signature(builder).parameters
         if "download_prior" in parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values()):

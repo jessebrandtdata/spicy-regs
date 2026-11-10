@@ -16,6 +16,7 @@ is covered by a synthetic row in tests/test_regulations_receipts.py), 164 rows s
 pages are cut, so no window is split and no page repeats a document.
 """
 
+import hashlib
 import json
 import shutil
 from contextlib import contextmanager
@@ -81,7 +82,7 @@ def assert_same_table(actual, expected):
     one, other = (f"read_parquet('{path}', file_row_number=true)" for path in (actual, expected))
     names = ", ".join(f'"{name}"' for name in pq.read_schema(expected).names)
     counts = duckdb.sql(f"SELECT (SELECT count(*) FROM {one}), (SELECT count(*) FROM {other})").fetchone()
-    assert counts[0] == counts[1]
+    assert counts is not None and counts[0] == counts[1]
     for left, right in ((one, other), (other, one)):
         assert duckdb.sql(f"SELECT count(*) FROM (SELECT {names} FROM {left} EXCEPT ALL SELECT {names} FROM {right})"
                           ).fetchone() == (0,)
@@ -160,6 +161,11 @@ def test_the_receipt_route_fills_the_promoted_columns_from_an_earlier_policy_pri
         FrDocketLinksRollup(output_dir=root).run()
     first_links = published(root, before=(first,))
     assert_links(first_links / "fr_docket_links.parquet", first / "federal_register.parquet")
+    # A declared input, pinned as the generation's parent at the bytes read: the table the Register run published.
+    assert FrDocketLinksRollup.inputs == FrDocketLinksRollup.published_inputs == ("federal_register.parquet",)
+    parents = json.loads((first_links / "artifact.json").read_text())["spec"]["parents"]
+    assert parents["federal_register.parquet"]["sha256"] == "sha256:" + hashlib.sha256(
+        (first / "federal_register.parquet").read_bytes()).hexdigest()
     assert_same_table(first_links / "fr_docket_links.parquet", FIXTURE / "expected/links-night-1.parquet")
 
     serve(monkeypatch, tmp_path, "night-2")
@@ -175,8 +181,6 @@ def test_the_receipt_route_fills_the_promoted_columns_from_an_earlier_policy_pri
 
 def stored(remote, monkeypatch):
     """Serve the fake bucket's own objects to the pinned readers; admission and publication run for real."""
-    import hashlib
-
     from spicy_regs.sources import publication, r2
 
     def index(_=None):
@@ -313,9 +317,9 @@ def test_receipts_leave_a_published_table_only_by_a_declared_retirement_and_neve
             (tmp_path / name).with_suffix(".table").mkdir()
             table = Path(shutil.copyfile(table, (tmp_path / name).with_suffix(".table") / "federal_register.parquet"))
             build_generation(tmp_path / name, family="federal-register", files=[table],
-                             expected_keys=["federal_register.parquet"],
-                             **({"receipt_path": receipts, "receipt_policies": policies,
-                                 "receipt_generation_id": MANIFEST["prior"]["generationId"]} if receipts else {}))
+                             expected_keys=["federal_register.parquet"], receipt_path=receipts,
+                             receipt_policies=policies if receipts else None,
+                             receipt_generation_id=MANIFEST["prior"]["generationId"] if receipts else None)
             return publication.publish_generation(tmp_path / name, client=remote, bucket="spicy-regs",
                                                   prior_index=index(), retired_receipt_datasets=declared)
 
@@ -363,7 +367,8 @@ def test_a_retirement_covers_only_the_datasets_it_names(tmp_path):
     held = ReceiptContext("build-1", "row", "test", [{"source_id": "s", "body_version": "1"}])
     pairs = [write_dataset([({"id": "1", "held": "x"}, held)], tmp_path / p.dataset, p) for p in policies]
     receipts = combine_receipts([receipt for _, receipt in pairs], tmp_path / "etl_receipts.parquet")
-    tables = [subject for subject, _ in pairs]
+    tables = [subject for subject, _ in pairs if subject is not None]
+    assert len(tables) == len(policies)
     keys = [p.dataset + ".parquet" for p in policies]
     build_generation(tmp_path / "first", family="two", files=tables, expected_keys=keys, receipt_path=receipts,
                      receipt_policies=policies, receipt_generation_id="build-1")
