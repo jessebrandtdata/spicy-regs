@@ -128,3 +128,15 @@ def test_unsupported_options_refuse_before_writing_private_state(tmp_path, metho
         getattr(store, method)(**arguments)
     assert store.objects == {} and store.uploads == {}
     assert not list(store.root.iterdir())
+
+
+def test_a_copy_keeps_the_bytes_and_etag_and_never_overwrites(tmp_path):
+    store = DiskStore(tmp_path / 'store', bucket='private')
+    store.put_object(Bucket='private', Key='old/a.parquet', Body=b'member')
+    store.copy_object(Bucket='private', Key='new/a.parquet', CopySource={'Bucket': 'private', 'Key': 'old/a.parquet'})
+    assert store.objects['new/a.parquet'].read_bytes() == b'member'
+    assert store.head_object(Bucket='private', Key='new/a.parquet')['ETag'] == store.etags['old/a.parquet']
+    for source, code in (('old/a.parquet', 'PreconditionFailed'), ('old/absent.parquet', 'NoSuchKey')):
+        with pytest.raises(ClientError) as raised:
+            store.copy_object(Bucket='private', Key='new/a.parquet', CopySource={'Bucket': 'private', 'Key': source})
+        assert raised.value.response['Error']['Code'] == code

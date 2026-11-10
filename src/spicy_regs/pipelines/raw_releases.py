@@ -19,6 +19,9 @@ from spicy_regs.generations import implementation_id
 from spicy_regs.source_evidence import JOURNAL
 
 
+READ_INDEX_HELP = "The published index this build read, as `spicy-regs mirror` saved it; recorded in the generation"
+
+
 def download_original(evidence, download, *, stage: str, max_bytes: int, validate_url, transport=None) -> dict:
     """Run the source owner's ``download(acquirer, store)`` through the evidence transport; return its descriptor.
 
@@ -167,6 +170,25 @@ def restore_originals(store, digests, base_url: str, *, max_bytes: int, transpor
     return fetched
 
 
+def inherit_read_index(evidence, read_index: Path | None) -> dict | None:
+    """Bind a hand build to the published index it read; returns it for the generation's ``readSnapshot``.
+
+    ``read_index`` is the pointer snapshot ``spicy-regs mirror`` saved (``<mirror>/publication.v2/<sha>.json``);
+    the family's root is read beside it in that mirror and becomes the build's prior-generation input. The
+    publisher then refuses the build once the family has moved on, and retention finds the generation it
+    replaced. Without it a build records no predecessor.
+    """
+    if read_index is None:
+        return None
+    from spicy_regs.sources import publication
+
+    index = publication.parse_index(read_index.read_bytes())
+    prior = index["families"].get(evidence.family)
+    if prior is not None:
+        evidence.inherit_pinned_root(index, (read_index.parent.parent / prior["prefix"] / "artifact.json").read_bytes())
+    return index
+
+
 def selected_readers(profile, selection: dict):
     """Readers over releases admitted earlier and kept on disk, each held to its selected pin."""
     from spicy_docs.source_native import SourceNativeReleaseReader
@@ -205,6 +227,7 @@ def add_snapshot_build(commands) -> None:
     inputs.add_argument("--selection", type=Path, help="Releases admitted earlier, with their original archives")
     build.add_argument("--output-dir", required=True, type=Path)
     build.add_argument("--archive-root", type=Path, help="Raw archive holding the originals (read only)")
+    build.add_argument("--read-index", type=Path, help=READ_INDEX_HELP)
 
 
 def snapshot_inputs(args, profile, iter_retained_pages):

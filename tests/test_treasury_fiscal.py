@@ -493,8 +493,9 @@ def test_acquire_records_receipt_scopes_and_rebuilds_identical_releases_from_raw
 def test_listed_debt_dates_are_captured_and_a_published_generation_names_its_own_captures(tmp_path):
     """A refresh needs no kept capture file: new debt days come from the listing, the rest from published rows."""
     report = b"%PDF-1.7 retained statement"
-    listing = [{"report_date": "2026-09-30", "report_group_id": "5",
-                "path": "/static-data/published-reports/mts/MonthlyTreasuryStatement_202609.pdf"}]
+    listing = [{"report_date": issue, "report_group_id": "5",
+                "path": f"/static-data/published-reports/mts/MonthlyTreasuryStatement_{issue[:7]}.pdf"}
+               for issue in ("2026-03-31", "2026-09-30")]
     requests = []
 
     def serve(request):
@@ -511,23 +512,30 @@ def test_listed_debt_dates_are_captured_and_a_published_generation_names_its_own
         return httpx.Response(200, content=(FIXTURES / (name + ".json")).read_bytes(),
                               headers={"content-type": "application/json"})
 
+    # Two statements, selected newest first: the build must not let that order reach the tables.
+    issues = [date(2026, 9, 30), date(2026, 3, 31)]
     selection = pipeline.acquire(
-        [("mts_table_1", date(2026, 9, 30)), ("mts_table_2", date(2026, 9, 30))], [date(2026, 9, 30)],
+        [(dataset, issue) for issue in issues for dataset in ("mts_table_1", "mts_table_2")], issues,
         tmp_path / "acquire", debt_after=date(2026, 10, 15), transport=httpx.MockTransport(serve))
     assert requests[0] == "record_date:gt:2026-10-15" and "record_date:eq:2026-10-16" in requests
     assert [(scope["selection"]["dataset"], scope["selection"]["record_date"]) for scope in selection["releases"]] == [
-        ("mts_table_1", "2026-09-30"), ("mts_table_2", "2026-09-30"), ("debt_to_penny", "2026-10-16")]
+        ("mts_table_1", "2026-09-30"), ("mts_table_2", "2026-09-30"), ("mts_table_1", "2026-03-31"),
+        ("mts_table_2", "2026-03-31"), ("debt_to_penny", "2026-10-16")]
 
     pipeline.build_from_captures(selection, tmp_path / "first")
     derived = pipeline.published_selection(sorted((tmp_path / "first" / "generation").glob("treasury_*.parquet")))
     assert sorted(derived["releases"], key=json.dumps) == sorted(selection["releases"], key=json.dumps)
-    assert derived["reports"] == {"2026-09-30": {
-        key: selection["reports"]["2026-09-30"][key] for key in ("url", "sha256")}}
+    assert derived["releases"] != selection["releases"]  # the same scopes, selected in another order
+    assert derived["reports"] == {issue: {key: selection["reports"][issue][key] for key in ("url", "sha256")}
+                                  for issue in ("2026-03-31", "2026-09-30")}
     pipeline.build_from_captures(derived, tmp_path / "second")
     for name in module.SCHEMAS:
-        first, second = (pq.read_table(tmp_path / run / "generation" / f"{name}.parquet").to_pylist()
-                         for run in ("first", "second"))
-        assert first == second and first
+        first, second = (tmp_path / run / "generation" / f"{name}.parquet" for run in ("first", "second"))
+        assert first.read_bytes() == second.read_bytes() and pq.read_table(first).num_rows
+    periods = pq.read_table(tmp_path / "first" / "generation" / f"{module.STATEMENTS}.parquet").to_pylist()
+    assert [row["report_date"].isoformat() for row in periods] == sorted(
+        row["report_date"].isoformat() for row in periods)
+    assert {row["report_date"].isoformat() for row in periods} == {"2026-03-31", "2026-09-30"}
 
     def too_many(request):
         return httpx.Response(200, json={"data": [{"record_date": "2026-10-16"}], "meta": {"total-count": 101}})

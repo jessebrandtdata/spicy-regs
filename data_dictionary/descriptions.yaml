@@ -10906,10 +10906,10 @@ tables:
     subject: spending
     summary: One observation per source notice in a declared Grants.gov daily XML snapshot, with literal eligibility,
       deadlines, amounts and source revisions.
-    coverage: Not a range. Designed to retain every admitted record in each explicitly selected daily snapshot.
-      Full real-export qualification and public delivery are pending. The date records this design statement,
-      not a source measurement. Snapshot membership does not establish active/open status, withdrawal, deletion
-      or historical completeness.
+    coverage: Not a range. Every admitted record of each explicitly selected daily export is retained. Each
+      refresh replaces the published snapshot with the export it selects; earlier snapshots are in earlier
+      generations, not in this table. Snapshot membership does not establish active/open status, withdrawal,
+      deletion or historical completeness.
     measured_on: '2026-10-20'
     grain: One source release, notice kind and native opportunity ID; publisher versions and older selected snapshots
       remain distinct.
@@ -11106,7 +11106,8 @@ tables:
     - entity_id
     summary: Literal OFAC enhanced-export observations with selected-list context and retained source history.
     coverage: Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN
-      and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence
+      and consolidated exports need not share an update time. Each refresh replaces the published snapshots
+      with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence
       does not establish delisting, and no history before these captures is inferred. Qualification and public
       selection are recorded by the generation evidence.
     measured_on: '2026-10-20'
@@ -11151,7 +11152,8 @@ tables:
     - snapshot_id
     summary: Publication metadata and reference dictionaries retained once per selected OFAC snapshot.
     coverage: Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN
-      and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence
+      and consolidated exports need not share an update time. Each refresh replaces the published snapshots
+      with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence
       does not establish delisting, and no history before these captures is inferred. Qualification and public
       selection are recorded by the generation evidence.
     measured_on: '2026-10-20'
