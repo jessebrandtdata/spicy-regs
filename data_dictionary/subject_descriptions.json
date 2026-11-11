@@ -3833,7 +3833,13 @@
       "affiliation_start": "Literal nested start date; interval boundary policy belongs to the consumer.",
       "affiliation_end": "Literal nested end date; a missing end does not imply an open interval.",
       "term_party": "The separate term-level party assertion, not a dated fallback.",
-      "caucus": "Complete affiliation object, retaining absent, null and unknown fields. This column retains the source property caucus."
+      "caucus": "Complete affiliation object, retaining absent, null and unknown fields. This column retains the source property caucus.",
+      "input_sha256": "Digest of the complete retained crosswalk JSON bytes.",
+      "start_status": "Calendar spelling status: absent, empty, valid or invalid.",
+      "end_status": "Calendar spelling status: absent, empty, valid or invalid.",
+      "source_path": "JSON pointer to the affiliation in the retained capture.",
+      "observed_at": "Caller-supplied capture instant; not a source affiliation date.",
+      "source_json": "Complete affiliation object, retaining absent, null and unknown fields."
     }
   },
   "member_terms": {
@@ -3845,7 +3851,9 @@
       "term_end": "End date of this term, where the crosswalk states one.",
       "term_state": "State this term was served for.",
       "term_party": "The separate source term-level party assertion, not a dated history.",
-      "term_district": "District for this term, spelled as the publisher does; absent for a Senate term."
+      "term_district": "District for this term, spelled as the publisher does; absent for a Senate term.",
+      "observed_at": "The parent capture's instant, carried so a term list versions with the member row it came from.",
+      "party_affiliations_state": "Nested list state: unread, absent, null, empty or populated."
     }
   },
   "member_vote_terms": {
@@ -3903,7 +3911,10 @@
       "name_nickname": "The crosswalk's own name.nickname for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
       "name_middle": "The crosswalk's own name.middle for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
       "name_suffix": "The crosswalk's own name.suffix for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
-      "name_official_full": "The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      "name_official_full": "The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
+      "roster": "Which file this record came from: current or historical.",
+      "observed_at": "When the file was captured; the merge prefers the larger value.",
+      "other_names_json": "Source other_names patches in order, with literal date bounds and nulls; absent is NULL."
     }
   },
   "native_legal_references": {
@@ -4102,7 +4113,12 @@
       "modify_date": "The Senate file's own modify_date literal (`July 1, 2025,  12:57 PM`), when the publisher last changed it; sorts as text. Empty when a captured Senate file states none; NULL on House rows, linkage-only rows and Senate rows captured before this column.",
       "tie_breaker_by_whom": "Who cast the tie-breaking vote, as the Senate's tie_breaker block names them (`Vice President of the United States`): the reason a 50-50 roll call reads Agreed to. NULL when the vote was not tied (the block is present and empty), on House rows, linkage-only rows and Senate rows captured before this column.",
       "tie_breaker_vote": "The tie-breaking vote as cast (`Yea`); NULL wherever tie_breaker_by_whom is.",
-      "party_totals": "The Clerk's totals by party, as a Native list in the file's order: each object the party as the Clerk names it (Republican, Democratic, Independent; member_votes.party spells the same parties R, D and I) and its yea-total, nay-total, present-total and not-voting-total. [] when a captured Clerk file states none (a Speaker election). NULL on Senate rows, whose files state none; on linkage-only rows; and on House rows captured before this column until they are read again. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
+      "party_totals": "The Clerk's totals by party, as a Native list in the file's order: each object the party as the Clerk names it (Republican, Democratic, Independent; member_votes.party spells the same parties R, D and I) and its yea-total, nay-total, present-total and not-voting-total. [] when a captured Clerk file states none (a Speaker election). NULL on Senate rows, whose files state none; on linkage-only rows; and on House rows captured before this column until they are read again. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
+      "source_url": "The publisher's own URL for this roll call.",
+      "match_rule": "Which vote-matching rule named that bill: bill_action_recorded_vote (the bill's own action records this roll call), house_vote_legislation (Congress.gov's House vote list), vote_file_legislation (the vote file names the bill: the Clerk's legis-num, or the Senate's document or amended document), or unmatched.",
+      "match_action_index": "Position of the action whose recordedVote named this roll call, where one did.",
+      "match_url": "The reference URL the match was read from.",
+      "conflict_count": "How many later references disagreed with the one that won; kept, never dropped."
     }
   },
   "rule_targets": {

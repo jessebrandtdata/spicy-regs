@@ -14,6 +14,10 @@ from spicy_regs.congress_receipts import policy, write_congress_dataset
 from spicy_regs.conversion_reads import ConversionReadOperation
 from spicy_regs.generations import build_generation
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def build(tmp_path, *, operation=None, canonical_root=None):
     original = tmp_path / 'members-original.parquet'

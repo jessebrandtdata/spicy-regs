@@ -41,7 +41,7 @@ def _admission_files():
 
 
 RESTORATION_FILES = {
-    "congress": ("congress_receipts.py", "congress_subjects.py", "congress_bulk.py",
+    "congress": ("congress_receipts.py", "congress_subjects.py", "congress_bulk.py", "congress_tables.py",
                  "votes_batch_receipts.py", "receipt_history.py"),
     "legislative": ("legislative_receipts.py", "legislative_documents.py",
                     "legislative_document_fields.json", "navigation_read_outcomes.py"),

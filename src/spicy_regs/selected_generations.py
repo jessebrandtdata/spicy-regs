@@ -218,11 +218,13 @@ class SelectedInputs:
         _member_pin(target, self.checked)
         return target
 
-    def select(self, dataset, *, ranged=False):
+    def select(self, dataset, *, ranged=False, last_receipts=False):
         """Pinned subjects and receipts of ``dataset``.
 
         ``ranged`` is for a caller that reads only ``dataset``'s receipts (every Congress reader selects them by
         dataset): a remote shared member may then be read for that dataset's rows alone (:meth:`_ranged_receipts`).
+        ``last_receipts`` selects the receipts a retired table's live generation still lists, for the one night a
+        reader needs a field they alone hold (``congress_subjects.PROMOTED``); otherwise a retired table has none.
         """
         if dataset in self.cache:
             if dataset in self.ranged and not ranged:
@@ -317,10 +319,10 @@ class SelectedInputs:
             subjects = (
                 tuple(fetch(m) for m in publication.table_members(self.index, dataset + ".parquet")) if owner else ()
             )
-            if not owners or retired:
+            if not owners or (retired and not last_receipts):
                 # A retired table is its published table, even while its live generation still lists the receipts
-                # it last published with: they are never read again, so they are not fetched (4.2 GiB for
-                # comment_attributes on its first receipts-free night).
+                # it last published with: they are not read again unless asked for, so they are not fetched (4.2
+                # GiB for comment_attributes on its first receipts-free night).
                 self.cache[dataset] = SelectedDataset(dataset, subjects, None, None)
                 return self.cache[dataset]
             receipts = publication.receipt_members(self.index, dataset=dataset)

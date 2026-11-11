@@ -9,9 +9,9 @@ from os import getenv
 from pathlib import Path
 import json
 
+from spicy_regs.congress_tables import as_builder_input
 from spicy_regs.generations import verify_generation
 from spicy_regs.pipelines.rollups.members import MembersRollup
-from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
 from spicy_regs.sources import publication
 from spicy_regs.sources.member_rosters import ReviewedMemberRosters
 from spicy_regs.transforms.build_members import BUDGET
@@ -51,12 +51,10 @@ def prepare(work: Path, *, expected_prior: str):
             or not any(item["role"] == "prior-generation" and item["artifactDigest"] == expected_prior
                        for item in artifact.root["inputs"])):
         raise ValueError("Prepared member generation must retain the captured published prior")
-    reader = SelectedPriors(work / "readback", root=work, public_url="")
     restored = {}
     for name in ("members", "member_terms", "member_party_affiliations"):
-        path = reader.get(name)
-        if path is None:
-            raise ValueError(f"Complete member generation cannot restore {name}")
+        # As the next scheduled build reads it: the published table in the builder's spelling (ss-vse3).
+        path = as_builder_input(name, [generation / f"{name}.parquet"], work / "readback" / f"{name}.parquet")
         restored[name] = str(path.resolve())
     if pipeline.source_evidence is None:
         raise ValueError("Complete member preparation must retain source evidence")

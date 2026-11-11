@@ -12,6 +12,10 @@ from spicy_regs.scorecards.action_comparisons import (
 from tests.test_scorecard_action_comparisons import fixture
 from tests.test_scorecard_native_main_inputs import native_selection
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def historical_fixture():
     context = dict(scorecard_id=SPONSORSHIP_SCOPE, snapshot_id="s1", capture_id="c1",

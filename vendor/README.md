@@ -1,5 +1,43 @@
 # Source reader wheels
 
+Only the wheels `pyproject.toml` pins are kept here. A superseded wheel is deleted when its
+successor is adopted (as `0.67.0` and `0.67.1` were at `0.68.0`). Entries below that call a wheel
+"retained" describe the tree when they were written. To get a deleted wheel back,
+`git log --diff-filter=D --format=%H -- vendor/<wheel>` names the commit that deleted it and
+`git show <that commit>^:vendor/<wheel>` prints the bytes from its parent. `uv sync --frozen` holds
+the pinned wheel to the hash in `uv.lock`; `tests/test_reader_wheel.py` holds its receipt to the wheel.
+
+A wheel's receipt (`spicy_docs-<version>.json`) records its SHA-256 and the SpicyDocs commit it was
+built from, and stays after the wheel goes. These 24 deleted wheels never had a receipt of that
+name, so their digests are recorded here, hashed from the bytes at `000770ea`:
+
+| Deleted wheel | SHA-256 | Bytes |
+|---|---|---|
+| `spicy_docs-0.53.0+scorecards.12167de41395-py3-none-any.whl` | `9ad1c08dddacca9346bb50ad62ae18cb3c5f497c1ed2f1d5a7b4cbc5f5396ee4` | 2,070,814 |
+| `spicy_docs-0.53.0+scorecards.2d71c102b53e-py3-none-any.whl` | `33eedc1697ea5525a4f8e2463e908ccdc0802c17423fb2c644f15a461c247a5f` | 1,949,041 |
+| `spicy_docs-0.53.0+scorecards.5e973eeabe60-py3-none-any.whl` | `1cbd8ee4f72c7f852e97f097813e01b8c8e22a9ca7b45013a3e1792dc7600fce` | 1,865,476 |
+| `spicy_docs-0.53.0+scorecards.76fcb2d7a34c-py3-none-any.whl` | `a9e3532776b7818af8f55003dc895e1fed85616431aad860bf60a6b99c7eff4e` | 2,028,006 |
+| `spicy_docs-0.53.0+scorecards.9916a2fc8473-py3-none-any.whl` | `e0123d4e093354d8c0781fd0a5cbdef700c01c89198692d205505388d2778f51` | 1,859,541 |
+| `spicy_docs-0.53.0+scorecards.a58105418881-py3-none-any.whl` | `c7fb1097ebd06f59379ab92b8d1a0e0ea5b29a419233d1c48d75bc1bd3109983` | 2,102,024 |
+| `spicy_docs-0.53.0+scorecards.fd38daf2d185-py3-none-any.whl` | `2caf2fc1cd4201bf57b0c772339a0b8837e2fd92702acee8ccbe3ea65e92337e` | 1,860,445 |
+| `spicy_docs-0.53.0+scorecards.ff2797d34976-py3-none-any.whl` | `6dfd4cbb27df6dde64c785a60da065e6fd2fb2b0290a8fa34f1d0a3f6a9e2614` | 2,170,532 |
+| `spicy_docs-0.54.0+chaos.a1b91ce28a2a-py3-none-any.whl` | `4ec97919319016d128b28b4d95db0ec795a6465c468b061ff6e9b7c80bd4ef08` | 1,865,157 |
+| `spicy_docs-0.54.0+etl.cf9f88e8c4b7-py3-none-any.whl` | `5378139ed6ca03e75d8718cdccdea5fa5691d7ba5bc737e4bf6ffbd2f7cdfff7` | 2,273,559 |
+| `spicy_docs-0.54.0+scorecards.0a04bc543988-py3-none-any.whl` | `12a64a15b02b323f5b933351c09206a67123c570a8ad88a220d1a9b3f323f66f` | 2,279,675 |
+| `spicy_docs-0.54.0+scorecards.0bee5afcac95-py3-none-any.whl` | `acfead5a41fc1313c59e54063925a2430404b60bb7b78b568efee6c09ce56134` | 2,360,921 |
+| `spicy_docs-0.54.0+scorecards.1a2bc6409221-py3-none-any.whl` | `8d9ab06ef48f20e4359a34299e93d20285a3feec033e4dba526e8d6c37b2cc23` | 2,291,352 |
+| `spicy_docs-0.54.0+scorecards.9ea43ea7845d-py3-none-any.whl` | `670d168db3ca15609485e363f2179a3fa6ad73572b4aadd4245e01d11c421168` | 1,934,729 |
+| `spicy_docs-0.54.0+scorecards.d42c3140cd83-py3-none-any.whl` | `7171c7c821668a4d72c0f9f331a90b51860b3224d2587c675cf2bf5170887198` | 2,337,042 |
+| `spicy_docs-0.54.0+scorecards.dee48d34213a-py3-none-any.whl` | `b8313f3c8c7cde81c701ce79cc83f007ec748f8a240bfa0b3cbdc69ee2202c0e` | 2,376,708 |
+| `spicy_docs-0.54.0+scorecards.e62a5197f70b-py3-none-any.whl` | `73a3ac78db94a46dc5bc3440f887ef8fc952d4b9ea62cbf239b4d844fa83dd2e` | 2,253,980 |
+| `spicy_docs-0.56.0+scorecards.7aed167baa10-py3-none-any.whl` | `18834bee6645061301bd3532d51fa049fa5b455ac6aa9472040d2f7f0f125bf4` | 2,441,853 |
+| `spicy_docs-0.56.0+scorecards.8253a8a31276-py3-none-any.whl` | `0af5441084e70d266e6baa6dc719f66c895c2a27f7508fef76f0472fc45864d9` | 2,431,016 |
+| `spicy_docs-0.56.0+scorecards.ef0b64b3121f-py3-none-any.whl` | `d773a2cda22200ee6d49eb24b41c52964085396cde4adea17b25287047d0dc0c` | 2,411,018 |
+| `spicy_docs-0.56.0-py3-none-any.whl` | `36d28dc6e3255224eed395cfa9dd097fc13872aa53c1625551d78ba71010a144` | 2,415,227 |
+| `spicy_docs-0.57.0-py3-none-any.whl` | `4efc149a18f2222e53dee8e7588cc59fdbd33cadb9a9fcf1851e51329def1dc2` | 2,478,280 |
+| `spicy_docs-0.63.0-py3-none-any.whl` | `7e5786e93d2bd8dc9773313b6b4dcc5f8d96513da02de734f9011097b44d82e4` | 2,587,129 |
+| `spicy_docs-0.64.0-py3-none-any.whl` | `fbe34056c040b624c00b38117eb57f8b945e9ce5d188ec59de46454e2141ff0e` | 2,613,712 |
+
 - **Selected provider** `spicy_docs-0.85.0` (ss-mbia, ss-i1gm, ss-348x). `members` appends
   `name_middle`, `name_suffix` and `name_official_full`, the legislators crosswalk's own name parts;
   `congress_subjects.INPUT_COLUMNS` classifies them and `members` moves to `congress-subjects/2`, whose
@@ -97,13 +135,10 @@ Base CLI and MCP installs do not require them.
   [build receipt](spicy_docs-0.67.0+centralraw.02cc4431e606-py3-none-any.json)
   pins both changed modules and wheel SHA-256
   `e3eecedfe268c630de671bb5eaff6ce0898e74172dcd6bcbf5ff81252e4702f3`.
-  `python scripts/package_central_raw_reader.py --check` reproduces the wheel,
-  receipt and dependency pins from retained wheels without writing or downloading.
-  `--base` selects another retained release wheel, `--provider` a reviewed source
-  checkout for the archive module; `--write` explicitly updates the overlay after
-  review. Keep both retained provider wheels. Tests verify unchanged reader
-  modules, streaming captures, exact-byte reuse of raw and gzip storage, and
-  interrupted-write cleanup.
+  The script that built and checked these overlays, `scripts/package_central_raw_reader.py`,
+  was deleted with the superseded wheels: no overlay has been needed since `0.68.0` ships
+  the archive module natively. `tests/test_reader_wheel.py` still covers streaming captures,
+  exact-byte reuse of raw and gzip storage, and interrupted-write cleanup.
 
 - `spicy_docs-0.67.0`: built from SpicyDocs fork main `3e68ec10`; SHA-256
   `b4d147cf3ae2860509f0bda1cfba168e007cfe4f86798858983bdc5426c95545`; two builds

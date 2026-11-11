@@ -667,30 +667,6 @@ def _register(number: str, **raw) -> dict:
     return {**shape_record("federal_register", row), "input_metadata": {}}
 
 
-def _vote(vote_id: str, chamber: str, **raw) -> dict:
-    return congress("roll_call_votes", vote_id=vote_id, chamber=chamber, **raw)
-
-
-def test_a_roll_call_published_before_its_file_columns_reads_them_unread_for_its_own_chamber_only(tmp_path, monkeypatch):
-    one_family(tmp_path, monkeypatch, {"roll_call_votes": [
-        _vote("119-house-1-1", "house", legis_num="", clerk_body_element="rollcall-vote", party_totals_json="[]"),
-        _vote("119-house-1-2", "house", legis_num="H R 1"),
-        _vote("119-senate-1-3", "senate", vote_question_text="On Passage", majority_requirement="1/2", modify_date=""),
-    ]})
-    fields = ["legis_num", "clerk_body_element", "party_totals_json", "vote_title", "vote_desc"]
-    reply = call("roll_call_votes", [{"vote_id": vote} for vote in ("119-house-1-1", "119-house-1-2", "119-senate-1-3")],
-                 fields)
-    # Read: the file states each column, '' at the least. A Senate column on a House row has no marker.
-    assert states(reply, 0) == {"legis_num": "stated_empty", "clerk_body_element": "stated",
-                                "party_totals_json": "stated_empty", "vote_title": "null_unmarked", "vote_desc": "null_unmarked"}
-    # Published before two of the columns: they are unread, and the one it holds is still stated.
-    assert states(reply, 1) == {"legis_num": "stated", "clerk_body_element": "unread", "party_totals_json": "unread",
-                                "vote_title": "null_unmarked", "vote_desc": "null_unmarked"}
-    # A Senate row: its own unread column is unread, and the House columns have no marker for it.
-    assert states(reply, 2) == {"legis_num": "null_unmarked", "clerk_body_element": "null_unmarked",
-                                "party_totals_json": "null_unmarked", "vote_title": "unread", "vote_desc": "null_unmarked"}
-
-
 # detail_read: the tool and the field-state views answer the same for the same row and field.
 
 MEETING_LISTS = {
@@ -979,13 +955,13 @@ def test_the_federal_register_read_rule_is_a_public_column_its_dictionary_note_n
     assert "is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`" in note
 
 
-def test_the_roll_call_markers_are_the_builder_s_read_columns_by_chamber():
-    from spicy_regs.transforms.build_roll_call_votes import _READ_COLUMNS
+def test_the_roll_call_read_rule_is_its_own_columns_its_dictionary_note_names():
+    """Its receipts are retired (ss-vse3), so no read marker governs them: a NULL read column is itself the answer."""
+    from spicy_regs.data_dictionary import load_descriptions
 
-    markers = {dict(marker.where)["chamber"]: marker for marker in declarations.read_markers()
-               if marker.table == "roll_call_votes"}
-    assert {chamber: marker.columns for chamber, marker in markers.items()} == dict(_READ_COLUMNS)
-    assert all(marker.fields == marker.columns and marker.read_value is None for marker in markers.values())
+    assert "roll_call_votes" not in {marker.table for marker in declarations.read_markers()}
+    note = " ".join(load_descriptions()["roll_call_votes"]["data_quality"].split())
+    assert "a House row published before `legis_num` or `clerk_body_element` existed is read again once" in note
 
 
 def snapshot_serving(tmp_path, monkeypatch, *, edit=None):

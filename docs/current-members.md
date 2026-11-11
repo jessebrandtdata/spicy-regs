@@ -20,20 +20,20 @@ independently complete official congressional roster.
 
 `scripts/prepare_members_native.py --work NEW_DIRECTORY --expected-prior sha256:DIGEST` prepares the first
 current native generation from these complete source files. It uses the
-maintained member builder, field policies, receipt writer, source evidence and
-generation admission. The captured published member artifact remains the
+maintained member builder, field policies, source evidence and generation
+admission. The captured published member artifact remains the
 prior-generation input. The command requires `R2_PUBLIC_URL` and the expected
 member artifact digest. It captures one published index, refuses a missing or
 different member prior before building, and verifies that the result retains
 that same member entry and prior-generation input. Its old processing rows are not used to manufacture
-new source facts. The outputs are `members`, `member_terms`,
-`member_party_affiliations` and their shared receipts. The command restores
-each processing table through the selected native reader and writes
+new source facts. The outputs are `members`, `member_terms` and
+`member_party_affiliations`, which publish no per-row receipts
+([votes trio](votes-receipt-archive.md)). The command writes
 `members-prepared.json` in its private work directory. It performs no
 publication.
 
-The ordinary scheduled member build continues to select receipt-backed native
-priors. Publication of the prepared generation requires the exact reviewed
+The ordinary scheduled member build merges into the selected published
+tables. Publication of the prepared generation requires the exact reviewed
 current code and source wheel, compatible readers, source and field checks,
 the captured member-family entry, and an admitted run. The shared publisher
 checks the complete artifact and evidence before changing that family's
