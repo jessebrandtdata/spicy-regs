@@ -2042,9 +2042,11 @@ def plan_family_removal(raw: bytes, etag: str, names: Iterable[str], *, roots: M
 
     Taking a family out of the index unpublishes it: readers resolve tables only through the index, and its
     generations stay stored (``generation_retention`` keeps a family's newest three once the index stops naming it).
-    Refused: a name the index lacks; a family that another family's current root (``roots``, every other family's,
-    by family) records as a managed parent, since that family's next build reads it through the index; and a family
-    whose name or current digest (bare hex) ``held`` maps to a reason, such as a pin document or a rulemaking input.
+    Refused: a name the index lacks; removing every family; a family that another family's current root (``roots``,
+    every other family's, by family) records as a parent, by its ``family`` or by a table key the family owns (as
+    ``generations._check_parents`` resolves it), since that family's next build reads it through the index; and a
+    family whose name or current digest (bare hex) ``held`` maps to a reason, such as a pin document or a rulemaking
+    input.
     """
     index = parse_index(raw)
     names = sorted(set(names))
@@ -2052,15 +2054,20 @@ def plan_family_removal(raw: bytes, etag: str, names: Iterable[str], *, roots: M
         raise PublicationError("Name at least one family to remove")
     if missing := [name for name in names if name not in index["families"]]:
         raise PublicationError(f"Not in the publication index: {', '.join(missing)}")
+    if len(names) == len(index["families"]):
+        raise PublicationError("Refusing to remove every family: the index would be empty")
     removed = {name: index["families"][name] for name in names}
     if unread := sorted(set(index["families"]) - set(removed) - set(roots)):
         raise PublicationError(f"Current roots not read, so their parents are unchecked: {', '.join(unread)}")
     reasons = [f"{name} is held by {held[token]}" for name, entry in removed.items()
                for token in (name, entry["artifactDigest"].removeprefix("sha256:")) if token in held]
-    reasons += [f"{parent['family']} is a parent of {family} ({key})"
-                for family, root in sorted(roots.items()) if family not in removed
-                for key, parent in sorted((root.get("spec", {}).get("parents") or {}).items())
-                if parent.get("family") in removed]
+    for family, root in sorted(roots.items()):
+        if family in removed:
+            continue
+        for key, parent in sorted((root.get("spec", {}).get("parents") or {}).items()):
+            owner = table_owner(index, key)
+            for read in {parent.get("family"), owner and owner[0]} & removed.keys():
+                reasons.append(f"{read} is a parent of {family} ({key})")
     if reasons:
         raise PublicationError("Refusing to remove: " + "; ".join(reasons))
     return FamilyRemoval(raw, etag, _without_families(index, names)[1], removed)
@@ -2088,19 +2095,48 @@ def check_family_removal(before: bytes, after: bytes, names: Iterable[str]) -> d
     return {"before": len(old["families"]), "after": len(new["families"]), "identical": len(kept)}
 
 
-def write_family_removal(client, bucket: str, removal: FamilyRemoval) -> bytes:
-    """Store ``removal.after`` only if the index still has ``removal.etag``; return the stored bytes, checked.
+class RemovalOutcome(NamedTuple):
+    """What the stored index holds after a removal's write attempt: ``removed``, ``not_written`` or ``index_moved``."""
 
-    The write is the conditional pointer write every publisher uses, tried once: an index changed since the plan was
-    read refuses with nothing written, and the plan must be made again.
+    status: str
+    stored: bytes
+    note: str
+
+
+def write_family_removal(client, bucket: str, removal: FamilyRemoval) -> RemovalOutcome:
+    """Store ``removal.after`` only if the index still has ``removal.etag``, then settle what the stored index holds.
+
+    The write is the conditional pointer write every publisher uses, tried once. Its answer alone is not trusted: a
+    PUT whose response is lost and which the client resends meets its own write as a changed ETag and is refused,
+    and a raised error may follow a write that landed. So the stored index is always read back and decides:
+    the planned bytes (``removed``, saying so when the answer disagreed), the bytes the plan read (``not_written``),
+    or anything else (``index_moved``, with the hashes and how it differs). Only a failed read-back raises.
     """
-    if not _put_pointer(client, bucket, INDEX_V2_KEY, removal.after, removal.etag):
-        raise PublicationError("The publication index changed since it was read; nothing was written. Plan again")
+    try:
+        answer = "refused (precondition failed)" if not _put_pointer(
+            client, bucket, INDEX_V2_KEY, removal.after, removal.etag) else ""
+    except Exception as failure:  # the read-back below decides; the error is reported with it
+        answer = f"raised {type(failure).__name__}: {failure}"
     stored = _get_bounded(client, bucket, INDEX_V2_KEY)
     if stored is None:
-        raise PublicationError("The publication index is absent after the write")
-    check_family_removal(removal.before, stored[0], removal.removed)
-    return stored[0]
+        raise PublicationError(f"The publication index is absent after the write ({answer or 'accepted'})")
+    raw = stored[0]
+    if raw == removal.after:
+        check_family_removal(removal.before, raw, removal.removed)
+        return RemovalOutcome("removed", raw, answer and f"The write {answer}, but the stored index holds the "
+                                                         "planned bytes: its response was lost")
+    if raw == removal.before:
+        return RemovalOutcome("not_written", raw, f"The write {answer or 'was accepted'}; the stored index still "
+                                                   "holds the bytes the plan read: nothing was written. Plan again")
+    try:
+        check_family_removal(removal.before, raw, removal.removed)
+        detail = "the removal holds but the bytes differ"
+    except PublicationError as exc:
+        detail = str(exc)
+    stored_sha, planned_sha, read_sha = (hashlib.sha256(value).hexdigest() for value in (raw, removal.after, removal.before))
+    return RemovalOutcome("index_moved", raw, (
+        f"The write {answer or 'was accepted'}; the index moved: stored sha256 {stored_sha} is neither the planned "
+        f"{planned_sha} nor the read {read_sha} ({detail})"))
 
 
 def _partition(member: Mapping) -> tuple[tuple[str, str], ...]:

@@ -9,7 +9,7 @@ from rulespec_artifacts import canonical_json_bytes
 from spicy_regs import generation_retention as retention
 from spicy_regs import local_publication as command
 from spicy_regs.sources import publication, r2
-from tests.generation_fakes import Store
+from tests.generation_fakes import Store, error
 from tests.test_generation_publication import build, publish
 
 refused = publication.PublicationError
@@ -104,9 +104,10 @@ def test_the_conditional_write_refuses_an_index_changed_after_it_was_read(tmp_pa
     index["families"]["kept"]["publishedAt"] = "2026-11-11T00:00:00Z"
     live.store.objects[publication.INDEX_V2_KEY] = changed = canonical_json_bytes(index)
 
-    with pytest.raises(refused, match="changed since it was read; nothing was written"):
-        publication.write_family_removal(live.store, "b", removal)
-    assert index_bytes(live) == changed
+    outcome = publication.write_family_removal(live.store, "b", removal)
+
+    assert outcome.status == "index_moved" and outcome.stored == changed == index_bytes(live)
+    assert "refused (precondition failed)" in outcome.note and "Still in the publication index: gone" in outcome.note
 
 
 def test_execute_needs_the_etag_and_the_etag_needs_execute(tmp_path, live):
@@ -129,6 +130,10 @@ def test_a_family_another_current_generation_reads_as_a_parent_refuses(tmp_path,
 
     with pytest.raises(refused, match=r"gone is a parent of kept \(a.parquet\)"):
         publication.plan_family_removal(raw, "e", ["gone"], roots=roots, held={})
+    # A parent stated by table key and bytes alone, with no family, still names the family that owns the table.
+    roots["kept"] = {"spec": {"parents": {"a.parquet": {"sha256": "sha256:" + "0" * 64, "byteSize": 1}}}}
+    with pytest.raises(refused, match=r"gone is a parent of kept \(a.parquet\)"):
+        publication.plan_family_removal(raw, "e", ["gone"], roots=roots, held={})
     with pytest.raises(refused, match="Current roots not read.*kept"):
         publication.plan_family_removal(raw, "e", ["gone"], roots={"also-gone": {}}, held={})
     assert publication.plan_family_removal(raw, "e", ["gone", "kept"], roots=roots, held={}).removed.keys() == {
@@ -147,16 +152,87 @@ def test_a_pinned_family_refuses(tmp_path, live):
                                         held={"also-gone": "a pin naming it"})
 
 
-def test_the_read_back_fails_loudly_when_the_families_are_still_there(tmp_path, live, monkeypatch):
-    dry = unpublish(tmp_path, "dry", "gone")
+def records(tmp_path, name):
+    return {path.name for path in (tmp_path / name).iterdir()}
+
+
+def put_index(live, monkeypatch, then):
+    """Make the index write call ``then(put, kwargs)`` instead of storing; other keys store as usual."""
     put = live.store.put_object
+    monkeypatch.setattr(live.store, "put_object", lambda **kwargs: then(put, kwargs)
+                        if kwargs["Key"] == publication.INDEX_V2_KEY else put(**kwargs))
 
-    def lost(**kwargs):  # the write is acknowledged but the stored index keeps its bytes
-        return {"ETag": live.store._etag(kwargs["Key"])} if kwargs["Key"] == publication.INDEX_V2_KEY else put(**kwargs)
 
-    monkeypatch.setattr(live.store, "put_object", lost)
-    with pytest.raises(refused, match="Still in the publication index: gone"):
+@pytest.mark.parametrize("answer", [error("PreconditionFailed"), ConnectionError("response lost")])
+def test_a_write_that_landed_is_removed_even_when_its_answer_is_lost(tmp_path, live, monkeypatch, answer):
+    """A timed-out PUT the client resends meets its own write and is refused, or the client gives up with an error."""
+    dry = unpublish(tmp_path, "dry", "gone")
+
+    def landed_then(put, kwargs):
+        put(**kwargs)
+        raise answer
+
+    put_index(live, monkeypatch, landed_then)
+    done = unpublish(tmp_path, "run", "gone", "--execute", "--expect-etag", dry["index_etag"])
+
+    assert done["status"] == "removed" and "its response was lost" in done["read_back"]["note"]
+    assert done["read_back"]["stored_equals_planned"] and done["read_back"]["public_equals_stored"]
+    assert "gone" not in publication.parse_index(index_bytes(live))["families"]
+
+
+def test_a_write_that_did_not_land_says_nothing_was_written_and_keeps_its_record(tmp_path, live, monkeypatch):
+    dry = unpublish(tmp_path, "dry", "gone")
+    before = index_bytes(live)
+    put_index(live, monkeypatch, lambda put, kwargs: {"ETag": live.store._etag(kwargs["Key"])})  # acknowledged only
+
+    with pytest.raises(refused, match="nothing was written"):
         unpublish(tmp_path, "run", "gone", "--execute", "--expect-etag", dry["index_etag"])
+    assert index_bytes(live) == before
+    assert records(tmp_path, "run") == {"before.json", "planned.json", "stored-after.json", "summary.json"}
+    assert json.loads((tmp_path / "run" / "summary.json").read_text())["status"] == "not_written"
+
+
+def test_a_publish_between_the_write_and_the_read_back_is_reported_with_its_record(tmp_path, live, monkeypatch):
+    dry = unpublish(tmp_path, "dry", "gone")
+
+    def landed_then_another_writer(put, kwargs):
+        put(**kwargs)
+        index = publication.parse_index(live.store.objects[publication.INDEX_V2_KEY])
+        index["families"]["kept"]["publishedAt"] = "2026-11-11T00:00:00Z"
+        live.store.objects[publication.INDEX_V2_KEY] = canonical_json_bytes(index)
+        return {"ETag": live.store._etag(kwargs["Key"])}
+
+    put_index(live, monkeypatch, landed_then_another_writer)
+    with pytest.raises(refused, match="the index moved: .*Entries changed besides the removal: kept"):
+        unpublish(tmp_path, "run", "gone", "--execute", "--expect-etag", dry["index_etag"])
+    assert records(tmp_path, "run") == {"before.json", "planned.json", "stored-after.json", "summary.json"}
+    summary = json.loads((tmp_path / "run" / "summary.json").read_text())
+    assert summary["status"] == "index_moved" and not summary["read_back"]["stored_equals_planned"]
+    assert (tmp_path / "run" / "stored-after.json").read_bytes() == index_bytes(live)
+
+
+def test_a_failed_read_back_still_leaves_the_summary(tmp_path, live, monkeypatch):
+    dry = unpublish(tmp_path, "dry", "gone")
+    get = live.store.get_object
+    state = {"written": False}
+
+    def written(put, kwargs):
+        state["written"] = True
+        return put(**kwargs)
+
+    put_index(live, monkeypatch, written)
+    monkeypatch.setattr(live.store, "get_object", lambda **kwargs: (_ for _ in ()).throw(ConnectionError("down"))
+                        if state["written"] else get(**kwargs))
+    with pytest.raises(ConnectionError):
+        unpublish(tmp_path, "run", "gone", "--execute", "--expect-etag", dry["index_etag"])
+    summary = json.loads((tmp_path / "run" / "summary.json").read_text())
+    assert summary["status"] == "unknown" and "down" in summary["error"]
+
+
+def test_removing_every_family_refuses(live):
+    raw = index_bytes(live)
+    with pytest.raises(refused, match="every family"):
+        publication.plan_family_removal(raw, "e", publication.parse_index(raw)["families"], roots={}, held={})
 
 
 def test_the_check_refuses_any_other_difference(live):
@@ -169,3 +245,5 @@ def test_the_check_refuses_any_other_difference(live):
     del index["families"]["kept"]
     with pytest.raises(refused, match="added or lost besides the removal"):
         publication.check_family_removal(before, canonical_json_bytes(index), ["gone"])
+    with pytest.raises(refused, match="Still in the publication index: gone"):
+        publication.check_family_removal(before, before, ["gone"])

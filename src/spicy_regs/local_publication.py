@@ -354,6 +354,38 @@ def _removal_summary(removal: publication.FamilyRemoval) -> dict:
     }
 
 
+def _write_summary(output: Path, summary: dict) -> None:
+    (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+
+
+def _execute_removal(client, bucket: str, removal: publication.FamilyRemoval, summary: dict, output: Path) -> None:
+    """Write, settle and read back the removal; the record files are written before any refusal is raised."""
+    from spicy_regs.sources.cloudflare import purge_urls
+
+    try:
+        outcome = publication.write_family_removal(client, bucket, removal)
+    except Exception as failure:
+        summary |= {"status": "unknown", "error": f"{type(failure).__name__}: {failure}"}
+        _write_summary(output, summary)
+        raise
+    (output / "stored-after.json").write_bytes(outcome.stored)
+    summary |= {"status": outcome.status, "read_back": {
+        "stored_sha256": _sha256(outcome.stored), "stored_equals_planned": outcome.stored == removal.after,
+        **({"note": outcome.note} if outcome.note else {}),
+    }}
+    if outcome.status != "removed":
+        _write_summary(output, summary)
+        raise PublicationError(outcome.note)
+    summary["read_back"]["stored"] = publication.check_family_removal(removal.before, outcome.stored, removal.removed)
+    purge_urls([f"{r2.VERIFIED_PUBLIC_URL}/{publication.INDEX_V2_KEY}"])
+    served = publication.load_index_bytes(r2.VERIFIED_PUBLIC_URL) or b""
+    summary["read_back"] |= {"public_sha256": _sha256(served), "public_equals_stored": served == outcome.stored}
+    if served != outcome.stored:
+        _write_summary(output, summary)
+        raise PublicationError(f"The stored index has the removal, but {r2.VERIFIED_PUBLIC_URL} serves other "
+                               "bytes; fetch it again before anything else")
+
+
 def unpublish_main(argv=None) -> int:
     """Take whole families out of the publication index; a dry run unless --execute and --expect-etag are given.
 
@@ -363,8 +395,6 @@ def unpublish_main(argv=None) -> int:
     the families are gone and every other entry is byte-identical. Generations stay stored, so a family is put back
     with ``publication.restore_family`` from the entry saved in ``before.json``.
     """
-    from spicy_regs.sources.cloudflare import purge_urls
-
     parser = argparse.ArgumentParser(description=(unpublish_main.__doc__ or "").split("\n\n")[0])
     parser.add_argument("family", nargs="+", help="A family to take out of the index")
     parser.add_argument("--output", type=Path, required=True,
@@ -392,20 +422,8 @@ def unpublish_main(argv=None) -> int:
     (args.output / "before.json").write_bytes(removal.before)
     (args.output / "planned.json").write_bytes(removal.after)
     if args.execute:
-        written = publication.write_family_removal(client, bucket, removal)
-        (args.output / "stored-after.json").write_bytes(written)
-        purge_urls([f"{r2.VERIFIED_PUBLIC_URL}/{publication.INDEX_V2_KEY}"])
-        served = publication.load_index_bytes(r2.VERIFIED_PUBLIC_URL) or b""
-        summary |= {"status": "removed", "read_back": {
-            "stored_sha256": _sha256(written), "stored_equals_planned": written == removal.after,
-            "stored": publication.check_family_removal(removal.before, written, removal.removed),
-            "public_sha256": _sha256(served), "public_equals_stored": served == written,
-        }}
-        if served != written:
-            (args.output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
-            raise PublicationError(f"The stored index has the removal, but {r2.VERIFIED_PUBLIC_URL} serves other "
-                                   "bytes; fetch it again before anything else")
-    (args.output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+        _execute_removal(client, bucket, removal, summary, args.output)
+    _write_summary(args.output, summary)
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
 
