@@ -19,8 +19,9 @@ Entries link to the pull request that introduced the change.
   corpus zip into the raw archive with its capture receipt; `uscode_xml_audit`
   now audits a whole release-point corpus, member by member, and both auditors
   report `evidence_sha256`; the additive preparation leaves the prior's
-  receipts behind and retains the addition's original into the generation's
-  evidence under its OLRC URL. The family is published by hand with
+  receipts behind, writes the union in zstd, and retains the addition's
+  original into the generation's evidence with its `acquire` capture's
+  download record and that acquisition evidence's pin. The family is published by hand with
   `publish-local-generation`. Editions stay selected: 119-138 is added beside
   the 2000 edition and 119-102, whose rows are unchanged
   (`docs/uscode-editions.md`).

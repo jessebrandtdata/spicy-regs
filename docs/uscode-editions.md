@@ -84,9 +84,9 @@ python -m spicy_regs.sources.uscode_editions --manifest "$WORK/selection.json" -
 # 3. Audit it independently (docs/uscode-editions-audit.md).
 python -m spicy_regs.sources.uscode_xml_audit "$WORK/candidate" --selection "$WORK/selection.json" \
   --output "$WORK/audit.json"
-# 4. Union it after the live generation's rows.
+# 4. Union it after the live generation's rows; $ACQUIRED is acquire's evidence, $WORK/acquire/source-evidence/*/artifact.
 python -m spicy_regs.uscode_edition_publication --prior "$LIVE_USCODE" --candidate "$WORK/candidate" \
-  --audit "$WORK/audit.json" --audit-sha256 "sha256:$(shasum -a 256 "$WORK/audit.json" | cut -d' ' -f1)" \
+  --acquisition "$ACQUIRED" --audit "$WORK/audit.json" --audit-sha256 "sha256:$(shasum -a 256 "$WORK/audit.json" | cut -d' ' -f1)" \
   --audit-bytes "$(stat -f %z "$WORK/audit.json")" --index "$LIVE_INDEX" --expected-prior "$PRIOR" \
   --output "$WORK/addition"
 # 5. Publish (docs/local-family-refresh.md), from prepared.json's generation and evidence.
@@ -103,5 +103,12 @@ digest. The preparation requires the audit's `APPROVE` verdict and its
 `evidence_sha256` pins over the build record, selection and every candidate
 table; checks the prior against the index it read; refuses a duplicate identity
 across prior and candidate; and compares the union with its inputs slice by
-slice. It reads each accepted original once, to retain it into the generation's
-evidence and the raw archive under its OLRC URL; it never publishes.
+slice. It writes the union in zstd, as the builder does. It reads each accepted
+original once, to retain it into the generation's evidence with the download
+record of the `acquire` capture that fetched it (URL, time, HTTP status, capture
+id) and the acquisition evidence's pin. A generation states exactly one
+source-evidence input (`generations.py`, and publication holds every evidence
+to the generation's prior), so the acquisition's artifact is cited from that
+journal entry rather than passed as a second `--evidence`. The retention adds
+one acquisition record to the raw archive per preparation run; it never
+publishes.

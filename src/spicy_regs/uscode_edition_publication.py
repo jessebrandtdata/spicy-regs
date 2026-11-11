@@ -3,9 +3,11 @@
 The prior's rows and the accepted candidate's rows are unioned unchanged, in order,
 into files the maintained generation builder adopts. The tables publish no per-row
 receipts (``receipts_retired``): a prior's receipt member stays in that generation,
-which docs/pins/receipt-archive.json keeps. The candidate's selected originals are
-retained once into the generation's source evidence and the shared raw archive,
-under their publisher URL. This command never publishes; publication must still
+which docs/pins/receipt-archive.json keeps. Each of the candidate's selected originals
+is retained into the generation's source evidence with the download record its
+``acquire`` capture journaled (URL, time, status) and that acquisition evidence's pin:
+a generation states exactly one source-evidence input, so the acquisition's artifact
+is cited from its journal, not added as a second input. This command never publishes; publication must still
 use the captured exact prior (``publish-local-generation --expect-prior``). Row
 batches do not impose a byte bound; the caller must supervise RSS, output and
 elapsed time for the selected inputs.
@@ -97,7 +99,8 @@ def _union(paths, schema, target, *, identities=None, dataset=None):
     # Bound the output group separately from small read batches. A 64 MiB
     # group also admits the accepted XML record bound; external RSS supervision
     # still owns native allocations and temporary Arrow backing buffers.
-    with pq.ParquetWriter(target, physical) as writer:
+    # zstd, as the builder writes: the union rewrites every row, so its codec is the published one.
+    with pq.ParquetWriter(target, physical, compression="zstd") as writer:
         for table in coalesced_tables(checked_batches(), physical, check_resources=lambda: None,
                                       row_group_rows=ROW_GROUP_ROWS, max_bytes=ROW_GROUP_BYTES):
             writer.write_table(table, row_group_size=ROW_GROUP_ROWS)
@@ -120,33 +123,38 @@ def _check_ordered_union(paths, target, schema):
         raise ValueError("Union omitted or added input occurrences")
 
 
-def _publisher_url(source: dict) -> str:
-    """Where OLRC serves one selected original; the journal is published, so it names this, never a local path."""
-    from spicy_docs.sources.uscode import (
-        ReleasePoint, TitleSelection, annual_archive_locator, corpus_xml_locator, title_xml_locator,
-    )
+def _acquired_captures(acquisition: Path, originals: list[dict]) -> tuple[dict, list[dict]]:
+    """The acquisition evidence's pin and, for each original, the ``acquire`` capture that downloaded it."""
+    from spicy_regs.source_evidence import JOURNAL, verify_evidence
 
-    if source["kind"] == "annual":
-        return annual_archive_locator(source["year"])
-    point = ReleasePoint.from_label(source["release_point"])
-    if source["kind"] == "release-point-corpus":
-        return corpus_xml_locator(point)
-    return title_xml_locator(TitleSelection(point, source["title"]))
+    artifact = verify_evidence(acquisition)
+    if artifact.root["spec"]["family"] != FAMILY:
+        raise ValueError("Acquisition evidence belongs to another family")
+    events = [json.loads(line) for line in (acquisition / JOURNAL).read_text().splitlines()]
+    captures = {event["sha256"]: event for event in events
+                if event["event"] == "capture" and event.get("stage") == CAPTURE_STAGE and event.get("status_code") == 200}
+    if missing := [source["sha256"] for source in originals if source["sha256"] not in captures]:
+        raise ValueError(f"No acquire capture of the accepted original {missing[0]}")
+    return artifact.pin.as_dict(), [captures[source["sha256"]] for source in originals]
 
 
 def prepare_addition(
-    *, prior_directory: Path, candidate_directory: Path, audit_pin: dict,
+    *, prior_directory: Path, candidate_directory: Path, acquisition: Path, audit_pin: dict,
     read_snapshot: dict, expected_prior: str, output: Path,
 ) -> dict:
     """Append one accepted selected edition to the complete captured native family.
 
     ``audit_pin`` is the coordinator's exact path/bytes/sha256 for the accepted
     independent audit. Its ``evidence_sha256`` map must bind the build metadata,
-    selection and all candidate subject files. The prior may still carry the
-    receipts of the generations before retirement; they are not read or carried.
+    selection and all candidate subject files, under resolved paths as the audit
+    states them. ``acquisition`` is the ``acquire`` run's evidence artifact
+    directory. The prior may still carry the receipts of the generations before
+    retirement; they are not read or carried.
     Failed working files stay readable; an existing output is never replaced.
     """
-    prior_directory, candidate_directory, output = map(Path, (prior_directory, candidate_directory, output))
+    # Resolved, as the audit keys its evidence pins; this also turns /tmp into /private/tmp before the symlink checks.
+    prior_directory, candidate_directory, acquisition, output = (
+        Path(p).resolve() for p in (prior_directory, candidate_directory, acquisition, output))
     if output.exists() or any(output.resolve().is_relative_to(p.resolve()) for p in (prior_directory, candidate_directory)):
         raise ValueError("Additive preparation requires a fresh separate output")
     if any(p.is_symlink() for p in (output, *output.parents)):
@@ -197,6 +205,7 @@ def prepare_addition(
     originals = build["inputs"]
     if [source["sha256"] for source in originals] != [source["sha256"] for source in selection["sources"]]:
         raise ValueError("Candidate build read other originals than its selection")
+    acquired_pin, captures = _acquired_captures(acquisition, originals)
     output.mkdir(parents=True)
     materialized = output / "union"
     materialized.mkdir()
@@ -209,10 +218,15 @@ def prepare_addition(
     source_evidence = CaptureEvidence(output, FAMILY)
     source_evidence.read_snapshot = read_snapshot
     source_evidence.prior_input = ArtifactInput(PRIOR_ROLE, prior["logicalId"], expected_prior)
-    # The accepted originals, once each: the retained bytes must be the ones the build and the audit read.
-    for source in originals:
-        retained = source_evidence.retain_file(Path(source["path"]), stage=CAPTURE_STAGE, raw_source=True,
-                                               original_location=_publisher_url(source))
+    # The accepted originals, once each, with the download record of the capture that fetched them: the retained
+    # bytes must be the ones the build and the audit read.
+    for source, capture in zip(originals, captures, strict=True):
+        record = {key: capture.get(key) for key in (
+            "requested_url", "resolved_url", "status_code", "observed_at", "content_type", "content_encoding")}
+        retained = source_evidence.retain_file(
+            Path(source["path"]), stage=CAPTURE_STAGE, raw_source=True, original_location=capture["requested_url"],
+            source_url=capture["requested_url"], acquisition_capture_id=capture["capture_id"],
+            acquisition_evidence=acquired_pin, **record)
         if retained["sha256"] != source["sha256"]:
             raise ValueError("Retained original differs from the accepted selection")
     source_evidence.event("held-native-addition", prior_generation=prior, prior_inputs=old.root["inputs"],
@@ -248,13 +262,14 @@ def prepare_addition(
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for flag in ("prior", "candidate", "audit", "index", "output"):
+    for flag in ("prior", "candidate", "acquisition", "audit", "index", "output"):
         parser.add_argument("--" + flag, type=Path, required=True)
     parser.add_argument("--audit-sha256", required=True)
     parser.add_argument("--audit-bytes", type=int, required=True)
     parser.add_argument("--expected-prior", required=True)
     args = parser.parse_args()
     print(json.dumps(prepare_addition(prior_directory=args.prior, candidate_directory=args.candidate,
+        acquisition=args.acquisition,
         audit_pin={"path": str(args.audit), "sha256": args.audit_sha256, "bytes": args.audit_bytes},
         read_snapshot=_json(args.index), expected_prior=args.expected_prior, output=args.output)))
 

@@ -17,11 +17,25 @@ from spicy_regs.etl_receipts import ReceiptContext, combine_receipts, write_data
 from spicy_regs.parquet_rows import write_rows
 from spicy_regs.source_evidence import JOURNAL, is_original
 from spicy_regs.sources import publication
-from spicy_regs.sources.uscode_editions import POLICIES
+from spicy_regs.sources.uscode_editions import CAPTURE_STAGE, POLICIES
+
+URL = "https://uscode.house.gov/download/releasepoints/us/pl/119/138/xml_uscAll@119-138.zip"
+OBSERVED_AT = "2026-11-11T09:23:14Z"
 
 
 def digest(path):
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def acquired(directory, body):
+    """What ``acquire`` leaves: the original in the raw archive and the evidence journaling its download."""
+    from spicy_docs.transport.captured import CapturedBodyResponse
+    from spicy_regs.pipelines.raw_releases import open_raw, raw_original
+    from spicy_regs.source_evidence import acquisition_evidence
+
+    with acquisition_evidence(addition.FAMILY, output_dir=directory) as evidence:
+        captured = evidence.capture(CapturedBodyResponse(URL, URL, 200, None, OBSERVED_AT, body), stage=CAPTURE_STAGE)
+    return raw_original(open_raw(), captured["sha256"], captured["byte_size"]), evidence.artifact_dir
 
 
 def native(root, prefix, count=1, *, receipts=False):
@@ -54,8 +68,7 @@ def native(root, prefix, count=1, *, receipts=False):
         outputs[name] = {"path": str(subject.relative_to(root)), "rows": count, "sha256": digest(subject)}
     if receipts:
         combine_receipts(shards, root / "etl_receipts.parquet")
-    original = root / "original.zip"
-    original.write_bytes(b"publisher bytes of " + prefix.encode())
+    original, acquisition = acquired(root / "acquire", b"publisher bytes of " + prefix.encode())
     source = {"kind": "release-point-corpus", "release_point": "119-138", "sha256": digest(original)}
     selection = root / "selection.json"
     selection.write_text(json.dumps({"sources": [{**source, "path": str(original)}]}))
@@ -68,7 +81,7 @@ def native(root, prefix, count=1, *, receipts=False):
         "generation": prefix + "-original-generation", "rows": {name: count for name in POLICIES},
         "selection_sha256": digest(selection),
         "evidence_sha256": {str(p): digest(p) for p in [*paths, selection, build]}}))
-    return paths, {"path": str(audit), "sha256": digest(audit), "bytes": audit.stat().st_size}
+    return paths, {"path": str(audit), "sha256": digest(audit), "bytes": audit.stat().st_size}, acquisition
 
 
 def entry(directory, published_at="2026-10-13T00:00:00Z"):
@@ -96,15 +109,15 @@ def setup(tmp_path, *, old_count=1, new_prefix="new", new_count=1):
     old_source = tmp_path / "old-input"
     with pytest.MonkeyPatch.context() as before_retirement:
         before_retirement.setattr(subject_catalog, "retired_receipt_datasets", frozenset)
-        files, _ = native(old_source, "old", old_count, receipts=True)
+        files, _, _ = native(old_source, "old", old_count, receipts=True)
         prior = tmp_path / "prior"
         generations.build_generation(prior, family=addition.FAMILY, files=files,
             expected_keys=[p.name for p in files], receipt_path=old_source / "etl_receipts.parquet",
             receipt_policies=list(POLICIES.values()), receipt_generation_id="old-original-generation")
     snapshot, expected_prior = entry(prior)
     candidate = tmp_path / "candidate"
-    _, audit = native(candidate, new_prefix, new_count)
-    return dict(prior_directory=prior, candidate_directory=candidate, audit_pin=audit,
+    _, audit, acquisition = native(candidate, new_prefix, new_count)
+    return dict(prior_directory=prior, candidate_directory=candidate, acquisition=acquisition, audit_pin=audit,
                 read_snapshot=snapshot, expected_prior=expected_prior, output=tmp_path / "addition")
 
 
@@ -133,14 +146,21 @@ def test_append_preserves_order_and_values_without_copy_and_leaves_retired_recei
         expected = pq.read_table(args['prior_directory'] / (name + '.parquet')).to_pylist()
         expected += pq.read_table(args['candidate_directory'] / name / (name + '.parquet')).to_pylist()
         assert pq.read_table(target / (name + '.parquet')).to_pylist() == expected
+        assert pq.ParquetFile(target / (name + '.parquet')).metadata.row_group(0).column(0).compression == 'ZSTD'
     assert all((target / name).stat().st_ino == inode for name, inode in captured.items())
     assert all((p.stat().st_ino, digest(p)) == pin for p, pin in before.items())
     assert result['payloadCopies'] == 0 and result['published'] is False and result['sourceReads'] == 1
-    # The accepted original is the evidence's one publisher original, under its OLRC URL, never a local path.
+    # The accepted original is the evidence's one publisher original, with the download record of its acquire
+    # capture and that acquisition's pin, never a local path.
     journal = [json.loads(line) for line in (Path(result['evidence']) / JOURNAL).read_text().splitlines()]
-    assert [(e['sha256'], e['original_location']) for e in journal if is_original(e)] == [(
-        digest(args['candidate_directory'] / 'original.zip'),
-        'https://uscode.house.gov/download/releasepoints/us/pl/119/138/xml_uscAll@119-138.zip')]
+    acquire = [json.loads(line) for line in (args['acquisition'] / JOURNAL).read_text().splitlines()]
+    capture, = [e for e in acquire if e['event'] == 'capture']
+    retained, = [e for e in journal if is_original(e)]
+    assert (retained['sha256'], retained['original_location'], retained['source_url']) == (capture['sha256'], URL, URL)
+    assert (retained['observed_at'], retained['status_code'], retained['acquisition_capture_id']) == (
+        OBSERVED_AT, 200, capture['capture_id'])
+    root = json.loads((args['acquisition'] / 'artifact.json').read_text())
+    assert retained['acquisition_evidence'] == {'logicalId': root['logicalId'], 'artifactDigest': root['artifactDigest']}
     assert str(tmp_path) not in json.dumps(journal)
 
 
@@ -148,8 +168,9 @@ def test_a_prior_without_receipts_takes_the_next_addition(tmp_path):
     first = Path(addition.prepare_addition(**setup(tmp_path))['generation'])
     snapshot, expected_prior = entry(first, "2026-11-11T00:00:00Z")
     candidate = tmp_path / 'later'
-    _, audit = native(candidate, 'later')
-    result = addition.prepare_addition(prior_directory=first, candidate_directory=candidate, audit_pin=audit,
+    _, audit, acquisition = native(candidate, 'later')
+    result = addition.prepare_addition(prior_directory=first, candidate_directory=candidate, acquisition=acquisition,
+                                       audit_pin=audit,
                                        read_snapshot=snapshot, expected_prior=expected_prior,
                                        output=tmp_path / 'second')
     editions = pq.read_table(Path(result['generation']) / 'uscode_editions.parquet').column('edition_id')
@@ -177,7 +198,7 @@ def test_refuses_wrong_prior_membership_audit_content_or_schema(tmp_path, change
     elif change == 'audit':
         args['audit_pin']['sha256'] = 'sha256:' + 'f' * 64
     elif change == 'original':
-        (args['candidate_directory'] / 'original.zip').write_bytes(b'other publisher bytes')
+        _, args['acquisition'] = acquired(tmp_path / 'other-acquire', b'other publisher bytes')
     else:
         path = args['candidate_directory'] / 'uscode_editions/uscode_editions.parquet'
         if change == 'member':
@@ -195,8 +216,16 @@ def test_refuses_wrong_prior_membership_audit_content_or_schema(tmp_path, change
             args['audit_pin'].update(sha256=digest(audit), bytes=audit.stat().st_size)
     with pytest.raises((ValueError, KeyError)):
         addition.prepare_addition(**args)
-    # The original is read once, while it is retained, so a changed one refuses inside the fresh output.
-    assert not (args['output'] / 'generation').exists() if change == 'original' else not args['output'].exists()
+    assert not args['output'].exists()
+
+
+def test_a_relative_or_symlinked_candidate_path_finds_the_audits_resolved_pins(tmp_path, monkeypatch):
+    args = setup(tmp_path)
+    (tmp_path / 'link').symlink_to(args['candidate_directory'])
+    monkeypatch.chdir(tmp_path)
+    for name in ('candidate', 'link'):
+        args['candidate_directory'], args['output'] = Path(name), tmp_path / ('from-' + name)
+        assert addition.prepare_addition(**args)['status'] == 'prepared-additive-uscode-generation'
 
 
 def test_ordered_union_crosses_batch_boundaries_and_checks_multiplicity(tmp_path):
