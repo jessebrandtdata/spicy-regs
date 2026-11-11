@@ -131,7 +131,7 @@ FROM read_parquet(getvariable('register'));
 -- (the window starts 120 days before the PRIOR table's newest date) and never earlier than it by more than that
 
 -- 7. Nothing older than the window changed: the 38 prior columns, both ways.
-SET VARIABLE window_start = (SELECT CAST(CAST(max(publication_date) AS DATE) - INTERVAL 120 DAY AS VARCHAR)
+SET VARIABLE window_start = (SELECT CAST(CAST(CAST(max(publication_date) AS DATE) - INTERVAL 120 DAY AS DATE) AS VARCHAR)
                              FROM read_parquet(getvariable('old_register')));
 SELECT (SELECT count(*) FROM (
           SELECT * EXCLUDE (html_url, pdf_url, body_html_url, source_sha256, regulations_dot_gov_info_json)
@@ -209,8 +209,10 @@ SELECT json_extract(content, '$.spec.etlReceipts') IS NULL                      
 FROM read_text(getvariable('base') || '/<links_prefix>/artifact.json');
 -- expect true, and parent = sha256:<the register prefix's 64 hex>; the Register's root: no_receipts true
 
--- 7'. Every row older than the window is carried exactly, every column, its page pointer included.
-SET VARIABLE window_start = (SELECT CAST(CAST(max(publication_date) AS DATE) - INTERVAL 120 DAY AS VARCHAR)
+-- 7'. Every row older than the window is carried exactly, every column, its page pointer included. The window
+-- starts at the old table's newest date less 120 days, the night's first re-read day, spelled as a date: as a
+-- timestamp ('2026-07-13 00:00:00') it would sort after '2026-07-13' and count that re-read day as older.
+SET VARIABLE window_start = (SELECT CAST(CAST(CAST(max(publication_date) AS DATE) - INTERVAL 120 DAY AS DATE) AS VARCHAR)
                              FROM read_parquet(getvariable('old_register')));
 SELECT (SELECT count(*) FROM (
           SELECT * FROM read_parquet(getvariable('register')) WHERE publication_date < getvariable('window_start')
