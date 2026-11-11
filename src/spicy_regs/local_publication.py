@@ -4,6 +4,9 @@
 index: no credentials are read and nothing leaves this machine. Without it the command compares with
 the stored index, writes to the verified R2 target, then reads the family back as an anonymous reader
 and records what was served. The per-family steps are in docs/local-family-refresh.md.
+
+``unpublish-families`` (:func:`unpublish_main`) is the reverse hand write: it takes whole families out of the
+index through the same conditional pointer write, a dry run unless told the index ETag to replace.
 """
 
 from __future__ import annotations
@@ -11,6 +14,7 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 from datetime import UTC, datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -297,6 +301,131 @@ def main(argv=None):
     name = "dry-run.json" if args.dry_run else "receipt.json"
     (args.output / name).write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     print(json.dumps(receipt, indent=2, sort_keys=True))
+
+
+def _current_roots(client, bucket: str, index: dict) -> dict[str, dict]:
+    """Every family's current root, read with credentials and held to its index entry."""
+    roots = {}
+    for family, entry in sorted(index["families"].items()):
+        stored = publication._get_bounded(client, bucket, f"{entry['prefix']}/artifact.json")
+        if stored is None:
+            raise PublicationError(f"{family}'s current root is not stored")
+        roots[family] = publication.family_root(stored[0], entry)
+    return roots
+
+
+def _held_elsewhere(client, bucket: str, index: dict) -> dict[str, str]:
+    """What pins each family name or bare generation digest outside the index, by the readers retention uses."""
+    from spicy_regs import generation_retention as retention
+
+    held = {}
+    for dataset, pin in retention.receipt_archive_pins().items():
+        reason = f"{retention.RECEIPT_ARCHIVE.name} ({dataset})"
+        held[pin["family"]] = held[pin["artifactDigest"].removeprefix("sha256:")] = reason
+    held |= retention.docspec_pins(retention._read_pin_source(retention.DOCSPEC_PINS, client=client))
+    held |= retention.archive_pins(retention._read_pin_source(retention.ARCHIVE_PINS, client=client))
+    snapshot_id, inputs, native = retention._snapshot_inputs(client, bucket)
+    for name, digest in native.items():
+        held[digest] = f"rulemaking snapshot {snapshot_id} (native input {name})"
+    for key in inputs:
+        if (owner := publication.table_owner(index, key)) is not None:
+            held[owner[0]] = f"rulemaking snapshot {snapshot_id} (input {key})"
+    return held
+
+
+def _sha256(raw: bytes) -> str:
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _removal_summary(removal: publication.FamilyRemoval) -> dict:
+    before = publication.parse_index(removal.before)["families"]
+    return {
+        "index_etag": removal.etag,
+        "index_sha256": _sha256(removal.before),
+        "families_before": len(before),
+        "families_after": len(before) - len(removal.removed),
+        "removed": {name: {
+            **{key: entry.get(key) for key in ("artifactDigest", "prefix", "publishedAt")},
+            "tables": {key: table["rows"] for key, table in sorted(entry["tables"].items())},
+            "rows": sum(table["rows"] for table in entry["tables"].values()),
+        } for name, entry in removal.removed.items()},
+        "write_sha256": _sha256(removal.after),
+        "write_bytes": len(removal.after),
+    }
+
+
+def _write_summary(output: Path, summary: dict) -> None:
+    (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+
+
+def _execute_removal(client, bucket: str, removal: publication.FamilyRemoval, summary: dict, output: Path) -> None:
+    """Write, settle and read back the removal; the record files are written before any refusal is raised."""
+    from spicy_regs.sources.cloudflare import purge_urls
+
+    try:
+        outcome = publication.write_family_removal(client, bucket, removal)
+    except Exception as failure:
+        summary |= {"status": "unknown", "error": f"{type(failure).__name__}: {failure}"}
+        _write_summary(output, summary)
+        raise
+    (output / "stored-after.json").write_bytes(outcome.stored)
+    summary |= {"status": outcome.status, "read_back": {
+        "stored_sha256": _sha256(outcome.stored), "stored_equals_planned": outcome.stored == removal.after,
+        **({"note": outcome.note} if outcome.note else {}),
+    }}
+    if outcome.status != "removed":
+        _write_summary(output, summary)
+        raise PublicationError(outcome.note)
+    summary["read_back"]["stored"] = publication.check_family_removal(removal.before, outcome.stored, removal.removed)
+    purge_urls([f"{r2.VERIFIED_PUBLIC_URL}/{publication.INDEX_V2_KEY}"])
+    served = publication.load_index_bytes(r2.VERIFIED_PUBLIC_URL) or b""
+    summary["read_back"] |= {"public_sha256": _sha256(served), "public_equals_stored": served == outcome.stored}
+    if served != outcome.stored:
+        _write_summary(output, summary)
+        raise PublicationError(f"The stored index has the removal, but {r2.VERIFIED_PUBLIC_URL} serves other "
+                               "bytes; fetch it again before anything else")
+
+
+def unpublish_main(argv=None) -> int:
+    """Take whole families out of the publication index; a dry run unless --execute and --expect-etag are given.
+
+    The dry run reads the stored index, every current root and the pin documents, and prints the index's ETag and
+    SHA-256, each named family's entry and the SHA-256 of the exact bytes a run would store. ``--execute`` writes
+    those bytes only if the index still has ``--expect-etag``, reads the stored and the public index back, and proves
+    the families are gone and every other entry is byte-identical. Generations stay stored, so a family is put back
+    with ``publication.restore_family`` from the entry saved in ``before.json``.
+    """
+    parser = argparse.ArgumentParser(description=(unpublish_main.__doc__ or "").split("\n\n")[0])
+    parser.add_argument("family", nargs="+", help="A family to take out of the index")
+    parser.add_argument("--output", type=Path, required=True,
+                        help="A fresh directory for the index read (before.json), the planned bytes and the summary")
+    parser.add_argument("--execute", action="store_true", help="Write the index; without it nothing is written")
+    parser.add_argument("--expect-etag", help="With --execute: the index_etag the dry run printed")
+    args = parser.parse_args(argv)
+    if args.execute != (args.expect_etag is not None):
+        parser.error("--execute and --expect-etag go together: pass the index_etag the dry run printed")
+    if args.output.exists():
+        parser.error(f"--output {args.output} exists; a removal record is written once")
+    r2.require_credentials("Reading the stored publication index")
+    client, bucket = r2.verified_target_client()
+    stored = publication._get_bounded(client, bucket, publication.INDEX_V2_KEY)
+    if stored is None:
+        raise PublicationError("The publication index is absent")
+    raw, etag = stored
+    if args.execute and etag.strip('"') != args.expect_etag.strip('"'):
+        raise PublicationError(f"The index ETag is {etag}, not {args.expect_etag}; nothing was written. Dry-run again")
+    index = publication.parse_index(raw)
+    removal = publication.plan_family_removal(
+        raw, etag, args.family, roots=_current_roots(client, bucket, index), held=_held_elsewhere(client, bucket, index))
+    summary = {"status": "dry_run", **_removal_summary(removal)}
+    args.output.mkdir(parents=True)
+    (args.output / "before.json").write_bytes(removal.before)
+    (args.output / "planned.json").write_bytes(removal.after)
+    if args.execute:
+        _execute_removal(client, bucket, removal, summary, args.output)
+    _write_summary(args.output, summary)
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
 
 
 if __name__ == "__main__":

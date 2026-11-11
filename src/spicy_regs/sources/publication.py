@@ -2007,17 +2007,136 @@ def restore_family(client, bucket: str, family: str, entry: Mapping | None, *, e
         if expected is not None and not matches:
             raise PublicationError(f"{family} names another generation than the one being rolled back")
         if entry is None:
-            from rulespec_artifacts import canonical_json_bytes
-
-            updated = deepcopy(index)
-            del updated["families"][family]
-            raw = canonical_json_bytes(updated)
-            parse_index(raw)
+            updated, raw = _without_families(index, (family,))
         else:
             updated, raw = _merge_family(index, family, dict(entry))
         if _put_pointer(client, bucket, INDEX_V2_KEY, raw, etag):
             return updated
     raise PublicationError("Publication changed concurrently; retry the rollback")
+
+
+def _without_families(index: Mapping, names: Iterable[str]) -> tuple[dict, bytes]:
+    """``index`` without ``names``' entries, and its canonical bytes checked as an index; the rest is kept as is."""
+    from rulespec_artifacts import canonical_json_bytes
+
+    updated = deepcopy(dict(index))
+    for name in names:
+        del updated["families"][name]
+    raw = canonical_json_bytes(updated)
+    parse_index(raw)
+    return updated, raw
+
+
+class FamilyRemoval(NamedTuple):
+    """One planned index write that drops whole families: the bytes read, their ETag, the exact bytes to store."""
+
+    before: bytes
+    etag: str
+    after: bytes
+    removed: dict[str, dict]
+
+
+def plan_family_removal(raw: bytes, etag: str, names: Iterable[str], *, roots: Mapping[str, Mapping],
+                        held: Mapping[str, str]) -> FamilyRemoval:
+    """Plan dropping ``names`` from the stored index ``raw``; nothing is written.
+
+    Taking a family out of the index unpublishes it: readers resolve tables only through the index, and its
+    generations stay stored (``generation_retention`` keeps a family's newest three once the index stops naming it).
+    Refused: a name the index lacks; removing every family; a family that another family's current root (``roots``,
+    every other family's, by family) records as a parent, by its ``family`` or by a table key the family owns (as
+    ``generations._check_parents`` resolves it), since that family's next build reads it through the index; and a
+    family whose name or current digest (bare hex) ``held`` maps to a reason, such as a pin document or a rulemaking
+    input.
+    """
+    index = parse_index(raw)
+    names = sorted(set(names))
+    if not names:
+        raise PublicationError("Name at least one family to remove")
+    if missing := [name for name in names if name not in index["families"]]:
+        raise PublicationError(f"Not in the publication index: {', '.join(missing)}")
+    if len(names) == len(index["families"]):
+        raise PublicationError("Refusing to remove every family: the index would be empty")
+    removed = {name: index["families"][name] for name in names}
+    if unread := sorted(set(index["families"]) - set(removed) - set(roots)):
+        raise PublicationError(f"Current roots not read, so their parents are unchecked: {', '.join(unread)}")
+    reasons = [f"{name} is held by {held[token]}" for name, entry in removed.items()
+               for token in (name, entry["artifactDigest"].removeprefix("sha256:")) if token in held]
+    for family, root in sorted(roots.items()):
+        if family in removed:
+            continue
+        for key, parent in sorted((root.get("spec", {}).get("parents") or {}).items()):
+            owner = table_owner(index, key)
+            for read in {parent.get("family"), owner and owner[0]} & removed.keys():
+                reasons.append(f"{read} is a parent of {family} ({key})")
+    if reasons:
+        raise PublicationError("Refusing to remove: " + "; ".join(reasons))
+    return FamilyRemoval(raw, etag, _without_families(index, names)[1], removed)
+
+
+def check_family_removal(before: bytes, after: bytes, names: Iterable[str]) -> dict[str, int]:
+    """Prove ``after`` is ``before`` without ``names``: each is absent and every other entry is byte-identical.
+
+    Entries are compared as canonical JSON, the form the stored index is written in. Any other difference refuses.
+    """
+    from rulespec_artifacts import canonical_json_bytes
+
+    old, new = parse_index(before), parse_index(after)
+    names = set(names)
+    if present := sorted(names & set(new["families"])):
+        raise PublicationError(f"Still in the publication index: {', '.join(present)}")
+    kept = set(old["families"]) - names
+    if set(new["families"]) != kept:
+        raise PublicationError(f"Families added or lost besides the removal: {sorted(set(new['families']) ^ kept)}")
+    if changed := [family for family in sorted(kept) if canonical_json_bytes(old["families"][family])
+                   != canonical_json_bytes(new["families"][family])]:
+        raise PublicationError(f"Entries changed besides the removal: {', '.join(changed)}")
+    if {key: old[key] for key in old if key != "families"} != {key: new[key] for key in new if key != "families"}:
+        raise PublicationError("The index header changed besides the removal")
+    return {"before": len(old["families"]), "after": len(new["families"]), "identical": len(kept)}
+
+
+class RemovalOutcome(NamedTuple):
+    """What the stored index holds after a removal's write attempt: ``removed``, ``not_written`` or ``index_moved``."""
+
+    status: str
+    stored: bytes
+    note: str
+
+
+def write_family_removal(client, bucket: str, removal: FamilyRemoval) -> RemovalOutcome:
+    """Store ``removal.after`` only if the index still has ``removal.etag``, then settle what the stored index holds.
+
+    The write is the conditional pointer write every publisher uses, tried once. Its answer alone is not trusted: a
+    PUT whose response is lost and which the client resends meets its own write as a changed ETag and is refused,
+    and a raised error may follow a write that landed. So the stored index is always read back and decides:
+    the planned bytes (``removed``, saying so when the answer disagreed), the bytes the plan read (``not_written``),
+    or anything else (``index_moved``, with the hashes and how it differs). Only a failed read-back raises.
+    """
+    try:
+        answer = "refused (precondition failed)" if not _put_pointer(
+            client, bucket, INDEX_V2_KEY, removal.after, removal.etag) else ""
+    except Exception as failure:  # the read-back below decides; the error is reported with it
+        answer = f"raised {type(failure).__name__}: {failure}"
+    stored = _get_bounded(client, bucket, INDEX_V2_KEY)
+    if stored is None:
+        raise PublicationError(f"The publication index is absent after the write ({answer or 'accepted'})")
+    raw = stored[0]
+    if raw == removal.after:
+        check_family_removal(removal.before, raw, removal.removed)
+        return RemovalOutcome("removed", raw, answer and f"The write {answer}, but the stored index holds the "
+                                                         "planned bytes: its response was lost")
+    if raw == removal.before:
+        return RemovalOutcome("not_written", raw, f"The write {answer or 'was accepted'}; the stored index still "
+                                                   "holds the bytes the plan read: nothing was written. Plan again")
+    try:
+        check_family_removal(removal.before, raw, removal.removed)
+        detail = "the removal holds but the bytes differ"
+    except PublicationError as exc:
+        detail = str(exc)
+    stored_sha, planned_sha, read_sha = (hashlib.sha256(value).hexdigest() for value in (raw, removal.after, removal.before))
+    return RemovalOutcome("index_moved", raw, (
+        f"The write {answer or 'was accepted'}; the index moved: stored sha256 {stored_sha} is neither the planned "
+        f"{planned_sha} nor the read {read_sha} ({detail})"))
 
 
 def _partition(member: Mapping) -> tuple[tuple[str, str], ...]:
