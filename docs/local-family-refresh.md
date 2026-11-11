@@ -2,13 +2,15 @@
 
 These published families are refreshed from a workstation: `treasury-fiscal`,
 `administration-policy`, `ofac-sanctions`, `house-disbursements`,
-`grants-opportunities`, `executive-orders` and `fec-financial-profiles`. Each
-hand refresh is the same five steps: acquire, build, dry-run publish, publish,
-read back. What each command does and refuses is in the family's own page
-([Treasury](treasury-fiscal.md), [administration policy](retained-collections.md),
-[OFAC](ofac-sanctions.md), [House](congressional-disbursements.md),
-[Grants](grants-opportunities.md), [executive orders](executive-orders.md),
-[FEC profiles](fec-financial-profiles.md)); this page is only the order.
+`grants-opportunities`, `executive-orders`, `fec-financial-profiles` and
+`uscode-editions`. Each hand refresh is the same five steps: acquire, build,
+dry-run publish, publish, read back. What each command does and refuses is in the
+family's own page ([Treasury](treasury-fiscal.md), [administration
+policy](retained-collections.md), [OFAC](ofac-sanctions.md),
+[House](congressional-disbursements.md), [Grants](grants-opportunities.md),
+[executive orders](executive-orders.md), [FEC
+profiles](fec-financial-profiles.md), [U.S. Code editions](uscode-editions.md));
+this page is only the order.
 
 ## Before any family
 
@@ -282,6 +284,18 @@ for its kind refuses; after reviewing it, `build --accept-shrink candidate` (or
 `committee`) accepts the loss. The fec-query tables stay at their September
 captures ([what that means for a
 reader](fec-financial-profiles.md#build-from-a-captured-pair)).
+
+## uscode-editions
+
+An edition is added by decision, not on a schedule. Mirror the family first
+(`--family uscode-editions`, about 600 MB), then acquire, build, audit and
+prepare as [the family's page](uscode-editions.md#adding-an-edition) shows. The
+preparation prints `generation` and `evidence`, the `$GENERATION` and
+`$EVIDENCE` of the publish steps. The dry run copies the changed members and
+every evidence blob into a temporary store beside `--output` (ss-p9fm), about
+0.7 GB for one corpus addition; check free disk first. The first publish after 2026-11-11 also drops the
+family's receipt member, which publication accepts because
+`docs/pins/receipt-archive.json` pins the live generation.
 
 ## After a publish
 

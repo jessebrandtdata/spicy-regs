@@ -1,4 +1,4 @@
-"""Complete tiny originals exercise independent source and receipt qualification."""
+"""Complete tiny originals exercise independent source qualification."""
 
 import hashlib
 import io
@@ -13,7 +13,6 @@ import pyarrow.parquet as pq
 import pytest
 
 from spicy_docs.sources.uscode.core import UsCodeSourceError
-from spicy_regs.etl_receipts import exact_json
 from spicy_regs.sources import uscode_editions as builder
 from spicy_regs.sources import uscode_editions_audit as auditor
 
@@ -213,34 +212,6 @@ def test_corrupt_subject_even_with_updated_output_hash_refuses(tmp_path, change)
         auditor.audit(candidate, selection, annual_year=1995)
 
 
-@pytest.mark.parametrize("change", ["shard", "witness", "generation", "version", "extra", "schema"])
-def test_corrupt_receipts_refuse(tmp_path, change):
-    candidate, selection, _ = fixture(tmp_path)
-    path = candidate / "etl_receipts.parquet"
-    records = pq.read_table(path).to_pylist()
-    if change == "schema":
-        pq.write_table(pa.table({"wrong": ["x"]}), path)
-    elif change == "shard":
-        shard = candidate / "uscode_editions/etl_receipts.parquet"
-        values = pq.read_table(shard).to_pylist()
-        values[0]["attempt_id"] = "changed"
-        pq.write_table(pa.Table.from_pylist(values, schema=auditor.RECEIPT_SCHEMA), shard)
-    else:
-        if change == "extra":
-            records.append(records[-1])
-        elif change == "witness":
-            records[0]["witnesses"][1]["locator"] = "wrong.htm"
-        else:
-            records[0][{"generation": "generation_id", "version": "subject_version"}[change]] = "sha256:" + "f" * 64
-        pq.write_table(pa.Table.from_pylist(records, schema=auditor.RECEIPT_SCHEMA), path)
-        # Match shards too so witness/protocol checks, not only duplication, run.
-        if change != "extra":
-            shard = candidate / "uscode_editions/etl_receipts.parquet"
-            pq.write_table(pa.Table.from_pylist(records[:3], schema=auditor.RECEIPT_SCHEMA), shard)
-    with pytest.raises((AssertionError, ValueError, StopIteration)):
-        auditor.audit(candidate, selection, annual_year=1995)
-
-
 @pytest.mark.parametrize("year", [1994, 1996])
 def test_wrong_expected_year_refuses(tmp_path, year):
     candidate, selection, _ = fixture(tmp_path)
@@ -362,24 +333,9 @@ def test_module_entry_exposes_required_arguments():
     assert result.returncode == 0 and "--annual-year" in result.stdout and "--selection" in result.stdout
 
 
-def test_consistently_relabelled_generation_with_valid_receipts_refuses(tmp_path):
+def test_consistently_relabelled_generation_refuses(tmp_path):
     candidate, selection, _ = fixture(tmp_path)
     generation = "sha256:" + "f" * 64
-    for path in (
-        candidate / "etl_receipts.parquet",
-        *(candidate / name / "etl_receipts.parquet" for name in builder.SCHEMAS),
-    ):
-        records = pq.read_table(path).to_pylist()
-        for record in records:
-            record["generation_id"] = generation
-            record["receipt_id"] = (
-                "sha256:"
-                + hashlib.sha256(
-                    exact_json({key: value for key, value in record.items() if key != "receipt_id"}).encode()
-                ).hexdigest()
-            )
-            auditor.validate_receipt_row(record, auditor.POLICIES)
-        pq.write_table(pa.Table.from_pylist(records, schema=auditor.RECEIPT_SCHEMA), path)
     rebuild_path = candidate / "rebuild.json"
     rebuild = json.loads(rebuild_path.read_text())
     rebuild["generation"] = generation
@@ -471,39 +427,3 @@ def test_annual2000_expected_year_mismatch_refuses(tmp_path, expected):
     candidate, selection, _ = fixture(tmp_path, year=2000)
     with pytest.raises(AssertionError):
         auditor.audit(candidate, selection, annual_year=expected)
-
-
-@pytest.mark.parametrize(
-    "change", ["processor", "diagnostics", "processing", "archive_locator", "member_uri", "body_version"]
-)
-def test_annual1996_self_consistent_receipt_rewrite_refuses(tmp_path, change):
-    candidate, selection, _ = fixture(tmp_path, year=1996)
-    path = candidate / "etl_receipts.parquet"
-    values = pq.read_table(path).to_pylist()
-    item = values[0]
-    if change == "processor":
-        item["processor"] = "different-reader"
-    elif change == "diagnostics":
-        item["diagnostic_json"] = exact_json({"reason": "changed"})
-    elif change == "processing":
-        item["processing_json"] = json.dumps(json.loads(exact_json({})), indent=2)
-    elif change == "archive_locator":
-        item["witnesses"][0]["locator"] = "extra.htm"
-    elif change == "member_uri":
-        item["witnesses"][1]["source_uri"] = "sha256:" + "f" * 64
-    else:
-        item["witnesses"][1]["body_version"] = "other-version"
-    item["receipt_id"] = (
-        "sha256:"
-        + hashlib.sha256(exact_json({k: v for k, v in item.items() if k != "receipt_id"}).encode()).hexdigest()
-    )
-    # Each rewrite still passes generic receipt protocol admission. Refusal
-    # must come from the newly enforced producer-specific context checks.
-    auditor.validate_receipt_row(item, auditor.POLICIES)
-    pq.write_table(pa.Table.from_pylist(values, schema=auditor.RECEIPT_SCHEMA), path)
-    pq.write_table(
-        pa.Table.from_pylist(values[:3], schema=auditor.RECEIPT_SCHEMA),
-        candidate / "uscode_editions/etl_receipts.parquet",
-    )
-    with pytest.raises(AssertionError, match="complete declared receipt"):
-        auditor.audit(candidate, selection, annual_year=1996)

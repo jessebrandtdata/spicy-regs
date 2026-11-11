@@ -1,7 +1,6 @@
-"""Complete tiny XML originals exercise body and receipt audit invariants."""
+"""Complete tiny XML originals exercise the body audit invariants."""
 
 import io
-import hashlib
 import json
 import zipfile
 
@@ -11,7 +10,6 @@ import pytest
 
 from spicy_regs.sources import uscode_editions as builder
 from spicy_regs.sources import uscode_xml_audit as auditor
-from spicy_regs.etl_receipts import exact_json
 
 
 XML = b"""<uscDoc xmlns="http://xml.house.gov/schemas/uslm/1.0" xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -140,61 +138,44 @@ def test_complete_order_multiplicity_and_native_observation_are_checked(tmp_path
         auditor.audit(candidate, selection)
 
 
-@pytest.mark.parametrize("change", ["extra", "missing", "binding", "witness", "generation"])
-def test_all_combined_and_shard_receipts_are_checked(tmp_path, change):
-    candidate, selection = fixture(tmp_path)
-    path = candidate / "etl_receipts.parquet"
-    values = pq.read_table(path).to_pylist()
-    if change == "extra":
-        values.append(values[-1])
-    elif change == "missing":
-        values.pop()
-    else:
-        if change == "binding":
-            values[0]["subject_version"] = "sha256:" + "f" * 64
-        elif change == "witness":
-            values[0]["witnesses"][1]["locator"] = "wrong.xml"
-        else:
-            values[0]["generation_id"] = "sha256:" + "f" * 64
-        pq.write_table(
-            pa.Table.from_pylist(values[:1], schema=auditor.RECEIPT_SCHEMA),
-            candidate / "uscode_editions/etl_receipts.parquet",
-        )
-    pq.write_table(pa.Table.from_pylist(values, schema=auditor.RECEIPT_SCHEMA), path)
-    with pytest.raises((AssertionError, ValueError, StopIteration)):
-        auditor.audit(candidate, selection)
+APPENDIX = XML.replace(
+    b"<dc:type>USCTitle</dc:type><docNumber>1</docNumber>", b"<dc:type>USCTitleAppendix</dc:type><docNumber>5a</docNumber>"
+).replace(b'identifier="/us/usc/t1"', b'identifier="/us/usc/t5a"')
 
 
-@pytest.mark.parametrize(
-    "change", ["processor", "diagnostics", "processing", "archive_locator", "member_uri", "body_version"]
-)
-def test_self_consistent_receipt_rewrite_cannot_change_declared_context(tmp_path, change):
-    candidate, selection = fixture(tmp_path)
-    path = candidate / "etl_receipts.parquet"
-    values = pq.read_table(path).to_pylist()
-    item = values[0]
-    if change == "processor":
-        item["processor"] = "different-reader"
-    elif change == "diagnostics":
-        item["diagnostic_json"] = exact_json({"reason": "changed"})
-    elif change == "processing":
-        item["processing_json"] = exact_json({"edition_id": "changed"})
-    elif change == "archive_locator":
-        item["witnesses"][0]["locator"] = "extra.xml"
-    elif change == "member_uri":
-        item["witnesses"][1]["source_uri"] = "sha256:" + "f" * 64
-    else:
-        item["witnesses"][1]["body_version"] = "other-version"
-    item["receipt_id"] = (
-        "sha256:"
-        + hashlib.sha256(exact_json({k: v for k, v in item.items() if k != "receipt_id"}).encode()).hexdigest()
-    )
-    pq.write_table(pa.Table.from_pylist(values, schema=auditor.RECEIPT_SCHEMA), path)
-    pq.write_table(
-        pa.Table.from_pylist(values[:1], schema=auditor.RECEIPT_SCHEMA),
-        candidate / "uscode_editions/etl_receipts.parquet",
-    )
-    with pytest.raises((AssertionError, ValueError)):
+def corpus_fixture(tmp_path, members):
+    original = tmp_path / "corpus.zip"
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as z:
+        for name, body in members:
+            z.writestr(name, body)
+    original.write_bytes(stream.getvalue())
+    selection = tmp_path / "selection.json"
+    spec = {"kind": "release-point-corpus", "release_point": "119-103", "path": original.name,
+            "sha256": auditor.sha(original)}
+    selection.write_text(json.dumps({"format": "spicy-uscode-edition-inputs", "version": 1, "sources": [spec]}))
+    candidate = tmp_path / "candidate"
+    builder.build(selection, candidate)
+    return candidate, selection
+
+
+def test_a_whole_release_point_corpus_is_audited_member_by_member(tmp_path):
+    candidate, selection = corpus_fixture(tmp_path, [("usc01.xml", XML), ("usc05A.xml", APPENDIX)])
+    result = auditor.audit(candidate, selection)
+    assert result["status"] == "verified-complete-selected-xml119-103-corpus"
+    assert result["complete_original_members"] == 2
+    assert result["rows"] == {"uscode_editions": 2, "uscode_edition_structure": 14, "uscode_edition_sections": 12}
+    # The report pins every file it read, as the additive preparation requires.
+    assert str(candidate / "rebuild.json") in result["evidence_sha256"]
+    editions = records(candidate, "uscode_editions")
+    assert [e["title"] for e in editions] == ["01", "05a"]
+    assert json.loads(editions[1]["metadata_json"])["document_type"] == "USCTitleAppendix"
+
+
+def test_a_corpus_member_of_another_title_refuses(tmp_path):
+    candidate, selection = corpus_fixture(tmp_path, [("usc01.xml", XML), ("usc05A.xml", APPENDIX)])
+    corrupt(candidate, "uscode_editions", lambda values: values[1].update(title="05"))
+    with pytest.raises(AssertionError, match="complete edition fields"):
         auditor.audit(candidate, selection)
 
 

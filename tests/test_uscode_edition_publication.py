@@ -1,4 +1,8 @@
-"""Small native fixtures exercise additive packaging, never original archive readers."""
+"""Small native fixtures exercise additive packaging, never original archive readers.
+
+The live prior still carries the receipts of the generations before retirement, so ``setup`` builds its prior with
+receipts under a catalog that has not retired them yet; the addition then leaves them behind.
+"""
 
 import hashlib
 import json
@@ -8,19 +12,36 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from spicy_regs import generations, uscode_edition_publication as addition
+from spicy_regs import generations, subject_catalog, uscode_edition_publication as addition
 from spicy_regs.etl_receipts import ReceiptContext, combine_receipts, write_dataset
+from spicy_regs.parquet_rows import write_rows
+from spicy_regs.source_evidence import JOURNAL, is_original
 from spicy_regs.sources import publication
-from spicy_regs.sources.uscode_editions import POLICIES
+from spicy_regs.sources.uscode_editions import CAPTURE_STAGE, POLICIES
+
+URL = "https://uscode.house.gov/download/releasepoints/us/pl/119/138/xml_uscAll@119-138.zip"
+OBSERVED_AT = "2026-11-11T09:23:14Z"
 
 
 def digest(path):
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def native(root, prefix, count=1):
+def acquired(directory, body):
+    """What ``acquire`` leaves: the original in the raw archive and the evidence journaling its download."""
+    from spicy_docs.transport.captured import CapturedBodyResponse
+    from spicy_regs.pipelines.raw_releases import open_raw, raw_original
+    from spicy_regs.source_evidence import acquisition_evidence
+
+    with acquisition_evidence(addition.FAMILY, output_dir=directory) as evidence:
+        captured = evidence.capture(CapturedBodyResponse(URL, URL, 200, None, OBSERVED_AT, body), stage=CAPTURE_STAGE)
+    return raw_original(open_raw(), captured["sha256"], captured["byte_size"]), evidence.artifact_dir
+
+
+def native(root, prefix, count=1, *, receipts=False):
+    """A prior's tables (with the receipts the live one still has) or an accepted candidate's, with its original."""
     root.mkdir()
-    paths, receipts, outputs = [], [], {}
+    paths, shards, outputs = [], [], {}
     for name, policy in POLICIES.items():
         records = []
         for i in range(count):
@@ -36,53 +57,71 @@ def native(root, prefix, count=1):
                                                    "sha256": "sha256:" + "a" * 64, "locator": str(i)}],
                                      {"nested": [None, "", {"value": 1}]})
             records.append((row, context))
-        subject, receipt = write_dataset(records, root / name, policy, validation_backend="reference")
-        assert subject is not None and receipt is not None
+        if receipts:
+            subject, shard = write_dataset(records, root / name, policy, validation_backend="reference")
+            assert subject is not None
+            shards.append(shard)
+        else:
+            (root / name).mkdir()
+            subject = write_rows((row for row, _ in records), root / name / (name + ".parquet"), policy.subject_schema)
         paths.append(subject)
-        receipts.append(receipt)
         outputs[name] = {"path": str(subject.relative_to(root)), "rows": count, "sha256": digest(subject)}
-    combine_receipts(receipts, root / "etl_receipts.parquet")
+    if receipts:
+        combine_receipts(shards, root / "etl_receipts.parquet")
+    original, acquisition = acquired(root / "acquire", b"publisher bytes of " + prefix.encode())
+    source = {"kind": "release-point-corpus", "release_point": "119-138", "sha256": digest(original)}
     selection = root / "selection.json"
-    selection.write_text(json.dumps({"sources": [{"kind": "release-point-corpus", "release_point": prefix,
-                                                  "path": "/private/source.zip", "sha256": "sha256:" + "b" * 64}]}))
+    selection.write_text(json.dumps({"sources": [{**source, "path": str(original)}]}))
     build = root / "rebuild.json"
     build.write_text(json.dumps({"status": "source-only-built", "generation": prefix + "-original-generation",
-                                "outputs": outputs, "baseline_inputs": []}))
+                                 "outputs": outputs, "baseline_inputs": [],
+                                 "inputs": [{**source, "path": str(original)}]}))
     audit = root / "audit.json"
     audit.write_text(json.dumps({"status": "verified-complete-selected-fixture", "verdict": "APPROVE",
         "generation": prefix + "-original-generation", "rows": {name: count for name in POLICIES},
         "selection_sha256": digest(selection),
-        "evidence_sha256": {str(p): digest(p) for p in [*paths, root / "etl_receipts.parquet", selection, build]}}))
-    return paths, {"path": str(audit), "sha256": digest(audit), "bytes": audit.stat().st_size}
+        "evidence_sha256": {str(p): digest(p) for p in [*paths, selection, build]}}))
+    return paths, {"path": str(audit), "sha256": digest(audit), "bytes": audit.stat().st_size}, acquisition
+
+
+def entry(directory, published_at="2026-10-13T00:00:00Z"):
+    """The index entry a publication of ``directory`` would write, receipts included when it has them."""
+    root = json.loads((directory / "artifact.json").read_text())
+    spec = root["spec"]
+    value = {
+        "logicalId": root["logicalId"], "artifactDigest": root["artifactDigest"],
+        "prefix": "generations/uscode-editions/" + root["artifactDigest"].removeprefix("sha256:"),
+        "publishedAt": published_at,
+        "tables": {k: {**v, "byteSize": (directory / k).stat().st_size, "sha256": digest(directory / k)}
+                   for k, v in spec["tables"].items()},
+    }
+    if "etlReceipts" in spec:
+        value["etlReceipts"] = {**{k: v for k, v in spec["etlReceipts"].items() if k != "policies"},
+                                "sha256": digest(directory / "etl_receipts.parquet"),
+                                "byteSize": (directory / "etl_receipts.parquet").stat().st_size,
+                                "datasets": list(POLICIES)}
+    snapshot = publication.empty_index()
+    snapshot["families"][addition.FAMILY] = value
+    return snapshot, root["artifactDigest"]
 
 
 def setup(tmp_path, *, old_count=1, new_prefix="new", new_count=1):
     old_source = tmp_path / "old-input"
-    files, _ = native(old_source, "old", old_count)
-    prior = tmp_path / "prior"
-    artifact = generations.build_generation(prior, family=addition.FAMILY, files=files,
-        expected_keys=[p.name for p in files], receipt_path=old_source / "etl_receipts.parquet",
-        receipt_policies=list(POLICIES.values()), receipt_generation_id="old-original-generation")
-    snapshot = publication.empty_index()
-    spec = artifact.root["spec"]
-    snapshot["families"][addition.FAMILY] = {
-        "logicalId": artifact.pin.logical_id, "artifactDigest": artifact.pin.artifact_digest,
-        "prefix": "generations/uscode-editions/" + artifact.pin.artifact_digest.removeprefix("sha256:"),
-        "publishedAt": "2026-10-13T00:00:00Z",
-        "tables": {k: {**v, "byteSize": (prior / k).stat().st_size, "sha256": digest(prior / k)}
-                   for k, v in spec["tables"].items()},
-        "etlReceipts": {k: v for k, v in spec["etlReceipts"].items() if k != "policies"},
-    }
-    snapshot["families"][addition.FAMILY]["etlReceipts"].update(
-        sha256=digest(prior / "etl_receipts.parquet"), byteSize=(prior / "etl_receipts.parquet").stat().st_size,
-        datasets=list(POLICIES))
+    with pytest.MonkeyPatch.context() as before_retirement:
+        before_retirement.setattr(subject_catalog, "retired_receipt_datasets", frozenset)
+        files, _, _ = native(old_source, "old", old_count, receipts=True)
+        prior = tmp_path / "prior"
+        generations.build_generation(prior, family=addition.FAMILY, files=files,
+            expected_keys=[p.name for p in files], receipt_path=old_source / "etl_receipts.parquet",
+            receipt_policies=list(POLICIES.values()), receipt_generation_id="old-original-generation")
+    snapshot, expected_prior = entry(prior)
     candidate = tmp_path / "candidate"
-    _, audit = native(candidate, new_prefix, new_count)
-    return dict(prior_directory=prior, candidate_directory=candidate, audit_pin=audit,
-                read_snapshot=snapshot, expected_prior=artifact.pin.artifact_digest, output=tmp_path / "addition")
+    _, audit, acquisition = native(candidate, new_prefix, new_count)
+    return dict(prior_directory=prior, candidate_directory=candidate, acquisition=acquisition, audit_pin=audit,
+                read_snapshot=snapshot, expected_prior=expected_prior, output=tmp_path / "addition")
 
 
-def test_append_preserves_order_all_values_and_original_receipts_without_copy(tmp_path, monkeypatch):
+def test_append_preserves_order_and_values_without_copy_and_leaves_retired_receipts(tmp_path, monkeypatch):
     args = setup(tmp_path, old_count=3, new_count=2)
     before = {p: (p.stat().st_ino, digest(p)) for root in [args['prior_directory'], args['candidate_directory']]
               for p in root.rglob('*.parquet')}
@@ -90,8 +129,8 @@ def test_append_preserves_order_all_values_and_original_receipts_without_copy(tm
     original = generations.build_generation
 
     def build(directory, **kwargs):
-        captured.update({p.name: p.stat().st_ino for p in [*kwargs['files'], kwargs['receipt_path']]})
-        assert kwargs['owned_output_root'] == args['output'] and kwargs['adopt_owned_receipt'] is True
+        captured.update({p.name: p.stat().st_ino for p in kwargs['files']})
+        assert kwargs['owned_output_root'] == args['output'] and kwargs.get('receipt_path') is None
         return original(directory, **kwargs)
 
     monkeypatch.setattr(generations, 'build_generation', build)
@@ -100,33 +139,54 @@ def test_append_preserves_order_all_values_and_original_receipts_without_copy(tm
     artifact = generations.verify_generation(target)
     assert artifact.root['spec']['readSnapshot'] == args['read_snapshot']
     assert artifact.root['spec']['publicationStatus'] == 'complete-family'
+    assert 'etlReceipts' not in artifact.root['spec'] and not (target / 'etl_receipts.parquet').exists()
     assert any(i['role'] == 'prior-generation' and i['artifactDigest'] == args['expected_prior']
                for i in artifact.root['inputs'])
     for name in POLICIES:
         expected = pq.read_table(args['prior_directory'] / (name + '.parquet')).to_pylist()
         expected += pq.read_table(args['candidate_directory'] / name / (name + '.parquet')).to_pylist()
         assert pq.read_table(target / (name + '.parquet')).to_pylist() == expected
-    receipts = pq.read_table(args['prior_directory'] / 'etl_receipts.parquet').to_pylist()
-    receipts += pq.read_table(args['candidate_directory'] / 'etl_receipts.parquet').to_pylist()
-    assert pq.read_table(target / 'etl_receipts.parquet').to_pylist() == receipts
-    assert {r['generation_id'] for r in receipts} == {'old-original-generation', 'new-original-generation'}
+        assert pq.ParquetFile(target / (name + '.parquet')).metadata.row_group(0).column(0).compression == 'ZSTD'
     assert all((target / name).stat().st_ino == inode for name, inode in captured.items())
     assert all((p.stat().st_ino, digest(p)) == pin for p, pin in before.items())
-    assert result['payloadCopies'] == 0 and result['published'] is False
-    journal = next(args['output'].glob('source-evidence/*/artifact/journal.jsonl')).read_text()
-    assert '/private/source.zip' not in journal
+    assert result['payloadCopies'] == 0 and result['published'] is False and result['sourceReads'] == 1
+    # The accepted original is the evidence's one publisher original, with the download record of its acquire
+    # capture and that acquisition's pin, never a local path.
+    journal = [json.loads(line) for line in (Path(result['evidence']) / JOURNAL).read_text().splitlines()]
+    acquire = [json.loads(line) for line in (args['acquisition'] / JOURNAL).read_text().splitlines()]
+    capture, = [e for e in acquire if e['event'] == 'capture']
+    retained, = [e for e in journal if is_original(e)]
+    assert (retained['sha256'], retained['original_location'], retained['source_url']) == (capture['sha256'], URL, URL)
+    assert (retained['observed_at'], retained['status_code'], retained['acquisition_capture_id']) == (
+        OBSERVED_AT, 200, capture['capture_id'])
+    root = json.loads((args['acquisition'] / 'artifact.json').read_text())
+    assert retained['acquisition_evidence'] == {'logicalId': root['logicalId'], 'artifactDigest': root['artifactDigest']}
+    assert str(tmp_path) not in json.dumps(journal)
+
+
+def test_a_prior_without_receipts_takes_the_next_addition(tmp_path):
+    first = Path(addition.prepare_addition(**setup(tmp_path))['generation'])
+    snapshot, expected_prior = entry(first, "2026-11-11T00:00:00Z")
+    candidate = tmp_path / 'later'
+    _, audit, acquisition = native(candidate, 'later')
+    result = addition.prepare_addition(prior_directory=first, candidate_directory=candidate, acquisition=acquisition,
+                                       audit_pin=audit,
+                                       read_snapshot=snapshot, expected_prior=expected_prior,
+                                       output=tmp_path / 'second')
+    editions = pq.read_table(Path(result['generation']) / 'uscode_editions.parquet').column('edition_id')
+    assert editions.to_pylist() == ['old-0', 'new-0', 'later-0']
 
 
 def test_refuses_overlap_without_replacing_prior(tmp_path):
     args = setup(tmp_path, new_prefix='old')
-    prior_pin = digest(args['prior_directory'] / 'etl_receipts.parquet')
+    prior_pin = digest(args['prior_directory'] / 'uscode_editions.parquet')
     with pytest.raises(ValueError, match='Overlapping or duplicate'):
         addition.prepare_addition(**args)
-    assert digest(args['prior_directory'] / 'etl_receipts.parquet') == prior_pin
+    assert digest(args['prior_directory'] / 'uscode_editions.parquet') == prior_pin
     assert not (args['output'] / 'generation/artifact.json').exists()
 
 
-@pytest.mark.parametrize('change', ['prior', 'membership', 'declaration', 'audit', 'member', 'schema'])
+@pytest.mark.parametrize('change', ['prior', 'membership', 'declaration', 'audit', 'member', 'schema', 'original'])
 def test_refuses_wrong_prior_membership_audit_content_or_schema(tmp_path, change):
     args = setup(tmp_path)
     if change == 'prior':
@@ -137,6 +197,8 @@ def test_refuses_wrong_prior_membership_audit_content_or_schema(tmp_path, change
         args['read_snapshot']['families'][addition.FAMILY]['tables']['uscode_editions.parquet']['rows'] = 999
     elif change == 'audit':
         args['audit_pin']['sha256'] = 'sha256:' + 'f' * 64
+    elif change == 'original':
+        _, args['acquisition'] = acquired(tmp_path / 'other-acquire', b'other publisher bytes')
     else:
         path = args['candidate_directory'] / 'uscode_editions/uscode_editions.parquet'
         if change == 'member':
@@ -155,6 +217,15 @@ def test_refuses_wrong_prior_membership_audit_content_or_schema(tmp_path, change
     with pytest.raises((ValueError, KeyError)):
         addition.prepare_addition(**args)
     assert not args['output'].exists()
+
+
+def test_a_relative_or_symlinked_candidate_path_finds_the_audits_resolved_pins(tmp_path, monkeypatch):
+    args = setup(tmp_path)
+    (tmp_path / 'link').symlink_to(args['candidate_directory'])
+    monkeypatch.chdir(tmp_path)
+    for name in ('candidate', 'link'):
+        args['candidate_directory'], args['output'] = Path(name), tmp_path / ('from-' + name)
+        assert addition.prepare_addition(**args)['status'] == 'prepared-additive-uscode-generation'
 
 
 def test_ordered_union_crosses_batch_boundaries_and_checks_multiplicity(tmp_path):

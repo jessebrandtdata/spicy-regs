@@ -92,6 +92,24 @@
    "artifactDigest": "sha256:a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c",
    "publishedAt": "2026-11-11T04:05:38Z",
    "receipts": "generations/roll-call-votes/a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c/etl_receipts.parquet"
+  },
+  "uscode_edition_sections": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
+  },
+  "uscode_edition_structure": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
+  },
+  "uscode_editions": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
   }
  }
 }

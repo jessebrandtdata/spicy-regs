@@ -6,7 +6,7 @@
 
 One native structural occurrence linked to its edition member. Source positions, labels, status and native context remain distinct from section text.
 
-**Coverage.** Sampled. Native structural observations in selected annual XHTML and release-point USLM members. Section-body coverage requires separate content qualification. *(measured 2026-10-10)*
+**Coverage.** Sampled. Native structural observations in the selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138). Section-body coverage requires separate content qualification. *(measured 2026-11-11)*
 
 - **Parquet file:** `uscode_edition_structure.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.

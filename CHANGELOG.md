@@ -17,15 +17,33 @@ Entries link to the pull request that introduced the change.
   (the alias patches as received, whose omitted keys the native `other_names`
   cannot keep), `member_terms.observed_at` and `party_affiliations_state`,
   `member_party_affiliations.input_sha256`, `start_status`, `end_status`,
-  `source_path` and `observed_at`, and `roll_call_votes.source_url`,
+  `source_path`, `observed_at` and `source_json` (the affiliation object as
+  received), and `roll_call_votes.source_url`,
   `match_rule`, `match_action_index`, `match_url` and `conflict_count`.
-  Policies `congress-subjects/3` (`members`, `roll_call_votes`) and `/2`
-  (`member_terms`, `member_party_affiliations`). Every existing column is
+  Policies `congress-subjects/3` (`members`, `roll_call_votes`,
+  `member_party_affiliations`) and `/2` (`member_terms`). Every existing column is
   unchanged, `member_vote_terms` still leaves out a vote with no established
   term, and scorecard analysis and committee rosters read the published
   tables. The votes job's limit drops from 60 to 30 minutes. The last
   generations with receipts are pinned; the equality proof and the first-night
   checks are in `docs/votes-receipt-archive.md`.
+
+- **The U.S. Code edition tables publish without per-row receipts, and the
+  family takes release point 119-138** (ss-coca). `uscode_editions`,
+  `uscode_edition_structure` and `uscode_edition_sections` are marked
+  `receipts_retired`; their receipts held no field beyond the rows, and each
+  row already names its archive and member by digest. The last generation with
+  receipts (`792cbaa7`, the 2000 edition and 119-102) is pinned. The builder
+  writes plain tables; a new `acquire` command captures a release point's
+  corpus zip into the raw archive with its capture receipt; `uscode_xml_audit`
+  now audits a whole release-point corpus, member by member, and both auditors
+  report `evidence_sha256`; the additive preparation leaves the prior's
+  receipts behind, writes the union in zstd, and retains the addition's
+  original into the generation's evidence with its `acquire` capture's
+  download record and that acquisition evidence's pin. The family is published by hand with
+  `publish-local-generation`. Editions stay selected: 119-138 is added beside
+  the 2000 edition and 119-102, whose rows are unchanged
+  (`docs/uscode-editions.md`).
 - **Court opinions and the three citation tables publish without per-row
   receipts** (ss-vse3). `court_opinions`, `court_citations`,
   `court_citation_map` and `court_parentheticals` are rebuilt whole from one

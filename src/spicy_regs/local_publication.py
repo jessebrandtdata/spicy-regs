@@ -25,7 +25,8 @@ from spicy_regs.sources.publication import PublicationError
 
 #: Families refreshed by hand. A family with a hosted workflow is published by that workflow, never from here.
 #: court-opinions has none: its 51.5 GiB export takes longer to download than a hosted job may run
-#: (docs/court-receipt-archive.md).
+#: (docs/court-receipt-archive.md). uscode-editions has none: each edition is added by an explicit decision, after
+#: an independent audit of its original (docs/uscode-editions.md).
 LOCAL_FAMILIES = frozenset({
     "administration-policy",
     "court-opinions",
@@ -35,6 +36,7 @@ LOCAL_FAMILIES = frozenset({
     "house-disbursements",
     "ofac-sanctions",
     "treasury-fiscal",
+    "uscode-editions",
 })
 RAW_ROOT_ENV = "SPICYGOV_RAW_ROOT"
 #: Either one loosens the publisher's shrink guard (``r2._assert_upload_safe``).

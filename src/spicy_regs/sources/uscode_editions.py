@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict
-from functools import partial
 import gzip
 import hashlib
 import inspect
@@ -17,13 +16,19 @@ from importlib import metadata
 import json
 from pathlib import Path
 import platform
+import sys
 from tempfile import TemporaryDirectory
 
 import pyarrow as pa
 
 from spicy_docs.sources.uscode import ReleasePoint, TitleSelection
 from spicy_docs.sources.uscode import annual, archive, structure, section_bodies
-from spicy_regs.etl_receipts import DatasetPolicy, ReceiptContext, combine_receipts, write_dataset
+from spicy_regs.etl_receipts import DatasetPolicy
+from spicy_regs.parquet_rows import write_rows
+
+FAMILY = "uscode-editions"
+#: The journal stage of a release point's corpus zip, captured into the shared raw archive.
+CAPTURE_STAGE = "uscode-release-point-corpus"
 
 MAX_ARCHIVE_BYTES = 192 * 1024**2
 MAX_MEMBER_BYTES = 128 * 1024**2
@@ -31,6 +36,7 @@ MAX_EXPANDED_BYTES = 2 * 1024**3
 # Content rows repeat large body/observation text during Arrow conversion.
 # This caps held records, not bytes or process memory.
 CONTENT_WRITE_BATCH_SIZE = 64
+WRITE_BATCH_SIZE = 2_000
 
 EDITION_COLUMNS = (
     "edition_id",
@@ -72,6 +78,9 @@ SCHEMAS = {
     "uscode_edition_structure": pa.schema([(name, pa.string()) for name in STRUCTURE_COLUMNS]),
     "uscode_edition_sections": pa.schema([(name, pa.string()) for name in CONTENT_COLUMNS]),
 }
+#: Each table's installed declaration: schema and identity. Their receipts are retired (``receipts_retired`` in
+#: ``etl_policies/``): a row's evidence is its edition row's archive and member digests, the selected original in the
+#: shared raw archive, and the generation's source-evidence journal.
 POLICIES = {
     name: DatasetPolicy(
         name,
@@ -153,8 +162,8 @@ def build(manifest_path: Path, output_dir: Path) -> dict:
         staged.mkdir()
         streams = {name: gzip.open(staged / (name + ".jsonl.gz"), "wt", encoding="utf-8") for name in SCHEMAS}
 
-        def emit(table: str, row: dict, context: ReceiptContext) -> None:
-            streams[table].write(_json({"row": row, "context": asdict(context)}) + "\n")
+        def emit(table: str, row: dict) -> None:
+            streams[table].write(_json(row) + "\n")
             counts[table] += 1
 
         try:
@@ -185,15 +194,6 @@ def build(manifest_path: Path, output_dir: Path) -> dict:
                     member_count += 1
                     metadata = entry.metadata
                     edition_id = _identity(selected, archive_hash, member_count, entry.name, entry.sha256)
-                    context = ReceiptContext(
-                        generation,
-                        edition_id,
-                        "uscode-editions-public-v2",
-                        [
-                            {"source_id": archive_hash, "sha256": archive_hash, "source_uri": archive_hash},
-                            {"source_id": edition_id, "sha256": entry.sha256, "locator": entry.name},
-                        ],
-                    )
                     annual_metadata = metadata if kind == "annual" else None
                     title = None if metadata is None else (metadata.title_enum if annual_metadata else metadata.title)
                     emit(
@@ -215,7 +215,6 @@ def build(manifest_path: Path, output_dir: Path) -> dict:
                             "member_role": "title" if metadata is not None else "supporting-file",
                             "metadata_json": _json(asdict(metadata)) if metadata is not None else None,
                         },
-                        context,
                     )
                     if metadata is None:
                         return
@@ -243,7 +242,6 @@ def build(manifest_path: Path, output_dir: Path) -> dict:
                                 "native_status": status,
                                 "source_observation_json": _json(asdict(value)),
                             },
-                            context,
                         )
 
                     def section_content(value) -> None:
@@ -267,7 +265,6 @@ def build(manifest_path: Path, output_dir: Path) -> dict:
                                 "body_text": value.body_text,
                                 "source_observation_json": _json(asdict(value)),
                             },
-                            context,
                         )
 
                     if kind == "annual":
@@ -326,30 +323,16 @@ def build(manifest_path: Path, output_dir: Path) -> dict:
         finally:
             for stream in streams.values():
                 stream.close()
-        receipt_paths = []
         outputs = {}
         for table, policy in POLICIES.items():
             records = staged / (table + ".jsonl.gz")
+            (staged / table).mkdir()
+            subject = staged / table / (table + ".parquet")
+            batch = CONTENT_WRITE_BATCH_SIZE if table == "uscode_edition_sections" else WRITE_BATCH_SIZE
             with gzip.open(records, "rt", encoding="utf-8") as stream:
-
-                def rows():
-                    for line in stream:
-                        item = json.loads(line)
-                        yield item["row"], ReceiptContext(**item["context"])
-
-                writer = partial(write_dataset, batch_size=CONTENT_WRITE_BATCH_SIZE) if table == "uscode_edition_sections" else write_dataset
-                subject, receipts = writer(
-                    rows(), staged / table, policy, validation_backend="reference"
-                )
-                assert subject is not None
-                outputs[table] = {
-                    "rows": counts[table],
-                    "sha256": _file_digest(subject),
-                    "path": str(subject.relative_to(staged)),
-                }
-                receipt_paths.append(receipts)
+                write_rows(map(json.loads, stream), subject, policy.subject_schema, batch_size=batch)
+            outputs[table] = {"rows": counts[table], "sha256": _file_digest(subject), "path": str(subject.relative_to(staged))}
             records.unlink()
-        combine_receipts(receipt_paths, staged / "etl_receipts.parquet")
         if manifest_path.read_bytes() != raw_manifest or _code_pins() != code_pins:
             raise ValueError("U.S. Code manifest or reader changed during build")
         for source in inputs:
@@ -376,11 +359,50 @@ def build(manifest_path: Path, output_dir: Path) -> dict:
     return receipt
 
 
-def main() -> None:
+def acquire(release_point: str, output_dir: Path, *, transport=None) -> dict:
+    """Capture one release point's complete XML corpus zip into the shared raw archive; return its selection entry.
+
+    The owner's acquirer proves every member's native title and release point before the bytes are kept, and the
+    capture's acquisition receipt (URL, time, status, digest) is committed to the raw archive with them. The entry
+    names the archive's own stored file, so the build and the audit read the retained original, not a copy.
+    """
+    from spicy_docs.sources.uscode.acquisition import UsCodeAcquirer, UsCodeAcquisitionBudget
+    from spicy_regs.pipelines.raw_releases import open_raw, raw_original
+    from spicy_regs.source_evidence import acquisition_evidence
+
+    point = ReleasePoint.from_label(release_point)
+    # One request; the timeout bounds each read, not the whole ~110 MB download.
+    budget = UsCodeAcquisitionBudget(
+        max_requests=1, max_bytes=MAX_ARCHIVE_BYTES, timeout_seconds=120.0, min_request_interval_seconds=1.5
+    )
+    with acquisition_evidence(FAMILY, output_dir=Path(output_dir)) as evidence:
+        acquired = UsCodeAcquirer(budget=budget, transport=transport).acquire_corpus(
+            point, max_entry_bytes=MAX_MEMBER_BYTES, max_total_bytes=MAX_EXPANDED_BYTES
+        )
+        captured = evidence.capture(acquired.capture, stage=CAPTURE_STAGE)
+    path = raw_original(open_raw(), captured["sha256"], captured["byte_size"])
+    return {"kind": "release-point-corpus", "release_point": point.label, "path": str(path), "sha256": captured["sha256"]}
+
+
+def main(argv=None) -> None:
+    argv = sys.argv[1:] if argv is None else list(argv)
     parser = argparse.ArgumentParser(description=__doc__)
+    if argv[:1] == ["acquire"]:
+        parser.add_argument("command", choices=["acquire"])
+        parser.add_argument("--release-point", required=True, help="e.g. 119-138")
+        parser.add_argument("--output-dir", required=True, type=Path, help="Where the acquisition evidence is written")
+        parser.add_argument("--selection-out", required=True, type=Path, help="A fresh one-source selection manifest")
+        args = parser.parse_args(argv)
+        if args.selection_out.exists():
+            parser.error(f"--selection-out {args.selection_out} exists")
+        source = acquire(args.release_point, args.output_dir)
+        manifest = {"format": "spicy-uscode-edition-inputs", "version": 1, "sources": [source]}
+        args.selection_out.write_text(json.dumps(manifest, indent=2) + "\n")
+        print(json.dumps({"selection": str(args.selection_out), **source}))
+        return
     parser.add_argument("--manifest", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     result = build(args.manifest, args.output)
     print(json.dumps({key: result[key] for key in ("status", "generation", "outputs")}))
 

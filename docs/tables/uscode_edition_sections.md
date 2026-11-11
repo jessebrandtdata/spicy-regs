@@ -6,7 +6,7 @@
 
 One section, range, stub or other content observation within a selected edition member. Native identifiers, source context and readable text preserve the retained source meaning.
 
-**Coverage.** Sampled. Selected retained annual XHTML and release-point XML members; complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables. *(measured 2026-10-12)*
+**Coverage.** Sampled. The selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138); complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables. *(measured 2026-11-11)*
 
 - **Parquet file:** `uscode_edition_sections.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
