@@ -546,7 +546,7 @@ def _restore_through_selected_priors(tmp_path, selected, route, monkeypatch):
 
         monkeypatch.setattr(regulations_bulk, "_materialize_selected", forced)
     priors = SelectedPriors(tmp_path / "selected", index=empty_index(), public_url="https://example.invalid")
-    monkeypatch.setattr(priors.selected, "select", lambda _, ranged=False: selected)
+    monkeypatch.setattr(priors.selected, "select", lambda _, ranged=False, last_receipts=False: selected)
     try:
         return priors.get(selected.dataset)
     except Exception as error:  # the refusal is the observation

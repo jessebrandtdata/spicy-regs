@@ -48,6 +48,14 @@ ACQUISITION_POLICY = DatasetPolicy(
 )
 
 
+PROMOTED_VERSIONS = {
+    "members": "congress-subjects/3",
+    "member_terms": "congress-subjects/2",
+    "member_party_affiliations": "congress-subjects/2",
+    "roll_call_votes": "congress-subjects/3",
+}
+
+
 def policy(dataset: str) -> DatasetPolicy:
     return DatasetPolicy(
         dataset,
@@ -55,7 +63,10 @@ def policy(dataset: str) -> DatasetPolicy:
         IDENTITIES.get(dataset, ()),
         RECEIPT_FIELDS,
         policy_version=(
-            "congress-subjects/3"
+            # Each moved when its PROMOTED source fields became columns (ss-vse3).
+            PROMOTED_VERSIONS[dataset]
+            if dataset in PROMOTED_VERSIONS
+            else "congress-subjects/3"
             if dataset == "nominations"
             else "congress-subjects/2"
             if dataset

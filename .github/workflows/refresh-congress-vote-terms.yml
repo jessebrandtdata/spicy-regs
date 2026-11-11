@@ -22,7 +22,10 @@ jobs:
     with:
       command: run-rollup-roll-call-votes
       require_bulk: true
-      timeout_minutes: 60
+      # No receipts since ss-vse3: on 2026-11-11 the job took 50 minutes, 22 of them writing the two tables' 10.6M
+      # receipts and 9 restoring its prior through them, against 25 s of builder. 30 keeps setup, the vote reads of
+      # a busy night and the upload; the first night restores roll_call_votes through its last receipts by range.
+      timeout_minutes: 30
       free_disk: true
       skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
   members:

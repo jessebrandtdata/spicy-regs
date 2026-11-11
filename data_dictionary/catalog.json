@@ -2365,81 +2365,6 @@
         ]
       },
       {
-        "dataset": "member_party_affiliations",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id",
-          "term_index",
-          "affiliation_index"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_terms",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id",
-          "term_index"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_vote_terms",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "vote_id",
-          "member_key"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_votes",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "vote_id",
-          "member_key"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "members",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "bioguide_id"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
         "dataset": "native_legal_reference_reads",
         "receipt_only": false,
         "policy_version": "legislative-documents/2",
@@ -2629,20 +2554,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "roll_call_votes",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "vote_id"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
         ]
       },
       {
@@ -7290,10 +7201,10 @@
       "table": "member_vote_terms",
       "label": "Member vote terms",
       "summary": "The term each member vote counts toward (delivery decision 2). A vote on `vote_day` counts toward the term with `term_start <= vote_day < term_end`, so the day one Congress ends and the next begins belongs to the new term. Only where that finds none is an inclusive end accepted, and only if exactly one term qualifies. The term type follows the chamber (`rep`, `sen`); a term with no end date never matches. Built by `build_member_vote_terms` from `member_votes`, whose `bioguide_id` the votes rollup resolves for a Senate row (from its LIS id) and for a House row of 1990-2002 (from its printed label), and `member_terms`. Join to `member_votes` on (`vote_id`, `member_key`) and to `member_terms` on (`bioguide_id`, `term_index`).",
-      "coverage": "Derived, and bounded by its inputs: one row for every `member_votes` row, matched to the member's term on the vote date.",
+      "coverage": "Derived, and bounded by its inputs: one row for every `member_votes` row whose term the rule establishes (`half_open` or `inclusive_end`). A vote it gives no term is left out: it is the `member_votes` row with no row here.",
       "kind": "derived",
-      "measured_on": "2026-09-23",
-      "data_quality": "On 2026-09-23 all but 18 votes matched a half-open term: 15 matched only an inclusive end date and 3 matched no term, exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).",
+      "measured_on": "2026-11-11",
+      "data_quality": "On 2026-11-11, of 10,563,782 votes, 232 matched only an inclusive end date, 12 matched no term and 2 named no resolvable member; those 14 are left out. On 2026-09-23 the same rule matched all but 18 of a frozen selection exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).",
       "columns": [
         "vote_id",
         "member_key",
@@ -9525,7 +9436,12 @@
         "modify_date",
         "tie_breaker_by_whom",
         "tie_breaker_vote",
-        "party_totals"
+        "party_totals",
+        "source_url",
+        "match_rule",
+        "match_action_index",
+        "match_url",
+        "conflict_count"
       ]
     },
     {
@@ -9584,7 +9500,10 @@
         "name_nickname",
         "name_middle",
         "name_suffix",
-        "name_official_full"
+        "name_official_full",
+        "roster",
+        "observed_at",
+        "other_names_json"
       ]
     },
     {
@@ -9603,7 +9522,9 @@
         "term_end",
         "term_state",
         "term_party",
-        "term_district"
+        "term_district",
+        "observed_at",
+        "party_affiliations_state"
       ]
     },
     {
@@ -9622,7 +9543,12 @@
         "affiliation_start",
         "affiliation_end",
         "term_party",
-        "caucus"
+        "caucus",
+        "input_sha256",
+        "start_status",
+        "end_status",
+        "source_path",
+        "observed_at"
       ]
     },
     {

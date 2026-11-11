@@ -14,6 +14,10 @@ from tests.test_congress_receipts import shaped
 from tests.test_subject_receipt_rollups import select_bundle
 from tests.test_votes_batch_current import WITNESS
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 TABLE = [("member_votes", "position"), ("member_vote_terms", "term_match")]
 
 

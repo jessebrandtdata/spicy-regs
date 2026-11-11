@@ -9,6 +9,23 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **Members, roll-call votes and member vote terms publish without per-row
+  receipts** (ss-vse3). The six tables of the nightly votes refresh re-uploaded
+  4.7 GB of receipts a night and spent about 31 of the votes job's 50 minutes
+  and most of the terms job's 25 on them. The fields only the receipts held are
+  columns at the end: `members.roster`, `observed_at` and `other_names_json`
+  (the alias patches as received, whose omitted keys the native `other_names`
+  cannot keep), `member_terms.observed_at` and `party_affiliations_state`,
+  `member_party_affiliations.input_sha256`, `start_status`, `end_status`,
+  `source_path` and `observed_at`, and `roll_call_votes.source_url`,
+  `match_rule`, `match_action_index`, `match_url` and `conflict_count`.
+  Policies `congress-subjects/3` (`members`, `roll_call_votes`) and `/2`
+  (`member_terms`, `member_party_affiliations`). Every existing column is
+  unchanged, `member_vote_terms` still leaves out a vote with no established
+  term, and scorecard analysis and committee rosters read the published
+  tables. The votes job's limit drops from 60 to 30 minutes. The last
+  generations with receipts are pinned; the equality proof and the first-night
+  checks are in `docs/votes-receipt-archive.md`.
 - **Court opinions and the three citation tables publish without per-row
   receipts** (ss-vse3). `court_opinions`, `court_citations`,
   `court_citation_map` and `court_parentheticals` are rebuilt whole from one

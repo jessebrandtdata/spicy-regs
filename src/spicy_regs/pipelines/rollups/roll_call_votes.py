@@ -28,17 +28,21 @@ A dispatch scopes the Congresses (``BILL_FAMILY_CONGRESSES``), the chambers
 (``ROLL_CALL_CHAMBERS``) and the per-run cap (``ROLL_CALL_MAX_VOTES``), which is
 how the 101st-107th House backfill runs: House only, newest first under the
 cap, each run resuming on what the last published.
+
+Both tables publish no per-row receipts (ss-vse3): a held roll call's bill link
+is relinked from its own published columns, ``source_url`` and the ``match_*``
+columns included, and a row's evidence is the run's retained vote files.
 """
 
 from pathlib import Path
 from typing import ClassVar
 
 from spicy_regs.pipelines.rollups.base import make_rollup_app
-from spicy_regs.pipelines.rollups.subject_receipts import SubjectReceiptRollup as RollupPipeline
+from spicy_regs.pipelines.rollups.subject_receipts import SubjectTableRollup
 from spicy_regs.transforms.build_roll_call_votes import ChamberListingRefused, build_roll_call_votes, max_votes_from_env
 
 
-class RollCallVotesRollup(RollupPipeline):
+class RollCallVotesRollup(SubjectTableRollup):
     """House and Senate roll calls and member positions with optional bill links."""
 
     name: ClassVar[str] = "roll-call-votes"
@@ -58,17 +62,17 @@ class RollCallVotesRollup(RollupPipeline):
             try:
                 built = build_roll_call_votes(work, selected_input=selected_input, **kwargs)
             except ChamberListingRefused as refused:
-                # Seal the successful chamber and its receipts before the run reports the refusal.
+                # Publish the successful chamber before the run reports the refusal.
                 self.deferred_failure = refused
                 built = refused.outputs
             if self.source_evidence is not None:
-                # The receipt writer's private stage may be cleaned on failure.
-                # Keep its exact matched processing inputs in the existing audit.
+                # The private build directory may be cleaned on failure. Keep the exact rows
+                # the public tables are mapped from in the run's evidence.
                 for path in built:
                     self.source_evidence.retain_file(path, stage="vote-processing-output", dataset=path.stem)
             return built
 
-        return self.build_receipts(output_dir, builder, max_votes=max_votes_from_env(), evidence=self.source_evidence)
+        return self.build_tables(output_dir, builder, max_votes=max_votes_from_env(), evidence=self.source_evidence)
 
 
 

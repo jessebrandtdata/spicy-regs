@@ -23,3 +23,8 @@ One member, input digest, term index and affiliation index. Literal dates and th
 | `affiliation_end` | `VARCHAR` | Literal nested end date; a missing end does not imply an open interval. |
 | `term_party` | `VARCHAR` | The separate term-level party assertion, not a dated fallback. |
 | `caucus` | `VARCHAR` | Complete affiliation object, retaining absent, null and unknown fields. This column retains the source property caucus. |
+| `input_sha256` | `VARCHAR` | Digest of the complete retained crosswalk JSON bytes. |
+| `start_status` | `VARCHAR` | Calendar spelling status: absent, empty, valid or invalid. |
+| `end_status` | `VARCHAR` | Calendar spelling status: absent, empty, valid or invalid. |
+| `source_path` | `VARCHAR` | JSON pointer to the affiliation in the retained capture. |
+| `observed_at` | `VARCHAR` | Caller-supplied capture instant; not a source affiliation date. |

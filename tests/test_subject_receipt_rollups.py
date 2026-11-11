@@ -11,6 +11,10 @@ from spicy_regs.sources import publication
 from tests.test_congress_receipts import shaped
 from tests.test_legislative_receipts import retained, row
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 class MixedRollup(SubjectReceiptRollup):
     name = "mixed-test"
@@ -100,7 +104,9 @@ def test_mixed_family_restores_both_owners_and_receipt_only_archive(tmp_path, mo
     outputs = first.build_receipts(first_dir, mixed_builder)
     assert {p.name for p in outputs} == {"members.parquet", "laws.parquet"}
     assert "bill_family_archives.parquet" in first.receipt_only_tables
-    assert "observed_at" not in pq.read_schema(first_dir / "members.parquet").names
+    # Its processing fields stay out, except those published since its receipts were retired (ss-vse3), last.
+    assert pq.read_schema(first_dir / "members.parquet").names[-3:] == ["roster", "observed_at", "other_names_json"]
+    assert "observed_at" not in pq.read_schema(first_dir / "members.parquet").names[:-3]
     assert pq.read_table(first_dir / "members.parquet")["fec_ids"].to_pylist() == [["A", "A"]]
     # A law's read outcome is published with the law, and restored below from the same row's receipt.
     assert pq.read_table(first_dir / "laws.parquet")["uslm_outcome"].to_pylist() == ["request_failed"]

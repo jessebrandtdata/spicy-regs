@@ -245,6 +245,20 @@ PROCESSING = {
     .split()),
 }
 
+#: Source fields published as they were received, appended after the mapped columns in this order, for tables that
+#: publish no per-row receipts (ss-vse3): what only the receipts held, or what only their literal text keeps.
+#: ``members.other_names_json`` is the source text beside the native ``other_names``, whose structs cannot tell an
+#: omitted key from a null one (2 of the 5 patches held on 2026-11-11 state a null); the scorecard resolver reads a
+#: missing ``first`` as the member's own. The rest were PROCESSING: capture instants (the merge's version column),
+#: the roster file, the roster digest and path, and the roll call's file URL and bill-link rule, which the votes
+#: builder reads back on every held row.
+PROMOTED = {
+    'members': ('roster', 'observed_at', 'other_names_json'),
+    'member_terms': ('observed_at', 'party_affiliations_state'),
+    'member_party_affiliations': ('input_sha256', 'start_status', 'end_status', 'source_path', 'observed_at'),
+    'roll_call_votes': ('source_url', 'match_rule', 'match_action_index', 'match_url', 'conflict_count'),
+}
+
 INTEGERS = {
     'bill_committee_activities': frozenset({'occurrence'}),
     'cbo_feed_items': frozenset({'congress'}),
@@ -265,7 +279,7 @@ INTEGERS = {
     'members': frozenset('term_count'.split()),
     'press_releases': frozenset('description_chars enclosure_length'.split()),
     'record_issues': frozenset('section_count article_count'.split()),
-    'roll_call_votes': frozenset('yea nay present not_voting member_vote_count'.split()),
+    'roll_call_votes': frozenset('yea nay present not_voting member_vote_count match_action_index conflict_count'.split()),
     'treaties': frozenset('action_count'.split()),
 }
 
@@ -339,6 +353,8 @@ def subject_schema(dataset: str) -> pa.Schema:
             dtype = NATIVE.get((dataset, name), INTEGER if name in INTEGERS.get(dataset, ())
                                else BOOLEAN if name in BOOLEANS.get(dataset, ()) else TEXT)
             fields[target_name(dataset, name)] = dtype
+    for name in PROMOTED.get(dataset, ()):
+        fields[name] = INTEGER if name in INTEGERS.get(dataset, ()) else TEXT
     return pa.schema(list(fields.items()))
 
 
@@ -457,6 +473,9 @@ def map_record(dataset: str, row: Mapping[str, Any]) -> MappedRecord:
         elif name in BOOLEANS.get(dataset, ()):
             value = boolean(value)
         subject[target_name(dataset, name)] = value
+    for name in PROMOTED.get(dataset, ()):
+        value = row.get(name)
+        subject[name] = integer(value) if name in INTEGERS.get(dataset, ()) else value
     schema = subject_schema(dataset)
     for field in schema:
         _check_native(subject[field.name], field.type, f"{dataset}.{field.name}")

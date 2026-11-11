@@ -20,6 +20,10 @@ from tests.generation_fakes import Store
 from tests.test_scorecard_analysis import _inputs
 from tests.test_scorecard_analysis_preflight import fixture_owner
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def seed_shaped_index(store, files, index=None):
     """Fixture for a captured historical index, not a new legacy publication.
