@@ -415,7 +415,6 @@ def test_lobbying_retains_each_page_without_the_key(tmp_path, monkeypatch, tee):
 
     lda = importlib.import_module('spicy_regs.transforms.build_lobbying_filings')
     monkeypatch.setenv('LDA_API_KEY', KEY)
-    monkeypatch.setattr(lda.r2, 'download', lambda *a: False)
     monkeypatch.setattr(lda, 'KEYED_INTERVAL_SECONDS', 0.0)
     evidence = CaptureEvidence(tmp_path / 'audit', 'lobbying-filings')
     raw = json.dumps({'count': 1, 'next': None, 'previous': None, 'results': [{'filing_uuid': 'f-1'}]}).encode()

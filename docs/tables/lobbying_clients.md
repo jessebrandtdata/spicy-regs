@@ -33,3 +33,4 @@ The client record LDA embeds in each filing, kept once per `client_id` (the late
 | `effective_date` | `DATE` | The client relationship's effective date in LDA's record. |
 | `captured_at` | `TIMESTAMP WITH TIME ZONE` | When spicy-regs captured the filing page this row was read from (UTC): the profile is LDA's record at that moment. |
 | `captured_filing_uuid` | `VARCHAR` | The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`. |
+| `url` | `VARCHAR` | LDA's API address of this client record (`client.url`, `https://lda.gov/api/v1/clients/<client_id>/`), as served. |
