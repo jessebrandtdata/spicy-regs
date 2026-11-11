@@ -31,21 +31,24 @@ def analysis_input_entries(snapshot: Mapping, *, convert_published_official_inpu
     verified new native bundles before building. Source scorecard receipts are
     always required. No legacy or prior receipts stand in for missing receipts.
     """
+    from spicy_regs.scorecards.analysis_inputs import published_input
     from spicy_regs.scorecards.etl import selected_table_entry
     from spicy_regs.sources import publication
 
     entries = {name: selected_table_entry(snapshot, name + ".parquet")
                for name in (*SOURCE_TABLES, *OFFICIAL_TABLES, *COMPARISON_INPUTS)}
+    published = {name for name, owner in entries.items() if published_input(owner, name)}
     source = entries["scorecards"]
     if any(entries[name]["artifactDigest"] != source["artifactDigest"] for name in (*SOURCE_TABLES, *COMPARISON_SOURCE_INPUTS)):
         raise publication.PublicationError("Scorecard analysis source inputs must share one generation")
     missing = [name for name, owner in entries.items()
-               if name not in owner.get("etlReceipts", {}).get("datasets", ())
+               if name not in owner.get("etlReceipts", {}).get("datasets", ()) and name not in published
                and not (convert_published_official_inputs and name in OFFICIAL_TABLES and "etlReceipts" not in owner)]
     if missing:
         raise publication.PublicationError("Scorecard analysis requires native receipts for: " + ", ".join(missing))
     for name, owner in entries.items():
-        if convert_published_official_inputs and name in OFFICIAL_TABLES and "etlReceipts" not in owner:
+        if name in published or (convert_published_official_inputs and name in OFFICIAL_TABLES
+                                 and "etlReceipts" not in owner):
             continue
         generation = owner["etlReceipts"].get("generationId")
         if not isinstance(generation, str) or not generation or len(publication.receipt_members(snapshot, dataset=name)) != 1:
@@ -125,9 +128,16 @@ def build_scorecard_analysis(
         if any(input_pins[name] != publication.table_pin(projected_official_index, name + ".parquet")
                for name in projected):
             raise ValueError("Projected resolver inputs differ from their selected publication pins")
-    if official_receipts is None or set(official_receipts) != set(OFFICIAL_TABLES) - projected:
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    # A table whose receipts are retired comes without them once its family lists none (``published_input``) and is
+    # read as its published table, in the builder's spelling (``congress_tables.as_builder_input``).
+    needed = set(OFFICIAL_TABLES) - projected
+    if official_receipts is None or not set(official_receipts) <= needed or (
+            needed - set(official_receipts) - retired_receipt_datasets()):
         raise ValueError("Every official analysis input requires its selected native receipts")
     from spicy_regs.congress_receipts import CongressInput
+    from spicy_regs.congress_tables import as_builder_input
 
     official = {}
     with TemporaryDirectory(prefix="scorecard-official-inputs-") as temporary:
@@ -135,9 +145,12 @@ def build_scorecard_analysis(
             if name in projected:
                 official[name] = read_published_native_resolver_rows(projected_official_index, name, input_paths[name])
                 continue
-            receipts, generation_id = official_receipts[name]
-            selected = CongressInput(tuple(input_paths[name]), receipts, generation_id)
-            path = selected.materialize(name, Path(temporary) / (name + ".parquet"))
+            path = Path(temporary) / (name + ".parquet")
+            if name in official_receipts:
+                receipts, generation_id = official_receipts[name]
+                CongressInput(tuple(input_paths[name]), receipts, generation_id).materialize(name, path)
+            else:
+                as_builder_input(name, tuple(input_paths[name]), path)
             official[name] = _read([path], OFFICIAL_COLUMNS[name])
     results = resolve_scorecard_links(source, official, input_pins, member_overrides=member_overrides)
     from spicy_regs.sources import publication

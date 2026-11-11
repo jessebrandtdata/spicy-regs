@@ -529,6 +529,20 @@ def test_unmarked_prior_stays_unmarked_while_any_package_keeps_unplaced_rows(mon
     assert not is_marked(tmp_path)
 
 
+
+def test_a_failed_volume_without_prior_rows_does_not_hold_the_marker_back(monkeypatch, tmp_path):
+    """Every prior package re-placed, and a new package's volume refused: no unplaced row remains, so the output is
+    marked and the next night places only changed packages (CFR-2026-title2-vol01 failed so every night)."""
+    new_id = "CFR-2025-title1-vol2"
+    new = {"packageId": new_id, "lastModified": PACKAGE["lastModified"], "title": "General Provisions"}
+    new_granule = {**GRANULE, "granuleId": f"{new_id}-sec1-1"}
+    acquirer, calls = volumes((200, "application/xml", VOLUME), (404, "text/html", b"not found"))
+    walk = Transport(page("packages", [PACKAGE, new]), page("granules", [GRANULE]), page("granules", [new_granule]))
+    rows = build_with(monkeypatch, tmp_path, walk, acquirer, prior_rows=[placed_prior()], marked=False)
+    assert len(calls) == 2
+    assert set(rows) == {GRANULE["granuleId"]}
+    assert is_marked(tmp_path)
+
 def test_prior_index_package_rows_are_dropped(monkeypatch, tmp_path):
     """GPO-CFR-INDEX-2025's rows are not CFR sections; the walk skips the package and the table drops them."""
     index = build._shape(

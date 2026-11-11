@@ -502,9 +502,17 @@ class CatalogSnapshot:
 
 @dataclass(frozen=True)
 class CatalogPairSnapshot(CatalogSnapshot):
-    """Subject identity plus the shared receipt table's independently changing identity."""
+    """Subject identity plus the shared receipt table's independently changing identity.
+
+    The comments mirror records both, but publishes the subject alone (ss-juz8): only :meth:`subject` decides
+    whether a publication is current.
+    """
 
     receipts: CatalogSnapshot
+
+    def subject(self) -> CatalogSnapshot:
+        """The comments table's own identity, without the receipt table's."""
+        return CatalogSnapshot(self.table_uuid, self.snapshot_id, self.schema_id)
 
 
 def _selected_catalog_namespace(con, record_type: RecordType) -> str:
@@ -553,11 +561,16 @@ def _read_pair_snapshot(con, record_type: RecordType, *, namespace: str | None =
 
 
 def catalog_snapshot(record_type: RecordType) -> CatalogPairSnapshot:
-    """Pin subject and receipt metadata in one transaction without preparing tables."""
+    """Pin subject and receipt metadata in one transaction, reading table metadata only.
+
+    The initialization check is skipped (explicit namespace): it scans every receipt row for one marker, 78 s on
+    the 26.5M-row table (2026-11-08), and the comments mirror, the one caller that publishes, refuses an unseeded
+    or partial table through its own row floor and retained-ID check instead (ss-juz8).
+    """
     con = _connect()
     try:
         with _transaction(con):
-            return _read_pair_snapshot(con, record_type)
+            return _read_pair_snapshot(con, record_type, namespace=_catalog_namespace(record_type))
     finally:
         con.close()
 
@@ -610,8 +623,12 @@ def compacted_since(record_type: RecordType, snapshot: CatalogPairSnapshot, *,
 
 
 def rows_unchanged_since(record_type: RecordType, snapshot: CatalogPairSnapshot) -> bool:
-    """Require unchanged subject and receipt rows, allowing compaction of either table."""
-    return all(compacted_since(record_type, snapshot))
+    """Require unchanged subject rows, allowing compaction.
+
+    The receipt table is no publication input since the comments mirror stopped exporting receipts (ss-juz8), so a
+    receipt-only commit (a rejected attempt, a retained refusal) leaves the published table current.
+    """
+    return compacted_since(record_type, snapshot)[0]
 
 
 def _snapshot_query(record_type: RecordType, snapshot: CatalogSnapshot, *, namespace: str | None = None) -> str:
@@ -620,41 +637,117 @@ def _snapshot_query(record_type: RecordType, snapshot: CatalogSnapshot, *, names
     return f"SELECT * FROM {table} AT (VERSION => {int(snapshot.snapshot_id)})"
 
 
+def _stated_rows(metadata: dict, snapshot_id: int) -> int | None:
+    """The rows the writer recorded for ``snapshot_id`` in its Iceberg summary, when that alone determines them.
+
+    ``total-records`` counts every row of the snapshot's data files, so it is the table's row count only for a
+    snapshot that states no delete file. With delete files the subtraction does not hold: after R2's compaction on
+    2026-11-09 the dockets table stated 45 records beside 25 delete files and 51 position deletes. Summary fields
+    are optional in Iceberg; any one absent returns None, as does any delete.
+    """
+    for entry in metadata.get("snapshots", []):
+        if int(entry.get("snapshot-id", -1)) != snapshot_id:
+            continue
+        summary = entry.get("summary") or {}
+        try:
+            records, delete_files = int(summary["total-records"]), int(summary["total-delete-files"])
+            deletes = sum(int(summary.get(name, 0)) for name in ("total-position-deletes", "total-equality-deletes"))
+        except (KeyError, TypeError, ValueError):
+            return None
+        return records if records >= 0 and not delete_files and not deletes else None
+    return None
+
+
+def _pinned_row_count(con, record_type: RecordType, snapshot: CatalogSnapshot, *, namespace: str) -> tuple[int, str]:
+    """How many rows the pinned comments snapshot holds, by a count other than the export's own scan.
+
+    The writer's count first: the snapshot's Iceberg summary, metadata only, present on every comments snapshot
+    the live catalog held on 2026-11-09 (DuckDB's appends and R2's compactions alike). Otherwise, or with a delete
+    file, or on a catalog that is not Iceberg, the accepted receipts of the dataset in the same transaction: the
+    ETL writes exactly one per row in the commit that writes the row (``replace_native``), and the 2026-11-08
+    rebuild proved 26,418,078 of each. That is a scan of another table, about 78 s on 26.5M receipts; a second
+    ``count(*)`` of the comments table would share the scan it is meant to check.
+    """
+    from .regulatory_catalog import _remote_catalog, receipts_table
+
+    if _remote_catalog(con):
+        stated = _stated_rows(_table_metadata(con, record_type, namespace=namespace), snapshot.snapshot_id)
+        if stated is not None:
+            return stated, "its Iceberg summary (total-records, no delete files)"
+    accepted = con.execute(f"SELECT count(*) FROM {receipts_table()} WHERE dataset = ? AND outcome = 'accepted'",
+                           [record_type.name]).fetchone()
+    if accepted is None:
+        raise RuntimeError("The catalog's receipt table returned no count")
+    return accepted[0], "its accepted receipts (the snapshot's summary states no usable count)"
+
+
 def export_public_comments(
     output_dir: Path, record_type: RecordType, *, memory_limit: str = ExportResources.memory,
     threads: int = ExportResources.threads,
     snapshot: CatalogPairSnapshot | None = None, resources: ExportResources | None = None,
 ) -> dict[str, Path]:
-    """Scan one pinned snapshot into agencies; sort once, assemble, then recount.
+    """Copy the pinned comments table once, check the copy is complete, stage it by agency, sort, assemble, recount.
 
-    Every payload read from the catalog includes its Iceberg deletes. Remaining
-    work reads local files. Anonymous readers retain their existing paths/schema.
+    Reads the comments table, and of the shared receipt table its metadata (the pinned pair's identity) and, only
+    when the snapshot's summary states no usable row count, the number of accepted receipts (ss-juz8). It reads no
+    receipt row's contents. The paired export it replaced copied the 26.5M receipts beside the table, rebound each
+    in Python, admitted both and replayed every row, about 138 of 170 measured minutes at full size (M4 Pro, 3GB /
+    1 thread), to publish rows it never changed. What those passes checked is owned elsewhere now:
+
+    * completeness: the copy must hold the rows :func:`_pinned_row_count` gives, or the export refuses with both
+      numbers. A row the published IDs never held (everything after 2026-10-10 on the first run) would otherwise
+      be lost to a partial read without notice, since the index is built from the same copy;
+    * the declared schema, here; unique non-null IDs, index coverage and every previously published ID, in
+      :func:`spicy_regs.pipelines.comments_mirror.validate_export`;
+    * each row's values when they are written, by ``regulatory_catalog.replace_native``'s readback inside the
+      writing transaction.
+
+    Not caught: a value changed outside ``replace_native``; and, when the summary decides, a row inserted or
+    deleted outside it, since the summary counts the table as written (the receipt count sees such a row unless
+    a receipt changed with it).
+
+    The copy is bounded as the paired one was (``resources``' row and byte targets, ss-7flp) and is deleted once
+    staged, so the copy no longer outlives the export. Every payload read from the catalog includes its Iceberg
+    deletes. The published files keep their paths and take the policy's schema, which the fixed root files did
+    not have before this route first rewrote them (docs/comments-receipt-archive.md).
     """
     import duckdb
+    import pyarrow.parquet as pq
     from spicy_regs.transforms.partition_comments import assemble_comments, sort_comment_agencies, stage_comment_agencies
+    from spicy_regs.transforms.regulations_receipts import policy
+    from . import regulatory_catalog as native
 
     resources = resources or ExportResources(memory=memory_limit, threads=threads)
     output_dir.mkdir(parents=True, exist_ok=True)
+    columns = policy(record_type.name).subject_schema.names
     with TemporaryDirectory(prefix="comments-export-", dir=output_dir) as work:
         work_dir = Path(work)
+        subjects = work_dir / f"{record_type.name}.parquet"
         con = _connect()
         try:
-            from . import regulatory_catalog as native
-            from spicy_regs.transforms.regulations_receipts import policy
-            from uuid import uuid4
-            native.require_initialized(con, record_type)
-            current = _read_pair_snapshot(con, record_type)
-            if snapshot is not None and current != snapshot:
-                raise RuntimeError("Catalog snapshot changed before export; retry")
             resources.configure(con, work_dir / "spill")
-            sidecar = output_dir / '.catalog-pairs' / record_type.name
-            selected = native.export_pair(con, record_type, sidecar,
-                                          generation_id='catalog-' + uuid4().hex, snapshot=current)
-            columns = policy(record_type.name).subject_schema.names
-            source = f"SELECT * FROM read_parquet('{_sql_str(str(selected.subjects[0]))}')"
-            stage_comment_agencies(con, source, work_dir / "staging", resources=resources)
+            namespace = _catalog_namespace(record_type)
+            with _transaction(con):
+                if difference := native.schema_difference(con, record_type):
+                    raise ValueError("Native catalog schema differs from declared policy: " + difference)
+                current = _read_pair_snapshot(con, record_type, namespace=namespace)
+                # Only the comments table is read, so only its identity binds the export.
+                if snapshot is not None and current.subject() != snapshot.subject():
+                    raise RuntimeError("Catalog snapshot changed before export; retry")
+                logger.info("Comments export: copying the pinned table (snapshot {})", current.snapshot_id)
+                native._copy(con, f"SELECT * FROM {_qualified(record_type)}", subjects, resources=resources)
+                copied = pq.ParquetFile(subjects).metadata.num_rows
+                expected, source = _pinned_row_count(con, record_type, current, namespace=namespace)
+                logger.info("Comments export: copied {:,} rows; snapshot {} holds {:,} by {}",
+                            copied, current.snapshot_id, expected, source)
+                if copied != expected:
+                    raise RuntimeError(f"Comments export copied {copied:,} rows but snapshot {current.snapshot_id} "
+                                       f"holds {expected:,} by {source}; refusing an incomplete read")
+            stage_comment_agencies(con, f"SELECT * FROM read_parquet('{_sql_str(str(subjects))}')",
+                                   work_dir / "staging", resources=resources)
         finally:
             con.close()
+        subjects.unlink()
         partitions = sort_comment_agencies(work_dir / "staging", output_dir, resources=resources)
         with duckdb.connect() as con:
             resources.configure(con, work_dir / "spill")
@@ -662,9 +755,7 @@ def export_public_comments(
             con.from_parquet(str(monolith)).create_view("comments_export")
             index_file = _build_comments_index(con, record_type, output_dir,
                                                source_sql="SELECT * FROM comments_export")
-        result = {"comments": monolith, "index": index_file, "partitions": partitions}
-        result.update(receipts=selected.receipts, generation=sidecar / "generation.json")
-        return result
+        return {"comments": monolith, "index": index_file, "partitions": partitions}
 
 
 def check_comments_against_indexes(record_type: RecordType, indexes: Mapping[str, Sequence[str]], *, agency: str | None = None,

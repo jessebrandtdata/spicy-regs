@@ -19,7 +19,6 @@ from spicy_regs.schemas.regulations import RECORD_TYPES
 
 def test_source_catalog_policy_descriptions_keep_selected_scope_and_native_fields():
     from spicy_regs.etl_policy_registry import installed_policies
-    from spicy_regs.receipt_field_declarations import container_fields
 
     names = {
         "administration_policy_statements", "administration_policy_bill_links",
@@ -33,19 +32,11 @@ def test_source_catalog_policy_descriptions_keep_selected_scope_and_native_field
         assert entry["identity_columns"] == list(policy.identity_fields)
         assert entry["coverage"].startswith("Sampled.")
         assert dd.coverage_prose_errors(name, entry["coverage"]) == []
-        containers = container_fields(policy)
-        assert set(containers) <= set(policy.receipt_fields)
-    assert container_fields(policies["table3_historical_records"])["source_position"] == (
-        "member_sha256", "release_point", "act_key", "act_record_position",
-        "member_name", "fragment_position", "fragment_record_position", "record_native_id",
-    )
-    assert container_fields(policies["ecfr_snapshots"]) == {}
     assert "uscode_edition_sections" in policies
 
 
 def test_retained_native_policies_regenerate_receipt_declarations():
     from spicy_regs.sources.retained_native_collections import POLICIES
-    from spicy_regs.receipt_field_declarations import container_fields
     from scripts.update_etl_policy_declarations import family_policies
 
     selected = family_policies(frozenset(POLICIES))
@@ -53,16 +44,6 @@ def test_retained_native_policies_regenerate_receipt_declarations():
     for name, policy in POLICIES.items():
         assert selected[name].descriptor() == policy.descriptor()
         assert not policy.receipt_fields
-        assert container_fields(policy) == {}
-
-
-def test_every_installed_subject_policy_has_receipt_field_registry():
-    from spicy_regs.etl_policy_registry import installed_policies
-    from spicy_regs.receipt_field_declarations import container_fields
-
-    for policy in installed_policies().values():
-        if not policy.receipt_only and policy.identity_fields:
-            assert set(container_fields(policy)) <= set(policy.receipt_fields)
 
 
 def test_generation_preserves_qualified_legacy_fec_meanings_and_processing_tables():
@@ -833,15 +814,33 @@ def test_live_selected_legacy_check_accepts_declared_shape_but_refuses_real_drif
     assert "[bill_subjects.subjects_json] in-code type VARCHAR but live parquet BIGINT" in capsys.readouterr().err
 
 
-def test_live_dictionary_changed_selection_is_incomplete(monkeypatch, capsys):
+def test_live_dictionary_selection_that_keeps_changing_is_incomplete(monkeypatch, capsys):
+    from itertools import count
+
     from spicy_regs.sources import publication
 
-    indexes = iter([{"families": {}}, {"families": {"changed": {"tables": {}}}}])
-    monkeypatch.setattr(publication, "load_index", lambda _: next(indexes))
+    loads = count()
+    monkeypatch.setattr(publication, "load_index", lambda _: {"families": {}, "seen": next(loads)})
     monkeypatch.setattr(dd, "discover_schemas", lambda *_, **_kwargs: {"dockets": dd.expected_schemas()["dockets"]})
     args = dd.build_parser().parse_args(["check", "--source", "r2"])
     assert args.func(args) == dd.EXIT_SOURCE_UNREACHABLE
-    assert "Publication selection changed" in capsys.readouterr().err
+    assert next(loads) == 2 * dd.SELECTION_ATTEMPTS, "each attempt captures and re-reads the selection"
+    assert f"changed during each of {dd.SELECTION_ATTEMPTS}" in capsys.readouterr().err
+
+
+def test_live_dictionary_rechecks_a_selection_that_moved_once(monkeypatch, capsys):
+    """A rollup publishing mid-check moved the selection on deploy-docs runs 42936659702, 42937011897, 43021165558."""
+    from spicy_regs.sources import publication
+
+    index = {"families": {"bill-subjects": {"tables": {"bill_subjects.parquet": {}}}}}
+    indexes = iter([{"families": {}}, index, index, index])
+    monkeypatch.setattr(publication, "load_index", lambda _: next(indexes))
+    monkeypatch.setattr(dd, "published_row_counts", lambda *_, **_kwargs: {})
+    declared = dd.expected_schemas(native=False)["bill_subjects"]
+    monkeypatch.setattr(dd, "discover_schemas", lambda *_, **_kwargs: {"bill_subjects": declared})
+    args = dd.build_parser().parse_args(["check", "--source", "r2"])
+    assert args.func(args) == 0
+    assert "checking the new one" in capsys.readouterr().err
 
 
 
@@ -876,10 +875,19 @@ def test_retained_court_legacy_declarations_preserve_native_and_refuse_drift(mon
     from pathlib import Path
     from spicy_regs.sources import publication
 
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
     fixture = json.loads((Path(__file__).parent / "fixtures" /
                           "court_selected_legacy_dictionary.json").read_text())
     index = fixture["index"]
-    live = {table: [tuple(field) for field in fields] for table, fields in fixture["schemas"].items()}
+    every = {table: [tuple(field) for field in fields] for table, fields in fixture["schemas"].items()}
+    # A table whose receipts are retired (ss-vse3) publishes none, so a generation without them is its current
+    # format, held to its installed schema: the citation tables' legacy shapes are no longer a selectable format.
+    retired = set(every) & retired_receipt_datasets()
+    assert retired == {"court_citations", "court_citation_map", "court_parentheticals"}
+    selected = dd.selected_dictionary_definitions(index, every, dd.DEFAULT_DESCRIPTIONS)[1]
+    assert {table: selected[table] for table in retired} == {table: dd.expected_schemas()[table] for table in retired}
+    live = {table: fields for table, fields in every.items() if table not in retired}
     native = {table: dd.expected_schemas()[table] for table in live}
     monkeypatch.setattr(publication, "load_index", lambda _: index)
     monkeypatch.setattr(dd, "published_row_counts", lambda *_, **_kwargs: {})
@@ -891,11 +899,11 @@ def test_retained_court_legacy_declarations_preserve_native_and_refuse_drift(mon
     assert {table: selected[table] for table in live} == live
     assert all("raw_source_record" not in dict(fields) for fields in live.values())
 
-    live["court_citation_map"].append(("unexpected_publisher_field", "VARCHAR"))
+    live["court_opinion_clusters"].append(("unexpected_publisher_field", "VARCHAR"))
     assert args.func(args) == 1
     assert "unexpected_publisher_field" in capsys.readouterr().err
-    live["court_citation_map"].pop()
-    live["court_citation_map"][0] = ("citing_opinion_id", "BIGINT")
+    live["court_opinion_clusters"].pop()
+    live["court_opinion_clusters"][0] = ("cluster_id", "BIGINT")
     assert args.func(args) == 1
     assert "in-code type VARCHAR but live parquet BIGINT" in capsys.readouterr().err
 

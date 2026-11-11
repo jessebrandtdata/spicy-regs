@@ -15,9 +15,8 @@ The data dictionary has two layers:
 ``spicy-regs-dict check`` reconciles the two so they can't silently drift, and
 ``spicy-regs-dict generate`` renders one Markdown page per table for the MkDocs
 site under ``docs/tables/``. ``generate`` also bundles the output ledger's
-per-table audits (``output_ledger``), the declared cross-table joins
-(``table_joins``) and what each table's receipts carry (``receipt_field_declarations``)
-for the MCP server, and ``check`` refuses a stale copy of any.
+per-table audits (``output_ledger``) and the declared cross-table joins
+(``table_joins``) for the MCP server, and ``check`` refuses a stale copy of either.
 
 Usage::
 
@@ -1200,16 +1199,18 @@ def load_descriptions(path: Path = DEFAULT_DESCRIPTIONS, *, native: bool = True)
 def selected_dictionary_definitions(index: dict, names: Iterable[str], descriptions_path: Path):
     """Use earlier declarations only for a selected owner explicitly without receipts.
 
-    Unknown owners and any declared receipt member keep native checks. No live
-    field or type is inferred as a supported declaration.
+    Unknown owners and any declared receipt member keep native checks, and so does a table whose receipts are
+    retired: it publishes the native table with no receipt member by design. No live field or type is inferred as a
+    supported declaration.
     """
     from spicy_regs.sources.publication import table_owner
+    from spicy_regs.subject_catalog import retired_receipt_datasets
 
     descriptions = load_descriptions(descriptions_path)
     schemas = expected_schemas()
     legacy_names = {name for name in names
                     if (owner := table_owner(index, name + ".parquet")) is not None
-                    and "etlReceipts" not in owner[1]}
+                    and "etlReceipts" not in owner[1] and name not in retired_receipt_datasets()}
     if legacy_names:
         legacy_descriptions = load_descriptions(descriptions_path, native=False)
         legacy_schemas = expected_schemas(native=False)
@@ -1242,6 +1243,52 @@ def selected_dictionary_definitions(index: dict, names: Iterable[str], descripti
                     descriptions[name] = {key: value for key, value in entry["description"].items() if key != "retired"}
                 descriptions[name]["columns"] = meanings
     return descriptions, schemas
+
+
+def accept_pending_policy_columns(index: dict, base_url: str, descriptions: dict, expected: dict, live: dict, *,
+                                  load_root=None) -> tuple[dict, dict, list[str]]:
+    """Leave out of a live check the columns a table's installed policy declares and its selected generation predates.
+
+    A column promotion merges before the nightly that publishes it, so until then the live file lacks columns the
+    dictionary describes (six for the two Register tables on 2026-11-10; the same on 2026-11-09 for bills). Such a
+    column is declared, not yet published: reported as a notice, not a failure. It is recognised from the
+    generation itself, never from a list: the family root states the policy the table was written under, and only
+    when that is a declared earlier policy of the installed one (``receipt_policies``) are the columns the
+    installed policy adds to it set aside. Every other difference stays an error: a column both policies hold that
+    the file lacks, a type, a table without receipts, a root stating a policy that is not a declared earlier one.
+    Roots are read only for tables that lack an expected column, one read per family.
+    """
+    from spicy_regs.etl_policy_registry import installed_policies
+    from spicy_regs.etl_receipts import receipt_policies
+    from spicy_regs.sources import publication
+
+    load_root = load_root or publication.load_family_root
+    installed, roots, notices = installed_policies(), {}, []
+    descriptions, expected = dict(descriptions), dict(expected)
+    for table in sorted(set(expected) & set(live)):
+        missing = {name for name, _ in expected[table]} - {name for name, _ in live[table]}
+        owner = publication.table_owner(index, table + ".parquet")
+        if not missing or table not in installed or owner is None or "etlReceipts" not in owner[1]:
+            continue
+        family, entry = owner
+        if family not in roots:
+            roots[family] = load_root(base_url, entry)[1]
+        stated = roots[family].get("spec", {}).get("etlReceipts", {}).get("policies", [])
+        written = next((p for p in receipt_policies(installed[table])[1:]
+                        if any(p.descriptor() == declared for declared in stated)), None)
+        if written is None:
+            continue
+        pending = sorted(missing - set(written.subject_schema.names))
+        if not pending:
+            continue
+        notices.append(f"[{table}] declared, not yet published: {', '.join(pending)} (the selected generation "
+                       f"states {written.policy_version}; installed is {installed[table].policy_version})")
+        expected[table] = [pair for pair in expected[table] if pair[0] not in pending]
+        if table in descriptions:
+            columns = descriptions[table].get("columns") or {}
+            descriptions[table] = {**descriptions[table],
+                                   "columns": {name: text for name, text in columns.items() if name not in pending}}
+    return descriptions, expected, notices
 
 
 def _reconcile_columns(
@@ -1538,11 +1585,30 @@ def _schemas_for_source(source: str, base: str | None) -> dict[str, list[tuple[s
 EXIT_SOURCE_UNREACHABLE = 3
 
 
+#: Live checks against a selection that moved mid-check before giving up. A rollup publishing during the
+#: two-minute check moved it on 3 of 25 deploy-docs runs (11-09..11-11), each red with nothing wrong.
+SELECTION_ATTEMPTS = 3
+
+
 def cmd_check(args: argparse.Namespace) -> int:
     """Reconcile descriptions against the chosen schema source and report drift.
 
-    Exit 1 on drift; a live source that cannot be read exits EXIT_SOURCE_UNREACHABLE (3), not 1.
+    Exit 1 on drift; a live source that cannot be read exits EXIT_SOURCE_UNREACHABLE (3), not 1. A publication
+    selection that moves during a live check is checked again from the start, up to :data:`SELECTION_ATTEMPTS`.
     """
+    for _ in range(SELECTION_ATTEMPTS):
+        result = _check_once(args)
+        if result is not None:
+            return result
+        print("  Publication selection changed during live schema verification; checking the new one.", file=sys.stderr)
+    print(f"! Publication selection changed during each of {SELECTION_ATTEMPTS} live schema verifications.",
+          file=sys.stderr)
+    print("Live schema verification is incomplete; this is not a pass.", file=sys.stderr)
+    return EXIT_SOURCE_UNREACHABLE
+
+
+def _check_once(args: argparse.Namespace) -> int | None:
+    """One :func:`cmd_check` pass; ``None`` when the live selection moved, so nothing it read can be reported."""
     import httpx
 
     descriptions = load_descriptions(Path(args.descriptions))
@@ -1579,6 +1645,14 @@ def cmd_check(args: argparse.Namespace) -> int:
         expected = expected_schemas()
         if index is not None:
             descriptions, expected = selected_dictionary_definitions(index, live, Path(args.descriptions))
+            try:
+                descriptions, expected, notices = accept_pending_policy_columns(
+                    index, resolve_r2_base_url(args.base), descriptions, expected, live)
+                for notice in notices:
+                    print(f"  notice: {notice}")
+            except (httpx.HTTPError, OSError, PublicationError) as exc:
+                print(f"! Could not read a published family root: {exc}", file=sys.stderr)
+                unreadable = True
         errors += check_descriptions(live, {name: value for name, value in descriptions.items() if name in live})
         expected = {name: value for name, value in expected.items() if name in live}
         errors += check_schema_drift(expected, live)
@@ -1592,7 +1666,7 @@ def cmd_check(args: argparse.Namespace) -> int:
                 if index is None:
                     raise PublicationError("No captured publication selection for live schema verification")
                 if load_index(base_url) != index:
-                    raise PublicationError("Publication selection changed during live schema verification")
+                    return None
                 rows = published_row_counts(base_url, index)
                 errors += kind_index_errors(descriptions, rows)
                 errors += receipt_index_errors(descriptions, rows, published_receipt_datasets(index))
@@ -1600,9 +1674,7 @@ def cmd_check(args: argparse.Namespace) -> int:
                 print(f"! Could not read the published row counts: {exc}", file=sys.stderr)
                 unreadable = True
 
-    from spicy_regs import receipt_field_declarations
-
-    stale = qualification_errors() + joins_errors() + receipt_field_declarations.record_errors()
+    stale = qualification_errors() + joins_errors()
     if errors or stale:
         print(f"✗ Data dictionary check failed ({len(errors) + len(stale)} issue(s)):", file=sys.stderr)
         for err in errors + stale:
@@ -1783,6 +1855,9 @@ def receipt_metadata():
         "diagnostic_json": "Notes about the processing itself, in the same typed form, such as which earlier "
                            "build's receipt for this row was carried forward and what that receipt held.",
     }
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    retired = retired_receipt_datasets()
     return {"table": "etl_receipts", "subject": None, "label": "ETL receipts", "category": "processing_evidence", "kind": "not_a_range",
             "summary": "The paperwork behind each row: what was read to make it, how the processing went, and what "
                        "was kept out of the table's columns.",
@@ -1795,7 +1870,7 @@ def receipt_metadata():
             "columns": [{"column_name": name, "column_type": dtype, "description": prose[name]} for name, dtype in described_schema(RECEIPT_SCHEMA)],
             "datasets": [{"dataset": name, "receipt_only": p.receipt_only, "policy_version": p.policy_version,
                           "identity_columns": list(p.identity_fields), "processing_fields": list(p.receipt_fields)}
-                         for name,p in subject_policies().items()]}
+                         for name,p in subject_policies().items() if name not in retired]}
 
 
 def build_mcp_metadata(descriptions: dict, schemas: dict[str, list[tuple[str, str]]]) -> dict:
@@ -1917,8 +1992,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
     """Render the table pages, refusing (exit 1) when descriptions are out of sync with the schema.
 
     Writing the default docs dir also refreshes catalog.json (+ .sha256), table_metadata.json,
-    table_qualification.json (from the output ledger), table_joins.json (from table_joins) and
-    receipt_fields.json (from receipt_field_declarations).
+    table_qualification.json (from the output ledger) and table_joins.json (from table_joins).
     """
     descriptions = load_descriptions(Path(args.descriptions))
     schemas = _schemas_for_source(args.source, args.base)
@@ -1965,10 +2039,6 @@ def cmd_generate(args: argparse.Namespace) -> int:
         print(f"  - {output_ledger.RECORD.relative_to(REPO_ROOT)}")
         table_joins.RECORD.write_bytes(joins_bytes())
         print(f"  - {table_joins.RECORD.relative_to(REPO_ROOT)}")
-        from spicy_regs import receipt_field_declarations
-
-        receipt_field_declarations.RECORD.write_bytes(receipt_field_declarations.record_bytes())
-        print(f"  - {receipt_field_declarations.RECORD.relative_to(REPO_ROOT)}")
     return 0
 
 

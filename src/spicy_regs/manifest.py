@@ -33,8 +33,8 @@ from loguru import logger
 from spicy_regs.sources.r2 import download_from_r2
 
 MANIFEST_FILE = "manifest.parquet"
-#: The persisted manifest's one column, shared by :func:`save_manifest` and the
-#: seed built from published ids (``scripts/seed_manifest_from_published.py``).
+#: The persisted manifest's one column, written by :func:`save_manifest`. The first manifest was
+#: seeded once (2026-09-24) from the ids the published base tables held.
 MANIFEST_SCHEMA = pa.schema([("key", pa.large_string())])
 
 
@@ -191,6 +191,12 @@ class Manifest:
         """Mark ``keys`` as processed this run (thread-safe)."""
         with self._lock:
             self._new_keys.update(key for key in keys if key not in self)
+
+    @property
+    def recorded(self) -> int:
+        """Keys recorded since load, saved or not: unchanged across a pass means it retired nothing."""
+        with self._lock:
+            return len(self._new_keys) + len(self._committed_keys)
 
     @property
     def new_keys(self) -> set[str]:

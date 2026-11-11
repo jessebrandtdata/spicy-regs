@@ -6,9 +6,9 @@
 
 The term each member vote counts toward (delivery decision 2). A vote on `vote_day` counts toward the term with `term_start <= vote_day < term_end`, so the day one Congress ends and the next begins belongs to the new term. Only where that finds none is an inclusive end accepted, and only if exactly one term qualifies. The term type follows the chamber (`rep`, `sen`); a term with no end date never matches. Built by `build_member_vote_terms` from `member_votes`, whose `bioguide_id` the votes rollup resolves for a Senate row (from its LIS id) and for a House row of 1990-2002 (from its printed label), and `member_terms`. Join to `member_votes` on (`vote_id`, `member_key`) and to `member_terms` on (`bioguide_id`, `term_index`).
 
-**Coverage.** Derived, and bounded by its inputs: one row for every `member_votes` row, matched to the member's term on the vote date. *(measured 2026-09-23)*
+**Coverage.** Derived, and bounded by its inputs: one row for every `member_votes` row whose term the rule establishes (`half_open` or `inclusive_end`). A vote it gives no term is left out: it is the `member_votes` row with no row here. *(measured 2026-11-11)*
 
-**Data quality.** On 2026-09-23 all but 18 votes matched a half-open term: 15 matched only an inclusive end date and 3 matched no term, exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).
+**Data quality.** On 2026-11-11, of 10,563,782 votes, 232 matched only an inclusive end date, 12 matched no term and 2 named no resolvable member; those 14 are left out. On 2026-09-23 the same rule matched all but 18 of a frozen selection exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).
 
 - **Parquet file:** `member_vote_terms.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.

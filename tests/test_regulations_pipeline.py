@@ -5,6 +5,7 @@ resource, alongside manifest incremental dedup, failed-key retry, chunked
 comment commits, and publication ordering with the manifest published last.
 """
 
+import io
 from json import dumps, loads
 from pathlib import Path
 from typing import Any
@@ -228,6 +229,16 @@ def _comment_payload(comment_id: str, docket_id: str, posted_date: str, agency: 
 
 def _comment_key(comment_id: str, docket_id: str, agency: str = AGENCY) -> str:
     return f"{PREFIX}/{agency}/{docket_id}/text-{comment_id}/comments/{comment_id}.json"
+
+
+def _document_payload(document_id: str, docket_id: str, posted_date: str, agency: str = AGENCY) -> dict:
+    attributes = {"docketId": docket_id, "agencyId": agency, "title": f"Title {document_id}",
+                  "documentType": "Rule", "postedDate": posted_date, "modifyDate": posted_date}
+    return {"data": {"id": document_id, "attributes": attributes}}
+
+
+def _document_key(document_id: str, docket_id: str, agency: str = AGENCY) -> str:
+    return f"{PREFIX}/{agency}/{docket_id}/text-{docket_id}/documents/{document_id}.json"
 
 
 # --- composition -----------------------------------------------------------
@@ -776,10 +787,13 @@ def test_workflow_setup_validates_the_dispatch_inputs(tmp_path: Path, event, bat
 
     workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/etl-new-pipeline.yml").read_text())
     assert workflow["jobs"]["etl-new"]["timeout-minutes"] == "${{ fromJSON(needs.setup.outputs.timeout_minutes) }}"
-    output = tmp_path / "github_output"
+    output, bin_dir = tmp_path / "github_output", tmp_path / "bin"
     output.touch()
+    bin_dir.mkdir()
+    (bin_dir / "gh").write_text("#!/bin/sh\n")  # a scheduled sweep asks for the latest sweep: none here
+    (bin_dir / "gh").chmod(0o755)
     env = {
-        "PATH": "/usr/bin:/bin",
+        "PATH": f"{bin_dir}:/usr/bin:/bin",
         "EVENT": event,
         "BATCH_NUMBER": batch,
         "TIMEOUT_MINUTES": timeout,
@@ -799,46 +813,6 @@ def test_workflow_setup_validates_the_dispatch_inputs(tmp_path: Path, event, bat
     assert written["run"] == "true"
 
 
-@pytest.mark.parametrize(
-    ("schedule", "succeeded_today", "run", "asked"),
-    [("25 6 * * *", "1", "true", False), ("25 18 * * *", "0", "true", True), ("25 18 * * *", "1", "false", True)],
-)
-def test_retry_sweep_runs_only_when_no_scheduled_sweep_succeeded_today(
-    tmp_path: Path, schedule, succeeded_today, run, asked
-) -> None:
-    """The 18:25 sweep re-lists everything, so it exits once a scheduled sweep has succeeded today."""
-    import subprocess
-
-    import yaml
-
-    workflow = yaml.safe_load((Path(__file__).parents[1] / ".github/workflows/etl-new-pipeline.yml").read_text())
-    assert workflow["jobs"]["etl-new"]["if"] == "${{ needs.setup.outputs.run == 'true' }}"
-    bin_dir, calls, output = tmp_path / "bin", tmp_path / "gh-calls", tmp_path / "github_output"
-    bin_dir.mkdir()
-    (bin_dir / "gh").write_text(f'#!/bin/sh\necho "$*" >> "{calls}"\necho {succeeded_today}\n')
-    (bin_dir / "gh").chmod(0o755)
-    output.touch()
-    env = {
-        "PATH": f"{bin_dir}:/usr/bin:/bin",
-        "EVENT": "schedule",
-        "SCHEDULE": schedule,
-        "BATCH_NUMBER": "",
-        "TIMEOUT_MINUTES": "",
-        "SKIP_UPLOAD": "",
-        "BATCH_COUNT": str(workflow["env"]["BATCH_COUNT"]),
-        "GITHUB_OUTPUT": str(output),
-    }
-    [step] = workflow["jobs"]["setup"]["steps"]
-    result = subprocess.run(["bash", "-c", step["run"]], env=env, capture_output=True, text=True)
-
-    assert result.returncode == 0, result.stderr
-    written = dict(line.split("=", 1) for line in output.read_text().splitlines())
-    assert written["run"] == run
-    assert calls.exists() is asked
-    if asked:
-        assert "--event schedule --status success" in calls.read_text()
-
-
 def test_sweep_reuses_manifest_and_discovers_agencies_once(tmp_output, monkeypatch):
     discoveries, loads, seen = [], [], []
     monkeypatch.delenv("AGENCIES", raising=False)
@@ -846,7 +820,7 @@ def test_sweep_reuses_manifest_and_discovers_agencies_once(tmp_output, monkeypat
     manifest = Manifest.empty()
     monkeypatch.setattr(Manifest, "load", lambda *a, **kw: loads.append(1) or manifest)
 
-    def run(self, *, manifest):
+    def run(self, *, manifest, record_types):
         seen.append((id(manifest), self._agencies()))
         if self.batch_number:
             assert "batch-0" in manifest
@@ -857,7 +831,8 @@ def test_sweep_reuses_manifest_and_discovers_agencies_once(tmp_output, monkeypat
     pipe = RegulationsPipeline(output_dir=tmp_output, batch_count=2, use_iceberg=True)
     pipe.run_sweep()
     assert discoveries == loads == [1]
-    assert seen == [(id(manifest), ["A", "B"]), (id(manifest), ["C"])]
+    # Every agency's dockets and documents first, then each batch's comments.
+    assert seen == [(id(manifest), ["A", "B", "C"]), (id(manifest), ["A", "B"]), (id(manifest), ["C"])]
     assert pipe.batch_number is None
 
 
@@ -867,8 +842,10 @@ def test_failed_sweep_stops_before_later_batch_can_retire_pending_keys(tmp_outpu
     monkeypatch.setattr(Manifest, "load", lambda *a, **kw: manifest)
     seen = []
 
-    def run(self, *, manifest):
+    def run(self, *, manifest, record_types):
         seen.append(self.batch_number)
+        if self.batch_number is None:  # the dockets and documents pass commits
+            return
         manifest.record(["pending"])
         raise OSError("checkpoint publication failed")
 
@@ -876,9 +853,175 @@ def test_failed_sweep_stops_before_later_batch_can_retire_pending_keys(tmp_outpu
     pipe = RegulationsPipeline(output_dir=tmp_output, batch_count=3, use_iceberg=True)
     with pytest.raises(OSError):
         pipe.run_sweep()
-    assert seen == [0]
+    assert seen == [None, 0]
     assert not (tmp_output / "manifest.parquet").exists()
     assert pipe.batch_number is None
+
+
+def _published_ids(remote, table: str) -> list[str] | None:
+    """The ids of a table in the fake remote's publication index, or None when it publishes no such table."""
+    from spicy_regs.sources import publication as pub
+
+    raw = remote.objects.get(pub.INDEX_V2_KEY)
+    index = pub.parse_index(raw) if raw else None
+    if index is None or pub.table_owner(index, f"{table}.parquet") is None:
+        return None
+    location = pub.single_member(index, f"{table}.parquet").path
+    return sorted(pl.read_parquet(io.BytesIO(remote.objects[location]))[table.removesuffix("s") + "_id"].to_list())
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_a_sweep_publishes_every_agencys_dockets_and_documents_before_any_comment_batch(
+    tmp_output, monkeypatch, native_publication, capsys, fails
+):
+    """The real composition, publishing to a fake R2. One pass publishes every agency's dockets and documents, then
+    each batch stages its comments alone. A pass that fails before recording a key publishes and retires none of its
+    keys; the comment batches still merge and retire theirs, and the sweep then fails."""
+    monkeypatch.setenv("AGENCIES", "EPA,FAA")
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://test.invalid")
+    store, first_pass = {}, set()
+    for agency in ("EPA", "FAA"):
+        docket, document, comment = f"{agency}-2026-0001", f"{agency}-2026-0001-0001", f"{agency}-2026-0001-0002"
+        first_pass |= {_docket_key(docket, agency=agency), _document_key(document, docket, agency)}
+        store[_docket_key(docket, agency=agency)] = dumps(_docket_payload(docket, "2026-11-09", agency)).encode()
+        store[_document_key(document, docket, agency)] = dumps(
+            _document_payload(document, docket, "2026-11-09T00:00:00Z", agency)).encode()
+        store[_comment_key(comment, docket, agency)] = dumps(
+            _comment_payload(comment, docket, "2026-11-09T00:00:00Z", agency)).encode()
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+    monkeypatch.setattr(regulations.r2, "preflight_uploads", lambda out, files: None)
+    monkeypatch.setattr(regulations.r2, "upload_file", lambda path, remote_key=None: None)
+    refused = OSError("documents merge refused")
+    if fails:
+        monkeypatch.setattr(regulations, "merge_staging_files", lambda *a, **k: (_ for _ in ()).throw(refused))
+    merges = []
+
+    def merge_comments(staging_dir, record_type):
+        staged = sorted(f"{path.parent.name}/{path.name}" for name in ("dockets", "documents", "comments")
+                        for path in (staging_dir / name).glob("*.parquet"))
+        merges.append((staged, [_published_ids(native_publication, table) for table in ("dockets", "documents")]))
+
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", merge_comments)
+    sweep = RegulationsPipeline(allow_fresh_start=True, output_dir=tmp_output, batch_count=2, use_iceberg=True,
+                                enrich_text=False, skip_upload=False).run_sweep
+    if fails:
+        with pytest.raises(RuntimeError, match="the comment batches after it ran") as raised:
+            sweep()
+        assert raised.value.__cause__ is refused
+        assert "::error title=Dockets and documents pass failed" in capsys.readouterr().out
+        published = [None, None]
+    else:
+        assert sweep() is None
+        published = [["EPA-2026-0001", "FAA-2026-0001"], ["EPA-2026-0001-0001", "FAA-2026-0001-0001"]]
+    assert merges == [(["comments/EPA.parquet"], published), (["comments/FAA.parquet"], published)]
+    retired = set(pl.read_parquet(tmp_output / "manifest.parquet")["key"].to_list())
+    assert retired == (set(store) - first_pass if fails else set(store))
+
+
+def test_a_first_pass_whose_manifest_upload_is_refused_stops_the_sweep(tmp_output, monkeypatch, native_publication):
+    """The realistic recorded case: its tables published and its manifest saved locally, then the upload refused.
+
+    A comment batch's upload of that local manifest would retire the pass's keys, so no batch runs.
+    """
+    monkeypatch.setenv("AGENCIES", "EPA,FAA")
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://test.invalid")
+    store = {_docket_key(f"{agency}-2026-0001", agency=agency): dumps(
+        _docket_payload(f"{agency}-2026-0001", "2026-11-09", agency)).encode() for agency in ("EPA", "FAA")}
+    store |= {_comment_key(f"{agency}-2026-0001-0002", f"{agency}-2026-0001", agency): dumps(_comment_payload(
+        f"{agency}-2026-0001-0002", f"{agency}-2026-0001", "2026-11-09T00:00:00Z", agency)).encode()
+        for agency in ("EPA", "FAA")}
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+    monkeypatch.setattr(regulations.r2, "preflight_uploads", lambda out, files: None)
+    refused = OSError("manifest upload refused")
+
+    def upload_file(path, remote_key=None):
+        raise refused
+
+    monkeypatch.setattr(regulations.r2, "upload_file", upload_file)
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", lambda *a, **k: pytest.fail("a comment batch ran"))
+    with pytest.raises(OSError) as raised:
+        RegulationsPipeline(allow_fresh_start=True, output_dir=tmp_output, batch_count=2, use_iceberg=True,
+                            enrich_text=False, skip_upload=False).run_sweep()
+    assert raised.value is refused
+    assert _published_ids(native_publication, "dockets") == ["EPA-2026-0001", "FAA-2026-0001"]
+
+
+@pytest.mark.parametrize("first_pass_lists", [True, False])
+def test_comment_batches_read_the_comment_keys_the_first_pass_listed(tmp_output, monkeypatch, first_pass_lists):
+    """One scan per agency per sweep: the first pass keeps the unread comment keys and no comment batch lists again.
+
+    A comment written after the scan waits for the next sweep (it is not manifested, so it is not lost). An agency
+    the first pass did not list, because its scan failed, is listed by its own batch as before.
+    """
+    monkeypatch.setenv("AGENCIES", "EPA,FAA")
+    store = {}
+    for agency in ("EPA", "FAA"):
+        docket, comment = f"{agency}-2026-0001", f"{agency}-2026-0001-0002"
+        store[_docket_key(docket, agency=agency)] = dumps(_docket_payload(docket, "2026-11-09", agency)).encode()
+        store[_comment_key(comment, docket, agency)] = dumps(
+            _comment_payload(comment, docket, "2026-11-09T00:00:00Z", agency)).encode()
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+    listed, real = [], mirrulations.list_agency_files_by_type
+
+    def counting(resource, bucket, prefix, agency, record_types, **kwargs):
+        listed.append((agency, sorted(record_type.name for record_type in record_types)))
+        if not first_pass_lists and agency == "EPA" and len(listed) <= 2:
+            raise OSError("listing raw-data/EPA/ refused")
+        return real(resource, bucket, prefix, agency, record_types, **kwargs)
+
+    monkeypatch.setattr(mirrulations, "list_agency_files_by_type", counting)
+    late = _comment_key("FAA-2026-0001-0003", "FAA-2026-0001", "FAA")
+    merged = []
+
+    def merge_comments(staging_dir, record_type):
+        merged.append(pl.read_parquet(staging_dir / "comments" / "*.parquet")["comment_id"].to_list())
+        store[late] = dumps(_comment_payload("FAA-2026-0001-0003", "FAA-2026-0001", "2026-11-10T00:00:00Z",
+                                             "FAA")).encode()  # written while the sweep runs
+
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", merge_comments)
+    sweep = RegulationsPipeline(allow_fresh_start=True, output_dir=tmp_output, batch_count=2, use_iceberg=True,
+                                enrich_text=False, skip_upload=True).run_sweep
+    every = ["comments", "dockets", "documents"]
+    if first_pass_lists:
+        sweep()
+        assert sorted(listed) == [("EPA", every), ("FAA", every)]
+        assert merged == [["EPA-2026-0001-0002"], ["FAA-2026-0001-0002"]]
+        assert set(pl.read_parquet(tmp_output / "manifest.parquet")["key"].to_list()) == set(store) - {late}
+    else:
+        with pytest.raises(RuntimeError, match="the comment batches after it ran"):
+            sweep()
+        # The pass kept nothing, so each batch lists its own agency again, for comments alone, and sees what the
+        # mirror holds by then: FAA's batch also reads the comment written during the sweep.
+        assert sorted(listed[2:]) == [("EPA", ["comments"]), ("FAA", ["comments"])]
+        assert [set(ids) for ids in merged] == [{"EPA-2026-0001-0002"}, {"FAA-2026-0001-0002", "FAA-2026-0001-0003"}]
+
+
+def test_a_held_key_batch_retries_its_unresolved_keys_first(tmp_output, monkeypatch):
+    """The retry set is the only way back for a key an older manifest wrongly marked read: listing skips it.
+
+    The comment batch reads the first pass's held keys, and must still be handed its agency's unresolved keys.
+    """
+    from spicy_regs.pipelines.regulatory_publication import finish_checkpoints
+
+    monkeypatch.setenv("AGENCIES", "EPA")
+    docket, listed, stuck = "EPA-2026-0001", "EPA-2026-0001-0002", "EPA-2026-0001-0001"
+    store = {_docket_key(docket): dumps(_docket_payload(docket, "2026-11-09")).encode()}
+    for comment in (listed, stuck):
+        store[_comment_key(comment, docket)] = dumps(_comment_payload(comment, docket, "2026-11-09T00:00:00Z")).encode()
+    # An older run manifested the stuck key without its row, and left it in the retry set.
+    pl.DataFrame({"key": [_comment_key(stuck, docket)]}).write_parquet(tmp_output / "manifest.parquet")
+    finish_checkpoints(tmp_output, {"failed_keys": [{
+        "agency": "EPA", "record_type": "comments", "key": _comment_key(stuck, docket), "status": "unreadable",
+        "reason": "legacy parse failure", "attempted_at": "2026-10-01T00:00:00+00:00", "attempts": 1,
+    }], "pending_comment_text": []}, publish=False)
+    monkeypatch.setattr(mirrulations, "s3_resource", lambda: _FakeS3Resource(store))
+    merged = []
+    monkeypatch.setattr(regulations.iceberg, "merge_comments", lambda staging_dir, record_type: merged.append(
+        sorted(pl.read_parquet(staging_dir / "comments" / "*.parquet")["comment_id"].to_list())))
+    RegulationsPipeline(output_dir=tmp_output, batch_count=1, use_iceberg=True, enrich_text=False,
+                        skip_upload=True).run_sweep()
+    assert merged == [[stuck, listed]]
+    assert restore_checkpoint(tmp_output, "failed_keys") == []
 
 
 @pytest.mark.parametrize("defer", [False, True])
@@ -905,7 +1048,7 @@ def test_skip_upload_keeps_configured_remote_input_authority(tmp_output, monkeyp
     before = native_publication.objects[publication.INDEX_V2_KEY]
     pipeline = RegulationsPipeline(output_dir=tmp_output, agency=AGENCY, skip_upload=True, skip_comments=True, enrich_text=False, allow_fresh_start=True)
     observed = []
-    monkeypatch.setattr(pipeline, '_run', lambda manifest: observed.append(pipeline._selected_inputs.index))
+    monkeypatch.setattr(pipeline, '_run', lambda manifest, record_types: observed.append(pipeline._selected_inputs.index))
     pipeline.run()
     assert observed == [publication.parse_index(before)]
     assert native_publication.objects[publication.INDEX_V2_KEY] == before

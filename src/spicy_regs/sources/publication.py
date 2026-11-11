@@ -15,11 +15,12 @@ Source-evidence blobs are content-addressed and stored once for all artifacts.
 
 A version-2 family entry may also state ``publishedAt``: the UTC instant its
 publisher moved the pointer to that generation, never when the data was read.
-:func:`publish_generation` stamps it at the pointer write, and
-:func:`backfill_published_at` fills it in for entries written before. Neither
-may write to a live bucket until every reader admits the key: a
-``parse_index`` that predates it requires the exact family key set and
-refuses the whole index. The server image that admits it deploys first.
+:func:`publish_generation` stamps it at the pointer write. Entries written
+before that were stamped once by a backfill on 2026-10-03
+(:data:`PUBLISHED_AT_BACKFILLED_THROUGH`), so every entry carries it. A new
+optional key may not reach a live bucket until every reader admits it: a
+``parse_index`` that predates it requires the exact family key set and refuses
+the whole index. The server image that admits it deploys first.
 """
 
 from __future__ import annotations
@@ -64,6 +65,8 @@ PART_BYTES = 64 * 1024 * 1024
 EVIDENCE_PREFIX = "source-evidence"
 #: Concurrent blob requests while publishing evidence, as r2.py bounds its uploads.
 EVIDENCE_WORKERS = 8
+#: Bytes per read when a stored evidence blob is read back, so eight concurrent read-backs hold eight chunks.
+_READ_BACK_CHUNK = 1024 * 1024
 #: An evidence manifest lists every retained body and its journal every
 #: capture, so both grow with a run's reads (house communications' 1,043
 #: captures: a 261 KB manifest and a 588 KB journal, 2026-09-26). Rulespec
@@ -584,6 +587,9 @@ class DownloadedMember:
 
 
 RESUME_STALLS = 5  # consecutive reconnects that add no byte before a member fetch gives up
+#: Each member request's timeout when the caller sets none. httpx's own default is 5 seconds, and the public host
+#: took longer than that to answer one 95 MB member's headers: run 42875578221 (2026-11-10) died on that ReadTimeout.
+MEMBER_REQUEST_TIMEOUT = 60.0
 _STRONG_ETAG = re.compile(r'"[\x21\x23-\x7e\x80-\xff]*"')
 
 
@@ -613,18 +619,20 @@ def _resumable_body(url: str, label: str, headers: Mapping[str, str] | None,
     ETag, admitting only HTTP 206 with the exact remaining ``Content-Range`` and the same ETag (the rules of
     ``explorer_publications._range``). A 200 or 412 answer means the object changed or the range was ignored.
     Resume is gated on a strong ETag rather than on a pin, so a mutable legacy key resumes too; the pin is
-    :class:`_PinnedBody`'s rule. ``RESUME_STALLS`` reconnects in a row without progress, or the caller's runtime
+    :class:`_PinnedBody`'s rule. A transport error before any byte is held (a timeout waiting for the headers)
+    asks again from the start; one mid-body without a strong ETag restarts the body at 0, at most
+    ``RESUME_STALLS`` times. ``RESUME_STALLS`` reconnects in a row without progress, or the caller's runtime
     deadline, end the body. An in-process reconnect is used rather than ``PartialDownload``'s fsync'd checkpoint
     because this contract keeps no state across processes. A 404 before any response was accepted raises
-    :class:`_MemberAbsent`; any other refusal raises ``RuntimeError``.
+    :class:`_MemberAbsent`; any other refusal raises ``RuntimeError``, and is not retried.
     """
-    etag, source, held, stalls, resuming, started = None, None, 0, 0, False, False
+    etag, source, held, stalls, restarts, resuming, started = None, None, 0, 0, 0, False, False
     while True:
         sent = dict(headers or {})
         if resuming:
             sent |= {"Range": f"bytes={held}-", "If-Match": etag, "Accept-Encoding": "identity"}
-        request: dict = {name: value for name, value in (("headers", sent or None),
-                                                         ("timeout", remaining_timeout(timeout)))
+        limit = remaining_timeout(MEMBER_REQUEST_TIMEOUT if timeout is None else timeout)
+        request: dict = {name: value for name, value in (("headers", sent or None), ("timeout", limit))
                          if value is not None}
         start = held
         try:
@@ -660,14 +668,23 @@ def _resumable_body(url: str, label: str, headers: Mapping[str, str] | None,
             return
         except httpx.TransportError as error:
             etag = etag or (_resume_etag(source) if source is not None else None)
-            if etag is None:
-                raise
             stalls = 0 if held > start else stalls + 1
             if stalls >= RESUME_STALLS:
                 raise RuntimeError(f"{label}: {stalls} reconnects without progress at byte {held}") from error
-            logger.warning("{} reset at byte {} ({}); resuming", label, held, type(error).__name__)
+            if held and etag is None:
+                # No strong validator pins a byte range of this body: discard what arrived and ask for all of it.
+                restarts += 1
+                if restarts >= RESUME_STALLS:
+                    raise RuntimeError(f"{label}: {restarts} restarts, and no ETag to resume on") from error
+                logger.warning("{} reset at byte {} ({}) with no ETag to resume on; restarting",
+                               label, held, type(error).__name__)
+                yield None
+                source, held = None, 0
+            else:
+                logger.warning("{} reset at byte {} ({}); {}", label, held, type(error).__name__,
+                               "resuming" if etag else "asking again")
             time.sleep(remaining_timeout(min(30, 2 ** stalls)))
-            resuming = True
+            resuming = etag is not None
 
 
 class _PinnedBody:
@@ -724,8 +741,9 @@ def fetch_member(base_url: str, member: Member, local_path: Path, label: str | N
     """Stream one table file to ``local_path`` through a sibling temp file, checked against its pin when it has one.
 
     ``False`` only when an unpinned (legacy) file is absent (HTTP 404). A missing pinned member, any other status, a
-    transport error that cannot be resumed (``_resumable_body``) or bytes that differ from the pin raise, leaving
-    ``local_path`` untouched and no temp file. ``headers`` and ``timeout`` pass through to each request when given.
+    transport error that outlasts the bounded retries (``_resumable_body``) or bytes that differ from the pin raise,
+    leaving ``local_path`` untouched and no temp file. ``headers`` and ``timeout`` pass through to each request when
+    given; without a ``timeout`` each request has ``MEMBER_REQUEST_TIMEOUT``.
     Each byte is hashed once, as it arrives; a restarted body truncates the temp file and the digest.
     """
     label = label or member.path
@@ -1138,8 +1156,14 @@ def _put_immutable(client, bucket: str, key: str, path: Path, *, sha256: str | N
     _put_immutable_stream(client, bucket, key, lambda: path.open("rb"), path.stat().st_size, sha256=sha256)
 
 
-def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) -> None:
-    """Conditional bounded upload from any supported original-byte reader."""
+def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) -> bool:
+    """Conditional bounded upload from any supported original-byte reader.
+
+    ``True`` only when this call created the object with one PUT and storage answered with the MD5 of the very
+    buffer sent as its ETag. ``False`` otherwise: the key already held an object (including this call's own
+    retried request), the upload was multipart, or the answer named another ETag or none. The answer is storage's
+    account of what it received, not a read of what it holds; the evidence publisher logs it and relies on a read.
+    """
     from botocore.exceptions import ClientError
 
     if size > PART_BYTES * 10_000:
@@ -1162,12 +1186,14 @@ def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) 
             body = checked(raw)
         assert_content_address()
         try:
-            client.put_object(Bucket=bucket, Key=key, **_IMMUTABLE_HEADERS, **body, ContentLength=size,
-                              IfNoneMatch="*")
+            created = client.put_object(Bucket=bucket, Key=key, **_IMMUTABLE_HEADERS, **body, ContentLength=size,
+                                        IfNoneMatch="*")
         except ClientError as exc:
             if not _precondition(exc):
                 raise
-        return
+            return False
+        # ``body`` holds the one buffer that was read, hashed and sent; its Content-MD5 is that buffer's MD5.
+        return isinstance(created, Mapping) and created.get("ETag") == f'"{base64.b64decode(body["ContentMD5"]).hex()}"'
 
     def upload_parts(upload_id: str) -> list[dict]:
         parts = []
@@ -1187,6 +1213,7 @@ def _put_immutable_stream(client, bucket, key, open_body, size, *, sha256=None) 
         return parts
 
     _create_multipart(client, bucket, key, upload_parts)
+    return False
 
 
 def verify_stored_member(client, bucket: str, member: Member, open_local: Callable[[], ContextManager[BinaryIO]]
@@ -1283,9 +1310,9 @@ class _EvidenceMembers:
     """Admission source for one evidence artifact whose blobs live in the shared prefix.
 
     Metadata members come from ``source-evidence/<digest>/``. Each
-    ``blobs/sha256/<hex>`` member comes from the locally admitted copy when the
-    stored object's size and ETag already equal those bytes (``trusted``), and
-    otherwise directly from the shared remote prefix.
+    ``blobs/sha256/<hex>`` member comes from the locally admitted copy when
+    stored bytes were already shown equal to it (``trusted``, see
+    :func:`publish_evidence`), and otherwise directly from the shared remote prefix.
     """
 
     def __init__(self, client, bucket: str, prefix: str, local, blobs: set[str], trusted: set[str]):
@@ -1305,24 +1332,28 @@ class _EvidenceMembers:
 
 
 def publish_evidence(client, bucket: str, path: Path, artifact, *, archive_root: Path | None = None) -> None:
-    """Upload one locally admitted evidence artifact, sending and reading back only new blob bytes.
+    """Upload one locally admitted evidence artifact, reading every blob it creates back once before admission.
 
     Blob members are content-addressed, so each is stored once at
     ``source-evidence/blobs/sha256/<hex>`` for every artifact that cites it.
-    A new blob is created from bytes that hash to its key and is read back once
-    before admission. An existing blob whose size and ETag equal the local
-    bytes is not transferred again; any other existing object is read back and
-    refused unless its bytes match. Small metadata stays under the artifact's
-    prefix. Uploads run ``EVIDENCE_WORKERS`` at a time. ``archive_root`` names the
-    evidence's own raw archive when it is not ``SPICYGOV_RAW_ROOT``. After every blob exists
-    and metadata is written, admission streams untrusted remote blobs directly
-    without retaining local verification copies.
+    Each blob is handled on one of ``EVIDENCE_WORKERS`` workers: created if
+    absent, then read back at once and held to its size and SHA-256. Only an
+    existing blob whose stored size and ETag equal the local bytes is not
+    read. Admission then hashes the local copy of each blob shown equal and
+    streams any other from storage, which refuses the artifact. Small
+    metadata stays under the artifact's prefix. ``archive_root`` names the
+    evidence's own raw archive when it is not ``SPICYGOV_RAW_ROOT``.
+
+    The rule, what each check can and cannot see, and its cost are stated
+    once, in docs/source-evidence.md ("Stored blobs").
     """
+    from collections import Counter
     from concurrent.futures import ThreadPoolExecutor
-    from rulespec_artifacts import admit_artifact, iter_member_descriptors
+    from rulespec_artifacts import MemberNotFoundError, admit_artifact, iter_member_descriptors
     from spicy_regs.source_evidence import EvidenceMemberSource
 
     local = EvidenceMemberSource(path, archive_root=archive_root)
+    shared = _S3Members(client, bucket, EVIDENCE_PREFIX)
     prefix = f"{EVIDENCE_PREFIX}/{artifact.pin.artifact_digest.removeprefix('sha256:')}"
     declared = {member.object_key: member for member in iter_member_descriptors(artifact, local)}
     blobs, metadata = [], []
@@ -1335,28 +1366,49 @@ def publish_evidence(client, bucket: str, path: Path, artifact, *, archive_root:
             raise PublicationError(f"Evidence blob {key} is not addressed by its content")
         blobs.append(key)
 
-    def store(key: str) -> bool:
-        """Create the blob if absent; ``True`` when the stored object already equals the local bytes."""
-        stored = _head(client, bucket, f"{EVIDENCE_PREFIX}/{key}")
-        if stored is None:
-            _put_immutable_stream(
-                client, bucket, f"{EVIDENCE_PREFIX}/{key}", lambda: local.open(key),
-                declared[key].byte_size, sha256=declared[key].sha256,
-            )
+    def stored_bytes_match(key: str) -> bool:
+        """Read the stored blob once, in bounded chunks; ``True`` when it has the member's size and SHA-256."""
+        member, digest, size = declared[key], hashlib.sha256(), 0
+        try:
+            with shared.open(key) as stream:
+                while size <= member.byte_size and (chunk := stream.read(_READ_BACK_CHUNK)):
+                    checkpoint()
+                    digest.update(chunk)
+                    size += len(chunk)
+        except MemberNotFoundError:
             return False
-        with local.open(key) as stream:
-            identity = _stream_identity(stream)
-        if (stored["ContentLength"], stored.get("ETag")) == (identity["bytes"], identity["etag"]):
-            return True
-        logger.warning("Stored evidence blob {} differs from its expected identity; reading it back", key)
-        return False
+        return (size, "sha256:" + digest.hexdigest()) == (member.byte_size, member.sha256)
+
+    def store(key: str) -> str | None:
+        """Make storage hold the blob; how its stored bytes were shown equal to the local ones, else ``None``."""
+        remote = f"{EVIDENCE_PREFIX}/{key}"
+        stored = _head(client, bucket, remote)
+        how = "read back"
+        if stored is None:
+            # Recorded for the log, never trusted: a created blob is read back whatever storage answered.
+            if _put_immutable_stream(client, bucket, remote, lambda: local.open(key), declared[key].byte_size,
+                                     sha256=declared[key].sha256):
+                how = "created with the sent MD5 as ETag and read back"
+        else:
+            with local.open(key) as stream:
+                identity = _stream_identity(stream)
+            if (stored["ContentLength"], stored.get("ETag")) == (identity["bytes"], identity["etag"]):
+                return "already stored"
+        if stored_bytes_match(key):
+            return how
+        logger.warning("Stored evidence blob {} is absent or differs from its content address; admission will "
+                       "refuse it", key)
+        return None
 
     with ThreadPoolExecutor(max_workers=EVIDENCE_WORKERS) as pool:
-        trusted = {key for key, same in zip(blobs, pool.map(store, blobs), strict=True) if same}
+        shown = dict(zip(blobs, pool.map(store, blobs), strict=True))
+    if blobs:
+        logger.info("Evidence blobs: {}", ", ".join(
+            f"{count:,} {how or 'refused'}" for how, count in Counter(shown.values()).most_common()))
     for key in metadata:
         _put_immutable(client, bucket, f"{prefix}/{key}", path / key)
     admit_artifact(
-        _EvidenceMembers(client, bucket, prefix, local, set(blobs), trusted),
+        _EvidenceMembers(client, bucket, prefix, local, set(blobs), {key for key, how in shown.items() if how}),
         expected_pin=artifact.pin,
     )
 
@@ -1390,6 +1442,9 @@ def publish_generation(directory: Path, *, client, bucket: str, prior_index: Map
     ``added_tables`` is an explicit migration: the family's table set may grow by
     exactly those tables. ``receipt_only_tables`` explicitly moves processing
     tables into the shared receipt member; each must have a receipt-only policy.
+    A published table stops having receipts only once its installed policy is marked
+    ``subject_catalog.RECEIPTS_RETIRED``: it keeps its table and is never claimed by a receipt member again, on this
+    and every other publishing path (:func:`_stage_verified_generation`).
     Prior immutable bytes remain retained. Unreferenced immutable uploads may
     remain and are safe to reuse. A pointer
     moved by another family's writer is reread and this family's entry merged
@@ -1581,6 +1636,12 @@ def _clone_into(source: Path, target: Path, size: int | None) -> None:
         raise
 
 
+#: Byte floor for a table that kept its rows and columns, as a fraction of its prior. Measured on fec_committees:
+#: a writer's layout change alone left 0.392 (0.295 had it been one row group); within one layout, every value
+#: but the key nulled leaves 0.163, and every string but the key emptied leaves 0.371, above this floor.
+_KEPT_ROWS_MIN_RATIO = 0.2
+
+
 def _generation_scoped_tables() -> frozenset[str]:
     """Tables that describe only the generation holding them: its producer members, their footers and conversions.
 
@@ -1592,6 +1653,43 @@ def _generation_scoped_tables() -> frozenset[str]:
     from spicy_regs.navigation_read_outcomes import FILE_TABLES
 
     return frozenset(name + ".parquet" for name in FILE_TABLES.values())
+
+
+def _require_receipt_archive_pins(family: str, live: str, datasets) -> None:
+    """Refuse the first generation without a retired table's receipts until the docs pin the one they live in.
+
+    That is the family's current generation, the last with receipts: weekly retention deletes it within days unless
+    docs/pins/receipt-archive.json cites it (generation_retention). The file is read through retention's own reader
+    from the checkout the publishing job runs in; an install without docs/ cannot publish a retirement.
+    """
+    from spicy_regs import generation_retention
+
+    if not generation_retention.RECEIPT_ARCHIVE.is_file():
+        raise PublicationError(f"Cannot check the receipt archive pins: {generation_retention.RECEIPT_ARCHIVE} is not "
+                               "readable here; publish a retirement from a spicy-regs checkout")
+    pins = generation_retention.receipt_archive_pins()
+    for name in sorted(datasets):
+        pin = pins.get(name, {})
+        if pin.get("artifactDigest") != live or pin.get("family") != family:
+            raise PublicationError(
+                f"{name} leaves its receipts in {family} generation {live}, but docs/pins/receipt-archive.json pins "
+                f"{pin.get('family')} {pin.get('artifactDigest')}: pin the live generation before this publish "
+                f"(scripts/pin_receipt_archive.py {family})")
+
+
+def require_live_receipt_pins(index: dict, datasets) -> None:
+    """Refuse at a run's start, before any work, a publish :func:`_require_receipt_archive_pins` would refuse at its end.
+
+    For each of ``datasets`` whose receipts are retired and whose live family still lists them (its first
+    receipts-free publication is still to come), the pin must name that live generation. A sweep republishes some
+    such families after every batch, so a pin written before the merge can be overtaken by a run on the old code.
+    """
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    for name in sorted(set(datasets) & retired_receipt_datasets()):
+        owner = table_owner(index, name + ".parquet")
+        if owner is not None and name in owner[1].get("etlReceipts", {}).get("datasets", ()):
+            _require_receipt_archive_pins(owner[0], owner[1]["artifactDigest"], [name])
 
 
 def _stage_verified_generation(
@@ -1621,14 +1719,17 @@ def _stage_verified_generation(
     exempt = converted | _verified_replacement_tables | _generation_scoped_tables()
     # The guards run per table: a partition of a split table may legitimately shrink, but none may vanish,
     # since a build that forgot a partition would otherwise pass whenever the rest outweighs the shrink ratio.
+    # Bytes follow the writer's layout as well as the data, so a table whose index shows every partition kept its
+    # rows and the table its columns faces only the lower floor (:func:`_keeps_rows_and_columns`, and its limits).
     for key, table in tables.items():
         prior = table_descriptor(index, key)
-        if missing := _partitions(prior) - _partitions(table):
-            raise PublicationError(f"{key} lacks partitions its prior generation holds: "
-                                   + ", ".join("/".join(f"{c}={v}" for c, v in p) for p in sorted(missing)))
+        if prior and (missing := _partitions(prior) - _partitions(table)):
+            raise PublicationError(f"{key} lacks partitions its prior generation holds: " + ", ".join(sorted(
+                "/".join(f"{c}={dict(p)[c]}" for c in prior["partitionColumns"]) for p in missing)))
         if key not in exempt:
             old_size = prior["byteSize"] if prior else _get_remote_size(client, bucket, key)
-            _assert_upload_safe(table["byteSize"], old_size, key)
+            kept = prior is not None and _keeps_rows_and_columns(table, prior)
+            _assert_upload_safe(table["byteSize"], old_size, key, floor=_KEPT_ROWS_MIN_RATIO if kept else None)
     old_family = index["families"].get(family)
     # The table set may change only by an explicit migration: exactly the declared added tables join, none leave.
     # A union, so the declaration is inert once those tables are published.
@@ -1639,15 +1740,29 @@ def _stage_verified_generation(
     expected_tables = (set((old_family or {}).get("tables", {})) | set(added_tables)) - set(receipt_only_tables)
     if old_family is not None and set(tables) != expected_tables:
         raise PublicationError("Family membership changed; explicit migration is required")
-    from spicy_regs.subject_catalog import shared_receipt_logs
+    from spicy_regs.subject_catalog import retired_receipt_datasets, shared_receipt_logs
     # ``datasets`` is the family's claim: every index reader gives each listed name one owning family. A shared log
     # is in the receipt member and in the generation's stated policies, and is claimed by no family.
     shared = shared_receipt_logs()
-    if old_family and "etlReceipts" in old_family and "etlReceipts" not in entry:
-        raise PublicationError("Cannot publish a generation that drops required ETL receipts")
+    claimed = set(entry.get("etlReceipts", {}).get("datasets", []))
+    # A retirement is declared once, on the table's installed policy (subject_catalog.RECEIPTS_RETIRED), never
+    # inferred, and read here whatever path publishes (ss-ag1j): the table stays published, its evidence is the run's
+    # journal and retained originals, and no generation may claim receipts for it again. The prior generation's
+    # receipt member is not touched; retention keeps it as long as docs/pins/receipt-archive.json cites it.
+    retired = retired_receipt_datasets()
+    if retired & claimed:
+        raise PublicationError("A retired receipt dataset publishes no receipts")
     # An entry written before logs were shared may still list one; ceasing to list it drops no ownership.
-    if old_family and (set(old_family.get("etlReceipts", {}).get("datasets", []))
-                       - set(entry.get("etlReceipts", {}).get("datasets", [])) - shared):
+    dropped = set((old_family or {}).get("etlReceipts", {}).get("datasets", [])) - claimed - shared
+    if not {name + ".parquet" for name in dropped & retired} <= set(tables):
+        raise PublicationError("A retired receipt dataset keeps its table and publishes no receipts")
+    if dropped & retired and old_family is not None:
+        _require_receipt_archive_pins(family, old_family["artifactDigest"], dropped & retired)
+    # The member itself may go only when every dataset it owned is retired: one holding shared logs alone stays.
+    if (old_family and "etlReceipts" in old_family and "etlReceipts" not in entry
+            and not (dropped and dropped <= retired)):
+        raise PublicationError("Cannot publish a generation that drops required ETL receipts")
+    if dropped - retired:
         raise PublicationError("Cannot publish a generation that drops receipt dataset ownership")
     _merge_family(index, family, entry)
     evidence = [verify_evidence(path) for path in evidence_directories]
@@ -1892,12 +2007,7 @@ def restore_family(client, bucket: str, family: str, entry: Mapping | None, *, e
         if expected is not None and not matches:
             raise PublicationError(f"{family} names another generation than the one being rolled back")
         if entry is None:
-            from rulespec_artifacts import canonical_json_bytes
-
-            updated = deepcopy(index)
-            del updated["families"][family]
-            raw = canonical_json_bytes(updated)
-            parse_index(raw)
+            updated, raw = _without_families(index, (family,))
         else:
             updated, raw = _merge_family(index, family, dict(entry))
         if _put_pointer(client, bucket, INDEX_V2_KEY, raw, etag):
@@ -1905,9 +2015,167 @@ def restore_family(client, bucket: str, family: str, entry: Mapping | None, *, e
     raise PublicationError("Publication changed concurrently; retry the rollback")
 
 
-def _partitions(table: Mapping | None) -> set[tuple[tuple[str, str], ...]]:
-    """The partitions a split table's members hold, as ``(column, value)`` tuples; none for a single file."""
-    return {tuple(member["partition"].items()) for member in (table or {}).get("members", ())}
+def _without_families(index: Mapping, names: Iterable[str]) -> tuple[dict, bytes]:
+    """``index`` without ``names``' entries, and its canonical bytes checked as an index; the rest is kept as is."""
+    from rulespec_artifacts import canonical_json_bytes
+
+    updated = deepcopy(dict(index))
+    for name in names:
+        del updated["families"][name]
+    raw = canonical_json_bytes(updated)
+    parse_index(raw)
+    return updated, raw
+
+
+class FamilyRemoval(NamedTuple):
+    """One planned index write that drops whole families: the bytes read, their ETag, the exact bytes to store."""
+
+    before: bytes
+    etag: str
+    after: bytes
+    removed: dict[str, dict]
+
+
+def plan_family_removal(raw: bytes, etag: str, names: Iterable[str], *, roots: Mapping[str, Mapping],
+                        held: Mapping[str, str]) -> FamilyRemoval:
+    """Plan dropping ``names`` from the stored index ``raw``; nothing is written.
+
+    Taking a family out of the index unpublishes it: readers resolve tables only through the index, and its
+    generations stay stored (``generation_retention`` keeps a family's newest three once the index stops naming it).
+    Refused: a name the index lacks; removing every family; a family that another family's current root (``roots``,
+    every other family's, by family) records as a parent, by its ``family`` or by a table key the family owns (as
+    ``generations._check_parents`` resolves it), since that family's next build reads it through the index; and a
+    family whose name or current digest (bare hex) ``held`` maps to a reason, such as a pin document or a rulemaking
+    input.
+    """
+    index = parse_index(raw)
+    names = sorted(set(names))
+    if not names:
+        raise PublicationError("Name at least one family to remove")
+    if missing := [name for name in names if name not in index["families"]]:
+        raise PublicationError(f"Not in the publication index: {', '.join(missing)}")
+    if len(names) == len(index["families"]):
+        raise PublicationError("Refusing to remove every family: the index would be empty")
+    removed = {name: index["families"][name] for name in names}
+    if unread := sorted(set(index["families"]) - set(removed) - set(roots)):
+        raise PublicationError(f"Current roots not read, so their parents are unchecked: {', '.join(unread)}")
+    reasons = [f"{name} is held by {held[token]}" for name, entry in removed.items()
+               for token in (name, entry["artifactDigest"].removeprefix("sha256:")) if token in held]
+    for family, root in sorted(roots.items()):
+        if family in removed:
+            continue
+        for key, parent in sorted((root.get("spec", {}).get("parents") or {}).items()):
+            owner = table_owner(index, key)
+            for read in {parent.get("family"), owner and owner[0]} & removed.keys():
+                reasons.append(f"{read} is a parent of {family} ({key})")
+    if reasons:
+        raise PublicationError("Refusing to remove: " + "; ".join(reasons))
+    return FamilyRemoval(raw, etag, _without_families(index, names)[1], removed)
+
+
+def check_family_removal(before: bytes, after: bytes, names: Iterable[str]) -> dict[str, int]:
+    """Prove ``after`` is ``before`` without ``names``: each is absent and every other entry is byte-identical.
+
+    Entries are compared as canonical JSON, the form the stored index is written in. Any other difference refuses.
+    """
+    from rulespec_artifacts import canonical_json_bytes
+
+    old, new = parse_index(before), parse_index(after)
+    names = set(names)
+    if present := sorted(names & set(new["families"])):
+        raise PublicationError(f"Still in the publication index: {', '.join(present)}")
+    kept = set(old["families"]) - names
+    if set(new["families"]) != kept:
+        raise PublicationError(f"Families added or lost besides the removal: {sorted(set(new['families']) ^ kept)}")
+    if changed := [family for family in sorted(kept) if canonical_json_bytes(old["families"][family])
+                   != canonical_json_bytes(new["families"][family])]:
+        raise PublicationError(f"Entries changed besides the removal: {', '.join(changed)}")
+    if {key: old[key] for key in old if key != "families"} != {key: new[key] for key in new if key != "families"}:
+        raise PublicationError("The index header changed besides the removal")
+    return {"before": len(old["families"]), "after": len(new["families"]), "identical": len(kept)}
+
+
+class RemovalOutcome(NamedTuple):
+    """What the stored index holds after a removal's write attempt: ``removed``, ``not_written`` or ``index_moved``."""
+
+    status: str
+    stored: bytes
+    note: str
+
+
+def write_family_removal(client, bucket: str, removal: FamilyRemoval) -> RemovalOutcome:
+    """Store ``removal.after`` only if the index still has ``removal.etag``, then settle what the stored index holds.
+
+    The write is the conditional pointer write every publisher uses, tried once. Its answer alone is not trusted: a
+    PUT whose response is lost and which the client resends meets its own write as a changed ETag and is refused,
+    and a raised error may follow a write that landed. So the stored index is always read back and decides:
+    the planned bytes (``removed``, saying so when the answer disagreed), the bytes the plan read (``not_written``),
+    or anything else (``index_moved``, with the hashes and how it differs). Only a failed read-back raises.
+    """
+    try:
+        answer = "refused (precondition failed)" if not _put_pointer(
+            client, bucket, INDEX_V2_KEY, removal.after, removal.etag) else ""
+    except Exception as failure:  # the read-back below decides; the error is reported with it
+        answer = f"raised {type(failure).__name__}: {failure}"
+    stored = _get_bounded(client, bucket, INDEX_V2_KEY)
+    if stored is None:
+        raise PublicationError(f"The publication index is absent after the write ({answer or 'accepted'})")
+    raw = stored[0]
+    if raw == removal.after:
+        check_family_removal(removal.before, raw, removal.removed)
+        return RemovalOutcome("removed", raw, answer and f"The write {answer}, but the stored index holds the "
+                                                         "planned bytes: its response was lost")
+    if raw == removal.before:
+        return RemovalOutcome("not_written", raw, f"The write {answer or 'was accepted'}; the stored index still "
+                                                   "holds the bytes the plan read: nothing was written. Plan again")
+    try:
+        check_family_removal(removal.before, raw, removal.removed)
+        detail = "the removal holds but the bytes differ"
+    except PublicationError as exc:
+        detail = str(exc)
+    stored_sha, planned_sha, read_sha = (hashlib.sha256(value).hexdigest() for value in (raw, removal.after, removal.before))
+    return RemovalOutcome("index_moved", raw, (
+        f"The write {answer or 'was accepted'}; the index moved: stored sha256 {stored_sha} is neither the planned "
+        f"{planned_sha} nor the read {read_sha} ({detail})"))
+
+
+def _partition(member: Mapping) -> tuple[tuple[str, str], ...]:
+    """A file's partition as sorted ``(column, value)`` pairs; ``()`` for a single file.
+
+    Sorted because the two sides list the columns differently: the stored index is canonical JSON, which sorts
+    them, and a new generation's entry lists them in directory order.
+    """
+    return tuple(sorted(member.get("partition", {}).items()))
+
+
+def _partitions(table: Mapping) -> set[tuple[tuple[str, str], ...]]:
+    """The partitions a split table's members hold, each as :func:`_partition` keys it; none for a single file."""
+    return {_partition(member) for member in table.get("members", ())}
+
+
+def _partition_rows(table: Mapping) -> dict[tuple[tuple[str, str], ...], int]:
+    """Rows per partition, each as :func:`_partition` keys it, a single file being the one partition ``()``."""
+    rows: dict[tuple[tuple[str, str], ...], int] = {}
+    for member in table.get("members", (table,)):
+        partition = _partition(member)
+        rows[partition] = rows.get(partition, 0) + member["rows"]
+    return rows
+
+
+def _keeps_rows_and_columns(table: Mapping, prior: Mapping) -> bool:
+    """Whether ``table`` records exactly ``prior``'s columns and at least its rows in every partition ``prior`` holds.
+
+    Such a table may shrink to :data:`_KEPT_ROWS_MIN_RATIO` of its prior's bytes, not only to the ordinary ratio:
+    its bytes can halve with nothing lost, as when ``fec_committees`` went from 1,767 row groups to 176 on
+    2026-11-09 (10.2 MB to 4.0 MB, ratio 0.392, all 89,974 rows and 16 columns kept). A lost row or a changed
+    column leaves the ordinary ratio in force, as does a single file rebuilt as a split table, which holds no
+    partition its prior holds. These are counts, names and types: rows kept with their values emptied, or exchanged
+    for as many others, look the same, and nothing at publication compares values with the prior generation. The
+    floor refuses only a wipe that takes most of the bytes.
+    """
+    kept = _partition_rows(table)
+    return (table["columns"] == prior["columns"]
+            and all(kept.get(partition, -1) >= rows for partition, rows in _partition_rows(prior).items()))
 
 
 def _instant(seconds: float | None = None) -> str:
@@ -1960,11 +2228,11 @@ def _merge_family(index: dict, family: str, entry: dict) -> tuple[dict, bytes]:
     return updated, raw
 
 
-#: When :func:`backfill_published_at` was applied to the live index (2026-10-03, round 5, its only run). Every
-#: ``publishedAt`` at or before it was written by that backfill: the last object write under the generation's
-#: prefix, with the pointer moved at or after it. Every later one was stamped at the pointer write. A writer-stamped
-#: value at or before this instant would be the move itself, which "at or after" still describes. Another
-#: backfill moves this instant.
+#: When the one-time ``publishedAt`` backfill was applied to the live index (2026-10-03, round 5, its only run; the
+#: command was removed once every entry carried the key). Every ``publishedAt`` at or before it was written by that
+#: backfill: the last object write under the generation's prefix, with the pointer moved at or after it. Every later
+#: one was stamped at the pointer write. A writer-stamped value at or before this instant would be the move itself,
+#: which "at or after" still describes.
 PUBLISHED_AT_BACKFILLED_THROUGH = "2026-10-03T16:13:56Z"
 
 
@@ -1974,41 +2242,6 @@ def published_at_basis(instant: str | None) -> str | None:
         return None
     moved = datetime.fromisoformat(instant) > datetime.fromisoformat(PUBLISHED_AT_BACKFILLED_THROUGH)
     return "pointer_move" if moved else "last_object_write"
-
-
-def backfill_published_at(client, bucket: str, *, apply: bool = False) -> dict:
-    """Plan, or with ``apply`` write, ``publishedAt`` for each version-2 family entry that lacks it.
-
-    The instant is the latest write under the generation's prefix. That prefix is create-only, and the pointer
-    moves only after every member is uploaded and read back, so the instant is a lower bound on the move, short by
-    the read-back. The root alone is a looser one: it is uploaded first, up to 915 s before the last member on
-    2026-10-03. The write is conditional on the version-2 ETag read here, so a pointer that moved meanwhile refuses
-    with nothing written, and a rerun plans only what is still missing.
-    """
-    from rulespec_artifacts import ROOT_OBJECT_KEY, canonical_json_bytes
-
-    index, etag = _stored_index(client, bucket)
-    if etag is None:
-        raise PublicationError(f"{INDEX_V2_KEY} is absent, so there is no entry to stamp")
-    stamps = {}
-    for family, entry in sorted(index["families"].items()):
-        if "publishedAt" in entry:
-            continue
-        pages = client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=entry["prefix"] + "/")
-        written = {item["Key"]: item["LastModified"] for page in pages for item in page.get("Contents", ())}
-        if f"{entry['prefix']}/{ROOT_OBJECT_KEY}" not in written:
-            raise PublicationError(f"{family}'s current generation has no root under {entry['prefix']}")
-        stamps[family] = _instant(max(written.values()).timestamp())
-    if not (stamps and apply):
-        return {"index": INDEX_V2_KEY, "etag": etag, "stamps": stamps, "applied": False}
-    updated = deepcopy(index)
-    for family, instant in stamps.items():
-        updated["families"][family]["publishedAt"] = instant
-    raw = canonical_json_bytes(updated)
-    parse_index(raw)
-    if not _put_pointer(client, bucket, INDEX_V2_KEY, raw, etag):
-        raise PublicationError(f"{INDEX_V2_KEY} moved since the backfill read it; nothing was written, run it again")
-    return {"index": INDEX_V2_KEY, "etag": etag, "stamps": stamps, "applied": True}
 
 
 def receipt_members(index: Mapping, *, dataset: str | None = None) -> tuple[Member, ...]:

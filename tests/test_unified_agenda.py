@@ -301,7 +301,7 @@ def test_the_first_run_is_complete_and_a_smaller_bound_completes_over_runs(tmp_p
     module = sys.modules["spicy_regs.transforms.build_unified_agenda"]
 
     class Reader:
-        def __init__(self, *, editions, on_source=None):
+        def __init__(self, *, editions, on_source=None, evidence=None):
             self.editions = editions
 
         def iter_records(self):
@@ -407,7 +407,7 @@ def test_the_backfill_rereads_editions_restored_before_related_rins_were_read(tm
     requested: list[str] = []
 
     class Reader:
-        def __init__(self, *, editions, on_source=None):
+        def __init__(self, *, editions, on_source=None, evidence=None):
             requested.extend(editions)
             self.editions = editions
 
@@ -446,7 +446,7 @@ def test_a_reread_that_drops_a_restored_row_holds_the_edition_afterwards(tmp_pat
     warnings: list[str] = []
 
     class Reader:
-        def __init__(self, *, editions, on_source=None):
+        def __init__(self, *, editions, on_source=None, evidence=None):
             requested.extend(editions)
             self.editions = editions
 
@@ -492,7 +492,7 @@ def test_a_prior_without_the_related_rins_column_is_reread_from_the_newest_editi
     requested: list[str] = []
 
     class Reader:
-        def __init__(self, *, editions, on_source=None):
+        def __init__(self, *, editions, on_source=None, evidence=None):
             requested.extend(editions)
 
         def iter_records(self):

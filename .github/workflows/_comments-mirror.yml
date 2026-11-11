@@ -6,15 +6,19 @@ on:
       skip_upload:
         type: boolean
         default: false
-      promote_v1:
-        type: boolean
-        default: false
       comments_only:
         type: boolean
         default: false
       comments_runner:
         type: string
         default: ubuntu-latest
+      # The 2026-10-10 v1 promotion's inputs. That route published ETL receipts, which
+      # comments no longer do (ss-juz8); the first step refuses any of them. They stay
+      # declared only because _regulations-refresh.yml, shared with the ETL, still
+      # passes them: remove them here once that file stops.
+      promote_v1:
+        type: boolean
+        default: false
       comments_original_pair:
         type: string
         default: ''
@@ -40,125 +44,37 @@ env:
 jobs:
   publish:
     runs-on: ${{ inputs.comments_runner }}
-    # Unchanged snapshots verify object versions only. Changed snapshots scan
-    # once into agency staging, sort each agency, then stream the monolith.
-    timeout-minutes: ${{ inputs.promote_v1 && 360 || 180 }}
+    # Unchanged snapshots verify object versions only. A changed snapshot copies
+    # the comments table (no receipts since ss-juz8), stages by agency, sorts,
+    # assembles, checks every prior ID, seals and uploads. Measured at full size
+    # on an M4 Pro (3GB / 1 thread): copy from the live catalog 15.5 (2026-11-10;
+    # 2.7 from a local file) + stage 2.8 + sort 3.2 + assemble 2.3 + index 0.1 +
+    # prior-ID check 20 = 44 min; estimated: completeness count 0-1.5 (the
+    # snapshot summary, or about 78 s of receipt count), partition check 1-3,
+    # generation seal and admission 5-10 (it decoded receipts too, ~50).
+    # 50-58 local x 1.2-1.6 hosted = 60-93, plus upload and full readback of
+    # about 19 GB each way (6.4 monolith + 6.4 agency files + 6.4 generation;
+    # the 4 GB receipt member is gone) at 40-100 MB/s = 7-16, plus setup:
+    # 70-115 min. 180 is 1.6x that and 2.5x the last hosted mirror without
+    # receipts (72.5 min, 2026-10-03).
+    # The receipt route needed 360 (138 of its 170 measured minutes were receipts).
+    timeout-minutes: 180
 
     steps:
-      - name: Check retained original pair before checkout
-        id: retained_original
-        if: ${{ inputs.promote_v1 || inputs.comments_captured_input != '' || inputs.comments_captured_input_sha256 != '' || inputs.comments_local_python != '' || inputs.comments_local_python_sha256 != '' }}
-        shell: bash
-        env:
-          COMMENTS_ORIGINAL_PAIR: ${{ inputs.comments_original_pair }}
-          COMMENTS_CAPTURED_INPUT: ${{ inputs.comments_captured_input }}
-          COMMENTS_CAPTURED_INPUT_SHA256: ${{ inputs.comments_captured_input_sha256 }}
-          COMMENTS_LOCAL_PYTHON: ${{ inputs.comments_local_python }}
-          COMMENTS_LOCAL_PYTHON_SHA256: ${{ inputs.comments_local_python_sha256 }}
-          PROMOTE_V1: ${{ inputs.promote_v1 }}
+      - name: Refuse the retired v1 promotion
+        if: ${{ inputs.promote_v1 || inputs.comments_original_pair != '' || inputs.comments_captured_input != '' || inputs.comments_captured_input_sha256 != '' || inputs.comments_local_python != '' || inputs.comments_local_python_sha256 != '' }}
         run: |
-          literal_path() {
-            [[ ! "$1" =~ [[:cntrl:]] ]] || { echo 'Retained pair path contains control characters' >&2; exit 1; }
-            case "$1" in
-              *'*'*|*'?'*|*'['*|*']'*|*'{'*|*'}'*|*'('*|*')'*|*'\'*) echo 'Retained pair path contains glob or escape syntax' >&2; exit 1 ;;
-            esac
-          }
-          if [[ -n "$COMMENTS_CAPTURED_INPUT" || -n "$COMMENTS_CAPTURED_INPUT_SHA256" ]]; then
-            [[ "$PROMOTE_V1" = true && -n "$COMMENTS_ORIGINAL_PAIR" && -n "$COMMENTS_CAPTURED_INPUT" ]] || {
-              echo 'Captured input requires promotion and an explicit retained pair and descriptor' >&2; exit 1;
-            }
-            [[ "$COMMENTS_CAPTURED_INPUT_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
-              echo 'Captured input requires its exact SHA-256 digest' >&2; exit 1;
-            }
-          fi
-          if [[ -n "$COMMENTS_LOCAL_PYTHON" || -n "$COMMENTS_LOCAL_PYTHON_SHA256" ]]; then
-            [[ -n "$COMMENTS_LOCAL_PYTHON" && -n "$COMMENTS_CAPTURED_INPUT" && "$PROMOTE_V1" = true ]] || {
-              echo 'Local Python requires complete captured-input promotion settings' >&2; exit 1;
-            }
-            [[ "$COMMENTS_LOCAL_PYTHON_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
-              echo 'Local Python requires its exact executable SHA-256 digest' >&2; exit 1;
-            }
-            literal_path "$COMMENTS_LOCAL_PYTHON"
-            [[ "$COMMENTS_LOCAL_PYTHON" = /* && -f "$COMMENTS_LOCAL_PYTHON" && -x "$COMMENTS_LOCAL_PYTHON" && ! -L "$COMMENTS_LOCAL_PYTHON" ]] || {
-              echo 'Local Python must be an absolute regular executable' >&2; exit 1;
-            }
-            python_parent="$(cd -- "$(dirname "$COMMENTS_LOCAL_PYTHON")" && pwd -P)"
-            [[ "$python_parent/${COMMENTS_LOCAL_PYTHON##*/}" = "$COMMENTS_LOCAL_PYTHON" ]] || {
-              echo 'Local Python must use its canonical parent path' >&2; exit 1;
-            }
-          fi
-          if [[ -z "$COMMENTS_ORIGINAL_PAIR" ]]; then
-            exit 0
-          fi
-          literal_path "$COMMENTS_ORIGINAL_PAIR"
-          [[ "$COMMENTS_ORIGINAL_PAIR" = /* ]] || { echo 'Retained pair must use an absolute path' >&2; exit 1; }
-          original="$(cd -- "$COMMENTS_ORIGINAL_PAIR" && pwd -P)"
-          literal_path "$original"
-          workspace="$(cd -- "$GITHUB_WORKSPACE" && pwd -P)"
-          case "$original/" in
-            "$workspace/"*) echo 'Retained pair must be outside the checkout workspace' >&2; exit 1 ;;
-          esac
-          case "$COMMENTS_LOCAL_PYTHON/" in
-            "$workspace/"*) echo 'Local Python must be outside the checkout workspace' >&2; exit 1 ;;
-          esac
-          if [[ -n "$COMMENTS_CAPTURED_INPUT" ]]; then
-            literal_path "$COMMENTS_CAPTURED_INPUT"
-            [[ "$COMMENTS_CAPTURED_INPUT" = /* && -f "$COMMENTS_CAPTURED_INPUT" && ! -L "$COMMENTS_CAPTURED_INPUT" ]] || {
-              echo 'Captured descriptor must be an absolute regular file' >&2; exit 1;
-            }
-            captured_parent="$(cd -- "$(dirname "$COMMENTS_CAPTURED_INPUT")" && pwd -P)"
-            captured="$captured_parent/${COMMENTS_CAPTURED_INPUT##*/}"
-            [[ "$captured" = "$COMMENTS_CAPTURED_INPUT" ]] || {
-              echo 'Captured descriptor must use its canonical parent path' >&2; exit 1;
-            }
-            case "$captured/" in
-              "$workspace/"*) echo 'Captured descriptor must be outside checkout' >&2; exit 1 ;;
-            esac
-            test -f "$original/comments.parquet"
-            test -f "$original/etl_receipts.parquet"
-            [[ ! -e "$original/export-complete.json" && ! -L "$original/export-complete.json" ]] || {
-              echo 'A sealed pair must use the sealed input path' >&2; exit 1;
-            }
-            printf 'captured_path=%s\n' "$captured" >> "$GITHUB_OUTPUT"
-          else
-            test -f "$original/generation.json"
-            test -f "$original/export-complete.json"
-          fi
-          printf 'path=%s\n' "$original" >> "$GITHUB_OUTPUT"
+          echo 'The v1 promotion (promote_v1 and its retained-pair inputs) published ETL receipts, which comments no longer do (ss-juz8).' >&2
+          echo 'Comments publish receipts-free from the catalog: run this workflow without those inputs.' >&2
+          exit 1
 
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
-        if: ${{ inputs.comments_local_python == '' }}
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Qualify existing Python for captured inputs
-        if: ${{ inputs.comments_local_python != '' }}
-        shell: bash
-        env:
-          UV_PYTHON: ${{ inputs.comments_local_python }}
-          SPICY_REGS_CAPTURED_PYTHON_SHA256: ${{ inputs.comments_local_python_sha256 }}
-          UV_PYTHON_DOWNLOADS: never
-        run: |
-          : "${UV_PYTHON:?Captured inputs require an existing qualified Python}"
-          : "${SPICY_REGS_CAPTURED_PYTHON_SHA256:?Captured inputs require the Python executable digest}"
-          "$UV_PYTHON" - <<'PY'
-          import hashlib, os, sys
-          from pathlib import Path
-          executable = Path(sys.executable).resolve(strict=True)
-          selected = Path(os.environ['UV_PYTHON']).resolve(strict=True)
-          if (executable != selected or sys.version_info[:2] != (3, 12)
-                  or hashlib.sha256(executable.read_bytes()).hexdigest() != os.environ['SPICY_REGS_CAPTURED_PYTHON_SHA256']
-                  or os.environ.get('UV_PYTHON_DOWNLOADS') != 'never'):
-              raise SystemExit('Captured-input Python identity or download policy changed')
-          print(f'Qualified existing Python {sys.version.split()[0]} at {executable}')
-          PY
-          printf 'UV_PYTHON=%s\n' "$UV_PYTHON" >> "$GITHUB_ENV"
-          printf 'UV_PYTHON_DOWNLOADS=never\n' >> "$GITHUB_ENV"
-          printf 'UV_PROJECT_ENVIRONMENT=%s/.venv\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -192,9 +108,6 @@ jobs:
         shell: bash
         env:
           TMPDIR: ${{ runner.temp }}
-          COMMENTS_ORIGINAL_PAIR: ${{ steps.retained_original.outputs.path || 'output/comments-original-v1' }}
-          COMMENTS_CAPTURED_INPUT: ${{ steps.retained_original.outputs.captured_path }}
-          COMMENTS_CAPTURED_INPUT_SHA256: ${{ inputs.comments_captured_input_sha256 }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
@@ -203,12 +116,10 @@ jobs:
           # Cloudflare edge-cache purge after publish (best-effort; no-op if unset).
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          # Bypass r2's byte-size shrink guard: re-exporting from the catalog
-          # re-sorts + re-compresses the data, so a partition can be several times
-          # smaller on disk while holding *more* rows (verified: ACF 19.7 MB -> 6.0 MB
-          # with more rows + fresher dates). The script checks retained IDs,
-          # uniqueness, index and partition coverage, plus a row-count floor.
-          R2_ALLOW_SHRINK: '1'
+          # No R2_ALLOW_SHRINK here: the mirror lifts r2's byte-size shrink guard
+          # for the fixed agency files alone (re-sorted they can shrink while
+          # holding more rows, ACF 19.7 MB -> 6.0 MB; a moved agency's is emptied).
+          # The monolith and the generation's members keep the guard (ss-juz8).
           R2_CATALOG_URI: ${{ secrets.R2_CATALOG_URI }}
           R2_CATALOG_WAREHOUSE: ${{ secrets.R2_CATALOG_WAREHOUSE }}
           R2_CATALOG_TOKEN: ${{ secrets.R2_CATALOG_TOKEN }}
@@ -223,34 +134,11 @@ jobs:
               /usr/bin/time -v -o output/comments-resources.txt "$@"
             fi
           }
-          if [ "${{ inputs.promote_v1 }}" = "true" ]; then
-            uv run --frozen python scripts/check_refresh_inputs.py capture \
-              --reuse-published-base --base-only --receipt output/comments-base-inputs.json
-            git fetch --no-tags --depth=1 origin e9dfd216dc999845ea94e6171afb41e0c9380a10
-            V1_PARENT="$(mktemp -d "$RUNNER_TEMP/comments-export-v1.XXXXXX")"
-            V1_SOURCE="$V1_PARENT/source"
-            git worktree add --detach "$V1_SOURCE" e9dfd216dc999845ea94e6171afb41e0c9380a10
-            mkdir -p output
-            PROMOTED_ARGS=()
-            if [ "${{ inputs.skip_upload }}" != "true" ]; then
-              PROMOTED_ARGS+=(--publish)
-            fi
-            if [[ -n "$COMMENTS_CAPTURED_INPUT" ]]; then
-              PROMOTED_ARGS+=(--captured-input "$COMMENTS_CAPTURED_INPUT"
-                              --captured-input-sha256 "$COMMENTS_CAPTURED_INPUT_SHA256")
-            fi
-            measure \
-              uv run --frozen python scripts/prepare_comments_selected_export.py \
-              --v1-source "$V1_SOURCE" --original-pair "$COMMENTS_ORIGINAL_PAIR" \
-              --output output/comments-selected --base-receipt output/comments-base-inputs.json "${PROMOTED_ARGS[@]}"
-            exit 0
-          fi
           ARGS=""
           if [ "${{ inputs.skip_upload }}" = "true" ]; then
             ARGS="$ARGS --skip-upload"
           fi
           echo "Running: uv run python scripts/publish_comments_mirror.py $ARGS"
-          mkdir -p output
           measure \
             uv run --frozen python scripts/publish_comments_mirror.py $ARGS
 
@@ -265,49 +153,6 @@ jobs:
             output/comments-publication.json
             output/comments-resources.txt
             output/comments-placement.json
-            output/comments-base-inputs.json
-            output/comments-selected/comments-build.json
-            output/comments-selected/comments-publication.json
-            output/comments-selected/comments-exact-encoding.json
-            output/comments-selected/comments-prepared-export*.json
-            output/comments-selected/.catalog-pairs/comments/generation.json
-          retention-days: 30
-
-      - name: Retain completed prepared candidate for publication recovery
-        if: ${{ always() && inputs.promote_v1 && hashFiles('output/comments-selected/comments-prepared-export.json') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: comments-prepared-${{ github.run_id }}
-          include-hidden-files: true
-          path: output/comments-selected
-          retention-days: 30
-
-      - name: Retain exact original selected v1 export
-        if: ${{ always() && inputs.promote_v1 && inputs.comments_original_pair == '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: comments-original-v1-${{ github.run_id }}
-          path: output/comments-original-v1
-          retention-days: 30
-
-      - name: Retain declared members and descriptor of the retained original pair
-        if: ${{ always() && inputs.promote_v1 && inputs.comments_captured_input == '' && steps.retained_original.outcome == 'success' && steps.retained_original.outputs.path != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: comments-original-v1-${{ github.run_id }}
-          path: |
-            ${{ steps.retained_original.outputs.path }}/comments.parquet
-            ${{ steps.retained_original.outputs.path }}/etl_receipts.parquet
-            ${{ steps.retained_original.outputs.path }}/generation.json
-            ${{ steps.retained_original.outputs.path }}/export-complete.json
-          retention-days: 30
-
-      - name: Retain captured original declaration
-        if: ${{ always() && inputs.promote_v1 && steps.retained_original.outcome == 'success' && steps.retained_original.outputs.captured_path != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: comments-original-v1-declaration-${{ github.run_id }}
-          path: ${{ steps.retained_original.outputs.captured_path }}
           retention-days: 30
 
       - name: Capture published base versions for dependent jobs
@@ -316,12 +161,7 @@ jobs:
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL || format('https://data.{0}', vars.SPICYREGS_DOMAIN || 'spicy-regs.dev') }}
         run: |
           : "${R2_PUBLIC_URL:?Set the fork public data URL}"
-          if [ "${{ inputs.promote_v1 }}" = "true" ]; then
-            uv run --frozen python scripts/check_refresh_inputs.py capture --reuse-published-base \
-              --base-receipt output/comments-base-inputs.json
-          else
-            uv run --frozen python scripts/check_refresh_inputs.py capture
-          fi
+          uv run --frozen python scripts/check_refresh_inputs.py capture
       - name: Retain refresh input versions
         if: ${{ !inputs.skip_upload && !inputs.comments_only }}
         uses: actions/upload-artifact@v4

@@ -1,6 +1,5 @@
 """Discovery avoids row restoration; one request budget also bounds cold admission."""
 import asyncio
-import json
 from time import monotonic, sleep
 from threading import Event, Timer
 
@@ -11,12 +10,16 @@ from spicy_regs.runtime_bounds import RequestBound, checkpoint, current_bound
 from tests.test_local_native_selection import selected_family
 from tests.test_mcp_server import _listed, _records, _tool_data
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 @pytest.fixture(autouse=True)
 def reset_connections():
     server._reset_connection_cache()
     yield
-    for con in (server._cached_connection, server._cached_discovery_connection, server._cached_receipt_connection):
+    for con in (server._cached_connection, server._cached_discovery_connection):
         if con is not None:
             con.close()
     server._reset_connection_cache()
@@ -399,8 +402,7 @@ def test_discovery_cache_age_does_not_restart_on_every_read(monkeypatch):
         server._reset_connection_cache()
 
 
-@pytest.mark.parametrize("receipt_lookup", [False, True])
-def test_discovery_refresh_timeout_preserves_connection_and_releases_owner(monkeypatch, receipt_lookup):
+def test_discovery_refresh_timeout_preserves_connection_and_releases_owner(monkeypatch):
     import duckdb
 
     now = [10.0]
@@ -413,7 +415,6 @@ def test_discovery_refresh_timeout_preserves_connection_and_releases_owner(monke
 
     monkeypatch.setattr(server, "_refreshed", timeout)
     discovery = server._discovery_only.set(True)
-    receipt = server._physical_receipt_lookup.set(receipt_lookup)
     try:
         assert server._get_connection() is con
         now[0] += server._CONNECTION_TTL_SECONDS + 1
@@ -423,7 +424,6 @@ def test_discovery_refresh_timeout_preserves_connection_and_releases_owner(monke
         server._pointer_refresh_lock.release()
         assert server._get_connection() is con
     finally:
-        server._physical_receipt_lookup.reset(receipt)
         server._discovery_only.reset(discovery)
 
 
@@ -455,99 +455,6 @@ def test_old_receipt_only_discovery_is_hidden_without_payload_restore(tmp_path, 
     with pytest.raises(ToolError, match='Unknown table'):
         _tool_data(mcp, 'describe_table', {'table': 'fec_collections'})
     assert server._cached_connection is None
-
-
-def test_remote_receipt_lookup_skips_unrelated_admission_but_queries_do_not(tmp_path, monkeypatch):
-    from pathlib import Path
-    from spicy_regs.relationship_views.core import literal
-    from spicy_regs import citation_receipts, receipt_lookup
-    from spicy_regs.fec_receipt_adapter import ReceiptAdapter
-    from tests.receipt_lookup_fixtures import one_family
-    from tests.test_mcp_fec_release import configure, connection
-    from tests.test_mcp_receipt_lookup import fcc
-    from mcp.server.mcpserver.exceptions import ToolError
-
-    get_connection = server._get_connection
-    fixture = one_family(tmp_path / 'fcc', monkeypatch, {'fcc_filings': [fcc('100')]}, family='fcc')
-    [(snapshot,)] = fixture.execute("SELECT snapshot FROM _spicy_publication").fetchall()
-    fcc_index = json.loads(snapshot)
-    entry = next(iter(fcc_index['families'].values()))
-    fixture.close()
-    root = Path(server.R2_BASE_URL)
-    (tmp_path / 'fec').mkdir()
-    specs, index, *_ = configure(tmp_path / 'fec', monkeypatch)
-    index['families'].update(fcc_index['families'])
-    monkeypatch.setattr(server, '_get_connection', get_connection)
-    receipt = entry['etlReceipts']
-    receipt_path = root / entry['prefix'] / receipt['key']
-    subject_path = root / entry['prefix'] / 'fcc_filings.parquet'
-    counts = {'prepare': 0, 'prepare_qualified': 0, 'citations': 0}
-    for name in ('prepare', 'prepare_qualified'):
-        original = getattr(ReceiptAdapter, name)
-        def counted(self, *args, name=name, original=original, **kwargs):
-            counts[name] += 1
-            return original(self, *args, **kwargs)
-        monkeypatch.setattr(ReceiptAdapter, name, counted)
-    install_citations = citation_receipts.install_citation_inputs
-    def citations(*args, **kwargs):
-        counts['citations'] += 1
-        return install_citations(*args, **kwargs)
-    monkeypatch.setattr(citation_receipts, 'install_citation_inputs', citations)
-    apply_security = server._apply_security_settings
-    monkeypatch.setattr(server, '_apply_security_settings', lambda *args: None)
-    def build():
-        con = connection(index)  # Real FEC release installation; fixture source bytes only.
-        con.execute(f'CREATE VIEW fcc_filings AS SELECT * FROM read_parquet({literal(str(subject_path))})')
-        apply_security(con, list(map(str, (subject_path, receipt_path))))
-        return con
-    monkeypatch.setattr(server, '_build_connection', build)
-    mcp = server.build_server()
-    arguments = {'table': 'fcc_filings', 'keys': [{'id_submission': '100'}], 'fields': ['filing_url']}
-    reply = _tool_data(mcp, 'read_receipt_fields', arguments)
-    assert reply['keys'][0]['fields']['filing_url']['value'].endswith('/100')
-    assert counts == {'prepare': 0, 'prepare_qualified': 0, 'citations': 0}
-    assert server._cached_connection is None
-    receipt_connection = server._cached_receipt_connection
-    assert receipt_connection is not None
-    assert server._cached_discovery_connection is None
-    assert receipt_connection.execute("SELECT current_setting('enable_external_access')").fetchone() == (False,)
-    # No group's identity bounds admit an unknown key, so only the subject search is left to bound.
-    monkeypatch.setattr(receipt_lookup, 'SCAN_ROW_BOUND', 0)
-    with pytest.raises(ToolError, match='over the 0-row bound'):
-        _tool_data(mcp, 'read_receipt_fields', {**arguments, 'keys': [{'id_submission': 'missing'}]})
-    assert counts == {'prepare': 0, 'prepare_qualified': 0, 'citations': 0}
-    queried = _tool_data(mcp, 'query_sql', {'sql': f'SELECT * FROM {specs[0].view.name}'})
-    assert _records(queried) == [{'id': 1}]
-    assert counts == {'prepare': 1, 'prepare_qualified': 1, 'citations': 0}
-    query_connection = getattr(server, '_cached_connection')
-    assert query_connection is not None
-    registry = server._connection_relationships(query_connection)
-    assert registry[specs[0].view.name]['status'] == 'available'
-    assert all(registry[spec.view.name]['status'] == 'deferred' for spec in specs[1:])
-    assert server._cached_connection is not receipt_connection
-
-
-def test_local_native_receipt_lookup_keeps_full_row_admission(tmp_path, monkeypatch):
-    from spicy_regs import etl_receipts
-    from mcp.server.mcpserver.exceptions import ToolError
-
-    selected_family(tmp_path, monkeypatch)
-    monkeypatch.setattr(server, 'DATA_DIR', tmp_path)
-    monkeypatch.setattr(server, 'TABLES', ())
-    admissions = []
-    original = etl_receipts.validate_receipt_bundle
-    def validate(*args, **kwargs):
-        admissions.append(kwargs['generation_id'])
-        return original(*args, **kwargs)
-    monkeypatch.setattr(etl_receipts, 'validate_receipt_bundle', validate)
-    # Invalid fields still build the same fully admitted local connection before refusing.
-    with pytest.raises(ToolError, match='receipts do not carry'):
-        _tool_data(server.build_server(), 'read_receipt_fields', {
-            'table': 'members', 'keys': [{'bioguide_id': 'X'}], 'fields': ['not_a_receipt_field']})
-    assert admissions
-    assert server._cached_connection is not None and server._cached_discovery_connection is None
-    local = server._connection_local_selection(server._cached_connection)
-    assert local is not None and local['receipt_rows_admitted'] is True
 
 
 def _remote_fixture(tmp_path, monkeypatch, index):

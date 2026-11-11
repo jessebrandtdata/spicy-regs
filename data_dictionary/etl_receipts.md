@@ -10,8 +10,8 @@ Receipts are useful for three things:
 - **Finding something that is no longer a column.** A table in the newer layout
   keeps the columns people query. A few things people do sometimes want, such
   as the link to a filing's page on the publisher's site, are kept in the
-  receipt instead. Where that is so, the table's own notes say it in one
-  sentence.
+  receipt instead, until the table's group stops writing receipts and makes
+  them columns. Where that is so, the table's own notes say it in one sentence.
 - **Checking where a row came from.** A receipt names what was read to make
   the row.
 - **Seeing what did not become a row.** When a pipeline records a record it
@@ -21,7 +21,13 @@ Not every table has receipts yet. Tables are moving to the newer layout one
 group at a time, and a table has receipts only after it has been published that
 way. `describe_table('etl_receipts')` lists, under `publication`, each group
 that has them and the tables in it (`datasets`). A table that is not named
-there has no receipts: everything it holds is in the table itself. (The other
+there has no receipts this server can query. Most such tables have none:
+everything they hold is in the table itself. The eight rulemaking snapshot
+tables (`rule_targets`, `proceedings`, `regulatory_agenda_items`,
+`agenda_item_proceedings`, `comment_periods`, `rulemaking_lifecycles`,
+`lifecycle_events`, `agency_lifecycle_stats`) are the exception: their receipts
+sit in the snapshot's own internal file, which this server does not read, so a
+value kept only there cannot be read here. (The other
 `datasets` list in that reply, under `metadata`, names every table that is set
 up to have receipts, whether or not it has published any.)
 
@@ -30,32 +36,11 @@ The word has two other uses in this dictionary, and neither is this table.
 received. A note that cites a "receipt" followed by a folder name points at the
 maintainers' own evidence files, which are not public.
 
-## The quick way: ask for a value by the row's key
-
-The `read_receipt_fields` tool reads values out of receipts for you. Give it
-the table, the keys of the rows you mean and the fields you want. For the link
-to the CRS report `R48641` at a particular source update date:
-
-```json
-{"table": "crs_reports", "keys": [{"report_id": "R48641", "update_date": "2026-07-17T22:38:55+00:00"}], "fields": ["url"]}
-```
-
-`describe_table('crs_reports')` lists, under `receipt_fields`, the table's key
-columns with their types and the fields its receipts hold. A key gives every
-key column its exact value, so a table with two key columns names both:
-`{"committee_id": "C00097238", "cycle": 2012}`. Each row answers `found` or
-says why not, and each field says whether the receipt states a value.
-
-The tool reads up to 100 rows in a call. It does not work on a table with more
-than 2,000,000 receipts, and says so when asked. For such a table, to join
-receipts to a query's rows, or to read a receipt that belongs to no row, use
-the queries below.
-
 ## How to find the receipt for a row
 
-Without the tool this takes a query. In a table that has receipts, every row
-has exactly one receipt whose `outcome` is `accepted`. You find it by the
-table's name and the row's key.
+In a table that has receipts, every row has exactly one receipt whose
+`outcome` is `accepted`. You find it with a query, by the table's name and the
+row's key.
 
 1. Ask for the table's key columns. `describe_table('crs_reports')` lists them
    as `identity_columns`; for `crs_reports` those are `report_id` and `update_date`.

@@ -29,7 +29,9 @@ def family_policies(datasets: frozenset[str] | None = None):
     from spicy_regs.legislative_documents import field_registry
     from spicy_regs.scorecards.etl import POLICIES as scorecards
     from spicy_regs.transforms.government_receipts import POLICIES as government
-    from spicy_regs.transforms.regulations_receipts import policy as regulations_policy, SOURCE_COLUMNS
+    from spicy_regs.transforms.regulations_receipts import (
+        PARENT_PINNED_SUMMARIES, SOURCE_COLUMNS, policy as regulations_policy,
+    )
     from spicy_regs.transforms.fec_identity_receipts import dataset_policy as identity_policy, REGISTRY
     from spicy_regs.transforms.fec_subject_receipts import dataset_policy as fec_policy
     from spicy_regs.transforms.fec_native_subjects import FIELD_RULES
@@ -61,7 +63,8 @@ def family_policies(datasets: frozenset[str] | None = None):
     for name in field_registry():
         add(legislative_policy(name))
     for name in SOURCE_COLUMNS:
-        add(regulations_policy(name))
+        if name not in PARENT_PINNED_SUMMARIES:
+            add(regulations_policy(name))
     for name in REGISTRY:
         add(identity_policy(name))
     declarations = json.loads((ROOT / 'data_dictionary/fec_typed_schemas.json').read_text())['tables']
@@ -74,22 +77,77 @@ def family_policies(datasets: frozenset[str] | None = None):
 
 
 def declarations(datasets: frozenset[str] | None = None):
-    """Each installed declaration as written: the policy's descriptor, and the marker on a shared log."""
-    from spicy_regs.subject_catalog import SHARED_LOG, is_shared_log
+    """Each installed declaration as written: the policy's descriptor, the marker on a shared log, and the marker on
+    a table whose receipts are retired, kept from its installed file (its one owner; set it there by hand)."""
+    from spicy_regs.subject_catalog import RECEIPTS_RETIRED, SHARED_LOG, is_shared_log, retired_receipt_datasets
 
     shared = {policy.dataset for policy in shared_logs()}
-    result = {name: {**policy.descriptor(), **({SHARED_LOG: True} if name in shared else {})}
+    retired = retired_receipt_datasets()
+    result = {name: {**policy.descriptor(), **({SHARED_LOG: True} if name in shared else {}),
+                     **({RECEIPTS_RETIRED: True} if name in retired else {})}
               for name, policy in family_policies(datasets).items()}
     if {name for name, declared in result.items() if is_shared_log(declared)} != shared & result.keys():
         raise ValueError('A shared log has no declared policy')
     return result
 
 
-def main():
+def record_migrations(declared, replays, *, ledger_path=None, installed=None):
+    """Keep ``policy_migrations.json`` in step with the declarations about to be installed (ss-aj7t, ss-ag1j).
+
+    A dataset whose descriptor changes must change its ``policy_version`` too; its previous installed descriptor
+    becomes its newest earlier entry, which the new policy reads, unless ``replays`` gives a reason for it (then it is
+    replay-required and needs a registered replay, ``policy_migrations.REPLAYS``). A new dataset is recorded as
+    installed. A table whose receipts are retired is recorded like any other: the change that marks it may also
+    promote columns, and its last night on receipts must still read its prior under the new policy.
+    """
+    from spicy_regs.etl_receipts import DatasetPolicy
+    from spicy_regs.policy_migrations import LEDGER, REPLAY_REQUIRED, descriptor_digest
+    from spicy_regs.subject_catalog import descriptor_of
+
+    ledger_path = ledger_path or ROOT / 'src/spicy_regs' / LEDGER
+    installed = installed or ROOT / 'src/spicy_regs/etl_policies'
+    ledger = json.loads(ledger_path.read_text())
+    unused = set(replays)
+    for name, declaration in sorted(declared.items()):
+        policy = DatasetPolicy.from_descriptor(descriptor_of(declaration))
+        digest = descriptor_digest(policy)
+        entry = ledger.setdefault(name, {'installed': digest})
+        if entry['installed'] == digest:
+            continue
+        previous = descriptor_of(json.loads((installed / f'{name}.json').read_text()))
+        if descriptor_digest(DatasetPolicy.from_descriptor(previous)) != entry['installed']:
+            raise ValueError(f'{name}: its installed file is not the policy {LEDGER} records as current')
+        if previous['policy_version'] == policy.policy_version:
+            raise ValueError(f'{name}: its policy changed under {policy.policy_version}; give it a new policy_version '
+                             'in its family\'s policy() (receipts name a policy by its version)')
+        reason = replays.get(name)
+        unused.discard(name)
+        entry['earlier'] = [*entry.get('earlier', ()), {**previous, **({REPLAY_REQUIRED: reason} if reason else {})}]
+        entry['installed'] = digest
+    if unused:
+        raise ValueError(f'--replay-required names datasets whose policy did not change: {sorted(unused)}')
+    ledger_path.write_text(json.dumps(ledger, indent=1, sort_keys=True) + '\n')
+
+
+def main(argv=None):
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--replay-required', action='append', default=[], metavar='DATASET=REASON',
+                        help='a changed dataset whose previous policy\'s rows are rebuilt from originals, not carried')
+    args = parser.parse_args(argv)
+    replays = dict(item.split('=', 1) for item in args.replay_required)
     directory = ROOT / 'src/spicy_regs/etl_policies'
     policies = declarations()
+    record_migrations(policies, replays)
+    rewritten = 0
     for name, declared in policies.items():
-        (directory / f'{name}.json').write_text(json.dumps(declared, indent=2) + '\n')
+        path = directory / f'{name}.json'
+        # Only a changed declaration is rewritten, so a run on an unchanged tree rewrites nothing (eight files
+        # written with sorted keys on 2026-10-10, 02987594, differ from this layout in key order alone).
+        if not path.exists() or json.loads(path.read_text()) != declared:
+            path.write_text(json.dumps(declared, indent=2) + '\n')
+            rewritten += 1
     stale = {p.stem for p in directory.glob('*.json')} - policies.keys()
     if stale:
         raise ValueError(f'Unowned installed policy declarations: {sorted(stale)}')
@@ -121,7 +179,7 @@ def main():
                          "arrow_schema": base64.b64encode(schema.serialize().to_pybytes()).decode(),
                          "descriptions": {column: prose[column] for column in schema.names}}
     (ROOT / "src/spicy_regs/fec_processing_schemas.json").write_text(json.dumps(payload, indent=2) + "\n")
-    print(f'Updated {len(policies)} explicit policies')
+    print(f'Rewrote {rewritten} of {len(policies)} explicit policies')
 
 if __name__ == '__main__':
     main()

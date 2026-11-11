@@ -23,7 +23,10 @@ jobs:
       command: run-rollup-cfr-sections
       skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
       cfr_replace_all: ${{ github.event_name == 'workflow_dispatch' && inputs.replace_all || false }}
-      # 42104322158 was still listing 335,000 granules at the old 30-minute
-      # limit. A prior successful 334,625-granule run needed another 4 minutes
-      # for retained-row merge, receipt preparation, admission and publication.
+      # The granule listing sets this, not receipts: 13.6 minutes in 42693875268
+      # (2026-11-09), still running at 30 in 42104322158. Receipts took about 4.3
+      # (prior restore 172 s, writer 84 s; gone since ss-vse3); the first night after
+      # the switch re-places every package once (about 5 minutes: 105,207 granules
+      # placed in 81 s in 42485018852), because the receipt route's table did not
+      # carry the placement marker. Kept at 60 for the listing's spread.
       timeout_minutes: 60

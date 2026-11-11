@@ -774,8 +774,10 @@ def main():
                         help="Explicit pinned completed remote subject to repack while rebuilding missing receipts")
     parser.add_argument("--retained-remote-subject-sha256", help="Exact digest of that recovery descriptor")
     args = parser.parse_args()
-    if args.native_only and args.publish:
-        raise ValueError("Native-only preparation cannot publish the legacy mirrors")
+    if args.publish:
+        # The promotion published the pair with its receipts (2026-10-10). Comments publish without receipts since
+        # ss-juz8; the catalog mirror (scripts/publish_comments_mirror.py) is the one publisher.
+        raise ValueError("The v1 promotion no longer publishes; comments publish receipts-free from the catalog")
     if args.remote_staging_prefix is not None and (
             not args.native_only or args.captured_input is None
             or not 0 < args.remote_max_bytes <= 64 * 1024**3):
@@ -889,14 +891,6 @@ def main():
         proof["observedSnapshot"] = asdict(observed_snapshot)
     evidence = args.output / "comments-exact-encoding.json"
     evidence.write_text(json.dumps(proof, indent=2, sort_keys=True) + "\n")
-    if args.publish:
-        verify_base()
-        from spicy_regs.pipelines.comments_mirror import publish_comments_mirror
-        publish_comments_mirror(args.output, prepared_export=result,
-                                prepared_reader=reader, prepared_snapshot=_pair_snapshot(manifest["source"]))
-        proof["status"] = "published"
-        proof["publication"] = json.loads((args.output / "comments-publication.json").read_text())
-        evidence.write_text(json.dumps(proof, indent=2, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":

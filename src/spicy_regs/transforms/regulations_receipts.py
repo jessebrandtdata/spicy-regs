@@ -41,7 +41,7 @@ from spicy_regs.transforms.regulations_shape import (
 )
 
 # Datasets whose retained processing input restores through the private batch reader.
-RESTORE_DATASETS = frozenset({"dockets", "documents", "federal_register", "fr_docket_links"})
+RESTORE_DATASETS = frozenset({"dockets", "documents"})
 #: Datasets whose restore keeps the captured source schema: the batch-restored ones and the typed attribute tables.
 ATTRIBUTE_DATASETS = frozenset({"comment_attributes", "docket_attributes", "document_attributes"})
 SOURCE_SCHEMA_DATASETS = RESTORE_DATASETS | ATTRIBUTE_DATASETS
@@ -50,6 +50,11 @@ BATCH_RESTORE_DATASETS = RESTORE_DATASETS | ATTRIBUTE_DATASETS
 #: Datasets whose writer keeps unchanged prior receipts exactly and gives a changed row only a predecessor
 #: reference (``carry_receipt_history``). Comments keeps its own catalog rules and inherits nothing.
 CARRY_DATASETS = frozenset(IDENTITIES) - {"comments"}
+#: Aggregates their scheduled rollups rebuild whole from published parents and publish without receipts (ss-nxew).
+#: The generation pins each parent it read (``spec.parents``); a row receipt would hold the row again and witness
+#: only that copy. No policy is installed for them, so admission asks for no receipt member.
+#: ``policy(name)`` and ``build_native_rollup`` below still build receipts for the four; only tests call that path.
+PARENT_PINNED_SUMMARIES = frozenset({"agency_monthly_volume", "agency_stats", "discovery_signals", "feed_summary"})
 
 NULLABLE_IDENTITIES = {
     "agency_lifecycle_stats": ("agency_code",),
@@ -67,7 +72,9 @@ def policy(dataset: str) -> DatasetPolicy:
         subject_schema(dataset),
         IDENTITIES[dataset],
         (*RECEIPT_COLUMNS[dataset], "raw_conversion_inputs", "input_metadata", "raw_source_record"),
-        policy_version=("regulations-native-v2" if dataset in {"comment_periods", "lifecycle_events", "comments", "documents", "agenda_item_proceedings", "rule_targets", "proceedings", "regulatory_agenda_items", "federal_register", "unified_agenda"} else "regulations-native-v1"),
+        policy_version=(
+            "regulations-native-v3" if dataset == "federal_register" else
+            "regulations-native-v2" if dataset in {"comment_periods", "lifecycle_events", "comments", "documents", "agenda_item_proceedings", "rule_targets", "proceedings", "regulatory_agenda_items", "unified_agenda", "fr_docket_links"} else "regulations-native-v1"),
         nullable_identity_fields=NULLABLE_IDENTITIES.get(dataset, ()),
     )
 
@@ -200,8 +207,11 @@ def _processor_input(dataset, row, *, processor=None):
     shaped = shape_record(dataset, value)
     schema = subject_schema(dataset)
     reproduced = pa.Table.from_pylist([shaped], schema=schema).to_pylist()[0]
-    selected = {name: row.get(name) for name in schema.names}
-    if exact_json(reproduced) != exact_json(selected):
+    # A pair selected under an earlier policy holds that policy's columns. One promoted since under a new name
+    # (a list its receipt held as JSON text) has no selected value to compare: it is reproduced from the retained
+    # input alone. A pair under the current policy holds every column, so nothing is left out for it.
+    held = [name for name in schema.names if name in row]
+    if exact_json({name: reproduced[name] for name in held}) != exact_json({name: row[name] for name in held}):
         raise ValueError(f"{dataset}: retained processor input differs from selected native subject")
     if any(exact_json(shaped.get(name)) != exact_json(row.get(name)) for name in RECEIPT_COLUMNS[dataset]):
         raise ValueError(f"{dataset}: retained processor input differs from selected processing evidence")
@@ -746,7 +756,6 @@ def build_native_rollup(name: str, inputs: Sequence[ReceiptInput], destination: 
     from spicy_regs.transforms.build_agency_monthly_volume import build_agency_monthly_volume
     from spicy_regs.transforms.build_discovery_signals import build_discovery_signals
     from spicy_regs.transforms.build_feed_summary import build_feed_summary
-    from spicy_regs.transforms.build_fr_docket_links import build_fr_docket_links
 
     def comment_index(work):
         import duckdb
@@ -763,7 +772,6 @@ def build_native_rollup(name: str, inputs: Sequence[ReceiptInput], destination: 
         "agency_monthly_volume": (build_agency_monthly_volume, {"documents"}, {"documents"}),
         "discovery_signals": (build_discovery_signals, {"documents"}, {"documents"}),
         "feed_summary": (build_feed_summary, {"dockets"}, {"dockets", "documents", "comments", "comments_index"}),
-        "fr_docket_links": (build_fr_docket_links, {"federal_register"}, {"federal_register"}),
     }
     operation, required, allowed = operations[name]
     present = {i.dataset for i in inputs}

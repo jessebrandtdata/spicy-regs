@@ -12,6 +12,10 @@ from spicy_regs.scorecards.resolution import INPUT_TABLES
 from spicy_regs.generations import build_generation
 from tests.test_scorecard_native_main_inputs import native_selection
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def fixture():
     source = {"scorecards": [{"scorecard_id": "lcv:2025", "snapshot_id": "s1", "publisher_id": "lcv", "year_text": "2025"}],

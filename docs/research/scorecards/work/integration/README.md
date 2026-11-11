@@ -110,14 +110,14 @@ With the selected provider installed, generate bounded qualification metadata
 from the private plan and its digest:
 
 ```sh
-uv run --frozen python scripts/build_scorecard_qualifications.py \
+uv run --frozen spicy-regs-scorecards qualifications \
   --plan "$SCORECARD_PLAN" --plan-sha256 "$SCORECARD_PLAN_SHA256" \
   --corpus "$SCORECARD_CORPUS" \
   --directory docs/research/scorecards/work/integration \
   --observed-at "$SCORECARD_OBSERVED_AT" \
   --published-ledger docs/research/scorecards/work/integration/integration_publications.json
-uv run --frozen python scripts/build_scorecard_integrations.py
-uv run --frozen python scripts/build_scorecard_integrations.py --check
+uv run --frozen spicy-regs-scorecards inventory
+uv run --frozen spicy-regs-scorecards inventory --check
 ```
 
 The coverage plan includes every qualified scope being reported. A smaller
@@ -125,7 +125,7 @@ ingestion plan may select only newly qualified or refreshed scopes. Capture the
 current public publication index, then prepare into fresh directories:
 
 ```sh
-uv run --frozen python scripts/prepare_scorecard_integrations.py \
+uv run --frozen spicy-regs-scorecards prepare \
   --plan "$SCORECARD_INGESTION_PLAN" \
   --plan-sha256 "$SCORECARD_INGESTION_PLAN_SHA256" \
   --corpus "$SCORECARD_CORPUS" --index "$SCORECARD_PRIOR_INDEX" \
@@ -160,7 +160,7 @@ uv run --frozen python docs/research/scorecards/work/integration/deployment/read
   --preparation "$SCORECARD_CANDIDATE/preparation.json" \
   --publication-receipt "$SCORECARD_PUBLICATION_RECEIPT" \
   --output "$SCORECARD_PUBLIC_READBACK"
-uv run --frozen python scripts/record_scorecard_publication.py \
+uv run --frozen spicy-regs-scorecards record-publication \
   --readback "$SCORECARD_PUBLIC_READBACK"
 ```
 

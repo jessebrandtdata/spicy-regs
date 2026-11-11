@@ -4,7 +4,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from spicy_regs import current_receipt_history, etl_bulk, regulations_bulk
+from spicy_regs import etl_bulk, regulations_bulk
 from spicy_regs.etl_receipts import exact_json, validate_receipt_bundle
 from spicy_regs.transforms import regulations_receipts
 from spicy_regs.transforms.regulations_receipts import ReceiptInput, materialize_internal, policy, write_held_dataset
@@ -361,28 +361,6 @@ def test_duckdb_failure_after_partial_restore_fails_fast_without_row_fallback(tm
     assert_raised_as(caught, failure, invalid)
     assert destination.read_bytes() == b'preserve'
     assert not list(tmp_path.glob('.regulatory-restore-*'))
-
-
-def test_ambiguous_priors_are_unsupported_semantics_only_when_unique_priors_are_required(tmp_path):
-    """The bulk lookup cannot pick among several accepted priors; the row writer decides them, or refuses."""
-    from spicy_regs.etl_receipts import _digest
-
-    source = _dockets(tmp_path, rows=1)
-    _, prior = write_held_dataset('dockets', source, tmp_path / 'prior', generation_id='prior')
-    _, current = write_held_dataset('dockets', source, tmp_path / 'current', generation_id='current')
-    held = pq.read_table(prior)
-    rows = held.to_pylist()
-    duplicate = dict(next(row for row in rows if row['outcome'] == 'accepted'))
-    duplicate['processing_json'] = exact_json({'raw_conversion_inputs': {'docket_id': 'd0', 'title': 'other'}})
-    duplicate['receipt_id'] = _digest({k: v for k, v in duplicate.items() if k != 'receipt_id'})
-    rows.append(duplicate)
-    pq.write_table(pa.Table.from_pylist(rows, schema=held.schema), prior)
-    with pytest.raises(etl_bulk.NotBulkEligible, match='Ambiguous selected prior'):
-        current_receipt_history.inherit_current_receipts(
-            current, [prior], tmp_path / 'strict.parquet', inherit_observations=False, require_unique_prior=True)
-    with pytest.raises(ValueError, match='Conflicting selected prior receipts'):
-        current_receipt_history.inherit_current_receipts(
-            current, [prior], tmp_path / 'lenient.parquet', inherit_observations=False)
 
 
 def test_mapper_rejecting_a_retained_input_still_leaves_the_exact_first_error_to_the_row_reader(tmp_path, monkeypatch):

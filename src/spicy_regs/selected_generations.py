@@ -47,10 +47,22 @@ RANGED_CHUNK_BYTES = 16 * 1024 * 1024
 
 @dataclass(frozen=True)
 class SelectedDataset:
+    """One dataset's pinned subjects and the receipts beside them.
+
+    ``receipts`` and ``generation_id`` are ``None`` for a table whose receipts are retired
+    (``subject_catalog.RECEIPTS_RETIRED``): its pinned public table is the whole selection.
+    """
+
     dataset: str
     subjects: tuple[Path, ...]
-    receipts: Path
-    generation_id: str
+    receipts: Path | None
+    generation_id: str | None
+
+    def required_receipts(self, reader: str) -> Path:
+        """The selected receipts, for a reader that still reads them; a retired table's refuses by name."""
+        if self.receipts is None:
+            raise ValueError(f"{self.dataset} has retired receipts; {reader} still reads them")
+        return self.receipts
 
 
 def unique_build_directory(root: Path) -> Path:
@@ -70,6 +82,10 @@ def _remember_selection(root, selections, checked):
     target = directory / "selection.json"
     values = json.loads(target.read_text()) if target.exists() else {}
     for selected in selections:
+        if selected.receipts is None:
+            # A table without receipts is never a native selection: it is read where its plain rollup wrote it.
+            values.pop(selected.dataset, None)
+            continue
 
         def member(path):
             return {"path": str(Path(path).resolve()), "sha256": _member_pin(path, checked)}
@@ -112,6 +128,16 @@ class SelectedInputs:
         signature, _ = self.checked[Path(path).absolute()]
         return {"sha256": digest, "byteSize": signature[2]}
 
+    def adopt_download(self, path, downloaded):
+        """Hold a member this session fetched against its pin, without hashing its bytes a second time."""
+        from spicy_regs.local_data import file_signature
+
+        path = Path(path).absolute()
+        signature = file_signature(path)
+        if signature != list(downloaded.state[:5]):
+            raise ValueError("Selected native member changed after its download")
+        self.checked[path] = (signature, downloaded.sha256)
+
     def receipts_pin(self, dataset, path):
         """The pin of the receipt member ``dataset`` was selected from: the published member's for a ranged read.
 
@@ -145,6 +171,8 @@ class SelectedInputs:
                 groups.setdefault(value.receipts, []).append(dataset)
         self.check()
         for receipts, names in groups.items():
+            if receipts is None:
+                continue
             scoped = select_receipt_family(receipts, self.directory / ("scoped-" + uuid4().hex), datasets=names)
             self.check()
             for dataset, path in scoped.items():
@@ -190,21 +218,32 @@ class SelectedInputs:
         _member_pin(target, self.checked)
         return target
 
-    def select(self, dataset, *, ranged=False):
+    def select(self, dataset, *, ranged=False, last_receipts=False):
         """Pinned subjects and receipts of ``dataset``.
 
         ``ranged`` is for a caller that reads only ``dataset``'s receipts (every Congress reader selects them by
         dataset): a remote shared member may then be read for that dataset's rows alone (:meth:`_ranged_receipts`).
+        ``last_receipts`` selects the receipts a retired table's live generation still lists, for the one night a
+        reader needs a field they alone hold (``congress_subjects.PROMOTED``); otherwise a retired table has none.
         """
         if dataset in self.cache:
             if dataset in self.ranged and not ranged:
                 raise ValueError(f"{dataset}: receipts were selected for this dataset alone")
             selected = self.cache[dataset]
-            for path in (*selected.subjects, selected.receipts):
+            for path in (*selected.subjects, *((selected.receipts,) if selected.receipts else ())):
                 _member_pin(path, self.checked)
             return self.cache[dataset]
+        from spicy_regs.subject_catalog import retired_receipt_datasets
+
+        retired = dataset in retired_receipt_datasets()
         if self.index is None:
             value = self.local.get(dataset)
+            published = self.root / f"{dataset}.parquet"
+            if retired and published.is_file():
+                # A local run beside the table a plain rollup just wrote: that file is the selection, pinned by hash.
+                _member_pin(published, self.checked)
+                self.cache[dataset] = SelectedDataset(dataset, (published,), None, None)
+                return self.cache[dataset]
             if value is None:
                 return None
 
@@ -227,7 +266,8 @@ class SelectedInputs:
             ]
             if not owners and owner is None:
                 return None
-            if len(owners) != 1:
+            # A retired table publishes no receipts: its pinned public table is read in their place.
+            if len(owners) != 1 and not (retired and not owners):
                 raise ValueError(f"{dataset}: selected native input requires one ETL receipt generation")
             if not self.public_url:
                 raise ValueError("Selected remote inputs require their public base URL")
@@ -279,6 +319,12 @@ class SelectedInputs:
             subjects = (
                 tuple(fetch(m) for m in publication.table_members(self.index, dataset + ".parquet")) if owner else ()
             )
+            if not owners or (retired and not last_receipts):
+                # A retired table is its published table, even while its live generation still lists the receipts
+                # it last published with: they are not read again unless asked for, so they are not fetched (4.2
+                # GiB for comment_attributes on its first receipts-free night).
+                self.cache[dataset] = SelectedDataset(dataset, subjects, None, None)
+                return self.cache[dataset]
             receipts = publication.receipt_members(self.index, dataset=dataset)
             if len(receipts) != 1:
                 raise ValueError(f"{dataset}: ambiguous selected receipt member")

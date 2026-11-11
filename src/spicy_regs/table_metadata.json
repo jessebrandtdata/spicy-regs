@@ -409,7 +409,7 @@
       {
         "column_name": "attachments",
         "column_type": "STRUCT(title VARCHAR, formats STRUCT(url VARCHAR, format VARCHAR, size BIGINT)[], attachment_id VARCHAR, restrict_reason VARCHAR, restrict_reason_type VARCHAR)[]",
-        "description": "Native ordered list of attachment entries, including restricted attachments and renditions without a URL. `restrict_reason_type` and `restrict_reason` retain the stated restriction. NULL means the included set was absent or unavailable in that row; [] means it contained no attachment entries. A format list or rendition URL can be NULL. Older rows may retain the earlier filtered representation; NULL never proves attachment absence."
+        "description": "Native ordered list of attachment entries, including restricted attachments and renditions without a URL. `restrict_reason_type` and `restrict_reason` retain the stated restriction. `attachment_id` is the attachment's own id, NULL on a row read before SpicyDocs 0.85.0 and where the record states none or a malformed one. NULL means the included set was absent or unavailable in that row; [] means it contained no attachment entries. A format list or rendition URL can be NULL. Older rows may retain the earlier filtered representation; NULL never proves attachment absence."
       },
       {
         "column_name": "text_content",
@@ -914,15 +914,23 @@
         "column_name": "link_source",
         "column_type": "VARCHAR",
         "description": "Which of the Register's statements carries the pair: `printed` (the document's printed docket labels), `regulations_dot_gov_info` (the Register's regulations.gov link, read from `regulations_dot_gov_docket_id` alone, never off a document id) or `both`, where a printed label is that docket id or SpicyDocs' normalizer reads it from the label. Every printed occurrence that carries the pair reads `both`, and the link then adds no row. The current builder writes one of these labels; retained historical rows without a label keep NULL."
+      },
+      {
+        "column_name": "normalized_docket_candidates",
+        "column_type": "VARCHAR[]",
+        "description": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
       }
     ],
     "subject": "rulemaking",
-    "grain": "One row per document–docket pair a dated Federal Register record states. Native receipt identity uses document_number, publication_date, literal docket_id and docket_source_ordinal: printed-array positions keep repeated labels distinct; the ordinal is NULL for a regulations.gov-only link, whose docket_id distinguishes the relationship. link_source is not part of the identity.",
+    "grain": "One row per document–docket pair a dated Federal Register record states. Its row identity is document_number, publication_date, literal docket_id and docket_source_ordinal: printed-array positions keep repeated labels distinct; the ordinal is NULL for a regulations.gov-only link, whose docket_id distinguishes the relationship. link_source is not part of the identity.",
     "identity_columns": [
       "document_number",
       "publication_date",
       "docket_source_ordinal",
       "docket_id"
+    ],
+    "later_policy_columns": [
+      "normalized_docket_candidates"
     ]
   },
   "discovery_signals": {
@@ -964,7 +972,7 @@
   "cfr_sections": {
     "table": "cfr_sections",
     "label": "Code of Federal Regulations sections",
-    "summary": "One GovInfo annual CFR granule: a section, appendix or other structural unit. This is metadata, not regulatory body text. Enclosing parts come from annual volume PART headings, preserving compound and unusual numbering; printed section numbers alone do not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread volumes can retain earlier placement; the annual index package is excluded.",
+    "summary": "One GovInfo annual CFR granule: a section, appendix or other structural unit. This is metadata, not regulatory body text. Enclosing parts come from annual volume PART headings, preserving compound and unusual numbering; printed section numbers alone do not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread volumes can retain earlier placement; the annual index package is excluded. A granule's GovInfo page is `https://www.govinfo.gov/app/details/{package_id}/{granule_id}`, composed from the identifiers and not stored (until 2026-11 only the per-row receipts held it).",
     "coverage": "Window. Annual-edition section metadata from the 2025 edition and, for some titles, the 2026 edition (`SELECT DISTINCT edition_year, title` lists which), not full publication history or body text. Each section's part comes from its volume's PART heading; on 2026-09-23 every compared Title 41, 43 and 14 section agreed with eCFR's 2025-01-01 structure. Receipts: fork-execution-2026-09-21/cfr-ancestry-fix-2026-09-23/ (candidate.json, validation.json).",
     "kind": "window",
     "measured_on": "2026-10-03",
@@ -1267,7 +1275,7 @@
   "unified_agenda": {
     "table": "unified_agenda",
     "label": "Planned agency actions",
-    "summary": "One row per Regulation Identifier Number (RIN) per agenda edition, ingested from the OIRA/OMB Unified Agenda published at reginfo.gov by `build_unified_agenda`. A Tier-1 rulemaking-lifecycle source: the upstream, forward-looking catalog of rulemakings agencies *plan* to pursue, keyed by the same `rin` that appears in `federal_register` (`regulation_id_numbers`). Primary / dedup key is (`rin`, `agenda_edition`).",
+    "summary": "One row per Regulation Identifier Number (RIN) per agenda edition, ingested from the OIRA/OMB Unified Agenda published at reginfo.gov by `build_unified_agenda`. A Tier-1 rulemaking-lifecycle source: the upstream, forward-looking catalog of rulemakings agencies *plan* to pursue, keyed by the same `rin` that appears in `federal_register` (`regulation_id_numbers`). Primary / dedup key is (`rin`, `agenda_edition`). An entry's reginfo.gov page is `https://www.reginfo.gov/public/do/eAgendaViewRule?pubId={agenda_edition}&RIN={rin}`, composed from the key and not stored (until 2026-11 only the per-row receipts held it).",
     "coverage": "True range: the retained published baseline starts at 199510 and excludes the 2004 editions and spring 2012; agenda_edition names each included edition. A local source-only replay now recovers the two 2004 editions through narrowly qualified repairs; that candidate has not been published. See docs/unified-agenda-retained-rebuild.md for the qualification boundary. A rule has one row per edition that lists it, so count distinct rin, not rows, for a number of rules.",
     "kind": "true_range",
     "measured_on": "2026-10-10",
@@ -2460,7 +2468,7 @@
       {
         "column_name": "filing_document_content_type",
         "column_type": "VARCHAR",
-        "description": "Media type of the filing document at `url`, as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none."
+        "description": "Media type of the filing document (`url`), as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none."
       },
       {
         "column_name": "expenses_method",
@@ -2521,6 +2529,11 @@
         "column_name": "registrant_different_address",
         "column_type": "BOOLEAN",
         "description": "The filing's flag for whether the registrant's principal place of business differs from the address filed: true, false, or null when the filing does not carry it (registrations among others)."
+      },
+      {
+        "column_name": "url",
+        "column_type": "VARCHAR",
+        "description": "The filing's `filing_document_url` as LDA served it: its printable document page (`https://lda.gov/filings/public/filing/<filing_uuid>/print/`; lda.senate.gov redirects there). Ten filings of 2006-2007 hold an API page address instead, as captured (measured 2026-11-11). Before 2026-11-11 this value was held only in the row's ETL receipt."
       }
     ],
     "subject": "lobbying",
@@ -2528,11 +2541,6 @@
     "identity_columns": [
       "filing_uuid"
     ],
-    "legacy_column_descriptions": {
-      "lobbying_activities_json": "JSON array of lobbying activities, each `{general_issue_code, general_issue_code_display, description}` — the issue areas lobbied and their free-text descriptions.",
-      "government_entities_json": "JSON array of the distinct government entities lobbied (`{id, name}`) — the agencies and chambers (e.g. `HOUSE OF REPRESENTATIVES`, `SENATE`) named across the filing's activities.",
-      "url": "URL of the filing's printable document page on lda.gov (`filing_document_url`; lda.senate.gov redirects there)."
-    },
     "later_policy_columns": [
       "filing_type_display",
       "filing_period_display",
@@ -2548,7 +2556,8 @@
       "registrant_zip",
       "registrant_country",
       "registrant_ppb_country",
-      "registrant_different_address"
+      "registrant_different_address",
+      "url"
     ],
     "documented_values": {
       "filing_type": {
@@ -3612,12 +3621,20 @@
         "column_name": "captured_filing_uuid",
         "column_type": "VARCHAR",
         "description": "The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`."
+      },
+      {
+        "column_name": "url",
+        "column_type": "VARCHAR",
+        "description": "LDA's API address of this registrant record (`registrant.url`, `https://lda.gov/api/v1/registrants/<registrant_id>/`), as served."
       }
     ],
     "subject": "lobbying",
     "grain": null,
     "identity_columns": [
       "registrant_id"
+    ],
+    "later_policy_columns": [
+      "url"
     ]
   },
   "lobbying_clients": {
@@ -3718,12 +3735,20 @@
         "column_name": "captured_filing_uuid",
         "column_type": "VARCHAR",
         "description": "The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`."
+      },
+      {
+        "column_name": "url",
+        "column_type": "VARCHAR",
+        "description": "LDA's API address of this client record (`client.url`, `https://lda.gov/api/v1/clients/<client_id>/`), as served."
       }
     ],
     "subject": "lobbying",
     "grain": null,
     "identity_columns": [
       "client_id"
+    ],
+    "later_policy_columns": [
+      "url"
     ]
   },
   "fec_committees": {
@@ -19237,7 +19262,7 @@
     "label": "Source-reported financial summary observations",
     "category": "query_data",
     "summary": "One source entity/period/summary-layout/version observation. Keeps monetary measures in a typed list with native names, raw spelling, status and unit. Reported totals are separate from itemized observations; overlapping cycle, year-to-date, quarterly and semiannual measures are not automatically additive. Resolve collection_id and source_record_id against fec_source_records in the captured source generation, using source_locator_json and source_sha256 to distinguish repeated witnesses. Stored or release-matched derived evidence routes preserve the same exact source coordinates.",
-    "coverage": "Sampled. Supported observations from retained candidate, committee, presidential and bundling summary layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration does not establish complete FEC history or current publication.",
+    "coverage": "Sampled. Supported observations from retained candidate, committee, presidential and bundling summary layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration does not establish complete FEC history or current publication. Its 2026 candidate and committee summary CSVs are the 2026-09-12 captures; fec_financial_profiles is refreshed separately from the publisher's current files, so the two can disagree for one entity.",
     "kind": "sampled",
     "measured_on": "2026-10-01",
     "data_quality": "Two layouts repeat one figure. candidate-web-summary/1 holds a candidate's row from FEC's weball file and, for a current House or Senate campaign, an identical row from webl, a subset of weball; committee-summary-csv/1 repeats a committee's row once per linked candidate. Keep one row per layout, entity, cycle and period before summing (cycle 2026, measured 2026-10-03, with 2,949 identical candidate pairs and 70 committees repeated, every repeat identical).",
@@ -20542,7 +20567,7 @@
     "table": "court_opinion_clusters",
     "label": "Court decisions and their opinion groups",
     "summary": "Decision metadata from CourtListener opinion-clusters bulk data and opinion-search catch-up. cluster_id joins court_opinions.cluster_id (and through it the citation map and parentheticals); cl_docket_id joins court_dockets.cl_docket_id only where both tables hold the same publisher docket object: an appellate decision can name a scraper-created docket while court_dockets holds the RECAP one, so match on the docket number when the id does not join. Court identity comes from a bulk docket map or a search result; jurisdiction classification uses CourtListener's court reference data. This table does not hold individual opinion bodies.",
-    "coverage": "Not a range. The complete 2026-06-30 CourtListener opinion-clusters export, every mapped source field checked against the original export; the court fields agree with the same-edition docket map and court reference data. A search catch-up adds every cluster whose id is above the export's highest, whatever its filing date; a correction to an exported cluster arrives with the next export. Opinion bodies and broader historical coverage are separate. Per-court gaps are the publisher's: cadc has no unpublished cluster between 2001-04 and 2020-07. See docs/research/fork-output-ledger-2026-09-21.md and receipt join-gaps-2026-09-26/i/.",
+    "coverage": "Not a range. The complete 2026-06-30 CourtListener opinion-clusters export, every mapped source field checked against the original export; the court fields agree with the same-edition docket map and court reference data. A daily search catch-up adds the clusters whose ids are above the export's highest, whatever their filing date, in id order and one day's request quota at a time: the table is complete through its highest cluster_id for what the publisher's search returned, and can be weeks behind the publisher (docs/court-search-recovery.md). A correction to an exported cluster arrives with the next export. Opinion bodies and broader historical coverage are separate. Per-court gaps are the publisher's: cadc has no unpublished cluster between 2001-04 and 2020-07. See docs/research/fork-output-ledger-2026-09-21.md and receipt join-gaps-2026-09-26/i/.",
     "kind": "not_a_range",
     "measured_on": "2026-09-22",
     "data_quality": "Bulk and search records expose different fields. ingest_source identifies the selected row's route; unavailable metadata may be NULL or blank. A search row never replaces a bulk row of the same export, whose ids it lies above, and a later export's bulk row replaces it. Opinion search does not index RECAP trial-court clusters, so one created after the export arrives only with the next export. Missing court scope is unknown, not proof of a non-federal court. court_dockets is a narrower selection, so unmatched docket IDs are expected. Names, judge strings and citations do not establish cross-source identity.\nOne decision can be several clusters. On the 2026-06-30 export (measured 2026-10-03), 131 of the 140 Supreme Court decisions reported in 600-606 U.S., grouped by `cl_docket_id` and U.S. citation, have two to five clusters, none with an `scdb_id`. That grouping is a heuristic: it cannot see a decision with no reporter citation yet.",
@@ -20757,12 +20782,38 @@
         "column_name": "citation_type",
         "column_type": "VARCHAR",
         "description": "Publisher citation type code: 1 federal reporter, 2 state, 3 state regional, 4 specialty, 5 early U.S. Supreme Court, 6 Lexis, 7 WestLaw, 8 vendor-neutral, 9 law journal."
+      },
+      {
+        "column_name": "date_created",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher created the citation record."
+      },
+      {
+        "column_name": "date_modified",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher last modified the citation record."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
     "grain": "One reporter citation of one CourtListener decision (cluster); a decision can have several.",
     "identity_columns": [
       "citation_id"
+    ],
+    "later_policy_columns": [
+      "date_created",
+      "date_modified",
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_citation_map": {
@@ -20787,7 +20838,17 @@
       {
         "column_name": "depth",
         "column_type": "BIGINT",
-        "description": "Number of times the citing opinion cites the cited one, as text."
+        "description": "Number of times the citing opinion cites the cited one."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
@@ -20795,6 +20856,10 @@
     "identity_columns": [
       "citing_opinion_id",
       "cited_opinion_id"
+    ],
+    "later_policy_columns": [
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_parentheticals": {
@@ -20829,18 +20894,32 @@
       {
         "column_name": "score",
         "column_type": "DOUBLE",
-        "description": "Publisher's 0-to-1 estimate of how descriptive the text is, as text."
+        "description": "Publisher's 0-to-1 estimate of how descriptive the text is."
       },
       {
         "column_name": "group_id",
         "column_type": "VARCHAR",
         "description": "Publisher's group of parentheticals making the same point; NULL when ungrouped."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
     "grain": "One parenthetical summary one opinion wrote about another.",
     "identity_columns": [
       "parenthetical_id"
+    ],
+    "later_policy_columns": [
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_opinions": {
@@ -20890,7 +20969,7 @@
       {
         "column_name": "page_count",
         "column_type": "BIGINT",
-        "description": "Page count of the original document when known, as text."
+        "description": "Page count of the original document when known."
       },
       {
         "column_name": "sha1",
@@ -20901,6 +20980,36 @@
         "column_name": "download_url",
         "column_type": "VARCHAR",
         "description": "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number."
+      },
+      {
+        "column_name": "local_path",
+        "column_type": "VARCHAR",
+        "description": "Path of the original document in CourtListener's storage, not a SpicyRegs file."
+      },
+      {
+        "column_name": "extracted_by_ocr",
+        "column_type": "BOOLEAN",
+        "description": "Publisher flag: true when the opinion's text was extracted by OCR (the export spells it `t` or `f`)."
+      },
+      {
+        "column_name": "date_created",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher created the opinion record."
+      },
+      {
+        "column_name": "date_modified",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher last modified the opinion record."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
@@ -20910,7 +21019,13 @@
     ],
     "later_policy_columns": [
       "sha1",
-      "download_url"
+      "download_url",
+      "local_path",
+      "extracted_by_ocr",
+      "date_created",
+      "date_modified",
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_opinion_pdf_extractions": {
@@ -21045,10 +21160,10 @@
     "table": "member_vote_terms",
     "label": "Member vote terms",
     "summary": "The term each member vote counts toward (delivery decision 2). A vote on `vote_day` counts toward the term with `term_start <= vote_day < term_end`, so the day one Congress ends and the next begins belongs to the new term. Only where that finds none is an inclusive end accepted, and only if exactly one term qualifies. The term type follows the chamber (`rep`, `sen`); a term with no end date never matches. Built by `build_member_vote_terms` from `member_votes`, whose `bioguide_id` the votes rollup resolves for a Senate row (from its LIS id) and for a House row of 1990-2002 (from its printed label), and `member_terms`. Join to `member_votes` on (`vote_id`, `member_key`) and to `member_terms` on (`bioguide_id`, `term_index`).",
-    "coverage": "Derived, and bounded by its inputs: one row for every `member_votes` row, matched to the member's term on the vote date.",
+    "coverage": "Derived, and bounded by its inputs: one row for every `member_votes` row whose term the rule establishes (`half_open` or `inclusive_end`). A vote it gives no term is left out: it is the `member_votes` row with no row here.",
     "kind": "derived",
-    "measured_on": "2026-09-23",
-    "data_quality": "On 2026-09-23 all but 18 votes matched a half-open term: 15 matched only an inclusive end date and 3 matched no term, exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).",
+    "measured_on": "2026-11-11",
+    "data_quality": "On 2026-11-11, of 10,563,782 votes, 232 matched only an inclusive end date, 12 matched no term and 2 named no resolvable member; those 14 are left out. On 2026-09-23 the same rule matched all but 18 of a frozen selection exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).",
     "columns": [
       {
         "column_name": "vote_id",
@@ -21979,7 +22094,7 @@
     "table": "grants_opportunity_observations",
     "label": "Grants.gov opportunity and forecast observations",
     "summary": "One observation per source notice in a declared Grants.gov daily XML snapshot, with literal eligibility, deadlines, amounts and source revisions.",
-    "coverage": "Not a range. Designed to retain every admitted record in each explicitly selected daily snapshot. Full real-export qualification and public delivery are pending. The date records this design statement, not a source measurement. Snapshot membership does not establish active/open status, withdrawal, deletion or historical completeness.",
+    "coverage": "Not a range. Every admitted record of each explicitly selected daily export is retained. Each refresh replaces the published snapshot with the export it selects; earlier snapshots are in earlier generations, not in this table. Snapshot membership does not establish active/open status, withdrawal, deletion or historical completeness.",
     "kind": "not_a_range",
     "measured_on": "2026-10-20",
     "data_quality": null,
@@ -22193,7 +22308,7 @@
     "table": "ofac_entity_observations",
     "label": "OFAC sanctions entity observations",
     "summary": "Literal OFAC enhanced-export observations with selected-list context and retained source history.",
-    "coverage": "Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence.",
+    "coverage": "Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Each refresh replaces the published snapshots with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence.",
     "kind": "not_a_range",
     "measured_on": "2026-10-20",
     "data_quality": null,
@@ -22310,7 +22425,7 @@
     "table": "ofac_snapshots",
     "label": "OFAC sanctions snapshots",
     "summary": "Publication metadata and reference dictionaries retained once per selected OFAC snapshot.",
-    "coverage": "Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence.",
+    "coverage": "Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Each refresh replaces the published snapshots with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence.",
     "kind": "not_a_range",
     "measured_on": "2026-10-20",
     "data_quality": null,
@@ -22370,21 +22485,21 @@
   "executive_order_observations": {
     "table": "executive_order_observations",
     "label": "Executive order text and publisher history",
-    "summary": "Every numbered executive order in an explicitly selected complete Federal Register publication year, with retained text, publisher attribution and literal history notes.",
-    "coverage": "Not a range. Designed for complete explicitly selected publication years with every admitted order represented, including explicit body acquisition failures. Full-year source and body qualification and public delivery are pending. The date records this design statement, not a source measurement.",
-    "kind": "not_a_range",
-    "measured_on": "2026-10-20",
+    "summary": "Every executive order the Federal Register API serves, with retained text, publisher attribution and literal history notes.",
+    "coverage": "True range. Every executive order the Federal Register API serves, from EO 12890 (published 1994-01-05) on; the API serves no document published before 1994. The last publication date a generation's listing covered is in its file metadata (`parquet_kv_metadata`, key `spicy_regs.executive_orders.coverage`).",
+    "kind": "true_range",
+    "measured_on": "2026-11-10",
     "data_quality": null,
     "columns": [
       {
         "column_name": "publication_year",
         "column_type": "INTEGER",
-        "description": "Calendar year of Federal Register publication, not the signing year."
+        "description": "Calendar year of Federal Register publication, not the signing year and not a completeness marker."
       },
       {
         "column_name": "executive_order_number",
         "column_type": "VARCHAR",
-        "description": "Exact publisher EO number used for lookup."
+        "description": "Exact publisher EO number used for lookup; null where the publisher states none, as for corrections, designations and a few orders the API files under executive orders."
       },
       {
         "column_name": "document_number",
@@ -22394,7 +22509,7 @@
       {
         "column_name": "publication_date",
         "column_type": "DATE",
-        "description": "Federal Register publication date; determines membership in the selected year."
+        "description": "Federal Register publication date."
       },
       {
         "column_name": "signing_date",
@@ -22504,12 +22619,12 @@
       {
         "column_name": "source_release_logical_id",
         "column_type": "VARCHAR",
-        "description": "Logical identity of the admitted metadata release."
+        "description": "Logical identity of the admitted metadata release the row was read from; kept while the publisher's record and body result are unchanged."
       },
       {
         "column_name": "source_release_digest",
         "column_type": "VARCHAR",
-        "description": "Exact admitted metadata release digest."
+        "description": "Exact admitted metadata release digest the row was read from; kept like source_release_logical_id."
       },
       {
         "column_name": "metadata_locator_json",
@@ -22520,6 +22635,11 @@
         "column_name": "raw_metadata_json",
         "column_type": "VARCHAR",
         "description": "Complete admitted native metadata; preserves missing, null and empty values even where nullable SQL columns collapse them."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained API listing page the row was read from (`sha256:<hex>`, the locator's evidenceBlobRef); the bytes are `source-evidence/blobs/sha256/<hex>`."
       }
     ],
     "subject": "reference",
@@ -26340,20 +26460,20 @@
     "label": "Reported candidate and committee financial profiles",
     "category": "query_data",
     "summary": "Exact source-reported money for an explicitly selected candidate and committee CSV snapshot, with visible missing dates and unresolved conflicts.",
-    "coverage": "Not a range. Designed for complete explicitly selected candidate and committee summary CSV populations in one election cycle. Actual population and publication are established by the selected generation and its retained source evidence. The date records this design statement, not a source measurement.",
+    "coverage": "Not a range. Every row of one captured pair of the FEC's 2026 candidate and committee summary CSVs, which FEC rewrites daily; captured_at and period_end say how current each profile is. Each refresh replaces the published pair; earlier pairs are in earlier generations and source evidence, not in this table. The fec-query tables keep their own, older captures. The date records this design statement, not a source measurement.",
     "kind": "not_a_range",
-    "measured_on": "2026-10-20",
+    "measured_on": "2026-11-10",
     "data_quality": null,
     "columns": [
       {
         "column_name": "profile_id",
         "column_type": "VARCHAR",
-        "description": "Stable profile identity from selection policy, explicit scope, entity kind, native entity ID and election cycle."
+        "description": "Profile identity from selection policy, entity kind, native entity ID and election cycle; the same entity keeps it across refreshes. Generations published before 2026-11 also hashed scope_id, so theirs changed with each capture."
       },
       {
         "column_name": "scope_id",
         "column_type": "VARCHAR",
-        "description": "Explicit retained snapshot selection identity. This is not an automatically refreshed latest record."
+        "description": "Names the cycle and capture day of the published CSV pair; it changes with each refresh, profile_id does not."
       },
       {
         "column_name": "entity_kind",
@@ -26428,12 +26548,12 @@
       {
         "column_name": "source_sha256",
         "column_type": "VARCHAR",
-        "description": "SHA-256 of the original retained CSV capture, distinct from the derived parent table."
+        "description": "SHA-256 of the original retained CSV capture the profile was mapped from."
       },
       {
         "column_name": "source_table_generation",
         "column_type": "VARCHAR",
-        "description": "Exact managed fec-query generation containing the input summary table; recorded as a generation parent."
+        "description": "Null since profiles are mapped from the captured CSV itself (source_sha256). Generations published before 2026-11 named the fec-query generation they were selected from."
       },
       {
         "column_name": "witnesses_json",
@@ -27171,7 +27291,7 @@
       {
         "column_name": "id_submission",
         "column_type": "VARCHAR",
-        "description": "ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov (`https://www.fcc.gov/ecfs/filing/<id_submission>`, the former `filing_url` column) is kept in the filing's receipt, not in this table: ask `read_receipt_fields` for the field `filing_url`."
+        "description": "ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov is `https://www.fcc.gov/ecfs/filing/<id_submission>`: the former `filing_url` column, which this table does not hold."
       },
       {
         "column_name": "proceedings",
@@ -30055,12 +30175,44 @@
         "column_name": "party_totals",
         "column_type": "STRUCT(party VARCHAR, \"yea-total\" BIGINT, \"nay-total\" BIGINT, \"present-total\" BIGINT, \"not-voting-total\" BIGINT)[]",
         "description": "The Clerk's totals by party, as a Native list in the file's order: each object the party as the Clerk names it (Republican, Democratic, Independent; member_votes.party spells the same parties R, D and I) and its yea-total, nay-total, present-total and not-voting-total. [] when a captured Clerk file states none (a Speaker election). NULL on Senate rows, whose files state none; on linkage-only rows; and on House rows captured before this column until they are read again. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "The publisher's own URL for this roll call."
+      },
+      {
+        "column_name": "match_rule",
+        "column_type": "VARCHAR",
+        "description": "Which vote-matching rule named that bill: bill_action_recorded_vote (the bill's own action records this roll call), house_vote_legislation (Congress.gov's House vote list), vote_file_legislation (the vote file names the bill: the Clerk's legis-num, or the Senate's document or amended document), or unmatched."
+      },
+      {
+        "column_name": "match_action_index",
+        "column_type": "BIGINT",
+        "description": "Position of the action whose recordedVote named this roll call, where one did."
+      },
+      {
+        "column_name": "match_url",
+        "column_type": "VARCHAR",
+        "description": "The reference URL the match was read from."
+      },
+      {
+        "column_name": "conflict_count",
+        "column_type": "BIGINT",
+        "description": "How many later references disagreed with the one that won; kept, never dropped."
       }
     ],
     "subject": "congress",
     "grain": "One row per roll call: the publisher's own tally, and the bill it refers to.",
     "identity_columns": [
       "vote_id"
+    ],
+    "later_policy_columns": [
+      "source_url",
+      "match_rule",
+      "match_action_index",
+      "match_url",
+      "conflict_count"
     ]
   },
   "member_votes": {
@@ -30258,12 +30410,50 @@
         "column_name": "name_nickname",
         "column_type": "VARCHAR",
         "description": "The crosswalk's own name.nickname for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_middle",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.middle for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_suffix",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.suffix for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "name_official_full",
+        "column_type": "VARCHAR",
+        "description": "The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "roster",
+        "column_type": "VARCHAR",
+        "description": "Which file this record came from: current or historical."
+      },
+      {
+        "column_name": "observed_at",
+        "column_type": "VARCHAR",
+        "description": "When the file was captured; the merge prefers the larger value."
+      },
+      {
+        "column_name": "other_names_json",
+        "column_type": "VARCHAR",
+        "description": "Source other_names patches in order, with literal date bounds and nulls; absent is NULL."
       }
     ],
     "subject": "congress",
     "grain": "One row per legislator in one capture of the community crosswalk.",
     "identity_columns": [
       "bioguide_id"
+    ],
+    "later_policy_columns": [
+      "name_middle",
+      "name_suffix",
+      "name_official_full",
+      "roster",
+      "observed_at",
+      "other_names_json"
     ]
   },
   "member_terms": {
@@ -30314,6 +30504,16 @@
         "column_name": "term_district",
         "column_type": "VARCHAR",
         "description": "District for this term, spelled as the publisher does; absent for a Senate term."
+      },
+      {
+        "column_name": "observed_at",
+        "column_type": "VARCHAR",
+        "description": "The parent capture's instant, carried so a term list versions with the member row it came from."
+      },
+      {
+        "column_name": "party_affiliations_state",
+        "column_type": "VARCHAR",
+        "description": "Nested list state: unread, absent, null, empty or populated."
       }
     ],
     "subject": "congress",
@@ -30321,6 +30521,10 @@
     "identity_columns": [
       "bioguide_id",
       "term_index"
+    ],
+    "later_policy_columns": [
+      "observed_at",
+      "party_affiliations_state"
     ]
   },
   "member_party_affiliations": {
@@ -30371,6 +30575,36 @@
         "column_name": "caucus",
         "column_type": "VARCHAR",
         "description": "Complete affiliation object, retaining absent, null and unknown fields. This column retains the source property caucus."
+      },
+      {
+        "column_name": "input_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the complete retained crosswalk JSON bytes."
+      },
+      {
+        "column_name": "start_status",
+        "column_type": "VARCHAR",
+        "description": "Calendar spelling status: absent, empty, valid or invalid."
+      },
+      {
+        "column_name": "end_status",
+        "column_type": "VARCHAR",
+        "description": "Calendar spelling status: absent, empty, valid or invalid."
+      },
+      {
+        "column_name": "source_path",
+        "column_type": "VARCHAR",
+        "description": "JSON pointer to the affiliation in the retained capture."
+      },
+      {
+        "column_name": "observed_at",
+        "column_type": "VARCHAR",
+        "description": "Caller-supplied capture instant; not a source affiliation date."
+      },
+      {
+        "column_name": "source_json",
+        "column_type": "VARCHAR",
+        "description": "Complete affiliation object, retaining absent, null and unknown fields."
       }
     ],
     "subject": "congress",
@@ -30379,6 +30613,14 @@
       "bioguide_id",
       "term_index",
       "affiliation_index"
+    ],
+    "later_policy_columns": [
+      "input_sha256",
+      "start_status",
+      "end_status",
+      "source_path",
+      "observed_at",
+      "source_json"
     ]
   },
   "committee_reports": {
@@ -31791,7 +32033,7 @@
     "coverage": "True range: dated records published from 1994-01-03 on, the whole span the API serves.",
     "kind": "true_range",
     "measured_on": "2026-09-23",
-    "data_quality": "Document numbers are not globally unique: `00-111` names different records on 2000-01-14 and 2000-01-18. Current merging preserves both dates and replaces only the same dated record on a later successful fetch. This code correction does not restore historical records already lost from published files; those require a pinned historical replay and publication. A number-only source reference remains ambiguous when its input generation supplies multiple dated candidates. One RIN, docket and title can cover a rule and its later corrections, effective-date delays and confirmations, all typed `Rule` since 2008 with `subtype` NULL, so a RIN or title match picks a document family, not a document; `action` tells them apart (`Final rule; correction.`) where the Register states one. The API lists no RIN on a large share of `Rule` documents every year, some of which state one in the printed text or inside `docket_ids`. A row not read since the Register's regulations.gov link and `action` were first requested (2026-10-03) is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`, which a row read since holds as `'{}'` at least. The scheduled run re-reads the last 120 days, so a relayed comment count follows the Register's own checks to about the comment period's close.",
+    "data_quality": "Document numbers are not globally unique: `00-111` names different records on 2000-01-14 and 2000-01-18. Current merging preserves both dates and replaces only the same dated record on a later successful fetch. This code correction does not restore historical records already lost from published files; those require a pinned historical replay and publication. A number-only source reference remains ambiguous when its input generation supplies multiple dated candidates. One RIN, docket and title can cover a rule and its later corrections, effective-date delays and confirmations, all typed `Rule` since 2008 with `subtype` NULL, so a RIN or title match picks a document family, not a document; `action` tells them apart (`Final rule; correction.`) where the Register states one. The API lists no RIN on a large share of `Rule` documents every year, some of which state one in the printed text or inside `docket_ids`. A row not read since the Register's regulations.gov link and `action` were first requested (2026-10-03) is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`, which a row read since holds as `'{}'` at least. The scheduled run re-reads the last 120 days, so a relayed comment count follows the Register's own checks to about the comment period's close. `html_url`, `pdf_url`, `body_html_url` and `regulations_dot_gov_info_json` are the last columns: they were held beside the table until 2026-11 and are as the Register stated them, its nulls included: `pdf_url` is NULL on about 33,500 rows, mostly 1994, where it serves no PDF. `source_sha256` names the retained API page a row was last read from and is NULL on a row not read since it was added, which is every document published before the 120-day window of that first run. It changes nightly on every row in the window, so compare generations without it.",
     "columns": [
       {
         "column_name": "document_number",
@@ -31982,6 +32224,31 @@
         "column_name": "regulations_dot_gov_regulatory_plan_title",
         "column_type": "VARCHAR",
         "description": "Regulatory-plan title stated in the linked Regulations.gov metadata."
+      },
+      {
+        "column_name": "html_url",
+        "column_type": "VARCHAR",
+        "description": "The document's page on federalregister.gov."
+      },
+      {
+        "column_name": "pdf_url",
+        "column_type": "VARCHAR",
+        "description": "The document's PDF rendition."
+      },
+      {
+        "column_name": "body_html_url",
+        "column_type": "VARCHAR",
+        "description": "The document's full-text HTML body; the XML body the Register also serves carries no boilerplate."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the retained Federal Register API page this row was last read from, as the run's source-evidence journal spells it (`sha256:<hex>`); the page is `source-evidence/blobs/sha256/<hex>`. NULL on a row no run has read since the column was added (2026-11). It is a pointer, not part of the record: the scheduled run re-reads the last 120 days, so it changes every night on every row in that window (about 8,700) whether or not the record changed, and a comparison of two generations must leave it out. Where one run reads a document on two pages it names the first."
+      },
+      {
+        "column_name": "regulations_dot_gov_info_json",
+        "column_type": "VARCHAR",
+        "description": "The Register's own statement of the regulations.gov docket and document it matched this document to (the API's `regulations_dot_gov_info`), a JSON object exactly as stated: `{}` where the Register states nothing, the time of its check alone where it checked and found nothing, otherwise any of the docket, the document, the comment count, the supporting documents and their titles. NULL on a row not read since the field was first requested (2026-10-03)."
       }
     ],
     "subject": "rulemaking",
@@ -31993,7 +32260,12 @@
     "later_policy_columns": [
       "president_json",
       "disposition_notes",
-      "executive_order_notes"
+      "executive_order_notes",
+      "html_url",
+      "pdf_url",
+      "body_html_url",
+      "source_sha256",
+      "regulations_dot_gov_info_json"
     ]
   },
   "fec_committee_history": {
@@ -38486,9 +38758,9 @@
     "table": "uscode_edition_sections",
     "label": "Retained U.S. Code section content",
     "summary": "One section, range, stub or other content observation within a selected edition member. Native identifiers, source context and readable text preserve the retained source meaning.",
-    "coverage": "Sampled. Selected retained annual XHTML and release-point XML members; complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.",
+    "coverage": "Sampled. The selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138); complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.",
     "kind": "sampled",
-    "measured_on": "2026-10-12",
+    "measured_on": "2026-11-11",
     "data_quality": null,
     "columns": [
       {
@@ -38542,9 +38814,9 @@
     "table": "uscode_edition_structure",
     "label": "Retained U.S. Code structural observations",
     "summary": "One native structural occurrence linked to its edition member. Source positions, labels, status and native context remain distinct from section text.",
-    "coverage": "Sampled. Native structural observations in selected annual XHTML and release-point USLM members. Section-body coverage requires separate content qualification.",
+    "coverage": "Sampled. Native structural observations in the selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138). Section-body coverage requires separate content qualification.",
     "kind": "sampled",
-    "measured_on": "2026-10-10",
+    "measured_on": "2026-11-11",
     "data_quality": null,
     "columns": [
       {
@@ -38598,9 +38870,9 @@
     "table": "uscode_editions",
     "label": "Retained U.S. Code edition members",
     "summary": "One native annual or release-point archive member observed in its edition. Requested year, native publication year, carried-forward state and appendices remain separate.",
-    "coverage": "Sampled. Selected retained original archive members only; edition membership and source structure do not establish complete section-body qualification.",
+    "coverage": "Sampled. Every member of the selected editions only, each added by explicit decision -- the 2000 annual XHTML archive and the complete release-point XML corpora at 119-102 and 119-138 (current through Public Law 119-138); other years and release points are not held. Edition membership and source structure do not establish complete section-body qualification.",
     "kind": "sampled",
-    "measured_on": "2026-10-10",
+    "measured_on": "2026-11-11",
     "data_quality": null,
     "columns": [
       {
@@ -39106,35 +39378,6 @@
         ]
       },
       {
-        "dataset": "agency_monthly_volume",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code",
-          "year",
-          "month",
-          "document_type"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "agency_stats",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "agenda_item_proceedings",
         "receipt_only": false,
         "policy_version": "regulations-native-v2",
@@ -39419,20 +39662,6 @@
         ]
       },
       {
-        "dataset": "cfr_sections",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "granule_id"
-        ],
-        "processing_fields": [
-          "url",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "cftc_comment_files",
         "receipt_only": false,
         "policy_version": "retained-native-collections-v1",
@@ -39460,19 +39689,6 @@
         "processing_fields": []
       },
       {
-        "dataset": "comment_attributes",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "comment_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "comment_periods",
         "receipt_only": false,
         "policy_version": "regulations-native-v2",
@@ -39485,35 +39701,6 @@
           "run_id",
           "asserted_at",
           "supersedes_id",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "comments",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "comment_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "comments_index",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code",
-          "docket_id",
-          "year",
-          "month"
-        ],
-        "processing_fields": [
           "raw_conversion_inputs",
           "input_metadata",
           "raw_source_record"
@@ -39680,37 +39867,6 @@
         ]
       },
       {
-        "dataset": "court_citation_map",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citing_opinion_id",
-          "cited_opinion_id"
-        ],
-        "processing_fields": [
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_citations",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citation_id"
-        ],
-        "processing_fields": [
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
         "dataset": "court_docket_groups",
         "receipt_only": false,
         "policy_version": "courts/1",
@@ -39793,38 +39949,6 @@
         ]
       },
       {
-        "dataset": "court_opinions",
-        "receipt_only": false,
-        "policy_version": "courts/2",
-        "identity_columns": [
-          "opinion_id"
-        ],
-        "processing_fields": [
-          "local_path",
-          "extracted_by_ocr",
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_parentheticals",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "parenthetical_id"
-        ],
-        "processing_fields": [
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
         "dataset": "crs_report_files",
         "receipt_only": false,
         "policy_version": "crs-report-files/1",
@@ -39862,19 +39986,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "discovery_signals",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {
@@ -40838,24 +40949,6 @@
         ]
       },
       {
-        "dataset": "federal_register",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "document_number",
-          "publication_date"
-        ],
-        "processing_fields": [
-          "html_url",
-          "pdf_url",
-          "body_html_url",
-          "regulations_dot_gov_info_json",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "federal_register_issues",
         "receipt_only": false,
         "policy_version": "historical-regulations-public-v2",
@@ -40864,19 +40957,6 @@
         ],
         "processing_fields": [
           "selection_metadata"
-        ]
-      },
-      {
-        "dataset": "feed_summary",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "docket_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {
@@ -40921,26 +41001,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "fr_docket_links",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "document_number",
-          "publication_date",
-          "docket_source_ordinal",
-          "docket_id"
-        ],
-        "processing_fields": [
-          "docket_normalization_rule",
-          "html_url",
-          "pdf_url",
-          "normalized_docket_candidates_json",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {
@@ -41141,175 +41201,6 @@
         ]
       },
       {
-        "dataset": "lobbying_activities",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "activity_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_activity_lobbyists",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "activity_index",
-          "lobbyist_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_affiliated_organizations",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "affiliated_organization_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_clients",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "client_id"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_conviction_disclosures",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "conviction_disclosure_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_filings",
-        "receipt_only": false,
-        "policy_version": "government-sources/2",
-        "identity_columns": [
-          "filing_uuid"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_foreign_entities",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "foreign_entity_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_registrants",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "registrant_id"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "member_party_affiliations",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id",
-          "term_index",
-          "affiliation_index"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_terms",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id",
-          "term_index"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_vote_terms",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "vote_id",
-          "member_key"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_votes",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "vote_id",
-          "member_key"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "members",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
         "dataset": "native_legal_reference_reads",
         "receipt_only": false,
         "policy_version": "legislative-documents/2",
@@ -41499,20 +41390,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "roll_call_votes",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "vote_id"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
         ]
       },
       {
@@ -41919,21 +41796,6 @@
         ]
       },
       {
-        "dataset": "unified_agenda",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "rin",
-          "agenda_edition"
-        ],
-        "processing_fields": [
-          "url",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "usaspending_recipients",
         "receipt_only": false,
         "policy_version": "government-sources/1",
@@ -41943,35 +41805,8 @@
         "processing_fields": [
           "raw_record"
         ]
-      },
-      {
-        "dataset": "uscode_edition_sections",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "observation_id"
-        ],
-        "processing_fields": []
-      },
-      {
-        "dataset": "uscode_edition_structure",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "observation_id"
-        ],
-        "processing_fields": []
-      },
-      {
-        "dataset": "uscode_editions",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "edition_id"
-        ],
-        "processing_fields": []
       }
     ],
-    "guide": "A receipt is the paperwork behind one row. Each time our pipeline turns a\npublisher's record (an FCC filing, a GAO decision, one rating on a scorecard)\ninto a row of a table, it writes one receipt to go with it: what it read, which\nversion of our code read it, how that went, and anything it kept that did not\nbecome a column. The table holds what you query. The receipt holds how the row\ngot there. (\"ETL\" in the name is that pipeline: extract, transform, load.)\n\nReceipts are useful for three things:\n\n- **Finding something that is no longer a column.** A table in the newer layout\n  keeps the columns people query. A few things people do sometimes want, such\n  as the link to a filing's page on the publisher's site, are kept in the\n  receipt instead. Where that is so, the table's own notes say it in one\n  sentence.\n- **Checking where a row came from.** A receipt names what was read to make\n  the row.\n- **Seeing what did not become a row.** When a pipeline records a record it\n  could not convert, it does so as a receipt with no row.\n\nNot every table has receipts yet. Tables are moving to the newer layout one\ngroup at a time, and a table has receipts only after it has been published that\nway. `describe_table('etl_receipts')` lists, under `publication`, each group\nthat has them and the tables in it (`datasets`). A table that is not named\nthere has no receipts: everything it holds is in the table itself. (The other\n`datasets` list in that reply, under `metadata`, names every table that is set\nup to have receipts, whether or not it has published any.)\n\nThe word has two other uses in this dictionary, and neither is this table.\n`fec_receipts` and other campaign-finance wording mean money a committee\nreceived. A note that cites a \"receipt\" followed by a folder name points at the\nmaintainers' own evidence files, which are not public.\n\n## The quick way: ask for a value by the row's key\n\nThe `read_receipt_fields` tool reads values out of receipts for you. Give it\nthe table, the keys of the rows you mean and the fields you want. For the link\nto the CRS report `R48641` at a particular source update date:\n\n```json\n{\"table\": \"crs_reports\", \"keys\": [{\"report_id\": \"R48641\", \"update_date\": \"2026-07-17T22:38:55+00:00\"}], \"fields\": [\"url\"]}\n```\n\n`describe_table('crs_reports')` lists, under `receipt_fields`, the table's key\ncolumns with their types and the fields its receipts hold. A key gives every\nkey column its exact value, so a table with two key columns names both:\n`{\"committee_id\": \"C00097238\", \"cycle\": 2012}`. Each row answers `found` or\nsays why not, and each field says whether the receipt states a value.\n\nThe tool reads up to 100 rows in a call. It does not work on a table with more\nthan 2,000,000 receipts, and says so when asked. For such a table, to join\nreceipts to a query's rows, or to read a receipt that belongs to no row, use\nthe queries below.\n\n## How to find the receipt for a row\n\nWithout the tool this takes a query. In a table that has receipts, every row\nhas exactly one receipt whose `outcome` is `accepted`. You find it by the\ntable's name and the row's key.\n\n1. Ask for the table's key columns. `describe_table('crs_reports')` lists them\n   as `identity_columns`; for `crs_reports` those are `report_id` and `update_date`.\n2. Write the row's key the way a receipt stores it in `identity_json`: each key\n   column as a name and a value, in the order `identity_columns` gives.\n3. Select the receipt with that table name and that key.\n\nFor the CRS report `R48641` updated at `2026-07-17T22:38:55+00:00`:\n\n```sql\nSELECT *\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nA table with two key columns names both. `fec_committee_history` is keyed by\n`committee_id` and `cycle`, and its key for committee `C00097238` in 2012 is:\n\n```text\n[\"list\",[[\"list\",[[\"str\",\"committee_id\"],[\"str\",\"C00097238\"]]],[\"list\",[[\"str\",\"cycle\"],[\"int\",2012]]]]]\n```\n\nText is written `[\"str\",\"…\"]`, a whole number `[\"int\",2012]` with no quotes\naround the number, and a key column that is empty for the row `[\"null\",null]`.\nA timestamp is written `[\"datetime\",\"2026-07-17T22:38:55+00:00\"]`.\nSpelling and capital letters must match the table's value exactly.\n\nTo fetch the receipts of several rows, join on the same expression and build\nthe key from the table's own column:\n\n```sql\nSELECT t.report_id, t.update_date, t.title, r.witnesses\nFROM crs_reports t\nJOIN etl_receipts r\n  ON r.dataset = 'crs_reports'\n AND r.outcome = 'accepted'\n AND r.identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"' || t.report_id\n     || '\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"'\n     || replace(strftime(t.update_date AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%M:%S.%f')\n                || '+00:00', '.000000+', '+') || '\"]]]]]'\nWHERE t.report_id IN ('R48641', 'IN12713')\n```\n\nThree things to know before relying on this:\n\n- The query reads through all of that table's receipts, so it is slower on the\n  largest tables.\n- A shorter form you may see, `contains(identity_json, '\"R48641\"')`, works for\n  a table with one key column. Do not use it on a table with several key\n  columns: matching one part of the key returns other rows' receipts.\n- A key value that contains a double quote or a backslash is stored with a\n  backslash in front of each, so the plain joining of text above will not match\n  it.\n\n## How to read a value out of a receipt\n\nThe three columns ending in `_json` hold text in a form of JSON where every\nvalue is written as a pair: its type, then the value. The text `R48641` is\nstored as `[\"str\",\"R48641\"]`, the number 5 as `[\"int\",5]`, a missing value as\n`[\"null\",null]`, a record as `[\"dict\",[[name, pair], …]]` and a list as\n`[\"list\",[pair, …]]`. This keeps the number 5 apart from the text \"5\", and a\nmissing value apart from an empty text. The cost is that the usual JSON\nfunctions cannot fetch a field by its name, so today the working way to read\none is a text pattern:\n\n```sql\nSELECT regexp_extract(processing_json, '\\[\"url\",\\[\"str\",\"([^\"]*)\"', 1) AS url\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nPut the field's name where `url` is. The pattern has limits:\n\n- It reads text values only. For a field that is absent, missing or not text it\n  returns an empty text, not NULL.\n- It returns the first field of that name anywhere in the receipt.\n- It stops at the first double quote, so a value that contains one (a title, or\n  a list kept as text) comes back cut short. For such a value use the longer\n  form, which reads it whole:\n\n```sql\nSELECT ('\"' || regexp_extract(processing_json, '\\[\"title\",\\[\"str\",\"((?:[^\"\\\\]|\\\\.)*)\"', 1) || '\"')::JSON ->> '$' AS title\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nTo see which fields a table's receipts hold, look at one:\n`SELECT processing_json FROM etl_receipts WHERE dataset = 'crs_reports' AND outcome = 'accepted' LIMIT 1`.\n\n## What a receipt contains\n\nOne row per receipt. The first columns say which row the receipt belongs to;\nthe rest say what was read and what happened. On the server, `etl_receipts` is\none table holding the receipts of every table that has them. In the published\nfiles, each group of tables has its own `etl_receipts.parquet` beside its\ntables, and the publication index names it.\n\nEach column is described under `columns` in this reply.\n\n## What a receipt does not tell you\n\n- **Whether the publisher's record is right, current or approved.** `outcome`\n  describes our processing only. `accepted` means the pipeline turned the record\n  into a row; it says nothing about what an agency decided. Where a publisher\n  states a status of its own, that is a column of the table.\n- **What the row said before.** The server holds one build of each table, the\n  one published now, with that build's receipts. A receipt for a row carried\n  over from an earlier build notes the earlier receipts in `diagnostic_json`;\n  the earlier builds themselves cannot be queried here. Tables that retain source\n  revisions, such as `crs_reports`, expose those revisions as separate rows in the\n  current build.\n- **Where to open the publisher's page.** `witnesses` names what the pipeline\n  read, and that is not always a page you can visit. For some tables it is one\n  of the pipeline's own working files, named by a path on the machine that ran\n  the build. A link to the publisher, where we hold one, is a column of the\n  table or a field in `processing_json`.\n- **That nothing was missed.** A table whose receipts are all `accepted` shows\n  that no failure was recorded, not that every record the publisher holds was\n  read. What a table covers is stated in its own coverage note.\n- **Anything about a table that has no receipts yet.** That table has not moved\n  to the newer layout. Nothing is missing from it."
+    "guide": "A receipt is the paperwork behind one row. Each time our pipeline turns a\npublisher's record (an FCC filing, a GAO decision, one rating on a scorecard)\ninto a row of a table, it writes one receipt to go with it: what it read, which\nversion of our code read it, how that went, and anything it kept that did not\nbecome a column. The table holds what you query. The receipt holds how the row\ngot there. (\"ETL\" in the name is that pipeline: extract, transform, load.)\n\nReceipts are useful for three things:\n\n- **Finding something that is no longer a column.** A table in the newer layout\n  keeps the columns people query. A few things people do sometimes want, such\n  as the link to a filing's page on the publisher's site, are kept in the\n  receipt instead, until the table's group stops writing receipts and makes\n  them columns. Where that is so, the table's own notes say it in one sentence.\n- **Checking where a row came from.** A receipt names what was read to make\n  the row.\n- **Seeing what did not become a row.** When a pipeline records a record it\n  could not convert, it does so as a receipt with no row.\n\nNot every table has receipts yet. Tables are moving to the newer layout one\ngroup at a time, and a table has receipts only after it has been published that\nway. `describe_table('etl_receipts')` lists, under `publication`, each group\nthat has them and the tables in it (`datasets`). A table that is not named\nthere has no receipts this server can query. Most such tables have none:\neverything they hold is in the table itself. The eight rulemaking snapshot\ntables (`rule_targets`, `proceedings`, `regulatory_agenda_items`,\n`agenda_item_proceedings`, `comment_periods`, `rulemaking_lifecycles`,\n`lifecycle_events`, `agency_lifecycle_stats`) are the exception: their receipts\nsit in the snapshot's own internal file, which this server does not read, so a\nvalue kept only there cannot be read here. (The other\n`datasets` list in that reply, under `metadata`, names every table that is set\nup to have receipts, whether or not it has published any.)\n\nThe word has two other uses in this dictionary, and neither is this table.\n`fec_receipts` and other campaign-finance wording mean money a committee\nreceived. A note that cites a \"receipt\" followed by a folder name points at the\nmaintainers' own evidence files, which are not public.\n\n## How to find the receipt for a row\n\nIn a table that has receipts, every row has exactly one receipt whose\n`outcome` is `accepted`. You find it with a query, by the table's name and the\nrow's key.\n\n1. Ask for the table's key columns. `describe_table('crs_reports')` lists them\n   as `identity_columns`; for `crs_reports` those are `report_id` and `update_date`.\n2. Write the row's key the way a receipt stores it in `identity_json`: each key\n   column as a name and a value, in the order `identity_columns` gives.\n3. Select the receipt with that table name and that key.\n\nFor the CRS report `R48641` updated at `2026-07-17T22:38:55+00:00`:\n\n```sql\nSELECT *\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nA table with two key columns names both. `fec_committee_history` is keyed by\n`committee_id` and `cycle`, and its key for committee `C00097238` in 2012 is:\n\n```text\n[\"list\",[[\"list\",[[\"str\",\"committee_id\"],[\"str\",\"C00097238\"]]],[\"list\",[[\"str\",\"cycle\"],[\"int\",2012]]]]]\n```\n\nText is written `[\"str\",\"…\"]`, a whole number `[\"int\",2012]` with no quotes\naround the number, and a key column that is empty for the row `[\"null\",null]`.\nA timestamp is written `[\"datetime\",\"2026-07-17T22:38:55+00:00\"]`.\nSpelling and capital letters must match the table's value exactly.\n\nTo fetch the receipts of several rows, join on the same expression and build\nthe key from the table's own column:\n\n```sql\nSELECT t.report_id, t.update_date, t.title, r.witnesses\nFROM crs_reports t\nJOIN etl_receipts r\n  ON r.dataset = 'crs_reports'\n AND r.outcome = 'accepted'\n AND r.identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"' || t.report_id\n     || '\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"'\n     || replace(strftime(t.update_date AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%M:%S.%f')\n                || '+00:00', '.000000+', '+') || '\"]]]]]'\nWHERE t.report_id IN ('R48641', 'IN12713')\n```\n\nThree things to know before relying on this:\n\n- The query reads through all of that table's receipts, so it is slower on the\n  largest tables.\n- A shorter form you may see, `contains(identity_json, '\"R48641\"')`, works for\n  a table with one key column. Do not use it on a table with several key\n  columns: matching one part of the key returns other rows' receipts.\n- A key value that contains a double quote or a backslash is stored with a\n  backslash in front of each, so the plain joining of text above will not match\n  it.\n\n## How to read a value out of a receipt\n\nThe three columns ending in `_json` hold text in a form of JSON where every\nvalue is written as a pair: its type, then the value. The text `R48641` is\nstored as `[\"str\",\"R48641\"]`, the number 5 as `[\"int\",5]`, a missing value as\n`[\"null\",null]`, a record as `[\"dict\",[[name, pair], …]]` and a list as\n`[\"list\",[pair, …]]`. This keeps the number 5 apart from the text \"5\", and a\nmissing value apart from an empty text. The cost is that the usual JSON\nfunctions cannot fetch a field by its name, so today the working way to read\none is a text pattern:\n\n```sql\nSELECT regexp_extract(processing_json, '\\[\"url\",\\[\"str\",\"([^\"]*)\"', 1) AS url\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nPut the field's name where `url` is. The pattern has limits:\n\n- It reads text values only. For a field that is absent, missing or not text it\n  returns an empty text, not NULL.\n- It returns the first field of that name anywhere in the receipt.\n- It stops at the first double quote, so a value that contains one (a title, or\n  a list kept as text) comes back cut short. For such a value use the longer\n  form, which reads it whole:\n\n```sql\nSELECT ('\"' || regexp_extract(processing_json, '\\[\"title\",\\[\"str\",\"((?:[^\"\\\\]|\\\\.)*)\"', 1) || '\"')::JSON ->> '$' AS title\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nTo see which fields a table's receipts hold, look at one:\n`SELECT processing_json FROM etl_receipts WHERE dataset = 'crs_reports' AND outcome = 'accepted' LIMIT 1`.\n\n## What a receipt contains\n\nOne row per receipt. The first columns say which row the receipt belongs to;\nthe rest say what was read and what happened. On the server, `etl_receipts` is\none table holding the receipts of every table that has them. In the published\nfiles, each group of tables has its own `etl_receipts.parquet` beside its\ntables, and the publication index names it.\n\nEach column is described under `columns` in this reply.\n\n## What a receipt does not tell you\n\n- **Whether the publisher's record is right, current or approved.** `outcome`\n  describes our processing only. `accepted` means the pipeline turned the record\n  into a row; it says nothing about what an agency decided. Where a publisher\n  states a status of its own, that is a column of the table.\n- **What the row said before.** The server holds one build of each table, the\n  one published now, with that build's receipts. A receipt for a row carried\n  over from an earlier build notes the earlier receipts in `diagnostic_json`;\n  the earlier builds themselves cannot be queried here. Tables that retain source\n  revisions, such as `crs_reports`, expose those revisions as separate rows in the\n  current build.\n- **Where to open the publisher's page.** `witnesses` names what the pipeline\n  read, and that is not always a page you can visit. For some tables it is one\n  of the pipeline's own working files, named by a path on the machine that ran\n  the build. A link to the publisher, where we hold one, is a column of the\n  table or a field in `processing_json`.\n- **That nothing was missed.** A table whose receipts are all `accepted` shows\n  that no failure was recorded, not that every record the publisher holds was\n  read. What a table covers is stated in its own coverage note.\n- **Anything about a table that has no receipts yet.** That table has not moved\n  to the newer layout. Nothing is missing from it."
   }
 }

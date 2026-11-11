@@ -5,7 +5,6 @@ import pyarrow.parquet as pq
 import pytest
 
 from spicy_regs.citation_resolution import NATIVE_RESOLUTION_RULE, NATIVE_ROUTES
-from spicy_regs.etl_receipts import DatasetPolicy
 from spicy_regs.legislative_documents import (
     LegislativeShapeError, NATIVE_TARGET_KEY_FIELDS, map_subject, recorded_subject,
 )
@@ -121,9 +120,9 @@ def test_exact_earlier_receipt_only_reads_and_stripped_subjects_restore_before_u
     from spicy_regs.selected_generations import SelectedDataset, remember_selection
 
     files, _ = run(FIXTURES / "manifest.json", tmp_path / "source")
-    from pathlib import Path
-    history = json.loads((Path(__file__).parents[1] / "src/spicy_regs/native_legal_policy_history.json").read_text())
-    old = {name: DatasetPolicy.from_descriptor(value) for name, value in history.items()}
+    from spicy_regs.policy_migrations import earlier_policy
+    old = {name: earlier_policy(name, "legislative-documents/1")
+           for name in ("native_legal_references", "native_legal_reference_reads")}  # the order ``files`` has
     current_policy, current_map = receipts.policy, receipts.map_subject
 
     def old_map(dataset, raw):

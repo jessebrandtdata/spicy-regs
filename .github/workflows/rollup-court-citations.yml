@@ -5,9 +5,10 @@ on:
     # publisher cuts its bulk export on the last day of each quarter and says it
     # finishes by the next day; each export is a full snapshot. Its citations
     # name clusters created after its cluster export, so this rollup refuses
-    # until court_opinion_clusters (Mondays) has caught up past them: the 9th
-    # follows one Monday of the new quarter and the 16th two. Any other week
-    # would republish the same edition.
+    # until court_opinion_clusters (daily: it rebuilds from a new export the
+    # day it is listed, then catches up above it) has passed them: the 9th
+    # and the 16th give it one and two weeks. Any other week would republish
+    # the same edition.
     - cron: '50 4 9,16 1,4,7,10 *'
   workflow_dispatch:
     inputs:

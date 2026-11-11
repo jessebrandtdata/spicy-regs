@@ -518,8 +518,11 @@ def build_cfr_sections(
         else:
             annotate("error", "cfr_sections", f"{package_id} volume failed and it has no prior rows; its granules are absent")
     # Marked output promises every row was placed by this rule: true when the prior
-    # was, or there was none, or every prior package was re-placed this run.
-    marked = prior is None or prior.placed or (not failed and prior.packages <= replaced)
+    # was, or there was none, or every prior package was re-placed this run. A failed
+    # volume with no prior rows adds no row, so it does not hold the marker back: one
+    # such package (CFR-2026-title2-vol01, every night since 2026-11-09) would otherwise
+    # re-place every package every night once a prior lacks the marker (ss-vse3).
+    marked = prior is None or prior.placed or prior.packages <= replaced
     if not marked:
         logger.warning("CFR: output left unmarked; the next run re-places every package")
     new_file = output_dir / "_cfr_new.parquet"

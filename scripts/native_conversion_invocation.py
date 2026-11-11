@@ -10,8 +10,9 @@ from pathlib import Path
 import re
 
 
+#: court-opinions left with its receipts (ss-vse3): a retired table never converts into receipts again.
 FAMILIES = frozenset({
-    "dockets", "documents", "court-opinions", "roll-call-votes", "member-vote-terms", "bill-family", "bill-subjects",
+    "dockets", "documents", "roll-call-votes", "member-vote-terms", "bill-family", "bill-subjects",
     "docket-attributes", "document-attributes", "comment-attributes", "court-opinion-clusters",
 })
 

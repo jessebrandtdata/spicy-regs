@@ -1,0 +1,175 @@
+{
+ "format": "spicy-regs-receipt-archive",
+ "version": 1,
+ "basis": "One entry per dataset whose installed policy is marked receipts_retired (subject_catalog.RECEIPTS_RETIRED): the last generation its family published with per-row ETL receipts, which holds the only complete copy of them. Weekly retention keeps every generation a file under docs/ cites by eight or more hex digits, so this file keeps each one for good; tests/test_receipt_archive_pins.py holds every retired dataset to an entry here. Never delete an entry: it is the archive's only pin.",
+ "archives": {
+  "cfr_sections": {
+   "family": "cfr-sections",
+   "artifactDigest": "sha256:897008e4a0fd9b1763d624ada093613ef7f7911efd03939af32505d9f0450c0e",
+   "publishedAt": "2026-11-09T20:52:01Z",
+   "receipts": "generations/cfr-sections/897008e4a0fd9b1763d624ada093613ef7f7911efd03939af32505d9f0450c0e/etl_receipts.parquet"
+  },
+  "comment_attributes": {
+   "family": "comment-attributes",
+   "artifactDigest": "sha256:252751c8589ce4c4bbff6fa5d35099db86b95df2d2debf1071d47ef739cf02a6",
+   "publishedAt": "2026-11-11T01:56:31Z",
+   "receipts": "generations/comment-attributes/252751c8589ce4c4bbff6fa5d35099db86b95df2d2debf1071d47ef739cf02a6/etl_receipts.parquet"
+  },
+  "comments": {
+   "family": "comments",
+   "artifactDigest": "sha256:08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1",
+   "publishedAt": "2026-10-10T15:45:23Z",
+   "receipts": "generations/comments/08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1/etl_receipts.parquet"
+  },
+  "comments_index": {
+   "family": "comments",
+   "artifactDigest": "sha256:08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1",
+   "publishedAt": "2026-10-10T15:45:23Z",
+   "receipts": "generations/comments/08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1/etl_receipts.parquet"
+  },
+  "court_citation_map": {
+   "family": "court-citations",
+   "artifactDigest": "sha256:7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d",
+   "publishedAt": "2026-10-20T00:50:52Z",
+   "receipts": "generations/court-citations/7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d/etl_receipts.parquet"
+  },
+  "court_citations": {
+   "family": "court-citations",
+   "artifactDigest": "sha256:7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d",
+   "publishedAt": "2026-10-20T00:50:52Z",
+   "receipts": "generations/court-citations/7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d/etl_receipts.parquet"
+  },
+  "court_opinions": {
+   "family": "court-opinions",
+   "artifactDigest": "sha256:85589a33b63f22bfac522e5f2c41210eb69437b763b81380562eda1fd33ef298",
+   "publishedAt": "2026-10-07T06:44:36Z",
+   "receipts": "generations/court-opinions/85589a33b63f22bfac522e5f2c41210eb69437b763b81380562eda1fd33ef298/etl_receipts.parquet"
+  },
+  "court_parentheticals": {
+   "family": "court-citations",
+   "artifactDigest": "sha256:7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d",
+   "publishedAt": "2026-10-20T00:50:52Z",
+   "receipts": "generations/court-citations/7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d/etl_receipts.parquet"
+  },
+  "federal_register": {
+   "family": "federal-register",
+   "artifactDigest": "sha256:3290df5438fa356c072430de6549f52ab4fc1c7526c90691179b458fec0b3c08",
+   "publishedAt": "2026-11-10T21:55:16Z",
+   "receipts": "generations/federal-register/3290df5438fa356c072430de6549f52ab4fc1c7526c90691179b458fec0b3c08/etl_receipts.parquet"
+  },
+  "fr_docket_links": {
+   "family": "fr-docket-links",
+   "artifactDigest": "sha256:a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773",
+   "publishedAt": "2026-11-10T22:06:19Z",
+   "receipts": "generations/fr-docket-links/a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773/etl_receipts.parquet"
+  },
+  "lobbying_activities": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_activity_lobbyists": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_affiliated_organizations": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_clients": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_conviction_disclosures": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_filings": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_foreign_entities": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_registrants": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "member_party_affiliations": {
+   "family": "members",
+   "artifactDigest": "sha256:26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780",
+   "publishedAt": "2026-11-11T03:15:15Z",
+   "receipts": "generations/members/26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780/etl_receipts.parquet"
+  },
+  "member_terms": {
+   "family": "members",
+   "artifactDigest": "sha256:26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780",
+   "publishedAt": "2026-11-11T03:15:15Z",
+   "receipts": "generations/members/26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780/etl_receipts.parquet"
+  },
+  "member_vote_terms": {
+   "family": "member-vote-terms",
+   "artifactDigest": "sha256:27ebf57b795752295e4225c79413c4ee652a52b49ade95a66c094baf4f0c9469",
+   "publishedAt": "2026-11-11T04:31:03Z",
+   "receipts": "generations/member-vote-terms/27ebf57b795752295e4225c79413c4ee652a52b49ade95a66c094baf4f0c9469/etl_receipts.parquet"
+  },
+  "member_votes": {
+   "family": "roll-call-votes",
+   "artifactDigest": "sha256:a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c",
+   "publishedAt": "2026-11-11T04:05:38Z",
+   "receipts": "generations/roll-call-votes/a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c/etl_receipts.parquet"
+  },
+  "members": {
+   "family": "members",
+   "artifactDigest": "sha256:26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780",
+   "publishedAt": "2026-11-11T03:15:15Z",
+   "receipts": "generations/members/26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780/etl_receipts.parquet"
+  },
+  "roll_call_votes": {
+   "family": "roll-call-votes",
+   "artifactDigest": "sha256:a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c",
+   "publishedAt": "2026-11-11T04:05:38Z",
+   "receipts": "generations/roll-call-votes/a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c/etl_receipts.parquet"
+  },
+  "unified_agenda": {
+   "family": "unified-agenda",
+   "artifactDigest": "sha256:ab8eb2989a156a2cbf8deae048430decb5bfe8ab0bacb063034ea327c4d7f115",
+   "publishedAt": "2026-11-10T20:20:59Z",
+   "receipts": "generations/unified-agenda/ab8eb2989a156a2cbf8deae048430decb5bfe8ab0bacb063034ea327c4d7f115/etl_receipts.parquet"
+  },
+  "uscode_edition_sections": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
+  },
+  "uscode_edition_structure": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
+  },
+  "uscode_editions": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
+  }
+ }
+}

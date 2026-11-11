@@ -5,7 +5,6 @@ import copy
 import hashlib
 import json
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
@@ -29,8 +28,6 @@ from spicy_regs.transforms.regulations_receipts import (
     materialize_internal,
     write_held_dataset,
 )
-from tests.test_federal_register_bulk_restore import _source as federal_register_source
-from tests.test_fr_docket_links_bulk_restore import _source as fr_docket_links_source
 
 
 def member(path):
@@ -360,29 +357,21 @@ def test_existing_destination_is_refused_before_hashing(tmp_path):
             bridge.restore(request)
 
 
-def test_identity_covers_every_policy_file_the_earlier_receipt_chains_read():
-    """current_receipts admits what the chains declare, so each file they read must be part of the packaged identity."""
+def test_identity_covers_the_ledger_of_earlier_policies_and_every_installed_policy():
+    """current_receipts admits what the ledger declares, so the ledger and its reader are part of the packaged identity."""
+    from spicy_regs import policy_migrations
+
     root = bridge.PACKAGE_ROOT
-    source = (root / "earlier_receipt_policies.py").read_text()
-    reads = re.findall(r'files\("([\w.]+)"\)\s*\.joinpath\(\s*"([^"]+)"', source)
-    assert reads and len(reads) == source.count(".joinpath(")
     covered = set(bridge._identity_files())
-    assert root / "earlier_receipt_policies.py" in covered
-    for package, name in reads:
-        folder = root.joinpath(*package.split(".")[1:])
-        # "etl_policies/" + dataset + ".json" names the directory: every policy file in it is read by some chain.
-        files = sorted((folder / name).glob("*.json")) if name.endswith("/") else [folder / name]
-        assert files and all(file.is_file() for file in files)
-        assert set(files) <= covered, name
+    assert {root / "policy_migrations.py", root / policy_migrations.LEDGER} <= covered
+    assert set((root / "etl_policies").glob("*.json")) <= covered
 
 
 @pytest.mark.parametrize(
     "changed",
     [
-        "earlier_receipt_policies.py",
-        "navigation_policy_history.json",
-        "fec_policy_history.json",
-        "scorecards/historical_rating_policies.json",
+        "policy_migrations.py",
+        "policy_migrations.json",
         "etl_policies/gao_reports.json",
     ],
 )
@@ -410,12 +399,10 @@ def route_warnings():
     logger.remove(sink)
 
 
-def _regulatory_input(tmp_path, dataset):
-    if dataset == "federal_register":
-        rows = [{"document_number": "2026-00001", "publication_date": "2026-06-30"}]
-        return federal_register_source(tmp_path, rows)[0]
-    if dataset == "fr_docket_links":
-        return fr_docket_links_source(tmp_path)[0]
+def _regulatory_input(tmp_path, dataset="documents"):
+    """A selected documents pair: the batch-restored dataset these tests exercise (the Register and its links were
+    the example until their receipts retired, ss-vse3)."""
+    assert dataset == "documents"
     schema = pa.schema([("document_id", pa.string()), ("title", pa.string())], metadata={b"dump_date": b"2026-06-30"})
     source = tmp_path / "source.parquet"
     rows = [{"document_id": "D-1", "title": "one"}, {"document_id": "D-2", "title": "two"}]
@@ -434,11 +421,11 @@ def _restore_request(tmp_path, selected, name="restored"):
     }
 
 
-REGULATORY_RESTORES = ["federal_register", "fr_docket_links", "documents"]
+REGULATORY_RESTORES = ["documents"]
 
 
 def test_regulatory_policies_agree_between_the_selected_prior_reader_and_the_materializers():
-    assert RESTORE_DATASETS == {"dockets", "documents", "federal_register", "fr_docket_links"}
+    assert RESTORE_DATASETS == {"dockets", "documents"}
     for dataset in sorted(RESTORE_DATASETS):
         assert bridge.dataset_policy(dataset) == regulations_receipts.policy(dataset)
 
@@ -504,13 +491,13 @@ def test_forced_batch_ineligibility_logs_the_row_route_and_restores_identically(
 
 
 def test_a_subject_schema_other_than_the_declared_one_logs_the_row_route_before_it_refuses(tmp_path, route_warnings):
-    selected = _regulatory_input(tmp_path, "federal_register")
+    selected = _regulatory_input(tmp_path, "documents")
     subject = pq.read_table(selected.subjects[0])
     pq.write_table(subject.append_column("undeclared", pa.nulls(subject.num_rows, pa.string())), selected.subjects[0])
     with pytest.raises(ValueError, match="Subject schema differs from policy"):
         materialize_internal(selected, tmp_path / "refused.parquet", bulk=True)
     assert route_warnings == [
-        f"regulatory restore route=row dataset=federal_register rows={subject.num_rows} reason=subject-schema-differs"
+        f"regulatory restore route=row dataset=documents rows={subject.num_rows} reason=subject-schema-differs"
     ]
 
 
@@ -559,17 +546,11 @@ def _restore_through_selected_priors(tmp_path, selected, route, monkeypatch):
 
         monkeypatch.setattr(regulations_bulk, "_materialize_selected", forced)
     priors = SelectedPriors(tmp_path / "selected", index=empty_index(), public_url="https://example.invalid")
-    monkeypatch.setattr(priors.selected, "select", lambda _, ranged=False: selected)
+    monkeypatch.setattr(priors.selected, "select", lambda _, ranged=False, last_receipts=False: selected)
     try:
         return priors.get(selected.dataset)
     except Exception as error:  # the refusal is the observation
         return f"{type(error).__name__}: {error}"
-
-
-FR_ROWS = [
-    {"document_number": "2026-00001", "publication_date": "2025-06-30", "title": "first"},
-    {"document_number": "2026-00002", "publication_date": "2026-06-30", "title": "second"},
-]
 
 
 @pytest.mark.parametrize("change", ["orphan", "ambiguous", "missing", "digest", "undeclared-policy", "raw"])
@@ -579,7 +560,7 @@ def test_a_corrupted_selected_pair_refuses_identically_on_the_bulk_and_the_row_r
     for route in ("bulk", "row"):
         directory = tmp_path / route
         directory.mkdir()
-        selected = federal_register_source(directory, FR_ROWS)[0]
+        selected = _regulatory_input(directory, "documents")
         _corrupt(selected, change)
         with monkeypatch.context() as patch_route:
             outcomes[route] = _restore_through_selected_priors(directory, selected, route, patch_route)

@@ -12,6 +12,42 @@ import pytest
 import spicy_regs.sources.r2 as r2
 
 
+@pytest.mark.parametrize("new_bytes, operator_ratio, floor, refused", [
+    (4_207_441, None, None, True),  # fec_committees, 2026-11-09: 0.392 of its prior, under the ordinary 0.5
+    (4_207_441, None, 0.2, False),  # the same file, its rows and columns known kept
+    (1_750_000, None, 0.2, True),  # 0.163, what that table is with every value but its key nulled
+    (1_750_000, "0.1", 0.2, False),  # an operator's ratio below the floor still decides
+    (536_568, "0.1", 0.2, True),  # 0.050
+    (4_207_441, "0.9", None, True),
+    (4_207_441, "0.9", 0.2, False),  # and one above it does not tighten a table that kept its rows
+])
+def test_the_floor_for_a_table_that_kept_its_rows_applies_where_it_is_the_lower(
+        monkeypatch, new_bytes, operator_ratio, floor, refused):
+    if operator_ratio is not None:
+        monkeypatch.setenv("R2_MIN_SIZE_RATIO", operator_ratio)
+    if not refused:
+        r2._assert_upload_safe(new_bytes, 10_731_354, "fec_committees.parquet", floor=floor)
+        return
+    with pytest.raises(RuntimeError, match="shrink"):
+        r2._assert_upload_safe(new_bytes, 10_731_354, "fec_committees.parquet", floor=floor)
+    monkeypatch.setenv("R2_ALLOW_SHRINK", "1")
+    r2._assert_upload_safe(new_bytes, 10_731_354, "fec_committees.parquet", floor=floor)
+
+
+def test_a_refusal_says_which_threshold_was_compared():
+    with pytest.raises(RuntimeError) as ordinary:
+        r2._assert_upload_safe(4_207_441, 10_731_354, "fec_committees.parquet")
+    assert str(ordinary.value) == (
+        "Refusing to upload fec_committees.parquet: new file would shrink remote from 10.2 MB to 4.0 MB "
+        "(ratio 0.392 < threshold 0.5). Set R2_ALLOW_SHRINK=1 to override.")
+    with pytest.raises(RuntimeError) as kept:
+        r2._assert_upload_safe(1_750_000, 10_731_354, "fec_committees.parquet", floor=0.2)
+    assert str(kept.value) == (
+        "Refusing to upload fec_committees.parquet: new file would shrink remote from 10.2 MB to 1.7 MB "
+        "(ratio 0.163 < threshold 0.2, the floor for a table that kept its rows and columns). "
+        "Set R2_ALLOW_SHRINK=1 to override.")
+
+
 def test_retry_checkpoint_can_clear_without_disabling_dataset_shrink_guards():
     r2._assert_upload_safe(100, 100_000, "failed_keys.parquet")
     r2._assert_upload_safe(100, 100_000, "pending_comment_text.parquet")

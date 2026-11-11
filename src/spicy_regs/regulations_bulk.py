@@ -250,6 +250,11 @@ def _plain_query(dataset, declared, schema):
     """
     if RECEIPT_COLUMNS[dataset] or not {name for name, _ in SOURCE_COLUMNS[dataset]} <= set(schema.names):
         return None
+    # A subject column the mapper derives from another field (the Register's regulations.gov statement) has no
+    # source column for the SQL to compare, so the mapper proves those rows.
+    native = {target for target, _ in NATIVE_FIELDS.get(dataset, {}).values()}
+    if not set(declared.subject_schema.names) <= native | set(schema.names):
+        return None
     names = sorted(schema.names)
     restored = [_restore_sql(f"json_extract(_processing, '$[1][1][1][1][{i}]')", schema.field(name).type)
                 for i, name in enumerate(names)]

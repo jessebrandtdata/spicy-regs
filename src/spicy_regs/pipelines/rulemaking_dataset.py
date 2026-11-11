@@ -23,6 +23,30 @@ from spicy_regs.transforms.build_regulatory_agenda import build_regulatory_agend
 from spicy_regs.transforms.build_rule_targets import build_rule_targets
 
 
+#: Sources read as their pinned published tables, never through receipts: every field a stage reads is a public
+#: column there, and their families stop publishing receipts (ss-vse3).
+PUBLISHED_SOURCES = ("federal_register.parquet", "unified_agenda.parquet", "fr_docket_links.parquet")
+
+
+def stage_text(dataset: str, path: Path) -> None:
+    """Rewrite a published native table in place in the text shape the stages read.
+
+    Each native list becomes the JSON text of its source column (``docket_ids`` as ``docket_ids_json``) and every
+    other column its text; a file already in that shape is left alone. It is the published value, not the
+    publisher's spelling: an agency entry keeps ``id``, ``name``, ``raw_name``, ``parent_id`` and ``slug``, and a CFR
+    part reads as text whether the Register wrote ``60`` or ``"60"``, which the stages' parsers take alike.
+    """
+    import pyarrow.parquet as pq
+
+    from spicy_regs.transforms.regulations_shape import NATIVE_FIELDS, published_as_source
+
+    native = {target for source, (target, _) in NATIVE_FIELDS[dataset].items() if source != target}
+    if not set(pq.read_schema(path).names) & native:
+        return
+    text = published_as_source(dataset, path, path.with_name(path.name + ".text"))
+    text.replace(path)
+
+
 class RulemakingDatasetPipeline(MaterializedDatasetPipeline):
     """Build one coherent generation of the rule-identity tables.
 
@@ -137,14 +161,26 @@ class RulemakingDatasetPipeline(MaterializedDatasetPipeline):
             purge_urls([f"{public_url.rstrip('/')}/{publication.SNAPSHOT_POINTER}"])
 
     def _prime_sources(self, output_dir: Path) -> None:
-        """Restore stage inputs from one selected native subject/receipt index."""
+        """Restore stage inputs from one captured index: native pairs through their receipts, and the Register and
+        agenda tables (``PUBLISHED_SOURCES``) as their pinned published tables, read back as the stages read them."""
+        from contextlib import nullcontext
+
         from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
         from spicy_regs.selected_generations import unique_build_directory
+        from spicy_regs.sources import publication, r2
 
-        self._selected_priors = SelectedPriors(unique_build_directory(output_dir), root=output_dir)
-        for key in self.source_inputs:
-            if not self._selected_priors.download(key, output_dir / key):
-                raise ValueError(f"Rulemaking requires selected native input {key}")
+        public_url = os.getenv("R2_PUBLIC_URL")
+        with publication.snapshot(public_url) if public_url else nullcontext():
+            self._selected_priors = SelectedPriors(unique_build_directory(output_dir), root=output_dir)
+            for key in self.source_inputs:
+                if key not in PUBLISHED_SOURCES:
+                    if not self._selected_priors.download(key, output_dir / key):
+                        raise ValueError(f"Rulemaking requires selected native input {key}")
+                # A local run reads the table already beside it, as every materialized source does.
+                elif not (not public_url and (output_dir / key).exists()) and not r2.download(key, output_dir / key):
+                    raise ValueError(f"Rulemaking requires published input {key}")
+        for dataset in ("federal_register", "unified_agenda"):
+            stage_text(dataset, output_dir / f"{dataset}.parquet")
 
     def _prime_previous_generation(self, output_dir: Path) -> dict | None:
         """Restore proceedings identity only from its admitted materialized pair."""
@@ -172,9 +208,12 @@ class RulemakingDatasetPipeline(MaterializedDatasetPipeline):
         snapshot = super()._input_snapshot(output_dir, previous_manifest)
         snapshot["native_inputs"] = {
             name: {"generationId": generation, "subjects": [file_witness(p) for p in subjects],
-                   "receipts": file_witness(receipts)}
+                   # A retired input is its published table alone; its pin below names the generation read.
+                   **({"receipts": file_witness(receipts)} if receipts is not None else {})}
             for name, (subjects, receipts, generation) in self._selected_priors.selections.items()
         }
+        # A published source has no receipt pair to witness: its pin below names the generation read.
+        snapshot["native_inputs"] |= {Path(key).stem: {} for key in PUBLISHED_SOURCES}
         index = self._selected_priors.selected.index
         if index is not None:
             from spicy_regs.sources.publication import table_pin
@@ -286,7 +325,6 @@ class RulemakingDatasetPipeline(MaterializedDatasetPipeline):
                 "timetable_json",
                 "first_action_date",
                 "next_action_date",
-                "url",
             ),
             "fr_docket_links.parquet": (
                 "document_number",

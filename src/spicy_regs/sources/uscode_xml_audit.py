@@ -1,9 +1,11 @@
-"""Independent complete body audit for retained USLM Title 01 at 119-103.
+"""Independent complete audit of one selected USLM release point: a whole-corpus zip or one title's zip.
 
 Source expectations use ElementTree and literal XML, never the maintained
-content/structure readers. Shared annual-audit helpers check only protocol,
-hashes, public output and executing reader identities. A supervised actual run
-is required; tiny fixtures and static review are not source qualification.
+content/structure readers. Shared annual-audit helpers check only hashes,
+public output and executing reader identities. The tables publish no per-row
+receipts, so every row is checked against the original member itself. A
+supervised actual run is required; tiny fixtures and static review are not
+source qualification.
 """
 
 import argparse
@@ -19,10 +21,8 @@ import zipfile
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from spicy_regs.etl_receipts import exact_json, subject_identity, validate_receipt_row
-from spicy_regs.sources.uscode_editions import POLICIES, SCHEMAS
+from spicy_regs.sources.uscode_editions import MAX_ARCHIVE_BYTES, MAX_MEMBER_BYTES, SCHEMAS
 from spicy_regs.sources.uscode_editions_audit import (
-    RECEIPT_SCHEMA,
     _reserve_report,
     identity,
     public,
@@ -36,9 +36,10 @@ U = "{http://xml.house.gov/schemas/uslm/1.0}"
 DC = "{http://purl.org/dc/elements/1.1/}"
 DT = "{http://purl.org/dc/terms/}"
 XSI = "{http://www.w3.org/2001/XMLSchema-instance}"
-# Finite selected title, not a whole-corpus tree-memory claim.
-MAX_ARCHIVE_BYTES = 1024**2
-MAX_MEMBER_BYTES = 1024**2
+#: The builder's own bounds. One member's whole ElementTree is held at a time: the largest, Title 42 at
+#: 119-102, is 113.7 MB of XML, so the process needs several times that; supervise its RSS externally.
+TITLE_MEMBER = re.compile(r"usc(?P<title>[0-9]{2})(?P<appendix>[aA]?)\.xml")
+KINDS = ("release-point-corpus", "release-point-title")
 BODY_TAGS = {
     U + n
     for n in (
@@ -100,7 +101,9 @@ def identifier_piece(raw):
     return result
 
 
-def native_metadata(root):
+def native_metadata(root, title, release_point):
+    """The title's native identity, held to the title its member name selects and the selected release point."""
+    doc_number = title.lstrip("0")
     require(root.tag == U + "uscDoc", "native root differs")
     require(sum(e.tag == U + "uscDoc" for e in root.iter()) == 1, "nested native document")
     meta = [e for e in root if e.tag == U + "meta"]
@@ -113,23 +116,23 @@ def native_metadata(root):
         require(not required or result is not None, "missing native metadata")
         return result
 
-    require(value(U + "docNumber", True) == "1", "native title differs")
-    require(value(U + "docPublicationName", True) == "Online@119-103", "native release point differs")
-    require(value(DC + "type", True) == "USCTitle", "native document type differs")
+    document_type = "USCTitleAppendix" if title.endswith("a") else "USCTitle"
+    require(value(U + "docNumber", True) == doc_number, "native title differs")
+    require(value(U + "docPublicationName", True) == f"Online@{release_point}", "native release point differs")
+    require(value(DC + "type", True) == document_type, "native document type differs")
     stated_id = root.attrib.get("identifier")
-    require(stated_id in (None, "/us/usc/t1"), "native root identifier differs")
+    require(stated_id in (None, f"/us/usc/t{doc_number}"), "native root identifier differs")
     properties = [
         text(e).strip() for e in meta[0] if e.tag == U + "property" and e.attrib.get("role") == "is-positive-law"
     ]
     require(len(properties) <= 1, "repeated positive-law property")
     body_present = any(text(e).strip() for e in root if e.tag in (U + "main", U + "appendix"))
-    require(body_present, "native body absent")
     return dict(
         source="release-point-title",
-        title="01",
-        doc_number="1",
-        release_point="Online@119-103",
-        document_type="USCTitle",
+        title=title,
+        doc_number=doc_number,
+        release_point=f"Online@{release_point}",
+        document_type=document_type,
         heading=value(DC + "title", True),
         publisher=value(DC + "publisher"),
         converter=value(DC + "creator"),
@@ -139,12 +142,12 @@ def native_metadata(root):
         identifier=stated_id,
         identity_basis=["doc-number:native", "release-point:native", "document-type:native"]
         + (["identifier:native"] if stated_id is not None else []),
-        body_present=True,
+        body_present=body_present,
     )
 
 
-def native_observations(body):
-    """Return literal metadata and postorder structure/body observations."""
+def native_observations(body, title="01", release_point="119-103"):
+    """Return literal metadata and postorder structure/body observations of one title member."""
     require(len(body) <= MAX_MEMBER_BYTES, "selected XML member bound")
     decoded = body.decode("utf-8-sig")
     require("\x00" not in decoded, "non-UTF8 XML unsupported")
@@ -212,11 +215,11 @@ def native_observations(body):
             )
 
     visit(root, [], "/*[1]")
-    return native_metadata(root), structure, content
+    return native_metadata(root, title, release_point), structure, content
 
 
 def audit(candidate: Path, selection: Path):
-    """Read one exact title candidate completely; never write or repair it."""
+    """Read one exact XML candidate and its original completely; never write or repair either."""
     candidate, selection = Path(candidate).resolve(), Path(selection).resolve()
     raw = selection.read_bytes()
     require(len(raw) <= 1024**2, "selection byte bound")
@@ -225,15 +228,15 @@ def audit(candidate: Path, selection: Path):
         selected.get("format") == "spicy-uscode-edition-inputs" and selected.get("version") == 1,
         "unsupported selection",
     )
-    require(
-        isinstance(selected.get("sources"), list) and len(selected["sources"]) == 1, "one XML title archive required"
-    )
+    require(isinstance(selected.get("sources"), list) and len(selected["sources"]) == 1, "one XML archive required")
     spec = selected["sources"][0]
+    kind, point, title = spec.get("kind"), spec.get("release_point"), spec.get("title")
     require(
-        spec.get("kind") == "release-point-title"
-        and spec.get("release_point") == "119-103"
-        and spec.get("title") == "01"
-        and spec.get("year") is None,
+        kind in KINDS
+        and isinstance(point, str)
+        and re.fullmatch(r"[0-9]{2,3}-[0-9]+[a-z]?", point) is not None
+        and spec.get("year") is None
+        and (title is None if kind == "release-point-corpus" else isinstance(title, str) and TITLE_MEMBER.fullmatch(f"usc{title}.xml") is not None),
         "unsupported selected XML scope",
     )
     source = Path(spec["path"])
@@ -249,14 +252,7 @@ def audit(candidate: Path, selection: Path):
     generation = identity("uscode-editions-public-v2", sha(selection), code)
     require(rebuild["generation"] == generation, "generation differs")
     require(set(rebuild["outputs"]) == set(SCHEMAS), "output table inventory differs")
-    evidence = [
-        selection,
-        source,
-        Path(__file__),
-        candidate / "rebuild.json",
-        candidate / "selection.json",
-        candidate / "etl_receipts.parquet",
-    ]
+    evidence = [selection, source, Path(__file__), candidate / "rebuild.json", candidate / "selection.json"]
     for table, entry in rebuild["outputs"].items():
         require(entry["path"] == f"{table}/{table}.parquet", "output path differs")
         path = candidate / entry["path"]
@@ -266,152 +262,102 @@ def audit(candidate: Path, selection: Path):
             parquet.schema_arrow == SCHEMAS[table] and parquet.metadata.num_rows == entry["rows"],
             "subject schema/count differs",
         )
-        evidence.extend([path, candidate / table / "etl_receipts.parquet"])
+        evidence.append(path)
     before = {str(p): sha(p) for p in evidence}
-    receipt_paths = [candidate / "etl_receipts.parquet"] + [candidate / t / "etl_receipts.parquet" for t in SCHEMAS]
-    require(all(pq.ParquetFile(p).schema_arrow == RECEIPT_SCHEMA for p in receipt_paths), "receipt schema differs")
-    combined = rows(receipt_paths[0])
-    shards = {t: rows(candidate / t / "etl_receipts.parquet") for t in SCHEMAS}
     counts = Counter()
+    editions = rows(candidate / rebuild["outputs"]["uscode_editions"]["path"])
+    observed = {t: rows(candidate / rebuild["outputs"][t]["path"]) for t in ("uscode_edition_structure", "uscode_edition_sections")}
 
-    def receipt(table, row, edition):
+    def checked(table, row):
         public(row, table)
-        item = next(combined)
-        require(item == next(shards[table]), "combined/shard receipt differs")
-        public(item, "receipt")
-        validate_receipt_row(item, POLICIES)
-        rid, version, key = subject_identity(POLICIES[table], row)
-        require(
-            (item["record_id"], item["subject_version"], item["identity_json"]) == (rid, version, key),
-            "subject receipt binding differs",
-        )
-        require(
-            item["dataset"] == table
-            and item["generation_id"] == generation
-            and item["outcome"] == "accepted"
-            and item["attempt_id"] == edition["edition_id"],
-            "receipt dataset/generation/member differs",
-        )
-        witnesses = item["witnesses"]
-        require(
-            item["policy_version"] == POLICIES[table].policy_version
-            and item["processor"] == "uscode-editions-public-v2"
-            and item["processing_json"] == exact_json({})
-            and item["diagnostic_json"] == exact_json({}),
-            "complete declared receipt processing fields differ",
-        )
-        require(
-            witnesses
-            == [
-                dict(
-                    source_id=spec["sha256"],
-                    source_uri=spec["sha256"],
-                    sha256=spec["sha256"],
-                    locator=None,
-                    body_version=None,
-                ),
-                dict(
-                    source_id=edition["edition_id"],
-                    source_uri=None,
-                    sha256=edition["member_sha256"],
-                    locator=edition["member_name"],
-                    body_version=None,
-                ),
-            ],
-            "complete declared receipt witnesses differ",
-        )
         counts[table] += 1
 
     with zipfile.ZipFile(source) as archive:
         members = [m for m in archive.infolist() if not m.is_dir()]
-        require(
-            len(members) == 1 and members[0].filename.rsplit("/", 1)[-1].lower() == "usc01.xml",
-            "complete title member inventory differs",
-        )
-        require(members[0].file_size <= MAX_MEMBER_BYTES, "decoded member bound")
-        body = archive.read(members[0])
-        metadata, structure, content = native_observations(body)
-        member_sha = "sha256:" + hashlib.sha256(body).hexdigest()
-        edition_id = identity(
-            ("release-point-title", None, "119-103", "01"), spec["sha256"], 1, members[0].filename, member_sha
-        )
-        expected_edition = dict(
-            edition_id=edition_id,
-            source_kind="release-point-title",
-            requested_year=None,
-            release_point="119-103",
-            archive_sha256=spec["sha256"],
-            member_name=members[0].filename,
-            member_sha256=member_sha,
-            member_bytes=str(len(body)),
-            title="01",
-            native_publication_year=None,
-            carried_forward=None,
-            member_role="title",
-            metadata_json=json.dumps(metadata),
-        )
-        editions = list(rows(candidate / rebuild["outputs"]["uscode_editions"]["path"]))
-        require(len(editions) == 1, "edition inventory differs")
-        edition = editions[0]
-        require(json.loads(edition["metadata_json"]) == metadata, "complete native metadata differs")
-        require(
-            {k: v for k, v in edition.items() if k != "metadata_json"}
-            == {k: v for k, v in expected_edition.items() if k != "metadata_json"},
-            "complete edition fields differ",
-        )
-        receipt("uscode_editions", edition, edition)
-        for table, expected in [("uscode_edition_structure", structure), ("uscode_edition_sections", content)]:
-            observed = rows(candidate / rebuild["outputs"][table]["path"])
-            for native in expected:
-                row = next(observed)
-                position = native["element"]["source_xpath"]
-                kind = "xml-section" if native["element"]["tag"] in (U + "section", "section") else "xml-chapter"
-                common = dict(
-                    observation_id=identity(
-                        edition_id, kind if table == "uscode_edition_structure" else "section-content", position
-                    ),
+        require(bool(members), "empty original archive")
+        if kind == "release-point-title":
+            require(len(members) == 1, "a title archive holds exactly one member")
+        for index, member in enumerate(members, 1):
+            match = TITLE_MEMBER.fullmatch(member.filename.rsplit("/", 1)[-1])
+            if match is None:
+                raise AssertionError("member is not a title: " + member.filename)
+            code_title = match["title"] + match["appendix"].lower()
+            require(kind == "release-point-corpus" or code_title == title, "title member differs from the selection")
+            require(member.file_size <= MAX_MEMBER_BYTES, "decoded member bound")
+            body = archive.read(member)
+            metadata, structure, content = native_observations(body, code_title, point)
+            member_sha = "sha256:" + hashlib.sha256(body).hexdigest()
+            edition_id = identity((kind, None, point, title), spec["sha256"], index, member.filename, member_sha)
+            edition = next(editions)
+            require(json.loads(edition["metadata_json"]) == metadata, "complete native metadata differs")
+            require(
+                {k: v for k, v in edition.items() if k != "metadata_json"}
+                == dict(
                     edition_id=edition_id,
-                    source_position=position,
-                    native_identifier=native["element"]["attributes"].get("identifier"),
-                )
-                if table == "uscode_edition_structure":
-                    common.update(
-                        observation_kind=kind,
-                        native_label=" ".join(n["text"] for n in native["numbers"]),
-                        native_status=native["element"]["attributes"].get("status"),
+                    source_kind=kind,
+                    requested_year=None,
+                    release_point=point,
+                    archive_sha256=spec["sha256"],
+                    member_name=member.filename,
+                    member_sha256=member_sha,
+                    member_bytes=str(len(body)),
+                    title=code_title,
+                    native_publication_year=None,
+                    carried_forward=None,
+                    member_role="title",
+                ),
+                "complete edition fields differ at " + member.filename,
+            )
+            checked("uscode_editions", edition)
+            del body
+            for table, expected in [("uscode_edition_sections", content), ("uscode_edition_structure", structure)]:
+                for native in expected:
+                    row = next(observed[table])
+                    position = native["element"]["source_xpath"]
+                    xml_kind = "xml-section" if native["element"]["tag"] in (U + "section", "section") else "xml-chapter"
+                    common = dict(
+                        observation_id=identity(
+                            edition_id, xml_kind if table == "uscode_edition_structure" else "section-content", position
+                        ),
+                        edition_id=edition_id,
+                        source_position=position,
+                        native_identifier=native["element"]["attributes"].get("identifier"),
                     )
-                else:
-                    common.update(
-                        source_kind="release-point-title",
-                        source_context=native["context"],
-                        body_text=native["body_text"],
+                    if table == "uscode_edition_structure":
+                        common.update(
+                            observation_kind=xml_kind,
+                            native_label=" ".join(n["text"] for n in native["numbers"]),
+                            native_status=native["element"]["attributes"].get("status"),
+                        )
+                    else:
+                        common.update(source_kind=kind, source_context=native["context"], body_text=native["body_text"])
+                    where = member.filename + position
+                    require(json.loads(row["source_observation_json"]) == native, "complete native observation differs at " + where)
+                    require(
+                        {k: v for k, v in row.items() if k != "source_observation_json"} == common,
+                        "complete subject fields differ at " + where,
                     )
-                require(
-                    json.loads(row["source_observation_json"]) == native,
-                    "complete native observation differs at " + position,
-                )
-                require(
-                    {k: v for k, v in row.items() if k != "source_observation_json"} == common,
-                    "complete subject fields differ",
-                )
-                receipt(table, row, edition)
-            require(next(observed, None) is None, "extra native rows")
-    require(next(combined, None) is None and all(next(s, None) is None for s in shards.values()), "extra receipts")
+                    checked(table, row)
+            del structure, content
+    require(next(editions, None) is None, "extra edition rows")
+    require(all(next(stream, None) is None for stream in observed.values()), "extra native rows")
     require(all(counts[t] == rebuild["outputs"][t]["rows"] for t in SCHEMAS), "verified row counts differ")
     require({str(p): sha(p) for p in evidence} == before, "input/candidate evidence drift")
     require(reader_pins() == code, "reader drift")
+    scope = f"xml{point}-" + ("corpus" if kind == "release-point-corpus" else f"title{title}")
     return dict(
-        status="verified-complete-selected-xml119-103-title01",
+        status=f"verified-complete-selected-{scope}",
         verdict="APPROVE",
         generation=generation,
         source_sha256=spec["sha256"],
         selection_sha256=sha(selection),
         audit_sha256=sha(__file__),
-        complete_original_members=1,
+        complete_original_members=len(members),
         rows=dict(counts),
-        independence="All source expectations use independent ElementTree, native attributes/text and positional child paths; maintained helpers only declare schemas and validate protocol.",
-        scope="One complete selected Title01 at119-103, every native metadata/heading/hierarchy/body/null/field/occurrence and every receipt. No corpus/publication/retirement proof.",
-        limits="UTF8 XML without DTD/entities, at most1MiB per archive/member; bounded whole-title tree, not large-corpus memory proof. Rendering is documented descendant/body text, not facsimile or legal meaning. External supervision required.",
+        evidence_sha256=before,
+        independence="All source expectations use independent ElementTree, native attributes/text and positional child paths; maintained helpers only declare schemas.",
+        scope=f"Every member of one selected release-point archive ({scope}): every native metadata/heading/hierarchy/body/null/field/occurrence of every row. No publication or retirement proof.",
+        limits="UTF8 XML without DTD/entities, within the builder's archive and member bounds; one member's whole tree at a time, not a memory bound. Rendering is documented descendant/body text, not facsimile or legal meaning. External supervision required.",
     )
 
 

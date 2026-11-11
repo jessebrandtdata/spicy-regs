@@ -1,4 +1,9 @@
-"""Seal the comments mirror and its aggregate index with exact ETL receipts."""
+"""Seal the comments mirror and its aggregate index as one generation.
+
+:func:`build_comments_generation` is the route: no ETL receipts since ss-juz8. The remote staging and prepared
+publication below belong to the one-shot v1 promotion of 2026-10-10, which published receipts; the mirror refuses
+that route now, and they go with it once a receipts-free publication has run.
+"""
 from dataclasses import asdict
 from contextlib import ExitStack
 import json
@@ -12,7 +17,7 @@ import pyarrow.parquet as pq
 import pyarrow as pa
 
 from spicy_regs.duckdb_settings import ExportResources
-from spicy_regs.etl_receipts import ReceiptContext, combine_receipts, write_dataset
+from spicy_regs.etl_receipts import ReceiptContext
 from spicy_regs.generations import build_generation
 from spicy_regs.sources.publication import file_identity
 from spicy_regs.transforms.regulations_receipts import policy
@@ -249,29 +254,27 @@ def publish_prepared_comments_remote(output_dir, *, client, bucket, reader, snap
         expected_pin=ArtifactPin(pin["logicalId"], pin["artifactDigest"]), before_pointer=guard)
 
 
-def build_comments_generation(output_dir, result, snapshot):
-    """Require the catalog's selected pair; derive index receipts from that body."""
-    metadata = json.loads(result["generation"].read_text())
-    if metadata.get("dataset") != "comments" or not metadata.get("generation_id"):
-        raise ValueError("Comments export has no selected receipt generation")
-    generation_id = metadata["generation_id"]
+#: The comments family's two tables, published together. Whether they carry receipts is not this module's to say:
+#: the "receipts retired" marker on each one's installed policy (``subject_catalog.RECEIPTS_RETIRED``) is the one owner
+#: (ss-ag1j). Admission requires a receipt member to classify every table beside it, so both leave receipts together.
+TABLES = ("comments.parquet", "comments_index.parquet")
+
+
+def build_comments_generation(output_dir, result):
+    """Seal the exported comments and their index as one family generation, without ETL receipts.
+
+    Each table must have the columns and types its installed policy declares, the check receipt admission made
+    before (ss-juz8). The published index is the export's own file, the one the fixed ``comments_index.parquet``
+    URL serves. ``catalog_comments`` records the digest of the table read, as every comments generation has.
+    """
+    from spicy_regs.native_types import described_schema
+
     comments = result["comments"]
-    if metadata.get("snapshot") != asdict(snapshot):
-        raise ValueError("Comments receipts name a different catalog snapshot")
-    index_policy = policy("comments_index")
-    witness = {"source_id": "comments", "source_uri": None,
-               "sha256": file_identity(comments)["sha256"],
-               "locator": json.dumps(asdict(snapshot), sort_keys=True), "body_version": generation_id}
-    with TemporaryDirectory(prefix="comments-index-receipts-", dir=output_dir) as temporary:
-        temporary = Path(temporary)
-        index_subject, index_receipts = write_dataset(
-            _index_records(result["index"], generation_id, witness), temporary / "index", index_policy)
-        assert index_subject is not None
-        shared = combine_receipts([result["receipts"], index_receipts], temporary / "etl_receipts.parquet")
-        directory = output_dir / ".comments-generations" / uuid4().hex
-        build_generation(directory, family="comments", files=[comments, index_subject],
-                         expected_keys=("comments.parquet", "comments_index.parquet"),
-                         parents={"catalog_comments": {"sha256": witness["sha256"], "byteSize": comments.stat().st_size}},
-                         receipt_path=shared, receipt_policies=[policy("comments"), index_policy],
-                         receipt_generation_id=generation_id, adopt_owned_receipt=True)
+    directory = output_dir / ".comments-generations" / uuid4().hex
+    build_generation(directory, family="comments", files=[comments, result["index"]],
+                     expected_keys=TABLES,
+                     schemas={name: described_schema(policy(name).subject_schema)
+                              for name in (key.removesuffix(".parquet") for key in TABLES)},
+                     parents={"catalog_comments": {"sha256": file_identity(comments)["sha256"],
+                                                   "byteSize": comments.stat().st_size}})
     return directory

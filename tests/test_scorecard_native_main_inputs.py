@@ -15,6 +15,10 @@ from spicy_regs.scorecards.resolution import OFFICIAL_COLUMNS
 from spicy_regs.sources import publication
 from tests.generation_fakes import Store
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def native_selection(tmp_path, name, records):
     raw = tmp_path / 'source.parquet'

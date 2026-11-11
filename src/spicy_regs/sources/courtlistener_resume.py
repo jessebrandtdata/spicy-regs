@@ -60,14 +60,8 @@ def read_usage(api_token: str | None, transport: httpx.BaseTransport | None) -> 
     return bytes(body)
 
 
-def fit_quota(body: bytes, wanted: int, *, request_interval: float) -> tuple[int, list[dict]]:
-    """Live Search attempts, at most ``wanted``, that every user-scope window can absorb.
-
-    Windows roll continuously. A window longer than the paced run cannot refill
-    during it, so its ``remaining`` caps the run; a shorter one refills under the
-    existing pacing. Blocked, exhausted or unreadable usage defers. A later 429's
-    Retry-After stays authoritative over this point-in-time reading.
-    """
+def _user_windows(body: bytes) -> list[dict]:
+    """The account's main-quota windows; an unreadable reply or a blocked account defers."""
     try:
         rows = json.loads(body)["current_usage"]
         windows = [{name: row[name] for name in (*_USAGE_FIELDS, "reset_at")}
@@ -82,6 +76,18 @@ def fit_quota(body: bytes, wanted: int, *, request_interval: float) -> tuple[int
         raise _deferred("CourtListener usage response is unusable") from error
     if any(window["blocked"] for window in windows):
         raise _deferred("the CourtListener account is blocked")
+    return windows
+
+
+def fit_quota(body: bytes, wanted: int, *, request_interval: float) -> tuple[int, list[dict]]:
+    """Live Search attempts, at most ``wanted``, that every user-scope window can absorb.
+
+    Windows roll continuously. A window longer than the paced run cannot refill
+    during it, so its ``remaining`` caps the run; a shorter one refills under the
+    existing pacing. Blocked, exhausted or unreadable usage defers. A later 429's
+    Retry-After stays authoritative over this point-in-time reading.
+    """
+    windows = _user_windows(body)
     for window in windows:
         if window["remaining"] == 0:
             raise _deferred(f"CourtListener {window['rate']} quota is exhausted until {window['reset_at']}")
@@ -91,6 +97,51 @@ def fit_quota(body: bytes, wanted: int, *, request_interval: float) -> tuple[int
         if request_interval * live < window["window_seconds"]:
             live = min(live, window["remaining"])
     return live, windows
+
+
+def daily_allowance(body: bytes, wanted: int, *, request_interval: float, reserve: int,
+                    lock_step_seconds: float) -> tuple[int, datetime | None, list[dict]]:
+    """What a run repeated every day may spend: attempts (at most ``wanted``) and when its first may go.
+
+    A job that spends most of a rolling day's quota never finds it idle: when it
+    starts, yesterday's run is still inside the window, so ``remaining`` is small
+    and grows by one as each of yesterday's requests leaves. Capping at
+    ``remaining``, as :func:`fit_quota` does for a one-off continuation, would
+    halve it on every day it starts earlier than the day before. So, for each
+    window longer than the paced run:
+
+    * room for ``wanted`` plus the ``reserve`` other jobs need: spend ``wanted``;
+    * fuller, and its next slot frees within ``lock_step_seconds``: that is
+      yesterday's run leaving. Spend ``wanted``, starting when that slot frees, so
+      each request takes a place yesterday's has just left;
+    * fuller, and nothing frees that soon: the quota was spent at another hour
+      and will not come back during this run. Spend what is free now, less
+      ``reserve``; zero means nothing today.
+
+    Keeping step holds nothing back: it takes every place yesterday's run
+    frees. Other use of the token is then protected only by how far ``wanted``
+    sits below the window's limit, which is the caller's choice, not by
+    ``reserve``.
+
+    Shorter windows refill under the pacing. Blocked or unreadable usage defers
+    (:func:`_user_windows`); a later 429's Retry-After stays authoritative.
+    """
+    windows = _user_windows(body)
+    allowed, not_before = wanted, None
+    for window in windows:
+        if request_interval * wanted >= window["window_seconds"] or window["remaining"] - reserve >= wanted:
+            continue
+        try:
+            frees = datetime.fromisoformat(window["reset_at"]) if window["reset_at"] else None
+            if frees is not None and frees.tzinfo is None:
+                raise ValueError("reset_at has no offset")
+        except ValueError as error:
+            raise _deferred("CourtListener usage response is unusable") from error
+        if frees is not None and frees - _now() <= timedelta(seconds=lock_step_seconds):
+            not_before = frees if not_before is None else max(not_before, frees)
+        else:
+            allowed = min(allowed, max(window["remaining"] - reserve, 0))
+    return allowed, not_before if allowed else None, windows
 
 
 @dataclass(frozen=True)

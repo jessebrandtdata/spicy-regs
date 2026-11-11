@@ -162,7 +162,8 @@ def test_each_assigned_table_has_explicit_columns_schema_and_identity():
         'comments': {'comment_reference_values_json', 'pdf_extraction_results_json'},
         'documents': {'pdf_extraction_results_json'},
         # The Register's literal president object: absent, JSON null and {} stay distinct (SpicyDocs 0.66.6 contract).
-        'federal_register': {'president_json'},
+        # and its literal regulations.gov statement, public whole since regulations-native-v3 (ss-vse3).
+        'federal_register': {'president_json', 'regulations_dot_gov_info_json'},
         'proceedings': {'fr_document_joins_json', 'unresolved_fr_references_json'},
         'regulatory_agenda_items': {'unresolved_fr_references_json'},
         'rule_targets': {'fr_references_json'},
@@ -215,7 +216,14 @@ def test_new_register_fields_keep_relations_counts_and_supporting_titles_native(
     assert shaped["regulations_dot_gov_supporting_documents"] == info["supporting_documents"]
     assert shaped["regulations_dot_gov_regulatory_plan_title"] == "Plan"
     assert shaped["raw_conversion_inputs"] == raw
-    assert "regulations_dot_gov_info_json" not in subject_schema("federal_register").names
+    # The statement itself is a public column, whole: the plan's html_url is stated nowhere else (ss-vse3).
+    assert shaped["regulations_dot_gov_info_json"] == json.dumps(info)
+    assert subject_schema("federal_register").names[-5:] == [
+        "html_url", "pdf_url", "body_html_url", "source_sha256", "regulations_dot_gov_info_json"]
+    # The links' promoted field is a list like the table's others, not JSON text (ss-vse3).
+    links = subject_schema("fr_docket_links")
+    assert links.names[-2:] == ["link_source", "normalized_docket_candidates"]
+    assert links.field("normalized_docket_candidates").type == links.field("docket_ids").type
     info["supporting_documents"][0]["unclassified"] = "retain, then refuse"
     with pytest.raises(RegulationsShapeError):
         shape_record("federal_register", raw | {"regulations_dot_gov_info_json": json.dumps(info)})
@@ -229,3 +237,45 @@ def test_plain_comment_text_and_source_restrictions_are_mapped_before_receipts()
     assert shaped["attachments"] == [{"title": "Study", "formats": None, "restrict_reason_type": "Copyrighted"}]
     assert shaped["raw_source_record"] == raw
     assert "raw_conversion_inputs" not in shaped  # Comments keeps one replayable original input.
+
+
+def test_the_installed_extracts_attachment_id_lands_in_the_comments_attachments_struct():
+    """spicy-docs 0.85.0 ends each comment attachment entry with ``attachment_id``, NULL for a malformed id; the comments
+    mapper accepts the key and the native struct keeps it, so nothing is refused or dropped."""
+    import pyarrow as pa
+
+    from spicy_regs.schemas import COMMENT
+
+    record = {"data": {"id": "EPA-X-0001-0002", "attributes": {}}, "included": [
+        {"id": "09000064b8f4997d", "type": "attachments", "attributes": {"title": "Letter", "fileFormats": [
+            {"fileUrl": "https://downloads.regulations.gov/EPA-X-0001-0002/attachment_1.pdf", "format": "pdf",
+             "size": 4}]}},
+        {"id": 7, "type": "attachments", "attributes": {"title": "Study", "fileFormats": None,
+                                                        "restrictReasonType": "Copyrighted"}},
+    ]}
+    extracted = COMMENT.extract(record)
+    shaped = shape_record("comments", {"comment_id": "EPA-X-0001-0002", "attachments_json": extracted["attachments_json"]})
+    stored = pa.Table.from_pylist([shaped], schema=subject_schema("comments")).to_pylist()[0]["attachments"]
+    assert [entry["attachment_id"] for entry in stored] == ["09000064b8f4997d", None]
+    assert [entry["restrict_reason_type"] for entry in stored] == [None, "Copyrighted"]
+
+
+def test_agency_slugs_read_back_as_the_projection_spells_them(tmp_path):
+    """``published_as_source`` joins the slugs with commas, as SpicyDocs' projection does, and the mapper splits them.
+
+    Exact for what the projection writes (non-empty slugs, no comma, or no slug at all); the documented limit is held
+    here so a change to it is deliberate: an empty list, which the projection never writes, comes back as ``[""]``.
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from spicy_regs.transforms.regulations_shape import published_as_source, shape_records
+
+    schema = subject_schema("federal_register")
+    slugs = [["environmental-protection-agency", "air-and-radiation-office"], ["treasury-department"], None, []]
+    rows = [dict.fromkeys(schema.names) | {"document_number": f"2026-{i}", "publication_date": "2026-01-01",
+                                           "agency_slugs": value} for i, value in enumerate(slugs)]
+    pq.write_table(pa.Table.from_pylist(rows, schema=schema), tmp_path / "published.parquet")
+    text = published_as_source("federal_register", tmp_path / "published.parquet", tmp_path / "text.parquet")
+    back = [row["agency_slugs"] for row in shape_records("federal_register", pq.read_table(text).to_pylist())]
+    assert back == [*slugs[:3], [""]]

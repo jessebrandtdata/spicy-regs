@@ -50,11 +50,12 @@ def test_plan_chunks_comment_keys_per_agency_and_a_newer_manifest_adds_only_new_
     assert cf.status(tmp_path)["planned_keys"] == len(keys)
 
 
-def test_a_new_record_shape_reads_every_key_again_beside_an_earlier_shapes_parts(tmp_path, monkeypatch):
-    """The 2026-10 re-read on the 2026-09-28 workdir: s3 plans and reads every key, not only the keys since."""
+@pytest.mark.parametrize("earlier", ["s2", "s3"])
+def test_a_new_record_shape_reads_every_key_again_beside_an_earlier_shapes_parts(tmp_path, monkeypatch, earlier):
+    """A re-read on an earlier shape's workdir (s2: 2026-09-28; s3: 2026-10-03) plans and reads every key again."""
     store, shape = _store(), cf.RECORD_SHAPE
-    assert shape != "s2"
-    monkeypatch.setattr(cf, "RECORD_SHAPE", "s2")
+    assert shape not in {"s2", "s3"}
+    monkeypatch.setattr(cf, "RECORD_SHAPE", earlier)
     cf.plan(tmp_path, _manifest(tmp_path, store), chunk_keys=10)
     assert cf.read(tmp_path, workers=2, resource=_FakeS3Resource(store))["keys"] == len(store)
     monkeypatch.setattr(cf, "RECORD_SHAPE", shape)
@@ -64,12 +65,14 @@ def test_a_new_record_shape_reads_every_key_again_beside_an_earlier_shapes_parts
     assert len(glob(str(cf.shape_parts(tmp_path)))) == 2
 
 
-def test_planning_or_reading_the_shape_needs_an_extract_that_keeps_withheld_attachments(tmp_path, monkeypatch):
+def test_planning_or_reading_the_shape_needs_an_extract_that_keeps_withheld_attachments_and_ids(tmp_path, monkeypatch):
     dropped = lambda record: {"attachments_json": None}  # noqa: E731 (SpicyDocs before b19b092)
-    kept = lambda record: {"attachments_json": '[{"title": "withheld", "formats": null}]'}  # noqa: E731
+    unidentified = lambda record: {"attachments_json": '[{"title": "withheld", "formats": null}]'}  # noqa: E731 (to 0.84.0)
     with pytest.raises(RuntimeError, match="b19b092"):
         cf.require_record_shape(dropped)
-    cf.require_record_shape(kept)
+    with pytest.raises(RuntimeError, match="0.85.0"):
+        cf.require_record_shape(unidentified)
+    cf.require_record_shape()  # the installed extract keeps both
 
     def refuse(extract=None):
         raise RuntimeError("refused")

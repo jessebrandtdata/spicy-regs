@@ -342,7 +342,8 @@ shape change will not arrive nightly until the bulk receipt writer lands. Audit 
 spicy-regs and each sibling repository's `main`. The first native publication
 removes `url`, `lobbying_activities_json` and `government_entities_json` from
 `lobbying_filings` and `government_entities_json` from `lobbying_activities`
-(`url` moves to the receipt; the JSON arrays become `lobbying_activities` and
+(`url` moved to the receipt, and came back as the table's last column when the family's receipts were
+retired on 2026-11-11, `docs/lobbying-receipt-archive.md`; the JSON arrays become `lobbying_activities` and
 `government_entities`). It retypes `filing_year`, `activity_index` and
 `lobbyist_index` to BIGINT, `dt_posted` to TIMESTAMP WITH TIME ZONE, `income` and
 `expenses` to DECIMAL(38,6), and `new` to BOOLEAN. The native filings table is
@@ -356,7 +357,7 @@ removes `url`, `lobbying_activities_json` and `government_entities_json` from
 | `table_joins.py`, `join_audit.json`, `join_measurements.json` | `filing_uuid`; `(filing_uuid, activity_index)` | Fine: both sides retype together. |
 | MCP `describe_table`/`list_sources`, `data_dictionary`, `docs/tables`, `table_metadata.json` | the dictionary already declares the native columns | Fine, and better: `schema_matches_declared` becomes true; `test_legacy_lobbying_descriptions.py` keeps the old meanings readable. |
 | `publish-explorer-metadata.yml`, the SpicyGov explorer | `explorer-metadata.v1.json`, fetched at run time and republished after this rollup | Fine. `spicygov/lib/data/table_joins.json` is read only by one test, as a fixture. |
-| Saved user SQL | the removed columns, `filing_year = '2025'` style text compares | Not checked, as for every family; `url` is `read_receipt_fields`. |
+| Saved user SQL | the removed columns, `filing_year = '2025'` style text compares | Not checked, as for every family; `url` is a column again since the receipt switch of 2026-11-11 (ss-vse3). |
 | `spicygov/content/coverage-definitions/regulation.json` | an exact `schema` per table; `build-coverage-maps.py` refuses drift ("Published schema needs coverage review") | Needs a change before the next coverage build: replace the three `schema` arrays with the native ones. The dimensions already cast to VARCHAR, so `dt_posted` and `filing_year` keep working. `content/coverage-reviews` pin generation `8374129a`; the new generation needs its review. |
 | `spicysearch/vendor`, RefSpec evidence, `spicy-docs`, `spicyengine`, `spicyregs-web`, DocSpec, BillTrax | a vendored dictionary copy and research files; no code reads the tables | Fine. |
 

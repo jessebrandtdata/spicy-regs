@@ -210,7 +210,9 @@ def test_published_ranges_retry_a_transient_failure_then_give_up(monkeypatch):
     assert len(asked) == remote_parquet.RANGE_ATTEMPTS
 
 
-def test_only_another_familys_soft_inputs_are_ranged():
+def test_only_another_familys_soft_inputs_and_last_receipts_are_ranged():
+    """A family's own priors fetch their member whole, except a retired table's last receipts (ss-vse3): those are read
+    for the one dataset whose promoted fields they back-fill, never all 3.5 GB of the votes member."""
     from spicy_regs.pipelines.rollups.roll_call_votes import RollCallVotesRollup
     from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
     rollup = RollCallVotesRollup.__new__(RollCallVotesRollup)
@@ -219,7 +221,9 @@ def test_only_another_familys_soft_inputs_are_ranged():
     from pathlib import Path
     with tempfile.TemporaryDirectory() as scratch:
         _, prior = rollup._new_receipt_work(Path(scratch))
-    assert isinstance(prior, SelectedPriors) and prior.ranged == {'bill_vote_references'}
+    assert isinstance(prior, SelectedPriors)
+    assert prior.last_receipts == {'members', 'member_terms', 'member_party_affiliations', 'roll_call_votes'}
+    assert prior.ranged == {'bill_vote_references', *prior.last_receipts}
 
 
 def test_published_ranges_refuse_a_full_answer_before_reading_its_body():

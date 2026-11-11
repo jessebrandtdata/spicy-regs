@@ -17,7 +17,9 @@ jobs:
     with:
       command: run-rollup-unified-agenda
       skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
-      # Retained-copy native rehearsals took 10–14 minutes in the migration
-      # audit; allow the slower hosted runner and next-edition acquisition.
-      # See docs/native-family-conversion.md and its pinned runtime evidence.
-      timeout_minutes: 60
+      # No receipts since ss-vse3: run 42892148572 (2026-11-10) took 13.5 minutes, of which
+      # the prior's restore through receipts (490 s) and the receipt writer (202 s) are gone;
+      # what remains is about 3 (setup, the 66 MB table each way, one edition read, the
+      # mapping: 11 s on the workstation). A cold backfill of all 60 editions adds about 6
+      # (121 s for 21 on the runner), so 30 keeps a wide margin and stops a hang 30 minutes sooner.
+      timeout_minutes: 30

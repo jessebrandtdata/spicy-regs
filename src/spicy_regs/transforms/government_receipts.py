@@ -14,8 +14,6 @@ import os
 import re
 import shutil
 from contextvars import ContextVar
-from collections.abc import Mapping
-from dataclasses import replace
 from functools import wraps
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -27,7 +25,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from spicy_regs import etl_bulk, government_bulk
-from spicy_regs.earlier_receipt_policies import earlier_policies
+from spicy_regs.policy_migrations import earlier_policies
 from spicy_regs.etl_receipts import (
     RECEIPT_KEY,
     RECEIPT_SCHEMA, open_receipt_writer,
@@ -40,11 +38,8 @@ from spicy_regs.etl_receipts import (
     select_receipts,
     split_record,
     subject_identity,
-    validate_receipt_bundle,
 )
-from spicy_regs.native_merge import native_merge
 from spicy_regs.receipt_history import RefusalIdentity, carry_receipt_history, crs_revision_identity_migrations
-from spicy_regs.selected_generations import SelectedDataset, SelectedInputs
 from spicy_regs.sources import publication
 from spicy_regs.transforms.government_source_shapes import (
     IDENTITY_FIELDS,
@@ -69,9 +64,12 @@ POLICY_VERSIONS = {
     "gao_decisions": "government-sources/3",
     "gao_recommendations": "government-sources/2",
     "gao_reports": "government-sources/4",
-    # 2026-10-30 (ss-hqoi): fifteen native filing fields the first mapper dropped. No /1 receipt holds them, so the
-    # first /2 generation is a full rebuild from the retained pages, never a window merged onto a /1 prior.
-    "lobbying_filings": "government-sources/2",
+    # 2026-10-30 (ss-hqoi), /2: fifteen native filing fields the first mapper dropped, rebuilt from retained pages.
+    # 2026-11-11 (ss-vse3): the family's receipts are retired and ``url``, which only they held, is the last column
+    # of these three (``PROMOTED_LAST``); the first night fills it from the last receipts (``build_lobbying_filings``).
+    "lobbying_filings": "government-sources/3",
+    "lobbying_registrants": "government-sources/2",
+    "lobbying_clients": "government-sources/2",
 }
 POLICIES = {
     dataset: DatasetPolicy(
@@ -96,37 +94,15 @@ def _row_route(route: str, error: etl_bulk.NotBulkEligible, *, dataset: str, row
         etl_bulk.log_row_eligibility(route, dataset=dataset, rows=rows, reason=str(error))
 
 
-def _without(dataset: str, *columns: str) -> DatasetPolicy:
-    """The dataset's ``government-sources/1`` policy: today's subject schema less the columns returned or added since."""
-    schema = POLICIES[dataset].subject_schema
-    for column in columns:
-        schema = schema.remove(schema.get_field_index(column))
-    return replace(POLICIES[dataset], subject_schema=schema, policy_version="government-sources/1")
-
-
-#: Exact policies a published prior may still carry. A prior is read under one only to restore its receipts' whole
-#: original rows; every write uses POLICIES. On 2026-10-04 gao-reports published gao_decisions without
-#: ``b_numbers_truncated`` and gao-recommendations published without ``first_seen`` and ``last_seen``; gao-reports
-#: published gao_reports to 2026-10-05 without the three major-rule letter columns, which no receipt held either.
-#: fcc-proceedings published fcc_proceedings to 2026-10-30 without its three ECFS NPRM/order/rule-section columns and
-#: with the four always-NULL comment-window columns.
-EARLIER_POLICIES: dict[str, tuple[DatasetPolicy, ...]] = {
-    "gao_decisions": (_without("gao_decisions", "b_numbers_truncated"),),
-    "gao_recommendations": (_without("gao_recommendations", "first_seen", "last_seen"),),
-    "gao_reports": (_without("gao_reports", "major_rule_agency", "major_rule_rins", "major_rule_fr_citations", "citation_product_id"),),
-}
-# Exact earlier policies restore private source rows without relabeling them.
-for _name in ("crs_reports", "gao_decisions", "gao_reports", "fcc_proceedings", "lobbying_filings"):
-    EARLIER_POLICIES[_name] = earlier_policies(POLICIES[_name])
-_FCC_HISTORY = json.loads(Path(__file__).parents[1].joinpath("navigation_policy_history.json").read_text())
-EARLIER_POLICIES["fcc_filings"] = tuple(
-    DatasetPolicy.from_descriptor(_FCC_HISTORY[key]) for key in ("fcc_filings", "fcc_filings_v2")
-)
+#: Exact policies a published prior may still carry (``policy_migrations``). A prior is read under one only to
+#: restore its receipts' whole original rows; every write uses POLICIES. On 2026-10-04 gao-reports published
+#: gao_decisions without ``b_numbers_truncated`` and gao-recommendations published without ``first_seen`` and
+#: ``last_seen``; gao-reports published gao_reports to 2026-10-05 without the three major-rule letter columns, which
+#: no receipt held either. fcc-proceedings published fcc_proceedings to 2026-10-30 without its three ECFS
+#: NPRM/order/rule-section columns and with the four always-NULL comment-window columns.
+EARLIER_POLICIES: dict[str, tuple[DatasetPolicy, ...]] = {name: earlier_policies(p) for name, p in POLICIES.items()}
 _ACTIVE: ContextVar[bool] = ContextVar("government_receipt_build", default=False)
 _INHERITED: ContextVar[dict[str, Path] | None] = ContextVar("government_prior_receipts", default=None)
-_NATIVE_PRIORS: ContextVar[dict[str, tuple[Path, Path]] | None] = ContextVar("government_native_priors", default=None)
-_SELECTED_PRIORS: ContextVar[tuple[SelectedInputs, dict[str, SelectedDataset | None]] | None] = ContextVar(
-    "government_selected_priors", default=None)
 # This is local build metadata for forwarding the shared API's admission arguments,
 # not another receipt format. The receipts themselves use etl_receipts.RECEIPT_SCHEMA.
 BUILD_METADATA = ".government-etl-build.json"
@@ -178,24 +154,8 @@ def _prior_policy(dataset: str, path: Path) -> DatasetPolicy:
     )
 
 
-def selected_native_prior(dataset: str) -> Path | None:
-    """The immutable subject already selected for this native family build."""
-    held = _SELECTED_PRIORS.get()
-    if held is None:
-        return None
-    session, selections = held
-    session.check()
-    selected = selections.get(dataset)
-    if selected is None:
-        return None
-    if len(selected.subjects) != 1:
-        raise ValueError(f"{dataset}: government prior requires one subject member")
-    return selected.subjects[0]
-
-
 def internal_prior(
     dataset: str, path: Path, *, receipt_path: Path | None = None, generation_id: str | None = None,
-    keep_native: bool = False,
 ) -> Path:
     """Restore literal processing input from a validated native subject/receipt pair.
 
@@ -203,8 +163,6 @@ def internal_prior(
     file must pin the subject bytes, or the captured publication index must pin
     them. Missing, changed, wrong-generation or ambiguous receipts always refuse.
     Legacy source-shaped inputs remain explicitly distinguishable by schema.
-    ``keep_native`` admits the selected pair once and leaves it for the builder's
-    native merge, avoiding restoration of unchanged rows.
     """
     if not _native(path, dataset):
         if unknown := set(pq.read_schema(path).names) - set(LEGACY_COLUMNS[dataset]):
@@ -213,16 +171,8 @@ def internal_prior(
     scratch = path.parent / f".{path.name}.receipts.parquet"
     selected = path.parent / f".{path.name}.selected-receipts.parquet"
     restored = path.parent / f".{path.name}.processing.parquet"
-    held = _SELECTED_PRIORS.get()
-    scoped = held[1].get(dataset) if held is not None and receipt_path is None else None
     try:
-        if scoped is not None:
-            assert held is not None
-            held[0].check()
-            if scoped.subjects != (path,):
-                raise ValueError("Government prior differs from the shared native selection")
-            selected, receipt_path, generation_id = scoped.receipts, scoped.receipts, scoped.generation_id
-        elif receipt_path is None:
+        if receipt_path is None:
             local = path.parent / BUILD_METADATA
             metadata = json.loads(local.read_text()) if local.exists() else None
             if metadata and metadata.get("subjects", {}).get(dataset, {}).get("sha256") == _digest(path):
@@ -249,27 +199,11 @@ def internal_prior(
                 generation_id = owner[1]["etlReceipts"]["generationId"]
         if generation_id is None:
             raise ValueError("An explicit receipt generation identity is required")
-        if scoped is None:
-            select_receipts(receipt_path, selected, dataset=dataset)
+        select_receipts(receipt_path, selected, dataset=dataset)
         inherited = _INHERITED.get()
         if inherited is not None:
             inherited[dataset] = selected
         policy = _prior_policy(dataset, path)
-        if keep_native:
-            if policy is not POLICIES[dataset]:
-                # A window merged onto an earlier policy's rows would publish them with the current policy's added
-                # columns NULL, though no earlier receipt ever held those values. Only a full rebuild moves the policy.
-                raise GovernmentShapeError(
-                    f"{dataset}: the selected prior was written under {policy.policy_version}, not "
-                    f"{POLICIES[dataset].policy_version}; rebuild the family under the current policy before a window")
-            native_priors = _NATIVE_PRIORS.get()
-            if native_priors is None:
-                raise ValueError("Native priors require an active receipt builder")
-            validate_receipt_bundle({dataset: [path]}, [selected], [policy], generation_id=generation_id)
-            if held is not None:
-                held[0].check()
-            native_priors[dataset] = (path, selected)
-            return path
         try:
             government_bulk.restore_legacy(
                 path, selected, restored, dataset=dataset, policy=policy, generation_id=generation_id,
@@ -284,13 +218,8 @@ def internal_prior(
         return restored
     finally:
         scratch.unlink(missing_ok=True)
-        if scoped is None and _INHERITED.get() is None:
+        if _INHERITED.get() is None:
             selected.unlink(missing_ok=True)
-
-
-def has_native_prior(dataset: str) -> bool:
-    """Whether this build retained an admitted pair for a window-only native merge."""
-    return dataset in (_NATIVE_PRIORS.get() or {})
 
 
 def attempt(
@@ -425,7 +354,6 @@ def _empty_observation(dataset: str, digest: str, generation_id: str) -> dict:
 
 def migrate_outputs(
     paths: tuple[Path, ...], *, generation_id: str | None = None, datasets: tuple[str, ...] | None = None, evidence=None,
-    native_orders: Mapping[str, tuple[str, ...]] | None = None,
 ) -> dict[str, Any]:
     """Convert every family output and retain the exact pre-conversion Parquet.
 
@@ -477,16 +405,7 @@ def migrate_outputs(
         with pq.ParquetFile(receipt_path) as receipts:
             refused = sum(pc.call_function("sum", [pc.call_function("equal", [batch.column(0), "refused"])]).as_py() or 0
                           for batch in receipts.iter_batches(columns=["outcome"]))
-        if native_prior := (_NATIVE_PRIORS.get() or {}).get(dataset):
-            if native_orders is None or dataset not in native_orders:
-                raise ValueError(f"{dataset}: retained native prior has no declared output order")
-            merged = native_merge(
-                policy, fresh=(subject_path, receipt_path), prior=native_prior, order_by=native_orders[dataset],
-                subjects=shard / "merged-subjects.parquet", receipts=shard / "merged-receipts.parquet",
-                refusal_identity=REFUSAL_IDENTITIES[dataset])
-            merged.subjects.replace(subject_path)
-            merged.receipts.replace(receipt_path)
-        elif prior := (_INHERITED.get() or {}).get(dataset):
+        if prior := (_INHERITED.get() or {}).get(dataset):
             carry_receipt_history(receipt_path, [prior], shard / "carried.parquet",
                                   refusal_identities={dataset: REFUSAL_IDENTITIES[dataset]},
                                   identity_migrations=crs_revision_identity_migrations(
@@ -502,10 +421,6 @@ def migrate_outputs(
     if any(value["refused"] for value in counts.values()):
         (work / "refusal-summary.json").write_text(json.dumps(counts, indent=2) + "\n")
         raise GovernmentShapeError(f"Government conversion refused inputs; preserved candidate at {work}")
-    # All prior reads are complete. Refuse mutation before replacing outputs or
-    # writing completion metadata that a retry would accept as its local prior.
-    if held := _SELECTED_PRIORS.get():
-        held[0].check()
     for original, subject, _ in bundles:
         staged = original.with_name("." + original.name + ".native")
         shutil.copyfile(subject, staged)
@@ -546,8 +461,7 @@ def generation_receipt_args(paths: tuple[Path, ...]) -> dict[str, Any]:
     }
 
 
-def receipt_builder(function=None, *, output_argument: str | None = None, dataset: str | None = None,
-                    native_orders: Mapping[str, tuple[str, ...]] | None = None):
+def receipt_builder(function=None, *, output_argument: str | None = None, dataset: str | None = None):
     """Adopt actual producers; nested family builders share the outer conversion."""
 
     def decorate(builder):
@@ -564,24 +478,8 @@ def receipt_builder(function=None, *, output_argument: str | None = None, datase
             evidence = bound.arguments.get("evidence") or getattr(owner, "source_evidence", None)
             token = _ACTIVE.set(True)
             inherited_token = _INHERITED.set({})
-            native_token = _NATIVE_PRIORS.set({})
-            selection_token = _SELECTED_PRIORS.set(None)
             try:
-                # The remote native family shares one immutable receipt member. Legacy
-                # inputs and completed local builds keep their existing selection paths.
-                prior_datasets = tuple(native_orders or ())
-                directory = Path(bound.arguments["output_dir"]) if prior_datasets else None
-                public_url = os.getenv("R2_PUBLIC_URL")
-                if directory is not None and public_url and not (directory / BUILD_METADATA).exists():
-                    index = publication.current_index(public_url)
-                    if any((owner := publication.table_owner(index, name + ".parquet")) is not None
-                           and "etlReceipts" in owner[1] for name in prior_datasets):
-                        session = SelectedInputs(directory, directory / (".selected-priors-" + uuid4().hex),
-                                                 index=index, public_url=public_url)
-                        _SELECTED_PRIORS.set((session, session.select_scoped(prior_datasets)))
                 result = builder(*args, **kwargs)
-                if held := _SELECTED_PRIORS.get():
-                    held[0].check()
                 paths = (
                     (Path(bound.arguments[output_argument]),)
                     if output_argument
@@ -594,14 +492,11 @@ def receipt_builder(function=None, *, output_argument: str | None = None, datase
                     generation_id=generation_id,
                     datasets=(dataset,) if dataset else None,
                     evidence=evidence,
-                    native_orders=native_orders,
                 )
                 return result
             finally:
                 _ACTIVE.reset(token)
                 _INHERITED.reset(inherited_token)
-                _NATIVE_PRIORS.reset(native_token)
-                _SELECTED_PRIORS.reset(selection_token)
 
         return build
 

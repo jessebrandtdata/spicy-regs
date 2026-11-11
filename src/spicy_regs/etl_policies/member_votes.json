@@ -13,5 +13,6 @@
     "entry_kind"
   ],
   "receipt_only": false,
-  "nullable_identity_fields": []
+  "nullable_identity_fields": [],
+  "receipts_retired": true
 }

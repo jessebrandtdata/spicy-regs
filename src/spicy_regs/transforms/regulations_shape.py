@@ -11,6 +11,7 @@ import hashlib
 import json
 from functools import cache
 from collections.abc import Mapping
+from pathlib import Path
 
 import pyarrow as pa
 
@@ -86,6 +87,8 @@ NATIVE_FIELDS = {
         "agency_slugs": ("agency_slugs", STRINGS),
     },
     "fr_docket_links": {
+        # The normalizer's readings of one printed label: a list like the table's others, never public as text.
+        "normalized_docket_candidates_json": ("normalized_docket_candidates", STRINGS),
         "agency_slugs": ("agency_slugs", STRINGS),
         "docket_ids_json": ("docket_ids", STRINGS),
         "regulation_id_numbers_json": ("regulation_id_numbers", STRINGS),
@@ -125,6 +128,17 @@ TYPE_OVERRIDES = {
     "cfr_sections": {"part_granule": pa.bool_()},
     "documents": {"withdrawn": pa.bool_()},
     "regulatory_agenda_items": {"linked_proceeding_count": pa.int64(), "observation_count": pa.int64()},
+}
+#: Rows per row group of a regulations ingest's published table, as the receipt writer left them (Federal Register 507
+#: groups for 1,012,333 rows on 2026-11-09; Unified Agenda and CFR sections the same on 2026-11-10): readers fetch by
+#: range, so the layout is part of what is published.
+ROW_GROUP_ROWS = 2000
+#: Columns that left receipts for the public table (ss-vse3), each appended after every column published before
+#: it, in this order, so no earlier column changes position. ``source_sha256`` is new with them: the retained API
+#: page a row was last read from, NULL on a row not read since.
+PROMOTED_LAST = {
+    "federal_register": ("html_url", "pdf_url", "body_html_url", "source_sha256", "regulations_dot_gov_info_json"),
+    "fr_docket_links": ("normalized_docket_candidates",),
 }
 IDENTITIES = {
     "agency_lifecycle_stats": ("agency_code", "stratum"),
@@ -338,6 +352,9 @@ def subject_schema(dataset):
         fields.append(pa.field("comment_text", S))
     if dataset == "rule_targets":
         fields.append(pa.field("fr_document_ids", STRINGS))
+    last = PROMOTED_LAST.get(dataset, ())
+    fields = [f for f in fields if f.name not in last] + sorted((f for f in fields if f.name in last),
+                                                                 key=lambda f: last.index(f.name))
     return pa.schema(fields)
 
 
@@ -469,3 +486,79 @@ def shape_records(dataset, rows):
     except (ValueError, TypeError, OverflowError, RecursionError, pa.ArrowException):
         return [shape_record(dataset, row) for row in rows]
     return shaped
+
+
+def published_as_source(dataset: str, published, destination: Path) -> Path:
+    """A published native table read back into the text shape the regulations builders read (``SOURCE_COLUMNS``).
+
+    Each native list becomes the JSON text of its source column (``docket_ids`` as ``docket_ids_json``) and every
+    other column its text; columns the table lacks are left out. It is the published value, not the publisher's
+    spelling: an agency entry keeps ``id``, ``name``, ``raw_name``, ``parent_id`` and ``slug``, and a CFR part reads as
+    text whether the Register wrote ``60`` or ``"60"``, which the regulations parsers take alike. ``published`` is one
+    file or a table's members.
+
+    ``agency_slugs`` reads back as SpicyDocs' projection spells it, the slugs joined by commas, which is how the
+    builders' text shape has always carried it and how the mapper reads it (``split(",")``); JSON here would be a
+    second spelling of one column. The round trip is exact only for a list of slugs without a comma and with no NULL
+    element: an empty list would read back as ``[""]``, a slug holding a comma would split, a NULL element would be
+    dropped. The projection joins only the non-empty slugs it is given, so none arises: the 2026-11-10 Register table
+    (1,012,441 rows) read back and mapped again exactly (ss-vse3 step 3's full-size check).
+
+    The first file's own key-value metadata comes along (``cfr_sections``' placement marker: a builder reads its prior's
+    run state there, :func:`mapped_table`).
+    """
+    import duckdb
+    import pyarrow.parquet as pq
+
+    paths = [Path(published)] if isinstance(published, (str, Path)) else [Path(path) for path in published]
+    schema = pq.read_schema(paths[0])
+    held = set(schema.names)
+    native = {source: target for source, (target, _) in NATIVE_FIELDS.get(dataset, {}).items() if source != target}
+    columns = []
+    for name, _ in SOURCE_COLUMNS[dataset]:
+        target = native.get(name, name)
+        if target not in held:
+            continue
+        columns.append(f"array_to_string({target}, ',') AS {name}" if name == "agency_slugs" else
+                       f"CAST(to_json({target}) AS VARCHAR) AS {name}" if name in native else
+                       f"CAST({target} AS VARCHAR) AS {name}")
+    listed = ", ".join(_text(str(path)) for path in paths)
+    kept = _own_metadata(schema)
+    metadata = (", KV_METADATA {" + ", ".join(f"{_text(key)}: {_text(value)}" for key, value in kept.items()) + "}"
+                if kept else "")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    duckdb.sql(f"COPY (SELECT {', '.join(columns)} FROM read_parquet([{listed}])) "
+               f"TO {_text(str(destination))} (FORMAT PARQUET, COMPRESSION ZSTD{metadata})")
+    return destination
+
+
+def _text(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _own_metadata(schema: pa.Schema) -> dict[str, str]:
+    """A file's key-value metadata a builder wrote, without what Arrow and pandas add for themselves."""
+    return {key.decode(): value.decode() for key, value in (schema.metadata or {}).items()
+            if not key.startswith((b"ARROW:", b"pandas"))}
+
+
+def mapped_table(dataset: str, text: Path, destination: Path, *, row_group_rows: int | None = None) -> Path:
+    """``text``'s rows, in the text shape a builder writes (``SOURCE_COLUMNS``), mapped to the published columns.
+
+    A batch at a time, in ``text``'s order, through :func:`shape_records`: a row the mapper refuses fails the caller.
+    ``text``'s own key-value metadata is kept (the run state a builder reads back from its prior, such as
+    ``cfr_sections``' placement marker). ``row_group_rows`` fixes the published layout readers fetch by range.
+    """
+    import pyarrow.parquet as pq
+
+    source = pq.ParquetFile(text)
+    schema = subject_schema(dataset)
+    if kept := _own_metadata(source.schema_arrow):
+        schema = schema.with_metadata(kept)
+    # Whole row groups per batch, so every group but the last holds ``row_group_rows``.
+    rows = 10_000 if row_group_rows is None else row_group_rows * max(1, 10_000 // row_group_rows)
+    with pq.ParquetWriter(destination, schema, compression="zstd") as writer:
+        for batch in source.iter_batches(batch_size=rows):
+            writer.write_table(pa.Table.from_pylist(shape_records(dataset, batch.to_pylist()), schema=schema),
+                               row_group_size=row_group_rows)
+    return destination

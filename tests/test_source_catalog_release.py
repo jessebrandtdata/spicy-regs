@@ -27,7 +27,9 @@ REGISTERED_RELEASE_DATASETS = (
 
 def test_declaration_refresh_preserves_installed_policies_and_shared_log_markers():
     from spicy_regs.etl_policy_registry import installed_policies
-    from spicy_regs.subject_catalog import SHARED_LOG, shared_receipt_logs
+    from spicy_regs.subject_catalog import (
+        RECEIPTS_RETIRED, SHARED_LOG, descriptor_of, retired_receipt_datasets, shared_receipt_logs,
+    )
 
     path = Path(__file__).parents[1] / "scripts/update_etl_policy_declarations.py"
     module_spec = importlib.util.spec_from_file_location("release_policy_declarations", path)
@@ -36,8 +38,13 @@ def test_declaration_refresh_preserves_installed_policies_and_shared_log_markers
     module_spec.loader.exec_module(module)
     declared = module.declarations()
     for name, policy in installed_policies().items():
-        assert {k: v for k, v in declared[name].items() if k != SHARED_LOG} == policy.descriptor()
+        assert descriptor_of(declared[name]) == policy.descriptor()
+        # A declaration is its policy's descriptor plus exactly the markers it carries, which the generator keeps.
+        markers = {SHARED_LOG} & {k for k, v in declared[name].items() if v is True} | (
+            {RECEIPTS_RETIRED} if name in retired_receipt_datasets() else set())
+        assert declared[name].keys() - policy.descriptor().keys() == markers
     assert {name for name, policy in declared.items() if policy.get(SHARED_LOG)} == set(shared_receipt_logs())
+    assert {name for name, policy in declared.items() if policy.get(RECEIPTS_RETIRED)} == retired_receipt_datasets()
     assert "uscode_edition_sections" in declared
 
 
@@ -60,7 +67,7 @@ def test_selected_section_policy_refresh_matches_maintained_declaration():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     assert module.declarations(frozenset({"uscode_edition_sections"})) == {
-        "uscode_edition_sections": POLICIES["uscode_edition_sections"].descriptor(),
+        "uscode_edition_sections": {**POLICIES["uscode_edition_sections"].descriptor(), "receipts_retired": True},
     }
 
 
@@ -71,7 +78,7 @@ def test_cfr_declaration_uses_public_owner_without_changing_local_rebuild_policy
 
     public = policy("cfr_sections").descriptor()
     retained = POLICIES["cfr_sections"].descriptor()
-    assert declarations(frozenset({"cfr_sections"})) == {"cfr_sections": public}
+    assert declarations(frozenset({"cfr_sections"})) == {"cfr_sections": {**public, "receipts_retired": True}}
     assert "cfr_sections" not in PUBLIC_POLICIES
     assert retained["policy_version"] == "retained-annual-cfr-v1"
     assert retained != public
@@ -92,7 +99,33 @@ def test_registered_release_policy_matches_final_producer(dataset):
     assert installed_policies()[dataset].descriptor() == producers[dataset].descriptor()
 
 
-@pytest.mark.parametrize("dataset", REGISTERED_RELEASE_DATASETS)
+#: Release tables whose receipts are retired (ss-coca): admission takes them without receipts and refuses any.
+RETIRED_RELEASE_DATASETS = ("uscode_edition_structure", "uscode_editions", "uscode_edition_sections")
+
+
+def test_retired_release_artifact_admission_refuses_receipts(tmp_path):
+    from spicy_regs.etl_policy_registry import installed_policies
+    from spicy_regs.etl_receipts import ReceiptContext, write_dataset
+    from spicy_regs.generations import build_generation, verify_generation
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    assert set(RETIRED_RELEASE_DATASETS) <= retired_receipt_datasets()
+    for dataset in RETIRED_RELEASE_DATASETS:
+        policy = installed_policies()[dataset]
+        row = {field.name: "fixture" for field in policy.subject_schema}
+        context = ReceiptContext("test-generation", "test-attempt", "test-processor", [{
+            "source_id": "test-source", "sha256": "sha256:" + "a" * 64}])
+        subject, receipts = write_dataset([(row, context)], tmp_path / dataset / "source", policy)
+        assert subject is not None
+        build = partial(build_generation, family="test-release", files=[subject], expected_keys=[subject.name])
+        with pytest.raises(ValueError, match="Receipts are retired"):
+            build(tmp_path / dataset / "with-receipts", receipt_path=receipts, receipt_policies=[policy],
+                  receipt_generation_id=context.generation_id)
+        artifact = build(tmp_path / dataset / "accepted")
+        assert verify_generation(tmp_path / dataset / "accepted").pin == artifact.pin
+
+
+@pytest.mark.parametrize("dataset", sorted(set(REGISTERED_RELEASE_DATASETS) - set(RETIRED_RELEASE_DATASETS)))
 def test_registered_release_artifact_admission_requires_matching_receipts(tmp_path, dataset):
     from dataclasses import replace
 

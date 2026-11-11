@@ -37,11 +37,14 @@ class CommitteeReportsRollup(LegislativeReceiptRollup):
     def build(self, output_dir: Path) -> tuple[Path, ...]:
         # Comma-separated package ids to re-read alone; unset is the normal discovery run.
         reread = [key.strip() for key in os.environ.get("COMMITTEE_REPORTS_REREAD", "").split(",") if key.strip()]
+        # Work left pending (cap-deferred, or refused and retried next run) is a warning the build names. A
+        # collection that completed none of the packages it attempted fails the run after publishing.
         self.acquisition_status = {}
         result = self.build_receipts(output_dir, build_committee_reports, evidence=self.source_evidence,
                                      reread=reread, coverage=self.acquisition_status)
-        if self.acquisition_status.get("pending"):
-            self.deferred_failure = RuntimeError("Committee tables generated with pending acquisition; see acquisition-coverage")
+        if failed := self.acquisition_status.get("nothing_read"):
+            self.deferred_failure = RuntimeError(
+                f"Committee reports read none of the packages attempted in {', '.join(failed)}; see acquisition-coverage")
         return result
 
 

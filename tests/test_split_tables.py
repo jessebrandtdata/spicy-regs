@@ -158,13 +158,13 @@ SPLIT = {"fixture_bill_sections.parquet": ["congress"]}
 KEYS = ["fixture_bill_sections.parquet", "fixture_congress_bills.parquet"]
 
 
-def _sections(directory, by_congress: dict[str, list[str]]) -> None:
-    """Write one ``congress=<N>/part-000000.parquet`` member per congress, its rows holding that congress."""
+def _sections(directory, by_congress: dict[str, list[str]], *, part: int = 0, **layout) -> None:
+    """Write one ``congress=<N>/part-<part>.parquet`` member per congress, its rows holding that congress."""
     for congress, bills in by_congress.items():
-        path = directory / "fixture_bill_sections" / f"congress={congress}" / "part-000000.parquet"
+        path = directory / "fixture_bill_sections" / f"congress={congress}" / f"part-{part:06d}.parquet"
         path.parent.mkdir(parents=True, exist_ok=True)
         pq.write_table(pa.table({"bill_id": bills, "congress": [congress] * len(bills),
-                                 "body": [f"text of {bill}" for bill in bills]}), path)
+                                 "body": [f"text of {bill}" for bill in bills]}), path, **layout)
 
 
 def _outputs(directory, by_congress=None, *, bills=("119-s5",)) -> list:
@@ -289,6 +289,87 @@ def test_the_shrink_guard_sums_a_split_tables_members(tmp_path):
     with pytest.raises(RuntimeError, match="shrink"):
         _publish(tmp_path, store, "second", _outputs(tmp_path / "out2", {"118": ["118-hr1"], "119": ["119-hr1"]}),
                  prior=first)
+
+
+def test_a_partition_is_the_same_partition_whatever_order_its_columns_are_listed_in(tmp_path):
+    """Ticket ss-biqd. The stored index sorts each partition's columns; a new generation lists them in directory order.
+
+    house_disbursements is split by report_year then report_quarter, which is not alphabetical, so all 42 of its
+    partitions read as missing from an identical rebuild. An unchanged table republishes; a dropped quarter refuses,
+    named as its directory spells it.
+    """
+    store = Store()
+
+    def publish(name, quarters, prior=None):
+        source = tmp_path / f"{name}-out" / "spending"
+        for year, quarter in quarters:
+            path = source / f"report_year={year}" / f"report_quarter={quarter}" / "part-000000.parquet"
+            path.parent.mkdir(parents=True)
+            pq.write_table(pa.table({"id": [f"{year}Q{quarter}"], "report_year": [year], "report_quarter": [quarter]}),
+                           path)
+        build_generation(tmp_path / name, family="house", files=[source], expected_keys=("spending.parquet",),
+                         partitioned={"spending.parquet": ("report_year", "report_quarter")}, read_snapshot=prior)
+        return pub.publish_generation(tmp_path / name, client=store, bucket="test",
+                                      prior_index=prior or pub.empty_index())
+
+    def stored():
+        return pub.parse_index(store.objects[pub.INDEX_V2_KEY])["families"]["house"]["tables"]["spending.parquet"]
+
+    first = publish("first", [("2024", "4"), ("2025", "1")])
+    # The two orders this test is about: without both, an unchanged republish would prove nothing.
+    assert stored()["partitionColumns"] == ["report_year", "report_quarter"]
+    assert [list(m["partition"]) for m in stored()["members"]] == [["report_quarter", "report_year"]] * 2
+    assert pub.member_partition(stored()["members"][0]["key"]) == {"report_year": "2024", "report_quarter": "4"}
+    assert list(pub.member_partition(stored()["members"][0]["key"])) == ["report_year", "report_quarter"]
+
+    second = publish("second", [("2024", "4"), ("2025", "1")], prior=first)
+    assert [m["partition"] for m in stored()["members"]] == [
+        {"report_year": "2024", "report_quarter": "4"}, {"report_year": "2025", "report_quarter": "1"}]
+
+    writes = list(store.writes)
+    with pytest.raises(pub.PublicationError, match=(
+            r"^spending\.parquet lacks partitions its prior generation holds: report_year=2024/report_quarter=4$")):
+        publish("third", [("2025", "1"), ("2025", "2")], prior=second)
+    assert store.writes == writes
+
+
+@pytest.mark.parametrize("parts, publishes", [
+    ({"118": [1], "119": [300]}, True),
+    ({"118": [1], "119": [150, 150]}, True),
+    ({"118": [1], "119": [250]}, False),  # more than either prior part file held, fewer than the two together
+    ({"118": [301], "119": [1]}, False),  # the table holds more rows than before; congress 119 lost 299 of its 300
+    ({"118": [1], "119": [299]}, False),
+])
+def test_a_smaller_split_table_publishes_only_if_every_partition_kept_its_row_count(tmp_path, parts, publishes):
+    """Ticket ss-kqzz. Rows are counted per partition over all its part files: a table's total can hold while one
+    partition empties, and a partition's files can be merged or cut again with every row kept.
+
+    The prior holds congress 119 as part files of 100 and 200 rows in 16-row groups and the candidate is written
+    one group per file, so it lands between the 0.2 floor and the 0.5 ratio (asserted), where the rows decide.
+    """
+    def write(directory, by_congress: dict[str, list[int]], **layout) -> None:
+        for congress, counts in by_congress.items():
+            bills = iter([f"{congress}-hr{number}" for number in range(sum(counts))])
+            for part, count in enumerate(counts):
+                _sections(directory, {congress: [next(bills) for _ in range(count)]}, part=part, **layout)
+
+    store = Store()
+    old, new = tmp_path / "out1", tmp_path / "out2"
+    write(old, {"118": [1], "119": [100, 200]}, row_group_size=16)
+    first = _publish(tmp_path, store, "first", _outputs(old))
+    held = first["families"]["bills"]["tables"]["fixture_bill_sections.parquet"]
+    assert [(m["partition"], m["rows"]) for m in held["members"]] == [
+        ({"congress": "118"}, 1), ({"congress": "119"}, 100), ({"congress": "119"}, 200)]
+    write(new, parts)
+    ratio = sum(path.stat().st_size for path in new.rglob("part-*.parquet")) / held["byteSize"]
+    assert 0.2 < ratio < 0.5  # measured 0.346, 0.406, 0.304, 0.347 and 0.345
+    if publishes:
+        second = _publish(tmp_path, store, "second", _outputs(new), prior=first)
+        table = second["families"]["bills"]["tables"]["fixture_bill_sections.parquet"]
+        assert (table["rows"], [m["rows"] for m in table["members"]]) == (301, [1, *parts["119"]])
+        return
+    with pytest.raises(RuntimeError, match=r"< threshold 0\.5\)\."):
+        _publish(tmp_path, store, "second", _outputs(new), prior=first)
 
 
 def test_a_split_table_keeps_every_partition_its_prior_generation_holds(tmp_path):

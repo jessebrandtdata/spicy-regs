@@ -11,6 +11,10 @@ from spicy_regs.selected_generations import SelectedDataset, remember_selection
 from tests.test_congress_receipts import shaped
 from tests.test_subject_receipt_rollups import MixedRollup, mixed_builder
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def selected_family(root, monkeypatch):
     monkeypatch.delenv("R2_PUBLIC_URL", raising=False)

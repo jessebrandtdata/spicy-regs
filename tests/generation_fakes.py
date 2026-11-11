@@ -119,7 +119,7 @@ class Store:
             self.checksums[Key] = None  # or a test's part sizes: a composite on HEAD
         self.modified[Key] = datetime.now(timezone.utc)
         self.writes.append(Key)
-        return {}
+        return {"ETag": self._etag(Key)}  # as S3/R2 answer a PUT: the hash of what was stored
 
     def delete_objects(self, *, Bucket, Delete):
         for item in Delete["Objects"]:

@@ -359,7 +359,7 @@
       "posted_date": "When the comment was posted, as the publisher stamps it (ISO 8601 string): a date at Eastern midnight written in UTC (`T04:00:00Z` or `T05:00:00Z`) on most records, a bare date label at `T00:00:00Z` on others. Read the date part as the publisher's date; converting a `T00:00:00Z` label to Eastern moves it a day early.",
       "modify_date": "Timestamp the comment was last modified (ISO 8601 string).",
       "receive_date": "The agency's stated receipt date, stamped as `posted_date` is (ISO 8601 string). It can follow `posted_date` (late or mailed submissions), so compare on the date part.",
-      "attachments": "Native ordered list of attachment entries, including restricted attachments and renditions without a URL. `restrict_reason_type` and `restrict_reason` retain the stated restriction. NULL means the included set was absent or unavailable in that row; [] means it contained no attachment entries. A format list or rendition URL can be NULL. Older rows may retain the earlier filtered representation; NULL never proves attachment absence.",
+      "attachments": "Native ordered list of attachment entries, including restricted attachments and renditions without a URL. `restrict_reason_type` and `restrict_reason` retain the stated restriction. `attachment_id` is the attachment's own id, NULL on a row read before SpicyDocs 0.85.0 and where the record states none or a malformed one. NULL means the included set was absent or unavailable in that row; [] means it contained no attachment entries. A format list or rendition URL can be NULL. Older rows may retain the earlier filtered representation; NULL never proves attachment absence.",
       "text_content": "Plain text of the comment's attachment(s). Filled inline during the ETL from Mirrulations' own extraction (the bucket's `derived-data` prefix): one extraction tool per comment, its attachments in number order, each stripped and separated by a blank line; when that tool's objects are all blank there is no derived text. Attachments Mirrulations has not extracted are backfilled by the on-demand PDF text-extraction step. Null when neither has produced text; see `text_extraction_status`.",
       "subtype": "The agency's own class for the submission (regulations.gov `subtype`), spelled as stated. It is agency-specific. EPA classifies the submitter: `Public Comment` (an individual), `Company/Organization Comment`, `Government Local`, `Government State`, `Government Federal`, `Government Tribal`, `Member of Congress`, `Mass Mail Campaign`, `Late Comment`. Most other agencies that state it put one generic label on every record (`Comment(s)`, `Public Comment`, FDA's `Electronic Regulation from Form`), and many state none. EPA's submitter classes also appear at other agencies in small numbers, and `Mass Mail Campaign` (and `Late Mass Mail Campaign`) at several, FWS among them; which agencies state which labels is a query (`SELECT agency_code, subtype, count(*) … GROUP BY ALL`), not a fixed list. Split organizations from individuals only within an agency that classifies, and not by `organization`: all 1,629 records of EPA-HQ-OW-2022-0114 leave `organization`, `category` and `first_name` NULL, 219 of them `Company/Organization Comment`. NULL where the record states none or the row predates reading this field.",
       "duplicate_comments": "How many received submissions the agency says this posted record stands for (regulations.gov `duplicateComments`), as stated. Agencies that count (EPA and FWS among them) state 1 for a single comment and the campaign's size on a `Mass Mail Campaign` record (15,851 on EPA-HQ-OW-2022-0114-1811, National Wildlife Federation Action Fund); agencies that do not count state 0 on every record. Rows are posted records. To estimate submissions, sum `GREATEST(duplicate_comments, 1)`, each posted record standing for at least itself, and first count the NULL rows: GREATEST reads NULL as 1. The sum counts the submissions the agency says its posted records stand for, each record at least itself: its posted accounting, not its official total. On the comments export of receipt sha256:77a08369… (2026-10-03), EPA-HQ-OW-2022-0114's 1,629 records sum to 53,692, 52,086 of them on its 23 `Mass Mail Campaign` records, while EPA's response to comments reports about 122,200 received. The 2026-09-28 sample found it stated on every record: 0 on 5,281, 1 on 660, more than 1 on 4. NULL where the row predates reading this field; 0 is a stated zero.",
@@ -542,7 +542,9 @@
     "columns": {
       "citing_opinion_id": "CourtListener opinion ID of the opinion that cites. Joins court_opinions.opinion_id.",
       "cited_opinion_id": "CourtListener opinion ID of the opinion cited. Joins court_opinions.opinion_id.",
-      "depth": "Number of times the citing opinion cites the cited one, as text."
+      "depth": "Number of times the citing opinion cites the cited one.",
+      "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
+      "source_sha256": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
     }
   },
   "court_citations": {
@@ -552,7 +554,11 @@
       "volume": "Reporter volume as the publisher records it (a string; some volumes are years).",
       "reporter": "Reporter abbreviation, such as `U.S.`, `F.3d` or `WL`, as the publisher records it.",
       "page": "Starting page or equivalent locator in the reporter, as text.",
-      "citation_type": "Publisher citation type code: 1 federal reporter, 2 state, 3 state regional, 4 specialty, 5 early U.S. Supreme Court, 6 Lexis, 7 WestLaw, 8 vendor-neutral, 9 law journal."
+      "citation_type": "Publisher citation type code: 1 federal reporter, 2 state, 3 state regional, 4 specialty, 5 early U.S. Supreme Court, 6 Lexis, 7 WestLaw, 8 vendor-neutral, 9 law journal.",
+      "date_created": "Timestamp the publisher created the citation record.",
+      "date_modified": "Timestamp the publisher last modified the citation record.",
+      "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
+      "source_sha256": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
     }
   },
   "court_docket_groups": {
@@ -659,9 +665,15 @@
       "author_str": "Author as the publisher's source text names them; not resolved to a person.",
       "per_curiam": "Publisher per-curiam flag (`t` or `f`).",
       "joined_by_str": "Judges joining the opinion, as the publisher's source text names them.",
-      "page_count": "Page count of the original document when known, as text.",
+      "page_count": "Page count of the original document when known.",
       "sha1": "Publisher's SHA-1 of the original document; not a SpicyRegs capture digest.",
-      "download_url": "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number."
+      "download_url": "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number.",
+      "local_path": "Path of the original document in CourtListener's storage, not a SpicyRegs file.",
+      "extracted_by_ocr": "Publisher flag: true when the opinion's text was extracted by OCR (the export spells it `t` or `f`).",
+      "date_created": "Timestamp the publisher created the opinion record.",
+      "date_modified": "Timestamp the publisher last modified the opinion record.",
+      "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
+      "source_sha256": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
     }
   },
   "court_parentheticals": {
@@ -670,8 +682,10 @@
       "described_opinion_id": "CourtListener opinion ID of the opinion the parenthetical summarizes. Joins court_opinions.opinion_id.",
       "describing_opinion_id": "CourtListener opinion ID of the opinion that wrote the parenthetical. Joins court_opinions.opinion_id.",
       "text": "The parenthetical as the describing opinion wrote it.",
-      "score": "Publisher's 0-to-1 estimate of how descriptive the text is, as text.",
-      "group_id": "Publisher's group of parentheticals making the same point; NULL when ungrouped."
+      "score": "Publisher's 0-to-1 estimate of how descriptive the text is.",
+      "group_id": "Publisher's group of parentheticals making the same point; NULL when ungrouped.",
+      "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
+      "source_sha256": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
     }
   },
   "crs_reports": {
@@ -842,7 +856,7 @@
   },
   "fcc_filings": {
     "columns": {
-      "id_submission": "ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov (`https://www.fcc.gov/ecfs/filing/<id_submission>`, the former `filing_url` column) is kept in the filing's receipt, not in this table: ask `read_receipt_fields` for the field `filing_url`.",
+      "id_submission": "ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov is `https://www.fcc.gov/ecfs/filing/<id_submission>`: the former `filing_url` column, which this table does not hold.",
       "proceedings": "Source-listed FCC proceedings with their names and identifiers; repeated occurrences remain distinct. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
       "submission_type": "ECFS submission type description, e.g. `COMMENT`, `REPLY TO COMMENTS`, `NOTICE OF EXPARTE`.",
       "express_comment": "Publisher express-comment flag, normalized to BOOLEAN. NULL means the publisher omitted the flag or supplied null; retained native evidence distinguishes those states. The flag alone does not establish document availability.",
@@ -3438,7 +3452,12 @@
       "regulations_dot_gov_regulation_id_number": "Regulation identifier number stated by the linked Regulations.gov metadata; no inferred docket or rule match.",
       "regulations_dot_gov_supporting_documents_count": "Supporting-document count stated by Regulations.gov for the linked document.",
       "regulations_dot_gov_supporting_documents": "Supporting document identifiers and titles listed by Regulations.gov, preserving source order and repetition. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
-      "regulations_dot_gov_regulatory_plan_title": "Regulatory-plan title stated in the linked Regulations.gov metadata."
+      "regulations_dot_gov_regulatory_plan_title": "Regulatory-plan title stated in the linked Regulations.gov metadata.",
+      "html_url": "The document's page on federalregister.gov.",
+      "pdf_url": "The document's PDF rendition.",
+      "body_html_url": "The document's full-text HTML body; the XML body the Register also serves carries no boilerplate.",
+      "source_sha256": "SHA-256 of the retained Federal Register API page this row was last read from, as the run's source-evidence journal spells it (`sha256:<hex>`); the page is `source-evidence/blobs/sha256/<hex>`. NULL on a row no run has read since the column was added (2026-11). It is a pointer, not part of the record: the scheduled run re-reads the last 120 days, so it changes every night on every row in that window (about 8,700) whether or not the record changed, and a comparison of two generations must leave it out. Where one run reads a document on two pages it names the first.",
+      "regulations_dot_gov_info_json": "The Register's own statement of the regulations.gov docket and document it matched this document to (the API's `regulations_dot_gov_info`), a JSON object exactly as stated: `{}` where the Register states nothing, the time of its check alone where it checked and found nothing, otherwise any of the docket, the document, the comment count, the supporting documents and their titles. NULL on a row not read since the field was first requested (2026-10-03)."
     }
   },
   "feed_summary": {
@@ -3487,7 +3506,8 @@
       "docket_ids": "The full original docket-ID array, retained so consumers can see the other IDs this FR document links to. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
       "regulation_id_numbers": "RINs (Native list) claimed by the FR document — the RIN-side join key for a rulemaking. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
       "executive_order_number": "Executive order number, for presidential documents.",
-      "link_source": "Which of the Register's statements carries the pair: `printed` (the document's printed docket labels), `regulations_dot_gov_info` (the Register's regulations.gov link, read from `regulations_dot_gov_docket_id` alone, never off a document id) or `both`, where a printed label is that docket id or SpicyDocs' normalizer reads it from the label. Every printed occurrence that carries the pair reads `both`, and the link then adds no row. The current builder writes one of these labels; retained historical rows without a label keep NULL."
+      "link_source": "Which of the Register's statements carries the pair: `printed` (the document's printed docket labels), `regulations_dot_gov_info` (the Register's regulations.gov link, read from `regulations_dot_gov_docket_id` alone, never off a document id) or `both`, where a printed label is that docket id or SpicyDocs' normalizer reads it from the label. Every printed occurrence that carries the pair reads `both`, and the link then adds no row. The current builder writes one of these labels; retained historical rows without a label keep NULL.",
+      "normalized_docket_candidates": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
     }
   },
   "gao_decisions": {
@@ -3789,7 +3809,7 @@
       "government_entities": "Government entities named on the filing, in order of first appearance. A rebuilt filing lists each source ID once and uses the source name when the ID is absent. The activity rows retain every occurrence. Earlier native generations may repeat entities at filing level. A missing activity list yields null and an empty activity list yields an empty result.",
       "filing_type_display": "The publisher's label for `filing_type`, as served (e.g. `1st Quarter - Report`, `Registration`).",
       "filing_period_display": "The publisher's label for `filing_period`, as served (e.g. `1st Quarter (Jan 1 - Mar 31)`).",
-      "filing_document_content_type": "Media type of the filing document at `url`, as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none.",
+      "filing_document_content_type": "Media type of the filing document (`url`), as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none.",
       "expenses_method": "The self-filer's expense accounting method code as filed (`expenses_method`). Two spellings occur, both kept as filed: lower case `a`, `b`, `c`, whose `expenses_method_display` is the long label, and upper case `A`, `B`, `C`, whose display is the bare letter; both occur in current years (a 400-page retained sample, 2026-10-30, held 751 lower-case and 286 upper-case codes). `a`/`A` is Method A (LDA definitions), `b`/`B` Method B (IRC 6033(b)(8)), `c`/`C` Method C (IRC 162(e)). Null when the filing states no method, as on most firm reports, which carry `income` instead.",
       "expenses_method_display": "The publisher's label for `expenses_method`, as filed: `Method A - Reporting amounts using LDA definitions only`, `Method B - Reporting amounts under section 6033(b)(8) of the Internal Revenue Code`, `Method C - Reporting amounts under section 162(e) of the Internal Revenue Code`, or the bare letter when the code is upper case.",
       "termination_date": "Date the registrant ended its representation of the client, on a termination report (`filing_type` `1T`–`4T`, `MT` and their no-activity forms). Null on other filings.",
@@ -3801,7 +3821,8 @@
       "registrant_zip": "ZIP or postal code of the registrant's address as filed on this filing.",
       "registrant_country": "Country of the registrant's address as filed on this filing, as the publisher displays it (e.g. `United States of America`), not a country code.",
       "registrant_ppb_country": "Country of the registrant's principal place of business as filed, when the filing states one (display name); null otherwise.",
-      "registrant_different_address": "The filing's flag for whether the registrant's principal place of business differs from the address filed: true, false, or null when the filing does not carry it (registrations among others)."
+      "registrant_different_address": "The filing's flag for whether the registrant's principal place of business differs from the address filed: true, false, or null when the filing does not carry it (registrations among others).",
+      "url": "The filing's `filing_document_url` as LDA served it: its printable document page (`https://lda.gov/filings/public/filing/<filing_uuid>/print/`; lda.senate.gov redirects there). Ten filings of 2006-2007 hold an API page address instead, as captured (measured 2026-11-11). Before 2026-11-11 this value was held only in the row's ETL receipt."
     }
   },
   "member_party_affiliations": {
@@ -3813,7 +3834,13 @@
       "affiliation_start": "Literal nested start date; interval boundary policy belongs to the consumer.",
       "affiliation_end": "Literal nested end date; a missing end does not imply an open interval.",
       "term_party": "The separate term-level party assertion, not a dated fallback.",
-      "caucus": "Complete affiliation object, retaining absent, null and unknown fields. This column retains the source property caucus."
+      "caucus": "Complete affiliation object, retaining absent, null and unknown fields. This column retains the source property caucus.",
+      "input_sha256": "Digest of the complete retained crosswalk JSON bytes.",
+      "start_status": "Calendar spelling status: absent, empty, valid or invalid.",
+      "end_status": "Calendar spelling status: absent, empty, valid or invalid.",
+      "source_path": "JSON pointer to the affiliation in the retained capture.",
+      "observed_at": "Caller-supplied capture instant; not a source affiliation date.",
+      "source_json": "Complete affiliation object, retaining absent, null and unknown fields."
     }
   },
   "member_terms": {
@@ -3825,7 +3852,9 @@
       "term_end": "End date of this term, where the crosswalk states one.",
       "term_state": "State this term was served for.",
       "term_party": "The separate source term-level party assertion, not a dated history.",
-      "term_district": "District for this term, spelled as the publisher does; absent for a Senate term."
+      "term_district": "District for this term, spelled as the publisher does; absent for a Senate term.",
+      "observed_at": "The parent capture's instant, carried so a term list versions with the member row it came from.",
+      "party_affiliations_state": "Nested list state: unread, absent, null, empty or populated."
     }
   },
   "member_vote_terms": {
@@ -3880,7 +3909,13 @@
       "current_term_state": "State of the latest term.",
       "current_term_party": "Party of the latest term, as the crosswalk states it for that term.",
       "current_term_district": "District of the latest term; absent for a Senate term.",
-      "name_nickname": "The crosswalk's own name.nickname for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      "name_nickname": "The crosswalk's own name.nickname for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
+      "name_middle": "The crosswalk's own name.middle for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
+      "name_suffix": "The crosswalk's own name.suffix for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
+      "name_official_full": "The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none.",
+      "roster": "Which file this record came from: current or historical.",
+      "observed_at": "When the file was captured; the merge prefers the larger value.",
+      "other_names_json": "Source other_names patches in order, with literal date bounds and nulls; absent is NULL."
     }
   },
   "native_legal_references": {
@@ -4079,7 +4114,12 @@
       "modify_date": "The Senate file's own modify_date literal (`July 1, 2025,  12:57 PM`), when the publisher last changed it; sorts as text. Empty when a captured Senate file states none; NULL on House rows, linkage-only rows and Senate rows captured before this column.",
       "tie_breaker_by_whom": "Who cast the tie-breaking vote, as the Senate's tie_breaker block names them (`Vice President of the United States`): the reason a 50-50 roll call reads Agreed to. NULL when the vote was not tied (the block is present and empty), on House rows, linkage-only rows and Senate rows captured before this column.",
       "tie_breaker_vote": "The tie-breaking vote as cast (`Yea`); NULL wherever tie_breaker_by_whom is.",
-      "party_totals": "The Clerk's totals by party, as a Native list in the file's order: each object the party as the Clerk names it (Republican, Democratic, Independent; member_votes.party spells the same parties R, D and I) and its yea-total, nay-total, present-total and not-voting-total. [] when a captured Clerk file states none (a Speaker election). NULL on Senate rows, whose files state none; on linkage-only rows; and on House rows captured before this column until they are read again. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
+      "party_totals": "The Clerk's totals by party, as a Native list in the file's order: each object the party as the Clerk names it (Republican, Democratic, Independent; member_votes.party spells the same parties R, D and I) and its yea-total, nay-total, present-total and not-voting-total. [] when a captured Clerk file states none (a Speaker election). NULL on Senate rows, whose files state none; on linkage-only rows; and on House rows captured before this column until they are read again. Stored as native nested values; list order, repeated values, null and empty collections remain distinct.",
+      "source_url": "The publisher's own URL for this roll call.",
+      "match_rule": "Which vote-matching rule named that bill: bill_action_recorded_vote (the bill's own action records this roll call), house_vote_legislation (Congress.gov's House vote list), vote_file_legislation (the vote file names the bill: the Clerk's legis-num, or the Senate's document or amended document), or unmatched.",
+      "match_action_index": "Position of the action whose recordedVote named this roll call, where one did.",
+      "match_url": "The reference URL the match was read from.",
+      "conflict_count": "How many later references disagreed with the one that won; kept, never dropped."
     }
   },
   "rule_targets": {

@@ -17,13 +17,14 @@ from spicy_regs.sources import publication as pub, r2
 from tests.generation_fakes import Store, error
 
 
-def build(tmp_path, name="one", family="test", keys=("a.parquet", "b.parquet"), value="one"):
+def build(tmp_path, name="one", family="test", keys=("a.parquet", "b.parquet"), value="one", table=None, **layout):
+    """A generation holding ``table`` (by default one ``id`` row of ``value``) at each key, written with ``layout``."""
     source = tmp_path / (name + "-source")
     source.mkdir()
     files = []
     for key in keys:
         path = source / key
-        pq.write_table(pa.table({"id": [value]}), path, store_schema=False)
+        pq.write_table(pa.table({"id": [value]}) if table is None else table, path, store_schema=False, **layout)
         files.append(path)
     target = tmp_path / name
     artifact = build_generation(target, family=family, files=files, expected_keys=keys)
@@ -573,100 +574,6 @@ def test_replaying_the_current_generation_keeps_when_the_pointer_moved_to_it(tmp
     assert pub.parse_index(store.objects[pub.INDEX_V2_KEY]) == prior
 
 
-def _unstamped(store, *families: str) -> dict:
-    """Leave ``store``'s version 2 as written before the writer stamped ``families``; return that index."""
-    index = pub.parse_index(store.objects[pub.INDEX_V2_KEY])
-    for family in families:
-        del index["families"][family]["publishedAt"]
-    store.objects[pub.INDEX_V2_KEY] = canonical_json_bytes(index)
-    return index
-
-
-def test_backfill_stamps_only_entries_lacking_the_instant_from_their_generation_s_latest_write(tmp_path):
-    one, _ = build(tmp_path)
-    other, _ = build(tmp_path, "other", family="other", keys=("c.parquet",))
-    store = Store()
-    publish(store, one)
-    published = publish(store, other)
-    index = _unstamped(store, "other")
-    prefix = index["families"]["other"]["prefix"]
-    for key in store.objects:
-        if key.startswith(prefix + "/"):
-            store.modified[key] = datetime(2026, 9, 1, 12, 0, 0, tzinfo=timezone.utc)
-    # The root is written first; the pointer moves after the last member and its read-back.
-    store.modified[f"{prefix}/c.parquet"] = datetime(2026, 9, 1, 12, 15, 2, 750_000, tzinfo=timezone.utc)
-    writes = list(store.writes)
-
-    planned = pub.backfill_published_at(store, "test")
-    assert planned["stamps"] == {"other": "2026-09-01T12:15:02Z"} and not planned["applied"]
-    assert store.writes == writes
-
-    applied = pub.backfill_published_at(store, "test", apply=True)
-    assert applied["stamps"] == planned["stamps"] and applied["applied"]
-    stored = pub.parse_index(store.objects[pub.INDEX_V2_KEY])
-    assert stored["families"]["other"] == {**index["families"]["other"], "publishedAt": "2026-09-01T12:15:02Z"}
-    assert stored["families"]["test"] == published["families"]["test"]
-
-    writes = list(store.writes)
-    again = pub.backfill_published_at(store, "test", apply=True)
-    assert again["stamps"] == {} and not again["applied"] and store.writes == writes
-
-
-def test_backfill_refuses_when_the_pointer_moved_since_it_read_it(tmp_path):
-    one, _ = build(tmp_path)
-    two, _ = build(tmp_path, "two", value="two")
-    store = Store()
-    _unstamped(store, *publish(store, one)["families"])
-    prior = pub.parse_index(store.objects[pub.INDEX_V2_KEY])
-
-    moved = []
-
-    def rival(key):
-        if key == pub.INDEX_V2_KEY:
-            store.before_put = None
-            moved.append(publish(store, two, prior))
-
-    store.before_put = rival
-    with pytest.raises(pub.PublicationError, match="moved since"):
-        pub.backfill_published_at(store, "test", apply=True)
-    assert pub.parse_index(store.objects[pub.INDEX_V2_KEY]) == moved[0]
-
-
-def test_backfill_refuses_a_generation_without_its_root_or_an_absent_index(tmp_path):
-    directory, _ = build(tmp_path)
-    store = Store()
-    index = _unstamped(store, *publish(store, directory)["families"])
-    del store.objects[index["families"]["test"]["prefix"] + "/artifact.json"]
-    writes = list(store.writes)
-    with pytest.raises(pub.PublicationError, match="no root"):
-        pub.backfill_published_at(store, "test", apply=True)
-    del store.objects[pub.INDEX_V2_KEY]
-    with pytest.raises(pub.PublicationError, match="absent"):
-        pub.backfill_published_at(store, "test", apply=True)
-    assert store.writes == writes
-
-
-def test_the_backfill_command_writes_only_with_apply(tmp_path, monkeypatch, capsys):
-    from scripts.backfill_published_at import main
-
-    directory, _ = build(tmp_path)
-    store = Store()
-    _unstamped(store, *publish(store, directory)["families"])
-    purged = []
-    monkeypatch.setattr(r2, "get_r2_client", lambda: store)
-    monkeypatch.setattr("scripts.backfill_published_at.purge_urls", purged.extend)
-    monkeypatch.setenv("R2_BUCKET_NAME", "test")
-    monkeypatch.setenv("R2_PUBLIC_URL", "https://test/")
-    writes = list(store.writes)
-    assert main([]) == 0
-    assert json.loads(capsys.readouterr().out)["applied"] is False and store.writes == writes and not purged
-    assert main(["--apply"]) == 0
-    assert json.loads(capsys.readouterr().out)["applied"] is True and store.writes == [*writes, pub.INDEX_V2_KEY]
-    assert "publishedAt" in pub.parse_index(store.objects[pub.INDEX_V2_KEY])["families"]["test"]
-    assert purged == [f"https://test/{pub.INDEX_V2_KEY}"]
-    assert main(["--apply"]) == 0 and json.loads(capsys.readouterr().out)["applied"] is False and len(purged) == 1
-
-
 def test_staging_complete_generations_keeps_both_unselected(tmp_path):
     from rulespec_artifacts import LocalMemberSource, iter_member_descriptors
 
@@ -761,11 +668,15 @@ def test_a_generation_scoped_outcome_table_may_shrink_but_a_data_table_may_not(t
     ("a.parquet", True),
 ])
 def test_a_smaller_generation_over_a_published_prior_is_guarded_only_for_data_tables(tmp_path, monkeypatch, key, shrinks):
-    """The live failure path: the prior generation's recorded size, not a probe of the remote object, is the comparison."""
+    """The live failure path: the prior generation's recorded size, not a probe of the remote object, is the comparison.
+
+    The smaller generation also holds one row fewer. An outcome table's rows follow its generation's producer members,
+    so it may lose rows and bytes; a data table that lost a row is compared by size.
+    """
     from spicy_regs import etl_policy_registry
 
     monkeypatch.setattr(etl_policy_registry, "require_registered_receipts", lambda *_: None)
-    large, _ = build(tmp_path, keys=(key,), value=os.urandom(50_000).hex())
+    large, _ = build(tmp_path, keys=(key,), table=pa.table({"id": [os.urandom(50_000).hex(), "kept"]}))
     store = Store()
     prior = publish(store, large)
     small, _ = build(tmp_path, "two", keys=(key,), value="two")
@@ -774,3 +685,135 @@ def test_a_smaller_generation_over_a_published_prior_is_guarded_only_for_data_ta
             publish(store, small, prior)
     else:
         assert key in publish(store, small, prior)["families"]["test"]["tables"]
+
+
+def _ids(rows: int) -> list[str]:
+    return [f"C{number:08d}" for number in range(rows)]
+
+
+def _relaid(tmp_path, old: pa.Table, new: pa.Table, *, groups: int = 16, **layout):
+    """Publish ``old`` in row groups of ``groups`` rows, then build ``new`` in one group, or as ``layout`` says.
+
+    The fec_committees refusal in small: the writer's row groups, not the data, set most of the size (1,767 groups
+    became 176 and 10.2 MB became 4.0 MB with all 89,974 rows). Returns the store, the prior index, the candidate's
+    directory and artifact, and the candidate's bytes as a fraction of the prior's. Each caller places that fraction
+    against the 0.5 ratio and the 0.2 floor before expecting anything: above 0.5 every candidate publishes and below
+    0.2 none does, so only between them do rows and columns decide.
+    """
+    large, _ = build(tmp_path, keys=("a.parquet",), table=old, row_group_size=groups)
+    small, artifact = build(tmp_path, "two", keys=("a.parquet",), table=new, **layout)
+    store = Store()
+    ratio = (small / "a.parquet").stat().st_size / (large / "a.parquet").stat().st_size
+    return store, publish(store, large), small, artifact, ratio
+
+
+@pytest.mark.parametrize("rows, publishes", [(400, True), (401, True), (399, False)])
+def test_a_table_between_the_floor_and_the_ratio_publishes_only_if_it_kept_its_row_count(tmp_path, rows, publishes):
+    """Ticket ss-kqzz. Equal or more rows with the same columns publish; one row fewer is the loss the guard is for."""
+    store, prior, small, _, ratio = _relaid(tmp_path, pa.table({"id": _ids(400)}), pa.table({"id": _ids(rows)}))
+    assert 0.38 < ratio < 0.40  # measured 0.389, 0.391 and 0.388; the fec_committees refusal was at 0.392
+    held = pub.table_descriptor(prior, "a.parquet")
+    assert held is not None and (held["rows"], held["columns"]) == (400, [["id", "VARCHAR"]])
+    if publishes:
+        table = pub.table_descriptor(publish(store, small, prior), "a.parquet")
+        assert table is not None and (table["rows"], table["columns"]) == (rows, [["id", "VARCHAR"]])
+        assert table["byteSize"] == (small / "a.parquet").stat().st_size
+        return
+    writes = list(store.writes)
+    with pytest.raises(RuntimeError, match=(
+            r"Refusing to upload a\.parquet: new file would shrink remote .* < threshold 0\.5\)\.")):
+        publish(store, small, prior)
+    assert store.writes == writes
+
+
+@pytest.mark.parametrize("columns, recorded", [
+    ({"id": _ids(400)}, [["id", "VARCHAR"]]),  # removed
+    ({"id": _ids(400), "n": [str(n) for n in range(400)]}, [["id", "VARCHAR"], ["n", "VARCHAR"]]),  # retyped
+    ({"id": _ids(400), "m": list(range(400))}, [["id", "VARCHAR"], ["m", "BIGINT"]]),  # renamed: same width and types
+    ({"n": list(range(400)), "id": _ids(400)}, [["n", "BIGINT"], ["id", "VARCHAR"]]),  # reordered
+])
+def test_a_table_that_kept_its_rows_but_not_its_columns_faces_the_ordinary_ratio(tmp_path, columns, recorded):
+    """No earlier publication check compares an unregistered table's columns with its prior's; this guard owns them."""
+    old = pa.table({"id": _ids(400), "n": list(range(400))})
+    store, prior, small, artifact, ratio = _relaid(tmp_path, old, pa.table(columns), groups=24)
+    assert 0.2 < ratio < 0.5  # measured 0.251, 0.455, 0.460 and 0.460
+    held = pub.table_descriptor(prior, "a.parquet")
+    assert held is not None and (held["rows"], held["columns"]) == (400, [["id", "VARCHAR"], ["n", "BIGINT"]])
+    assert artifact.root["spec"]["tables"]["a.parquet"] == {"rows": 400, "columns": recorded}
+    with pytest.raises(RuntimeError, match=r"< threshold 0\.5\)\."):
+        publish(store, small, prior)
+
+
+def _committees(wipe: str | None = None) -> pa.Table:
+    """2,655 rows of a key and fifteen text fields; ``wipe`` empties ``one`` field or nulls ``all`` fifteen."""
+    rows = 2655
+
+    def field(number: int) -> pa.Array:
+        if wipe == "all":
+            return pa.nulls(rows, type=pa.string())
+        return pa.array(["" if wipe == "one" and number == 1 else f"value {number} of {row}" for row in range(rows)])
+
+    return pa.table({"committee_id": _ids(rows), **{f"field_{number:02d}": field(number) for number in range(1, 16)}})
+
+
+@pytest.mark.parametrize("wipe, groups, low, high, publishes", [
+    (None, 15, 0.38, 0.40, True),  # measured 0.388
+    ("one", 15, 0.36, 0.38, True),  # measured 0.367: the limit that remains
+    ("all", 15, 0.05, 0.08, False),  # measured 0.064
+    ("all", 150, 0.15, 0.18, False),  # measured 0.164: the same wipe with no change of layout
+])
+def test_a_table_shaped_like_fec_committees_publishes_unless_most_of_its_bytes_went(
+        tmp_path, wipe, groups, low, high, publishes):
+    """Sixteen columns whose 177 row groups become 18, a tenth of the refused run's 1,767 and 176, every row kept.
+
+    The layout change alone leaves 0.388 of the prior's bytes, as the real one left 0.392, and publishes. The
+    descriptors record counts, names and types, never values, so the 0.2 floor is the only check on a table that
+    kept its rows: it refuses every value but the key nulled (the real table measured 0.163 within one layout),
+    and one emptied field still publishes. If a check that reads values is added to publication, that second
+    expectation should flip.
+    """
+    store, prior, small, artifact, ratio = _relaid(tmp_path, _committees(), _committees(wipe), groups=groups,
+                                                   row_group_size=150)
+    assert low < ratio < high
+    declared, held = artifact.root["spec"]["tables"]["a.parquet"], pub.table_descriptor(prior, "a.parquet")
+    assert (declared["rows"], len(declared["columns"])) == (2655, 16)
+    assert held is not None and (held["rows"], held["columns"]) == (2655, declared["columns"])
+    assert (pq.read_metadata(tmp_path / "one" / "a.parquet").num_row_groups,
+            pq.read_metadata(small / "a.parquet").num_row_groups) == (177 if groups == 15 else 18, 18)
+    if publishes:
+        table = pub.table_descriptor(publish(store, small, prior), "a.parquet")
+        assert table is not None and table["byteSize"] == (small / "a.parquet").stat().st_size
+        return
+    writes = list(store.writes)
+    with pytest.raises(RuntimeError, match=(
+            r"< threshold 0\.2, the floor for a table that kept its rows and columns\)\. Set R2_ALLOW_SHRINK=1")):
+        publish(store, small, prior)
+    assert store.writes == writes
+
+
+def test_a_single_file_rebuilt_as_a_split_table_faces_the_ordinary_ratio(tmp_path):
+    """It holds no partition its prior holds, so its rows are not counted as kept, though all 300 are there."""
+    def rows(congress: str) -> pa.Table:
+        return pa.table({"id": [f"{congress}-hr{number:05d}" for number in range(150)], "congress": [congress] * 150})
+
+    source = tmp_path / "source"
+    source.mkdir()
+    pq.write_table(pa.concat_tables([rows("118"), rows("119")]), source / "s.parquet", store_schema=False,
+                   row_group_size=16)
+    for congress in ("118", "119"):
+        path = source / "s" / f"congress={congress}" / "part-000000.parquet"
+        path.parent.mkdir(parents=True)
+        pq.write_table(rows(congress), path, store_schema=False)
+    build_generation(tmp_path / "one", family="test", files=[source / "s.parquet"], expected_keys=("s.parquet",))
+    store = Store()
+    prior = publish(store, tmp_path / "one")
+    artifact = build_generation(tmp_path / "two", family="test", files=[source / "s"], expected_keys=("s.parquet",),
+                                partitioned={"s.parquet": ("congress",)})
+    held, table = pub.table_descriptor(prior, "s.parquet"), artifact.root["spec"]["tables"]["s.parquet"]
+    columns = [["id", "VARCHAR"], ["congress", "VARCHAR"]]
+    assert held is not None and (held["rows"], held["columns"]) == (300, columns)
+    assert (table["rows"], table["columns"], table["partitionColumns"]) == (300, columns, ["congress"])
+    ratio = sum(path.stat().st_size for path in (tmp_path / "two" / "s").rglob("*.parquet")) / held["byteSize"]
+    assert 0.2 < ratio < 0.5  # measured 0.333
+    with pytest.raises(RuntimeError, match=r"Refusing to upload s\.parquet: .* < threshold 0\.5\)\."):
+        publish(store, tmp_path / "two", prior)

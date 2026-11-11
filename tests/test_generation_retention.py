@@ -274,3 +274,20 @@ def test_native_snapshot_keeps_exact_source_generation_despite_restored_file_has
         'family': 'base', 'artifactDigest': 'sha256:' + '0' * 64}}}}}).encode()
     with pytest.raises(pub.PublicationError, match='Native rulemaking input generation is missing'):
         _plan(remote)
+
+
+def test_the_generations_the_hand_refresh_runbook_keeps_are_found_by_the_docs_scan():
+    """A docs edit that drops or mangles one of these rows would let retention delete that generation's tables."""
+    import re
+
+    runbook = (retention.DOCS / "local-family-refresh.md").read_text()
+    section = runbook.split("## Generations kept by name", 1)[1].split("\n## ", 1)[0]
+    kept = dict(re.findall(r"^\| `([a-z-]+)` \| `([0-9a-f]{64})` \|$", section, flags=re.MULTILINE))
+    assert set(kept) == {"treasury-fiscal", "administration-policy", "ofac-sanctions", "grants-opportunities"}
+    stored = {digest: retention.Generation(family, digest) for family, digest in kept.items()}
+    named = retention.note_pins(retention._notes(), stored)
+    assert set(named) == set(kept.values())
+    assert all("docs/local-family-refresh.md" in names for names in named.values())
+    # The family pages name their own as well, so one page's edit alone does not unpin a generation.
+    assert "docs/ofac-sanctions.md" in named[kept["ofac-sanctions"]]
+    assert "docs/grants-opportunities.md" in named[kept["grants-opportunities"]]

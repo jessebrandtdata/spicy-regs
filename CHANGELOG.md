@@ -7,7 +7,124 @@ Entries link to the pull request that introduced the change.
 
 ## [Unreleased]
 
+### Changed
+
+- **The Unified Agenda and CFR sections tables publish without per-row
+  receipts** (ss-vse3). `unified_agenda` and `cfr_sections` are marked
+  `receipts_retired`. Their receipts held the builder's text row, which maps to
+  exactly the published table, and `url`, which on every row is a fixed
+  template of the row's identity: it is not promoted, and the dictionary states
+  the template. The builders are unchanged; their prior is now the published
+  table read back into their text shape (`RegulationsTableRollup`), and their
+  table is mapped once, in their order, with no receipt written. The CFR
+  placement marker and the agenda's edition-manifest digest move from the
+  receipts' input record to the table's file metadata; the CFR job's first
+  night places every package once because the last receipt-route table lacks
+  the marker. Each Unified Agenda edition file a run reads is now kept as
+  source evidence. The agenda job's limit falls from 60 to 30 minutes; CFR's
+  stays at 60, set by GovInfo's listing. The last generations with receipts
+  are pinned; `regulations_ingest` is removed. Equality and first-night checks:
+  `docs/agenda-cfr-receipt-archive.md`. Policies unchanged
+  (`regulations-native-v2`, `regulations-native-v1`).
+
+- **The eight lobbying tables publish without per-row receipts** (ss-vse3).
+  `lobbying_filings` and its seven sibling tables are marked
+  `receipts_retired`; the nightly re-uploaded 2.94 GB of receipts (16.3M rows,
+  every one `accepted`) for 0.73 GB of tables and spent most of its 29 minutes
+  on them. The receipts held one field the tables lacked, `url` on
+  `lobbying_filings`, `lobbying_registrants` and `lobbying_clients`, now the
+  last column of each as LDA served it (policies `government-sources/3`,
+  `/2`, `/2`); every other field equals its column, only spelled differently.
+  A night maps the fetched window and upserts it over each published table
+  (`native_merge.upsert_subjects`); the first night fills `url` from the
+  receipts of the pinned last generation with them (`233aef1f`). On the same
+  real prior and window, all eight tables equal the receipt route's on every
+  existing column, both ways and in order (`docs/lobbying-receipt-archive.md`).
+  The lobbying-only native receipt merge in `government_receipts` is gone, and
+  the workflow's limit for the window path is now 45 minutes, not 90.
+- **Members, roll-call votes and member vote terms publish without per-row
+  receipts** (ss-vse3). The six tables of the nightly votes refresh re-uploaded
+  4.7 GB of receipts a night and spent about 31 of the votes job's 50 minutes
+  and most of the terms job's 25 on them. The fields only the receipts held are
+  columns at the end: `members.roster`, `observed_at` and `other_names_json`
+  (the alias patches as received, whose omitted keys the native `other_names`
+  cannot keep), `member_terms.observed_at` and `party_affiliations_state`,
+  `member_party_affiliations.input_sha256`, `start_status`, `end_status`,
+  `source_path`, `observed_at` and `source_json` (the affiliation object as
+  received), and `roll_call_votes.source_url`,
+  `match_rule`, `match_action_index`, `match_url` and `conflict_count`.
+  Policies `congress-subjects/3` (`members`, `roll_call_votes`,
+  `member_party_affiliations`) and `/2` (`member_terms`). Every existing column is
+  unchanged, `member_vote_terms` still leaves out a vote with no established
+  term, and scorecard analysis and committee rosters read the published
+  tables. The votes job's limit drops from 60 to 30 minutes. The last
+  generations with receipts are pinned; the equality proof and the first-night
+  checks are in `docs/votes-receipt-archive.md`.
+- **The U.S. Code edition tables publish without per-row receipts, and the
+  family takes release point 119-138** (ss-coca). `uscode_editions`,
+  `uscode_edition_structure` and `uscode_edition_sections` are marked
+  `receipts_retired`; their receipts held no field beyond the rows, and each
+  row already names its archive and member by digest. The last generation with
+  receipts (`792cbaa7`, the 2000 edition and 119-102) is pinned. The builder
+  writes plain tables; a new `acquire` command captures a release point's
+  corpus zip into the raw archive with its capture receipt; `uscode_xml_audit`
+  now audits a whole release-point corpus, member by member, and both auditors
+  report `evidence_sha256`; the additive preparation leaves the prior's
+  receipts behind, writes the union in zstd, and retains the addition's
+  original into the generation's evidence with its `acquire` capture's
+  download record and that acquisition evidence's pin. The family is published by hand with
+  `publish-local-generation`. Editions stay selected: 119-138 is added beside
+  the 2000 edition and 119-102, whose rows are unchanged
+  (`docs/uscode-editions.md`).
+- **Court opinions and the three citation tables publish without per-row
+  receipts** (ss-vse3). `court_opinions`, `court_citations`,
+  `court_citation_map` and `court_parentheticals` are rebuilt whole from one
+  CourtListener export each, and their receipts (4.2 GB and 12.0 GB, every one
+  `accepted`) held only the publisher's record fields, now columns at the end:
+  `date_created`, `date_modified`, `local_path`, `extracted_by_ocr`,
+  `dump_date`, and `source_sha256`, the export file each row was read from. A
+  download goes once into the raw archive with its capture receipt and is kept
+  as source evidence; a row the mapping refuses or that the publisher spelled
+  other than canonically is recorded in the table's exceptions file with its
+  source row; more than 1,000 such rows, or an identity held twice, stop the
+  build. A held export (`COURTLISTENER_BULK_DIR`) is retained as the run's
+  original too, so every pointer names a file the evidence holds; court-opinions
+  publishes by hand (`publish-local-generation`), the citations through their
+  workflow. The last generations with receipts are pinned
+  (`docs/pins/receipt-archive.json`); the switch, its equality proof and the
+  procedure for the court opinions refresh are in
+  `docs/court-receipt-archive.md`. Policies `courts/2` (citations family) and
+  `courts/3` (`court_opinions`): the new columns.
+
 ### Fixed
+
+- **A table that kept its rows and columns is not refused for halving in size**
+  (ss-kqzz). The `fec_committees` nightly was refused on 2026-11-09 for shrinking
+  from 10.2 MB to 4.0 MB (ratio 0.392) with the same 89,974 rows and 16 columns:
+  a writer change cut its row groups from 1,767 to 176 and its footer from
+  3.03 MB to 0.31 MB. A table whose index shows it kept its prior's columns and
+  at least its prior's rows in every partition may now shrink to 0.2 of its
+  prior's bytes; a lost row or a changed column still faces the ordinary 0.5.
+  The rule reads counts, names and types, never values. The 0.2 floor refuses
+  rows kept with nearly all their values lost (that table with every value but
+  its key nulled is 0.163 of itself), and one emptied column still publishes.
+
+- **A split table's partitions are matched whatever order their columns are
+  listed in** (ss-biqd). The stored index sorts each partition's columns and a
+  new generation lists them in directory order, so a table split by
+  `report_year` then `report_quarter` read as missing every partition its prior
+  held: all 42 of `house_disbursements` on the live index. Its next publication
+  would have been refused. A partition that is really missing still refuses, and
+  the message names it as its directory spells it.
+
+- **The four regulatory summaries build again, published without receipts** (ss-nxew).
+  `agency_stats`, `agency_monthly_volume`, `discovery_signals` and `feed_summary`
+  had a field policy installed on 2026-10-04 (64141879) but no receipt writer, so
+  admission refused every build and the four stayed at their 2026-10-03
+  generations. Their policies are removed. Each summary is rebuilt whole from
+  published parents, and its generation pins the parents it read. The catalog's
+  `etl_receipts.datasets` no longer lists the four; no field changed shape, and a
+  consumer holding a copy re-vendors.
 
 - **A new reading of an unchanged print replaces the old one** (ss-fmxo). When a
   derivation changed a print's text digest but its PDF bytes had not changed,
@@ -113,6 +230,118 @@ Entries link to the pull request that introduced the change.
   input is removed; proceedings are always walked whole.
 
 ### Changed
+
+- **`comment_attributes` publishes without per-row receipts** (ss-vse3). Every
+  comment batch of the Regulations.gov sweep upserted its rows over the
+  26.5-million-row table and spent about 46 minutes on whole-table work
+  whatever it merged (1 row or 60,028), about 33 to 38 of them on receipts:
+  selecting and validating the prior's, merging, admitting and uploading the
+  4.2 GiB member. Its receipts held only each row's contract-shape copy, which
+  the published row implies (every one of the 26.5 million checked), so no column
+  is added. A batch now converts its rows with the same writer and upserts them
+  over the published table (`native_merge.upsert_subjects`); the refresh's
+  `run-rollup-comment-attributes` publishes nothing. The last generation with
+  receipts is pinned at merge (`scripts/pin_receipt_archive.py`), and a batch
+  whose pin a later publish overtook refuses at its start; the window and
+  checks are in `docs/comment-attributes-receipt-archive.md`.
+
+- **`fec_financial_profiles` is built from a captured pair of FEC summary CSVs,
+  not from fec-query** (ss-coca). `build --captures` maps the candidate and
+  committee CSVs from the raw archive with the fec-query summary mapper, and the
+  dispatch-only `rollup-fec-financial-profiles.yml` does the same with the day's
+  download; the family is also published by hand (`publish-local-generation`).
+  A generation records no parent, `source_table_generation` is null, and the
+  explorer lists no input table. Rebuilt from the 2026-09-12 pair, all 18,521
+  published rows match but for those two lineage fields. The fec-query tables
+  keep their September captures, so a fresh profile can show newer totals than
+  the same committee's summary or itemized rows there.
+  **`profile_id` now survives a refresh.** It hashes the selection rule, entity
+  kind, FEC identifier and cycle, no longer `scope_id` (the capture day), so a
+  link to a profile keeps working; the first refresh changes every id once.
+  A file with more than 10% fewer rows than the live table records refuses
+  (`--accept-shrink` accepts a reviewed loss by hand), and the hosted run sends
+  the day's two originals to R2 evidence before it parses them, which replaces
+  the never-run `capture-fec-summaries.yml`.
+- **`comments` and `comments_index` publish without ETL receipts** (ss-juz8,
+  part of ss-vse3). The comments family's generation has no `etl_receipts.parquet`
+  and its index entry no `etlReceipts`; the generation's two tables keep their
+  columns, and no field moves, since the live receipts held none the table lacks.
+  The mirror copies the pinned catalog table, checks the copy holds every row
+  the snapshot does, and no longer rebinds, admits or replays its 26.5 million
+  receipts: 138.5 of 169.6 measured minutes at full size. A receipt-only catalog
+  commit no longer republishes. The last generation with receipts, the
+  2026-10-10 one, is pinned in `docs/comments-receipt-archive.md`; the catalog
+  keeps writing its own receipt table. Both installed policies carry
+  `"receipts_retired": true` (ss-ag1j), which `receipt_fields.json`, the catalog
+  and `table_metadata.json` now reflect: the two tables state no receipt fields.
+  `prepare_comments_selected_export.py --publish` (the 2026-10-10 v1 promotion)
+  now refuses.
+  **The fixed files change shape.** The first receipts-free publication is the
+  first since 2026-10-03 to rewrite the bucket-root `comments.parquet` and its
+  180 agency files, which still hold `attachments_json`, the attachment list as
+  JSON text. They take the generation's shape: `attachments`, a list of
+  structs, in the same position, every other column unchanged. A reader of
+  those files that parses `attachments_json` must read `attachments` instead.
+
+- **The Federal Register and its docket links publish no per-row receipts**
+  (ss-vse3, steps 3 and 4). The Register job maps the night's documents once
+  and merges them into the pinned published table in DuckDB (fresh wins on
+  number and date, every other row carried as published with `rin` derived
+  again, 2,000-row groups as before); the links rebuild from that table
+  straight into their published columns. Both installed policies are marked
+  `receipts_retired`; `docs/pins/receipt-archive.json` keeps the last receipts
+  generation of each, published 2026-11-10. The journal gains
+  `federal-register-pages` (each page's SHA-256 and record count) and
+  `federal-register-merge` (prior, read, new and total rows, whether the prior
+  was mapped again, and the columns that added, dropped or retyped). A prior
+  without a column that left receipts is refused; a prior of another width is
+  mapped again, and its rows are counted as published, before the re-map. A
+  document the mapping refuses now fails the night instead of being
+  refused into a receipt. The Register's receipt restore path is deleted.
+  Both jobs time out at 30 minutes (a re-read keeps 240).
+
+- **`federal_register` and `fr_docket_links` publish the fields their receipts
+  held** (ss-vse3, step 1 of moving both tables off per-row receipts).
+  `federal_register` gains, as its last columns, `html_url`, `pdf_url`,
+  `body_html_url`, `source_sha256` and `regulations_dot_gov_info_json`;
+  `fr_docket_links` gains `normalized_docket_candidates`, a native list like
+  its others (the receipts held it as JSON text). The first
+  scheduled run fills them for every row from the prior generation's receipts,
+  the only copy for the 99% of rows whose API response was never retained.
+  `source_sha256` names the retained API page a row was last read from and is
+  NULL on a row not read since; it changes nightly on every row in the
+  120-day re-read window, so compare generations without it. `pdf_url` stays
+  NULL on about 33,500 rows where the Register serves no PDF. Policies move to
+  `regulations-native-v3` and `-v2`; the earlier ones stay readable, so nothing
+  is replayed. **The first night's `federal_register` job takes about 55 to 80
+  minutes instead of 29**: the prior's schema differs, so the restore reads it
+  by row once (28.7 and 56.2 minutes of restore on the two earlier hosted
+  nights that did, 2026-10-31 and 11-01). The checks to run afterwards are in
+  [docs/federal-register-receipt-archive.md](docs/federal-register-receipt-archive.md).
+
+- **`fr_docket_links` and the rulemaking materializer read the published
+  Federal Register tables, not their receipts** (ss-vse3, step 2). The links
+  rollup fetches the pinned `federal_register` table instead of restoring it
+  row by row (307 of that job's 937 s on 2026-11-09); the generation still
+  records the table as its parent. The materializer reads `federal_register`
+  and `fr_docket_links` as published and gives its stages the Register's lists
+  as JSON text; its manifest records each one's publication pin and no receipt
+  pair. The materializer is scheduled, not manual: `_regulations-refresh.yml`
+  runs it inside the ETL refresh, so the first refresh after the merge takes
+  this path unattended. Both tables still publish receipts. Run alone before
+  the Register job has published its promoted columns, the links workflow
+  refuses with a message saying so.
+
+- **A table's receipts can be retired, once and for good** (ss-vse3,
+  ss-ag1j). Its installed policy file gains `"receipts_retired": true` beside
+  the descriptor (no policy version or ledger entry moves). From then on every
+  path that builds or publishes a generation lets the table leave its family's
+  receipt ownership, keeping the table, and refuses receipts for it again; the
+  receipt lookup, dictionary and MCP server say its fields are columns, and a
+  consumer still on receipts reads it as its pinned public table.
+  `docs/pins/receipt-archive.json` keeps its last receipts generation, and
+  publication refuses the first generation without them until that file pins
+  the family's live generation for each table leaving them.
 
 - Prepared native conversions publish by an operator-named receipt digest.
   `--publish-prepared` now requires `--expect-receipt-digest`, the

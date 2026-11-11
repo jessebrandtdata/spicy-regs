@@ -6,7 +6,7 @@
 
 Literal OFAC enhanced-export observations with selected-list context and retained source history.
 
-**Coverage.** Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence. *(measured 2026-10-20)*
+**Coverage.** Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Each refresh replaces the published snapshots with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence. *(measured 2026-10-20)*
 
 - **Parquet file:** `ofac_entity_observations.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.

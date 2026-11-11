@@ -1,4 +1,4 @@
-"""Real tiny workflow checks and refusal controls for retained Court/FR replay."""
+"""Real tiny workflow checks and refusal controls for retained Court and base-table replay."""
 import hashlib
 import json
 from pathlib import Path
@@ -19,11 +19,6 @@ def selected_plan(tmp_path, dataset, *, refused=False):
         rows = [{'opinion_id': None if refused else '1', 'cluster_id': '2', 'author_str': 'café\x00\n',
                  'page_count': '0002', 'per_curiam': 't'},
                 {'opinion_id': '3', 'cluster_id': None, 'author_str': '', 'page_count': None, 'per_curiam': None}]
-    elif dataset == 'federal_register':
-        # Original order has rin last; the actual processor emits canonical order.
-        rows = [{'document_number': '2026-00001', 'publication_date': '2026-01-01', 'title': 'café\x1b\n',
-                 'agencies_json': '[]', 'regulations_dot_gov_comments_count': '0007', 'rin': '007'},
-                {'document_number': '2026-00002', 'publication_date': '2026-01-02', 'title': '', 'rin': None}]
     elif dataset == 'dockets':
         rows = [{'docket_id': 'FAA-2026-0001', 'title': 'café\x00\n', 'rin': '007'},
                 {'docket_id': 'FAA-2026-0002', 'title': '', 'rin': None}]
@@ -44,7 +39,28 @@ def selected_plan(tmp_path, dataset, *, refused=False):
     return path, plan, source
 
 
-@pytest.mark.parametrize('dataset', runner.DATASETS)
+def _receipt_datasets():
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    return [dataset for dataset in runner.DATASETS if dataset not in retired_receipt_datasets()]
+
+
+def test_a_retired_table_is_never_qualified_back_into_receipts(tmp_path, installed_httpfs):
+    """court_opinions publishes without receipts (ss-vse3); its replay stops at generation admission."""
+    path, _, _ = selected_plan(tmp_path, 'court_opinions')
+    output, candidate = tmp_path / 'workflow', tmp_path / 'candidate'
+    subprocess.run([sys.executable, '-m', 'scripts.qualify_retained_population', str(path), str(candidate),
+                    '--fixture', '--stage', 'build'], cwd=Path(__file__).parents[1], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, '-m', 'scripts.qualify_retained_population', str(path),
+                             str(output), '--fixture', '--stage', 'audit', '--candidate', str(candidate),
+                             '--httpfs-extension', str(installed_httpfs)],
+                            cwd=Path(__file__).parents[1], capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "Receipts are retired for ['court_opinions']" in result.stdout + result.stderr
+    assert not (output / 'RESULT.json').exists()
+
+
+@pytest.mark.parametrize('dataset', _receipt_datasets())
 def test_actual_complete_fixture_pipeline(tmp_path, dataset, installed_httpfs):
     path, _, source = selected_plan(tmp_path, dataset)
     output = tmp_path / 'workflow'
@@ -175,7 +191,7 @@ def test_wrong_pin_and_empty_selection_refuse_before_production(tmp_path):
 
 
 def test_source_changed_after_capture_refuses_final_claim(tmp_path, installed_httpfs):
-    path, _, source = selected_plan(tmp_path, 'court_opinions')
+    path, _, source = selected_plan(tmp_path, 'dockets')
     output = tmp_path / 'changed'
     code = '''
 import sys

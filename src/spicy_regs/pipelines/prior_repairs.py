@@ -12,9 +12,6 @@ values it names, and publishes a generation that carries every other table forwa
   (``build_bill_family._require_spelled_digests``), so this re-spell runs before any compare.
 * ``respell-document-digests`` counts each attempt's bare ``source_sha256`` in ``documents.pdf_extraction_results_json``
   and only counts (``Repair.count_only`` says why).
-* ``respell-comment-digests``: the same for ``comments.pdf_extraction_results_json`` (each attempt's
-  ``source_sha256``, each derived attachment's ``sha256``) in the comments catalog, one agency at a time, through
-  the catalog's checked upsert; ``--apply`` writes, and each written row's prior value is kept for ``--restore``.
 * ``backfill-found-by``: ``cbo_cost_estimates`` appends ``title_bill_id``, ``found_by`` and ``title_bill_id_rule``;
   every prior BILLSTATUS row takes ``billstatus``, the title rule's reading and the rule's name.
 * ``rebuild-record-issues``: ``record_issues.package_id`` follows ``entire_issue_url_stem/2``, re-shaped from each
@@ -459,108 +456,6 @@ def dry_run(name: str, *, prior_dir: Path | None = None) -> dict[str, dict[str, 
 
 
 # --------------------------------------------------------------------------- #
-# Comments live in the catalog, not a generation family.
-# --------------------------------------------------------------------------- #
-
-#: A bare digest where either writer puts one; the JSON parse decides, this only narrows the rows read.
-_BARE_IN_RESULTS = r'"(source_)?sha256": "[0-9a-f]{64}"'
-
-
-def comment_digest_repairs(con: Any, relation: str, *, agency: str | None = None) -> list[tuple[str, str, str]]:
-    """``(comment_id, prior, respelled)`` for each comment in ``relation`` whose results hold a bare digest."""
-    where = "" if agency is None else f"AND agency_code = '{agency.replace(chr(39), chr(39) * 2)}'"
-    rows = con.execute(
-        f"SELECT comment_id, pdf_extraction_results_json FROM {relation} "
-        f"WHERE pdf_extraction_results_json IS NOT NULL AND regexp_matches(pdf_extraction_results_json, ?) {where}",
-        [_BARE_IN_RESULTS],
-    ).fetchall()
-    return [
-        (comment, prior, spelled)
-        for comment, prior in rows
-        if (spelled := respell_pdf_results(prior)) is not None and spelled != prior
-    ]
-
-
-def respell_comment_digests(*, agencies: Sequence[str] = (), apply: bool = False,
-                            receipt_dir: Path | None = None) -> dict[str, int]:
-    """Count, and with ``apply`` write, the comments catalog's re-spelled digests, one agency at a time.
-
-    A write goes through ``iceberg.upsert_comment_text`` with only ``_new_pdf_results`` stated, so the text columns
-    keep their values. Each agency's receipt (``comment_id``, the prior value, the written value) is written before its
-    upsert, which is what ``restore_comment_digests`` puts back.
-    """
-    import polars as pl
-
-    from spicy_regs.schemas import COMMENT
-    from spicy_regs.sources import iceberg
-    from spicy_regs.sources.regulatory_catalog import processing_table
-
-    if apply and receipt_dir is None:
-        raise ValueError("--apply keeps each written row's prior value; name --receipt-dir")
-    con = iceberg._connect_for_table(COMMENT)
-    counts: Counter[str] = Counter()
-    try:
-        table = iceberg._qualified(COMMENT)
-        names = list(agencies) or [row[0] for row in con.execute(
-            f"SELECT DISTINCT agency_code FROM {table} WHERE agency_code IS NOT NULL ORDER BY 1").fetchall()]
-        for agency in names:
-            source = processing_table(con, COMMENT, where=f"agency_code = '{iceberg._sql_str(agency)}'")
-            repairs = comment_digest_repairs(con, source, agency=agency)
-            counts["agencies"] += 1
-            counts["comments_respelled"] += len(repairs)
-            if not repairs:
-                continue
-            logger.info("comments[{}]: {:,} rows hold a bare digest", agency, len(repairs))
-            if apply and receipt_dir is not None:
-                receipt = receipt_dir / f"comment-digests-{agency}.parquet"
-                receipt_dir.mkdir(parents=True, exist_ok=True)
-                pq.write_table(pa.table({"comment_id": [r[0] for r in repairs], "prior": [r[1] for r in repairs],
-                                         "written": [r[2] for r in repairs]}), receipt)
-                updates = pl.DataFrame({"comment_id": [r[0] for r in repairs], "_new_text": [None] * len(repairs),
-                                        "_new_status": [None] * len(repairs), "_new_pdf_results": [r[2] for r in repairs]},
-                                       schema={"comment_id": pl.Utf8, "_new_text": pl.Utf8, "_new_status": pl.Utf8,
-                                               "_new_pdf_results": pl.Utf8})
-                iceberg.upsert_comment_text(con, COMMENT, agency, updates)
-    finally:
-        con.close()
-    return dict(counts)
-
-
-def restore_comment_digests(receipt_dir: Path) -> dict[str, int]:
-    """Put back each receipt's prior values where the row still holds what the re-spell wrote, agency by agency."""
-    import polars as pl
-
-    from spicy_regs.schemas import COMMENT
-    from spicy_regs.sources import iceberg
-    from spicy_regs.sources.regulatory_catalog import processing_table
-
-    con = iceberg._connect_for_table(COMMENT)
-    counts: Counter[str] = Counter()
-    try:
-        for receipt in sorted(receipt_dir.glob("comment-digests-*.parquet")):
-            agency = receipt.stem.removeprefix("comment-digests-")
-            table = processing_table(con, COMMENT, where=f"agency_code = '{iceberg._sql_str(agency)}'")
-            held = pq.read_table(receipt).to_pylist()
-            con.register("_restore_receipt", pa.Table.from_pylist(held))
-            current = dict(con.execute(
-                f"SELECT c.comment_id, c.pdf_extraction_results_json FROM {table} c JOIN _restore_receipt r "
-                f"USING (comment_id) WHERE c.agency_code = ?", [agency]).fetchall())
-            con.unregister("_restore_receipt")
-            back = [row for row in held if current.get(row["comment_id"]) == row["written"]]
-            counts["comments_restored"] += len(back)
-            counts["comments_since_rewritten"] += len(held) - len(back)
-            if back:
-                iceberg.upsert_comment_text(con, COMMENT, agency, pl.DataFrame(
-                    {"comment_id": [r["comment_id"] for r in back], "_new_text": [None] * len(back),
-                     "_new_status": [None] * len(back), "_new_pdf_results": [r["prior"] for r in back]},
-                    schema={"comment_id": pl.Utf8, "_new_text": pl.Utf8, "_new_status": pl.Utf8,
-                            "_new_pdf_results": pl.Utf8}))
-    finally:
-        con.close()
-    return dict(counts)
-
-
-# --------------------------------------------------------------------------- #
 # Stage suppression (a measurement) and restore (the rollback).
 # --------------------------------------------------------------------------- #
 
@@ -657,24 +552,6 @@ def missing_bills_command(
 ) -> None:
     """Add explicitly named absent bills from Congress.gov details, preserving existing rows and family siblings."""
     missing_bills_rollup(bill_ids)(output_dir=output_dir, skip_upload=skip_upload).run()
-
-
-@app.command(name="respell-comment-digests")
-def respell_comment_digests_command(
-    *,
-    dry_run_: Annotated[bool, Parameter(name="--dry-run", help="Count only")] = False,
-    apply: Annotated[bool, Parameter(help="Write the catalog (hold comments-catalog-write)")] = False,
-    agency: Annotated[tuple[str, ...], Parameter(help="Only these agency codes")] = (),
-    receipt_dir: Annotated[Path | None, Parameter(help="Where each agency's prior values are kept")] = None,
-    restore: Annotated[bool, Parameter(help="Put back the receipts' prior values")] = False,
-) -> None:
-    """Re-spell the comments catalog's pdf_extraction_results_json digests, or restore them from receipts."""
-    if restore:
-        if receipt_dir is None:
-            raise ValueError("--restore reads --receipt-dir")
-        _print(restore_comment_digests(receipt_dir))
-        return
-    _print(respell_comment_digests(agencies=agency, apply=apply and not dry_run_, receipt_dir=receipt_dir))
 
 
 @app.command(name="stage-suppression")

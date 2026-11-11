@@ -56,6 +56,14 @@ from spicy_regs.pipelines.base import Pipeline
 from spicy_regs.sources import r2
 
 
+class Unchanged(Exception):
+    """``build`` found the source holds nothing the published generation lacks.
+
+    ``run`` then builds and publishes nothing and returns normally, so a scheduled run on a day without
+    news is green. Raise it only once every byte acquired is known to be published already.
+    """
+
+
 class RollupPipeline(Pipeline):
     """A single materialized rollup, run standalone from the base tables on R2."""
 
@@ -149,6 +157,10 @@ class RollupPipeline(Pipeline):
             self._run_tables(output_dir)
             if self.deferred_failure is not None:
                 raise self.deferred_failure
+        except Unchanged as unchanged:
+            if self.source_evidence:
+                self.source_evidence.finish()
+            logger.info("Rollup {}: {}; nothing built or published", self.name, unchanged)
         except BaseException as error:
             if self.source_evidence:
                 self.source_evidence.finish(error)
@@ -340,10 +352,14 @@ class RollupPipeline(Pipeline):
         managed download reuses its descriptor; any other file is hashed once.
         The rollup's own table is primed but is no parent (:meth:`_own`).
         """
+        return self._prime_tables(self.inputs, output_dir, snapshot)
+
+    def _prime_tables(self, keys: tuple[str, ...], output_dir: Path, snapshot: Mapping | None) -> dict[str, dict]:
+        """:meth:`_prime` for ``keys``: each published table downloaded, pinned and returned as a parent."""
         from spicy_regs.sources import publication
 
         parents = {}
-        for remote_key in self.inputs:
+        for remote_key in keys:
             local = output_dir / remote_key
             downloaded = False
             if local.exists():

@@ -42,7 +42,6 @@ def test_local_edition_uses_pinned_scope_and_preserves_prior(tmp_path: Path, mon
         local_file=clusters,
         docket_court_map=docket_map,
         courts_local_file=courts,
-        skip_search_catchup=True,
         include_prior=False,
     )
     [row] = pq.read_table(output).to_pylist()
@@ -66,7 +65,7 @@ def test_incremental_rerun_uses_latest_complete_local_pair(tmp_path, monkeypatch
         b'id,case_name,date_created\n"1","First","2026-06-30T08:00:00Z"\n'
     ))
     first = build_court_opinion_clusters(tmp_path, local_file=first_source,
-        skip_search_catchup=True, skip_court_scope=True)
+        skip_court_scope=True)
     first_bytes = first.read_bytes()
     # Retained pre-migration scratch must not displace the complete native pair.
     (tmp_path / "_clusters_prior.parquet").write_bytes(b"stale retained scratch")
@@ -75,7 +74,7 @@ def test_incremental_rerun_uses_latest_complete_local_pair(tmp_path, monkeypatch
         b'id,case_name,date_created\n"2","Second","2026-07-01T08:00:00Z"\n'
     ))
     second = build_court_opinion_clusters(tmp_path, local_file=second_source,
-        skip_search_catchup=True, skip_court_scope=True)
+        skip_court_scope=True)
     restored = {r["cluster_id"]: r for r in read_court_rows(second, dataset="court_opinion_clusters")}
     assert set(restored) == {"1", "2"}
     assert restored["1"]["date_created"] == "2026-06-30T08:00:00Z"

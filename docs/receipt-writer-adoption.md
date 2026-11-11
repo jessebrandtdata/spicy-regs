@@ -27,8 +27,7 @@ earlier witnesses or processing values. `write_dataset(prior_receipts=...)`
 exposes it to explicit callers. Following the owner's 2026-10-17 bulk receipt
 writer decision, carry is active in these maintained paths:
 
-- Government output migration (`transforms/government_receipts.migrate_outputs`),
-  including lobbying's native prior merge.
+- Government output migration (`transforms/government_receipts.migrate_outputs`).
 - Court row and batch writers (`court_receipts`).
 - The Congress row writer (`congress_receipts.write_congress_dataset`), batch
   writer (`votes_batch_receipts`) and `legislative_receipts.write_legislative_outputs`.
@@ -91,8 +90,8 @@ Every receipt member is written by `etl_receipts.open_receipt_writer`: whole
 the key columns (including `identity_json`), and dictionaries only on
 low-cardinality columns. A reader finds one row's receipts by filtering on
 `dataset` and `identity_json`, so the footer and page index prune to the pages
-that can hold it; rows are not sorted. `read_receipt_fields` reads those groups
-with DuckDB, and the browser reads the identity columns first, then the one row.
+that can hold it; rows are not sorted. The receipt lookups that read those
+groups (server and browser) were retired on 2026-11-10.
 Measured 2026-11-09 on bill-family's largest dataset (3.7M receipts): ~2-5 MB a
 cold lookup (ticket ss-e4nx). This replaced the earlier key-to-position sidecar
 (`etl_receipts.keys.parquet`), which no family ever published; its 2026-10-05

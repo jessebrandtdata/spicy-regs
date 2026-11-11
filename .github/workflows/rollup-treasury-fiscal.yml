@@ -1,0 +1,22 @@
+name: Rollup — treasury_fiscal
+# Daily after the US business day: on 2026-11-10 Treasury listed the day's Debt to the Penny row between
+# 21:21 and 21:41 UTC. A run that finds nothing new publishes nothing and ends green.
+# Built here: each newly listed Debt to the Penny day joins the published generation.
+on:
+  schedule:
+    - cron: '43 22 * * *'
+  workflow_dispatch:
+    inputs:
+      skip_upload:
+        description: 'Skip R2 upload (dry run)'
+        required: false
+        default: true
+        type: boolean
+jobs:
+  run:
+    uses: ./.github/workflows/_rollup.yml
+    secrets: inherit
+    with:
+      command: run-rollup-treasury-fiscal
+      skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
+      timeout_minutes: 20

@@ -1,6 +1,6 @@
 """A bounded additive search precedes all full-prior processing."""
 
-from datetime import date
+from datetime import UTC, date, datetime
 from contextlib import nullcontext
 import hashlib
 import importlib
@@ -237,14 +237,6 @@ def test_catch_up_requires_token_before_reading_its_prior(selected, monkeypatch)
     monkeypatch.setattr(delta.publication, "table_owner", lambda *_: pytest.fail("prior read before the token check"))
     with pytest.raises(courtlistener.CourtListenerError, match="requires COURTLISTENER_API_TOKEN"):
         delta.catch_up_court_opinion_clusters(work, **kwargs)
-
-
-def test_bulk_build_requires_token_before_reading_unless_search_is_skipped(tmp_path, monkeypatch):
-    build = importlib.import_module("spicy_regs.transforms.build_court_opinion_clusters")
-    monkeypatch.delenv("COURTLISTENER_API_TOKEN", raising=False)
-    monkeypatch.setattr(build.r2, "download", lambda *_: pytest.fail("prior read before the token check"))
-    with pytest.raises(courtlistener.CourtListenerError, match="requires COURTLISTENER_API_TOKEN"):
-        build.build_court_opinion_clusters(tmp_path)
 
 
 @pytest.fixture
@@ -642,6 +634,35 @@ def test_quota_sizes_live_attempts_to_windows_that_cannot_refill(windows, wanted
     assert live == expected
     assert all(window.keys() == {"rate", "used", "limit", "remaining", "window_seconds", "reset_at", "blocked"}
                for window in observed)
+
+
+DAY_SPENT = (("5/min", 5, 60), ("50/hour", 50, 3600))
+NOON = datetime(2026, 11, 8, 12, tzinfo=UTC)
+SOON = datetime(2026, 11, 8, 15, tzinfo=UTC)  # 3 min 52.762401 s before the helper's reset_at
+RESET = datetime(2026, 11, 8, 15, 3, 52, 762401, tzinfo=UTC)
+
+
+@pytest.mark.parametrize(("windows", "now", "expected"), [
+    ((), NOON, (105, None)),  # an idle account
+    ((*DAY_SPENT, ("125/day", 112, 86400)), NOON, (105, None)),  # room for 105 and the docket job's 7
+    ((*DAY_SPENT, ("125/day", 13, 86400)), SOON, (105, RESET)),  # yesterday's run is leaving: keep step with it
+    ((*DAY_SPENT, ("125/day", 0, 86400)), SOON, (105, RESET)),
+    ((*DAY_SPENT, ("125/day", 13, 86400)), NOON, (6, None)),  # spent at another hour: what is free, less 7
+    ((*DAY_SPENT, ("125/day", 5, 86400)), NOON, (0, None)),
+    ((("5/min", 0, 60), ("50/hour", 0, 3600), ("125/day", 125, 86400)), NOON, (105, None)),  # shorter windows refill
+])
+def test_daily_allowance_follows_a_rolling_day(monkeypatch, windows, now, expected):
+    monkeypatch.setattr(courtlistener_resume, "_now", lambda: now)
+    allowed, not_before, observed = courtlistener_resume.daily_allowance(
+        json.dumps(usage(*windows)).encode(), 105, request_interval=75.0, reserve=7, lock_step_seconds=5400.0)
+    assert (allowed, not_before) == expected
+    assert len(observed) == 3
+
+
+def test_daily_allowance_refuses_a_blocked_account_instead_of_reporting_nothing_to_do():
+    with pytest.raises(ValueError, match="account is blocked"):
+        courtlistener_resume.daily_allowance(json.dumps(usage(("0/day", 0, 86400))).encode(), 105,
+                                             request_interval=75.0, reserve=7, lock_step_seconds=5400.0)
 
 
 EXHAUSTED_HOUR = usage(("5/min", 5, 60), ("50/hour", 0, 3600), ("125/day", 75, 86400))

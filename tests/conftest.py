@@ -51,6 +51,23 @@ class _NoBulkBillText:
 
 
 @pytest.fixture(autouse=True)
+def nothing_published_names_this_machine(request: pytest.FixtureRequest, tmp_path: Path):
+    """After each test, nothing a publish would upload from its folder names this machine's folders (ss-81bv).
+
+    Every test that builds source evidence, a generation or an input proof through the maintained writers is held
+    to it (``tests/published_paths.published_files`` lists what is read). It sees only what a test writes under its
+    own ``tmp_path``, and only this machine's real folders, not a path a fixture made up.
+    """
+    yield
+    if "integration" in request.keywords:
+        return
+    from tests.published_paths import machine_paths, published_machine_paths
+
+    found = published_machine_paths(tmp_path, machine_paths(tmp_path))
+    assert not found, f"Published artefacts name this machine's folders (file, folder): {found}"
+
+
+@pytest.fixture(autouse=True)
 def fresh_owner_admissions() -> None:
     """Start every test with no process-wide owner admission, so a pin reused across tests never skips a check."""
     from spicy_regs import generations
@@ -345,3 +362,22 @@ def installed_httpfs() -> Path:
         assert con.execute("SELECT current_setting('allow_unsigned_extensions')").fetchone() == (False,)
         con.execute("LOAD '" + str(path).replace("'", "''") + "'")
     return path
+
+
+#: The votes trio's tables, which publish no per-row receipts since ss-vse3 (tests/test_votes_receipt_switch.py).
+VOTES_TRIO = frozenset({"members", "member_terms", "member_party_affiliations", "roll_call_votes", "member_votes",
+                        "member_vote_terms"})
+
+
+@pytest.fixture
+def votes_receipts_unretired(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Set aside the votes trio's ``receipts_retired`` marker for a test of the receipt route they last published under.
+
+    That route is shared by every Congress family still on receipts and is how the trio's last generations are read;
+    a test that uses these tables as its stand-in, or builds generations of their last receipts night, runs as before
+    the switch, as ``test_regulatory_attributes_bulk`` does for ``comment_attributes``.
+    """
+    from spicy_regs import subject_catalog
+
+    retired = subject_catalog.retired_receipt_datasets() - VOTES_TRIO
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: retired)

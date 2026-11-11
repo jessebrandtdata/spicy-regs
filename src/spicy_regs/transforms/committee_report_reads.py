@@ -45,6 +45,11 @@ READ_COLUMNS = ("package_id", "last_modified", "outcome", "rule_version", "obser
 #: appended columns, so each of the 185 held hearings is read once more.
 #: ``mods=hearing-mods-002``: the round-6 build also reads the committee codes
 #: the MODS states (``committee_system_codes_json``), so each is read again.
+#: spicy-docs 0.84.0 (body-text derivation ``004``, which changed ``htm`` alone)
+#: needs no CHRG token: each of the 617 ``htm`` bodies the held transcripts were
+#: read from derives the same text under 0.83.0 and 0.84.0, equal to its
+#: published ``text_sha256`` (``vendor/spicy_docs-0.84.0.json``). The rest are
+#: ``txt`` and ``pdf``, which ``004`` reads as ``003`` by construction.
 RULE_VERSIONS = {
     "CRPT": (
         f"code={spicy_docs_code()[:12]};cbo={CBO_ESTIMATE_RULE_VERSION};sections={REPORT_SECTION_READER_VERSION}"

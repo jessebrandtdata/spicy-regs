@@ -54,10 +54,16 @@ policy changes; no producer-written success field supplies admission.
 
 ## Publication and failure
 
-All shrink guards run before any upload. Objects are created conditionally under
-`generations/<family>/<artifact-digest>/`. The publisher rereads and verifies all
-remote bytes before conditionally replacing the small publication index. A
-concurrent change refuses the update; rebuild from a fresh index before retrying.
+All shrink guards run before any upload. A table that records its prior's
+columns and at least its prior's rows in every partition may shrink to 0.2 of
+its prior's bytes rather than 0.5, since a writer's row-group layout can halve
+the bytes with no row lost. That comparison reads counts, names and types, never
+values: the floor refuses a table whose rows were kept and nearly all their
+values lost, and one emptied column still publishes. Objects are created
+conditionally under `generations/<family>/<artifact-digest>/`. The publisher
+rereads and verifies all remote bytes before conditionally replacing the small
+publication index. A concurrent change refuses the update; rebuild from a fresh
+index before retrying.
 A crash before the pointer update can leave unreferenced immutable objects but
 keeps the previous published family intact.
 If the connection fails after submitting the pointer update, reread the index:
@@ -94,6 +100,18 @@ A family cannot silently change its table membership or take another family's
 table. Those changes need an explicit migration. Successful empty tables still
 face the existing shrink guard; an intentional destructive replacement requires
 the existing explicit override after reviewing the result.
+
+Nor can a family silently stop publishing receipts for a table. The table's
+installed policy file (`src/spicy_regs/etl_policies/<table>.json`) carries
+`"receipts_retired": true` beside its descriptor; every publishing path then
+accepts the first generation without them, requires the table to stay
+published, and refuses any generation that claims receipts for it again, as
+admission does. Unmarked, the generation is refused. The prior generation's
+receipt file is not touched; `docs/pins/receipt-archive.json` keeps it, and the
+first generation without receipts is refused until that file pins the family's
+live generation for each table leaving them (read from the publishing checkout). A
+receipt file must still classify every table beside it, so the tables of one
+family leave receipts together.
 
 The Congress.gov archive walker is a partial writer of `bill-family`. Its bill
 update preserves the existing wider columns using the existing merge. It copies
@@ -141,7 +159,7 @@ selected scope and earlier coverage when refreshing it.
 
 | Family | Selected coverage and completion | Freshness claim and current signal | Smallest useful consumer check |
 | --- | --- | --- | --- |
-| Court opinion clusters | Complete selected bulk edition with its docket-to-court map and receipts; keep the existing prior-ID preservation check for the recovery. An explicitly offline edition can finish without live search. | Name the bulk edition and any separately completed search scope. The [cluster workflow](https://github.com/mikewolfd/spicy-regs/blob/12353ea83aa035cc3a2758276be67e5efc1fabdd/.github/workflows/rollup-court-opinion-clusters.yml) checks weekly; its usual catch-up is not evidence that an offline candidate includes later decisions. | Read a selected decision with its court fields and receipt. |
+| Court opinion clusters | Complete selected bulk edition with its docket-to-court map and receipts; keep the existing prior-ID preservation check for the recovery. An explicitly offline edition can finish without live search. | Name the bulk edition and any separately completed search scope. The [cluster workflow](https://github.com/mikewolfd/spicy-regs/blob/12353ea83aa035cc3a2758276be67e5efc1fabdd/.github/workflows/rollup-court-opinion-clusters.yml) runs daily: a rebuild when a newer export is listed, otherwise a bounded search catch-up whose journal states the id reached and the backlog left ([court search](court-search-recovery.md)). That catch-up is not evidence that an offline candidate includes later decisions. | Read a selected decision with its court fields and receipt. |
 | Court citations | Every declared citation-family output from one common bulk edition. The [builder](https://github.com/mikewolfd/spicy-regs/blob/12353ea83aa035cc3a2758276be67e5efc1fabdd/src/spicy_regs/transforms/build_court_bulk_tables.py) requires published clusters and refuses a referenced cluster ID above their maximum. | Name the quarterly edition; the [citation workflow](https://github.com/mikewolfd/spicy-regs/blob/12353ea83aa035cc3a2758276be67e5efc1fabdd/.github/workflows/rollup-court-citations.yml) follows that source cadence. Additional cluster coverage is required when the actual dependency check fails or selected product scope requires later decisions; bounded catch-up is one route. | Read a citation through the intended court relationship; retain explicit missing/ambiguous endpoints. The maximum-ID guard does not prove every endpoint exists. |
 | Legislative families | Finish the selected Congresses, bill types and declared family outputs; retain carried siblings' provenance and unresolved outcomes. The [vote/term chain](https://github.com/mikewolfd/spicy-regs/blob/12353ea83aa035cc3a2758276be67e5efc1fabdd/.github/workflows/refresh-congress-vote-terms.yml) needs both votes and members before terms. | State each input's acquisition scope and carried generation. Daily workflows do not imply historical completeness; bill `update_date` and `latest_action_date` are the existing lag signals. | Read a selected bill or vote with its receipt and the relationship the release changes. |
 | Lobbying filings | Finish the requested posted-date window or filing year and all declared [family outputs](https://github.com/mikewolfd/spicy-regs/blob/12353ea83aa035cc3a2758276be67e5efc1fabdd/src/spicy_regs/pipelines/rollups/lobbying_filings.py), merged with the selected prior. Incomplete acquisition or fresh conversion refusals block completion. | Record the actual bounded window/year. The [workflow](https://github.com/mikewolfd/spicy-regs/blob/12353ea83aa035cc3a2758276be67e5efc1fabdd/.github/workflows/rollup-lobbying-filings.yml) runs daily; the freshness monitor uses `dt_posted` as its lag signal. A recent filing does not prove all history was read. | Read a filing with its activities/lobbyists and a carried receipt field through the intended reader. |

@@ -152,7 +152,10 @@ def test_later_pages_keep_their_window_when_next_page_url_is_not_a_window_reques
 
     monkeypatch.setattr(acquisition, "federal_register_fetcher", fetcher)
     read = _live_federal_register_documents(date.today(), output_dir=pipeline.output_dir)
-    assert [document["document_number"] for document in read] == ["2026-1", "2026-2"]
+    # Each record names the page it was read from, as the journal spells that page's digest.
+    assert [(page, document["document_number"]) for page, document in read] == [
+        ("sha256:" + hashlib.sha256(json.dumps(pages[later]).encode()).hexdigest(), number)
+        for later, number in ((False, "2026-1"), (True, "2026-2"))]
 
 
 def test_workflow_always_retains_main_evidence_bodies_and_journal():

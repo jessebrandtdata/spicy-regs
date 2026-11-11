@@ -181,6 +181,7 @@ def test_comment_extract_packs_attachments_json() -> None:
         },
         "included": [
             {
+                "id": "09000064b8f4997d",
                 "type": "attachments",
                 "attributes": {
                     "title": "Exhibit A",
@@ -206,6 +207,7 @@ def test_comment_extract_packs_attachments_json() -> None:
             "title": "Exhibit A",
             "formats": [{"url": "https://example.gov/x.pdf", "format": "pdf", "size": 123},
                         {"url": None, "format": "pdf", "size": None}],
+            "attachment_id": "09000064b8f4997d",  # the attachment's own id, last (spicy-docs 0.85.0)
         }
     ]
 

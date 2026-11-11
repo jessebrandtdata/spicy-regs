@@ -40,11 +40,16 @@ COVERAGE_NOTE = (
 )
 
 
+def official_sources() -> bytes:
+    """The installed provider's inventory: this table's one input, whose SHA-256 every row states as ``catalog_sha256``."""
+    return files("spicy_docs.sources.fec").joinpath("official_sources.json").read_bytes()
+
+
 def build_fec_source_catalog(output_dir: Path) -> Path:
     """Build one row per official family without fetching or interpreting records."""
     from spicy_docs.sources.fec.catalog import api_operations
 
-    original = files("spicy_docs.sources.fec").joinpath("official_sources.json").read_bytes()
+    original = official_sources()
     sources = json.loads(original)
     operations = api_operations()
     digest = hashlib.sha256(original).hexdigest()

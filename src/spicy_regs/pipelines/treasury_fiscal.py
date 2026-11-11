@@ -14,10 +14,11 @@ import json
 from datetime import date
 from pathlib import Path
 
-from rulespec_artifacts import LocalMemberSource, Producer
-
 from spicy_regs.contract_types import described_schema
-from spicy_regs.generations import build_generation, implementation_id
+from spicy_regs.generations import build_generation
+from spicy_regs.pipelines.raw_releases import (
+    READ_INDEX_HELP, ReleaseBlobs, admit_release, inherit_read_index, merged_scopes, open_raw, raw_original,
+)
 from spicy_regs.source_evidence import JOURNAL, CaptureEvidence, acquisition_evidence
 from spicy_regs.transforms.build_treasury_fiscal import SCHEMAS, build_treasury_fiscal
 
@@ -28,6 +29,9 @@ PAGE_SIZES = {"debt_to_penny": 1, "mts_table_1": 50, "mts_table_2": 20}
 PUBLISHED_FILES = "https://api.fiscaldata.treasury.gov/services/dtg/publishedfiles?dataset_id=015-BFS-2014Q1-13"
 REPORT_HOST = "https://fiscaldata.treasury.gov"
 API_STAGE, REPORT_STAGE, LISTING_STAGE = "treasury-api-page", "treasury-report-pdf", "treasury-report-listing"
+DATES_STAGE = "treasury-debt-date-listing"
+#: Twenty weeks of business days: more than any gap between two hand refreshes so far (three weeks).
+MAX_NEW_DEBT_DATES = 100
 
 
 def _stated_report_url(listing, report_date: date) -> str:
@@ -39,40 +43,59 @@ def _stated_report_url(listing, report_date: date) -> str:
     return REPORT_HOST + paths[0]
 
 
-def acquire(selections, report_dates, output_dir: Path, *, transport=None) -> dict:
-    """Capture each (dataset, record date) and each stated MTS PDF once through CaptureEvidence.
+def debt_dates_after(evidence, after: date, *, transport=None) -> list[date]:
+    """Every Debt to the Penny record date the publisher lists after ``after``, oldest first.
 
-    Returns the capture selection read back from the run's own receipts.
+    The listing is captured like any other response. More dates than one page holds are refused, so a long gap
+    is selected by hand instead of being silently cut short.
+    """
+    import httpx
+    from spicy_docs.sources.treasury_fiscal import ENDPOINTS, MAX_BYTES
+
+    listed = evidence.transport(transport, stage=DATES_STAGE, max_bytes=MAX_BYTES)
+    with httpx.Client(transport=listed, timeout=60) as client:
+        listing = client.get(ENDPOINTS["debt_to_penny"], params={
+            "fields": "record_date", "filter": f"record_date:gt:{after.isoformat()}", "sort": "record_date",
+            "page[size]": str(MAX_NEW_DEBT_DATES)}).raise_for_status().json()
+    dates = [date.fromisoformat(row["record_date"]) for row in listing["data"]]
+    if listing["meta"]["total-count"] != len(dates) or dates != sorted(set(dates)) or any(d <= after for d in dates):
+        raise ValueError("Treasury lists more new debt dates than one run selects, or lists them out of order")
+    return dates
+
+
+def capture(evidence, selections, report_dates, *, transport=None) -> dict:
+    """Capture each (dataset, record date) and each stated MTS PDF once through ``evidence``.
+
+    Returns the capture selection read back from the evidence's own receipts.
     """
     import httpx
     from spicy_docs.reading.paged_json import PagedJsonBudget
     from spicy_docs.sources.treasury_fiscal import MAX_BYTES, FiscalDataReader, FiscalDataSelection, selected_request
 
-    with acquisition_evidence("treasury-fiscal", output_dir=Path(output_dir)) as evidence:
-        for dataset, record_date in selections:
-            selection = FiscalDataSelection(dataset, record_date.isoformat(), PAGE_SIZES[dataset])
-            api = evidence.transport(transport, stage=API_STAGE, max_bytes=MAX_BYTES)
-            with FiscalDataReader(budget=PagedJsonBudget(4, MAX_BYTES, 60, 1), transport=api) as reader:
-                for _ in reader.read(selection):
-                    pass
-        if report_dates:
-            # The listing is retained too, so each PDF path can later be shown to be the publisher's statement.
-            listed = evidence.transport(transport, stage=LISTING_STAGE, max_bytes=MAX_BYTES)
-            with httpx.Client(transport=listed, timeout=60) as client:
-                response = client.get(PUBLISHED_FILES).raise_for_status()
-            # The raw archive keeps the wire bytes (gzip when the server encodes),
-            # so the digest comes from the completed capture, not the decoded body.
-            listing, listing_sha256 = response.json(), response.extensions["spicy_docs.completed_capture"].sha256
-            pdf = evidence.transport(transport, stage=REPORT_STAGE, max_bytes=MAX_REPORT_BYTES)
-            with httpx.Client(transport=pdf, timeout=120) as client:
-                for report_date in report_dates:
-                    url = _stated_report_url(listing, report_date)
-                    evidence.event("treasury-report-listing", listing_url=PUBLISHED_FILES, listing_sha256=listing_sha256,
-                                   report_url=url, report_date=report_date.isoformat())
-                    response = client.get(url).raise_for_status()
-                    if response.headers.get("content-type", "").split(";")[0] != "application/pdf":
-                        raise ValueError("Treasury report response is not a PDF")
-        events = [json.loads(line) for line in (evidence.artifact_dir / JOURNAL).read_text().splitlines()]
+    for dataset, record_date in selections:
+        selection = FiscalDataSelection(dataset, record_date.isoformat(), PAGE_SIZES[dataset])
+        api = evidence.transport(transport, stage=API_STAGE, max_bytes=MAX_BYTES)
+        with FiscalDataReader(budget=PagedJsonBudget(4, MAX_BYTES, 60, 1), transport=api) as reader:
+            for _ in reader.read(selection):
+                pass
+    if report_dates:
+        # The listing is retained too, so each PDF path can later be shown to be the publisher's statement.
+        listed = evidence.transport(transport, stage=LISTING_STAGE, max_bytes=MAX_BYTES)
+        with httpx.Client(transport=listed, timeout=60) as client:
+            response = client.get(PUBLISHED_FILES).raise_for_status()
+        # The raw archive keeps the wire bytes (gzip when the server encodes),
+        # so the digest comes from the completed capture, not the decoded body.
+        listing, listing_sha256 = response.json(), response.extensions["spicy_docs.completed_capture"].sha256
+        pdf = evidence.transport(transport, stage=REPORT_STAGE, max_bytes=MAX_REPORT_BYTES)
+        with httpx.Client(transport=pdf, timeout=120) as client:
+            for report_date in report_dates:
+                url = _stated_report_url(listing, report_date)
+                evidence.event("treasury-report-listing", listing_url=PUBLISHED_FILES, listing_sha256=listing_sha256,
+                               report_url=url, report_date=report_date.isoformat())
+                response = client.get(url).raise_for_status()
+                if response.headers.get("content-type", "").split(";")[0] != "application/pdf":
+                    raise ValueError("Treasury report response is not a PDF")
+    events = [json.loads(line) for line in (evidence.artifact_dir / JOURNAL).read_text().splitlines()]
     captures = [event for event in events if event["event"] == "capture"]
     releases = {}
     for event in captures:
@@ -93,105 +116,107 @@ def acquire(selections, report_dates, output_dir: Path, *, transport=None) -> di
     return {"releases": list(releases.values()), "reports": reports}
 
 
-class _ReleaseBlobs:
-    """Raw originals are only verified and read; derived release members go to a local store.
+def acquire(selections, report_dates, output_dir: Path, *, debt_after: date | None = None, transport=None) -> dict:
+    """Capture the selections, every debt date listed after ``debt_after`` and the stated MTS PDFs into raw."""
+    with acquisition_evidence("treasury-fiscal", output_dir=Path(output_dir)) as evidence:
+        listed = debt_dates_after(evidence, debt_after, transport=transport) if debt_after is not None else []
+        return capture(evidence, [*selections, *(("debt_to_penny", day) for day in listed)], report_dates,
+                       transport=transport)
 
-    Building a release from raw therefore never writes to the archive.
+
+def published_selection(tables) -> dict:
+    """The capture selection behind a published generation, read from its own rows.
+
+    Every row names the page it came from, and every statement row its report control, so the generation
+    rebuilds from this selection and its originals without the capture files it was built with.
     """
+    import pyarrow.parquet as pq
+    from spicy_docs.sources.treasury_fiscal import selected_request
 
-    def __init__(self, raw, local):
-        self.raw, self.local, self.derived = raw, local, set()
-
-    def put_blob(self, blob_ref, byte_size, chunks):
-        from spicy_docs.storage.blobs import SourceNativeBlobWrite
-
-        try:
-            self.raw.describe_blob(blob_ref, byte_size)
-        except FileNotFoundError:
-            self.derived.add(blob_ref)
-            return self.local.put_blob(blob_ref, byte_size, chunks)
-        return SourceNativeBlobWrite(blob_ref, byte_size, True, 0)
-
-    def open(self, blob_ref):
-        return (self.local if blob_ref in self.derived else self.raw).open(blob_ref)
+    pages, reports = {}, {}
+    for path in tables:
+        table = pq.read_table(path)
+        located = table.select(["source_release_digest", "source_locator_json"]).to_pylist()
+        # One scope per source release: a second capture of the same date is its own observation.
+        for release, locator in {tuple(row.values()) for row in located}:
+            page = json.loads(locator)
+            selection, number = selected_request(page["request_url"])
+            key = (selection.dataset, selection.record_date, selection.page_size, release)
+            descriptor = {field: page[field] for field in ("request_url", "response_sha256", "observed_at", "byte_size")}
+            if pages.setdefault(key, {}).setdefault(number, descriptor) != descriptor:
+                raise ValueError("Published rows name two captures of one Treasury page")
+        if "qualification_report_url" in table.column_names:
+            controls = table.select(["report_date", "qualification_report_url", "qualification_report_sha256"])
+            for issue, url, digest in {tuple(row.values()) for row in controls.to_pylist()}:
+                control = {"url": url, "sha256": digest}
+                if reports.setdefault(issue.isoformat(), control) != control:
+                    raise ValueError("Published rows name two report controls for one issue")
+    return {"releases": sorted((
+        {"selection": {"dataset": dataset, "record_date": record_date, "page_size": page_size},
+         "captures": [numbered[number] for number in sorted(numbered)]}
+        for (dataset, record_date, page_size, _release), numbered in pages.items()), key=_scope_order),
+        "reports": reports}
 
 
 def release_readers(selection: dict, destination: Path, *, store):
-    """Publish one derived source release per captured scope over raw originals and admit it.
-
-    Producer and clock come from the code and the captures, so the same
-    selection and code rebuild the same release digest.
-    """
-    from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher, SourceNativeReleaseReader
+    """Publish one derived source release per captured scope over raw originals and admit it."""
     from spicy_docs.sources.treasury_fiscal_profile import TREASURY_FISCAL_PROFILE, iter_retained_pages
-    from datetime import UTC, datetime
 
-    implementation = implementation_id()
-    producer = Producer("spicy-docs", implementation, "urn:spicy-regs:source-native-release-verifier", "2.0",
-                        implementation)
-    from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
-
-    blobs = _ReleaseBlobs(store, LocalSourceNativeBlobStore(Path(destination) / "blobs"))
-    readers = []
-    for index, scope in enumerate(selection["releases"]):
-        observed = sorted(datetime.fromisoformat(capture["observed_at"]).astimezone(UTC)
-                          for capture in scope["captures"])
-        published = SourceNativeReleasePublisher(
-            TREASURY_FISCAL_PROFILE, blob_store=blobs, clock=lambda last=observed[-1]: last,
-        ).publish(
-            iter_retained_pages(scope, blob_source=blobs),
-            destination=Path(destination) / str(index),
-            build=SourceNativeReleaseBuild(
-                query_scope=scope, producer=producer,
-                started_at=observed[0].replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-            ),
-        )
-        readers.append(SourceNativeReleaseReader(
-            LocalMemberSource(published.root), blob_source=blobs, profile=TREASURY_FISCAL_PROFILE,
-            accepted_verifier_implementation_ids=frozenset({implementation}), expected_pin=published.artifact.pin,
-        ))
-    return readers
+    blobs = ReleaseBlobs(store, Path(destination) / "blobs")
+    return [
+        admit_release(TREASURY_FISCAL_PROFILE, iter_retained_pages(scope, blob_source=blobs), scope,
+                      Path(destination) / str(index), blobs=blobs,
+                      observed=[capture["observed_at"] for capture in scope["captures"]])
+        for index, scope in enumerate(selection["releases"])
+    ]
 
 
-def build(readers, output_dir: Path, *, debt_dates, report_dates, reports):
-    """Retain admitted pages and the explicit report controls through the existing owner."""
+def retain_and_build(readers, output_dir: Path, evidence, *, debt_dates, report_dates, reports):
+    """Retain the report controls and admitted pages in ``evidence`` and build the tables; returns files and checks."""
     from spicy_docs.sources.treasury_fiscal import MAX_BYTES
 
+    qualifications = {}
+    for report_date, control in reports.items():
+        with Path(control["path"]).open("rb") as stream:
+            body = stream.read(MAX_REPORT_BYTES + 1)
+        if len(body) > MAX_REPORT_BYTES or "sha256:" + hashlib.sha256(body).hexdigest() != control["sha256"]:
+            raise ValueError("Treasury report control differs from its explicit byte bound or digest")
+        evidence.retain_bytes(body, stage="treasury-qualified-report", report_date=report_date.isoformat(),
+                              source_url=control["url"], expected_sha256=control["sha256"])
+        qualifications[report_date] = {"url": control["url"], "sha256": control["sha256"]}
+    files, summary = build_treasury_fiscal(
+        readers, output_dir, debt_dates=debt_dates, report_dates=report_dates, qualifications=qualifications,
+    )
+    for checks in summary:
+        evidence.event("treasury-table2-checks", **checks)
+    retained = set()
+    for reader in readers:
+        evidence.event("treasury-source-release", source_logical_id=reader.pin.logical_id,
+                       source_artifact_digest=reader.pin.artifact_digest)
+        for entry in reader.iter_record_evidence():
+            ref = entry["evidenceBlobRef"]
+            if ref not in retained:
+                evidence.retain_bytes(reader.read_evidence(ref, max_bytes=MAX_BYTES),
+                                      stage="treasury-source-page", evidence_blob_ref=ref)
+                retained.add(ref)
+    return files, summary
+
+
+def build(readers, output_dir: Path, *, debt_dates, report_dates, reports, read_index: Path | None = None):
+    """Retain admitted pages and the explicit report controls through the existing owner."""
     output_dir = Path(output_dir)
     if (output_dir / "generation").exists():
         raise ValueError("Use a fresh output directory for each Treasury generation")
-    readers = tuple(readers)
     evidence = CaptureEvidence(output_dir, "treasury-fiscal")
     try:
-        qualifications = {}
-        for report_date, control in reports.items():
-            with Path(control["path"]).open("rb") as stream:
-                body = stream.read(MAX_REPORT_BYTES + 1)
-            if len(body) > MAX_REPORT_BYTES or "sha256:" + hashlib.sha256(body).hexdigest() != control["sha256"]:
-                raise ValueError("Treasury report control differs from its explicit byte bound or digest")
-            evidence.retain_bytes(body, stage="treasury-qualified-report", report_date=report_date.isoformat(),
-                                  source_url=control["url"], expected_sha256=control["sha256"])
-            qualifications[report_date] = {"url": control["url"], "sha256": control["sha256"]}
-        files, summary = build_treasury_fiscal(
-            readers, output_dir, debt_dates=debt_dates, report_dates=report_dates, qualifications=qualifications,
-        )
-        for checks in summary:
-            evidence.event("treasury-table2-checks", **checks)
-        retained = set()
-        for reader in readers:
-            evidence.event("treasury-source-release", source_logical_id=reader.pin.logical_id,
-                           source_artifact_digest=reader.pin.artifact_digest)
-            for entry in reader.iter_record_evidence():
-                ref = entry["evidenceBlobRef"]
-                if ref not in retained:
-                    evidence.retain_bytes(reader.read_evidence(ref, max_bytes=MAX_BYTES),
-                                          stage="treasury-source-page", evidence_blob_ref=ref)
-                    retained.add(ref)
+        read_snapshot = inherit_read_index(evidence, read_index)
+        files, summary = retain_and_build(tuple(readers), output_dir, evidence, debt_dates=debt_dates,
+                                          report_dates=report_dates, reports=reports)
         artifact = build_generation(
             output_dir / "generation", family="treasury-fiscal", files=files,
             expected_keys=tuple(name + ".parquet" for name in SCHEMAS),
             schemas={name: described_schema(schema) for name, schema in SCHEMAS.items()},
-            inputs=evidence.inputs(),
+            inputs=evidence.inputs(), read_snapshot=read_snapshot,
         )
     except BaseException as error:
         evidence.finish(error)
@@ -202,39 +227,47 @@ def build(readers, output_dir: Path, *, debt_dates, report_dates, reports):
 
 def merge_selections(selections) -> dict:
     """Combine capture selections; one scope or report per identity, never a silent override."""
-    releases, reports = {}, {}
+    selections, reports = list(selections), {}
     for selection in selections:
-        for scope in selection["releases"]:
-            key = json.dumps(scope, sort_keys=True)
-            if key in releases:
-                raise ValueError("A Treasury capture scope was selected twice")
-            releases[key] = scope
         for report_date, report in selection["reports"].items():
             if reports.setdefault(report_date, report) != report:
                 raise ValueError("Two Treasury report controls name the same issue")
-    return {"releases": list(releases.values()), "reports": reports}
+    return {"releases": merged_scopes(selections), "reports": reports}
 
 
-def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path | None = None):
-    """Rebuild every selected release from raw originals, then the ordinary generation."""
-    from spicy_docs.storage.raw_archive import CentralRawArchiveStore, default_raw_archive_root
+def _scope_order(scope: dict) -> tuple:
+    """Dataset, record date, then capture: the order releases are built in, whatever order they were selected in."""
+    first = scope["captures"][0]
+    return (scope["selection"]["dataset"], scope["selection"]["record_date"], first["observed_at"],
+            first["response_sha256"])
 
-    store = CentralRawArchiveStore(archive_root or default_raw_archive_root(), create=False)
-    output_dir = Path(output_dir)
-    readers = release_readers(selection, output_dir / "source-releases", store=store)
+
+def selected_inputs(selection: dict, destination: Path, *, store):
+    """Rebuild every selected release from raw originals; returns its readers and the build's date and report inputs.
+
+    Releases are built in :func:`_scope_order`, so the tables' row order does not follow the order of the
+    capture files: a generation rebuilt from its own published rows is the same bytes.
+    """
+    selection = {**selection, "releases": sorted(selection["releases"], key=_scope_order)}
+    readers = release_readers(selection, destination, store=store)
     dates = {}
     for scope in selection["releases"]:
         dataset = scope["selection"]["dataset"]
         dates.setdefault(dataset == "debt_to_penny", set()).add(date.fromisoformat(scope["selection"]["record_date"]))
     reports = {}
     for report_date, report in selection["reports"].items():
-        described = store.describe_blob(report["sha256"], report["byte_size"])
-        if described["encoding"] != "raw":
-            raise ValueError("Treasury report control must be a raw-encoded original")
-        reports[date.fromisoformat(report_date)] = {"url": report["url"], "sha256": report["sha256"],
-                                                    "path": str(store.root / described["object"])}
-    return build(readers, output_dir, debt_dates=dates.get(True, set()), report_dates=dates.get(False, set()),
-                 reports=reports)
+        reports[date.fromisoformat(report_date)] = {
+            "url": report["url"], "sha256": report["sha256"],
+            "path": str(raw_original(store, report["sha256"], report.get("byte_size")))}
+    return readers, {"debt_dates": dates.get(True, set()), "report_dates": dates.get(False, set()), "reports": reports}
+
+
+def build_from_captures(selection: dict, output_dir: Path, *, archive_root: Path | None = None,
+                        read_index: Path | None = None):
+    """Rebuild every selected release from raw originals, then the ordinary generation."""
+    output_dir = Path(output_dir)
+    readers, inputs = selected_inputs(selection, output_dir / "source-releases", store=open_raw(archive_root))
+    return build(readers, output_dir, read_index=read_index, **inputs)
 
 
 def _selection_argument(value: str):
@@ -252,21 +285,32 @@ def main():
                          help="DATASET:YYYY-MM-DD, repeatable")
     capture.add_argument("--report", action="append", default=[], type=date.fromisoformat,
                          help="MTS issue date whose publisher-stated PDF to capture, repeatable")
+    capture.add_argument("--debt-after", type=date.fromisoformat,
+                         help="Also capture every Debt to the Penny date the publisher lists after this date")
     capture.add_argument("--output-dir", required=True, type=Path)
     capture.add_argument("--captures-out", required=True, type=Path, help="Where to write the capture selection")
+    published = commands.add_parser(
+        "published-captures", help="Write the capture selection behind a published generation, from its own rows")
+    published.add_argument("--generation", required=True, type=Path, help="A local copy of the published generation")
+    published.add_argument("--captures-out", required=True, type=Path)
     generation = commands.add_parser("build", help="Build a generation from capture selections and raw originals")
     generation.add_argument("--captures", required=True, action="append", type=Path)
     generation.add_argument("--output-dir", required=True, type=Path)
     generation.add_argument("--archive-root", type=Path, help="Raw archive holding the originals (read only)")
+    generation.add_argument("--read-index", type=Path, help=READ_INDEX_HELP)
     args = parser.parse_args()
-    if args.command == "acquire":
-        selection = acquire(args.select, args.report, args.output_dir)
+    if args.command in ("acquire", "published-captures"):
+        if args.command == "acquire":
+            selection = acquire(args.select, args.report, args.output_dir, debt_after=args.debt_after)
+        else:
+            selection = published_selection(sorted(args.generation.glob("treasury_*.parquet")))
         args.captures_out.write_text(json.dumps(selection, indent=2, sort_keys=True) + "\n")
-        print(json.dumps({"captures": str(args.captures_out), "releases": len(selection["releases"]),
-                          "reports": sorted(selection["reports"])}))
+        print(json.dumps({"captures": str(args.captures_out), "reports": sorted(selection["reports"]), "releases": [
+            f"{scope['selection']['dataset']}:{scope['selection']['record_date']}" for scope in selection["releases"]]}))
         return
     selection = merge_selections(json.loads(path.read_text()) for path in args.captures)
-    artifact, evidence, summary = build_from_captures(selection, args.output_dir, archive_root=args.archive_root)
+    artifact, evidence, summary = build_from_captures(selection, args.output_dir, archive_root=args.archive_root,
+                                                        read_index=args.read_index)
     print(json.dumps({"directory": str(args.output_dir / "generation"), "sourceEvidence": str(evidence),
                       "logicalId": artifact.pin.logical_id, "artifactDigest": artifact.pin.artifact_digest,
                       "table2Checks": summary}))

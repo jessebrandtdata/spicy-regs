@@ -1,24 +1,25 @@
-"""CourtListener bulk domain tables with generation-bound ETL receipts.
+"""CourtListener bulk domain tables, each from one whole export, with no per-row receipts (ss-vse3).
 
-Each complete export becomes one subject table plus shared receipts. Subject
-rows retain native identifiers, legal descriptions and typed domain values.
-Dump editions, publisher record timestamps, body references and extraction
-provenance belong to receipts. Retained source bytes preserve the publisher's
-literal spellings, nulls and empty strings. Receipt conversion inputs preserve
-numeric and boolean literals when the subject uses native types.
+Each complete export becomes one table. Rows keep native identifiers, legal descriptions and typed domain values,
+and the publisher's record fields beside them (``date_created``, ``date_modified``, ``local_path``, ...), the
+export's edition (``dump_date``) and ``source_sha256``, the SHA-256 of the export file the row was read from: the
+pointer to the original, which a run with evidence keeps in the shared raw archive with its capture receipt. The
+publisher's spelling of a converted value is its canonical spelling (``court_bulk.write_table``); a row spelled
+otherwise, or refused, is recorded in the table's exceptions file, kept with the run's journal.
 
-A source must be read completely before the subject/receipt pair replaces its
-predecessor. Cluster-naming tables still refuse exports ahead of the selected
-cluster publication. Downloads retain their listed size and ETag checks and
-the existing disk floor; downloaded and pre-existing source bytes remain held.
+A source must be read completely before its table replaces its predecessor. Cluster-naming tables still refuse
+exports ahead of the selected cluster publication. Downloads keep their listed size and ETag checks and the disk
+floor; downloaded and pre-existing source bytes remain held.
 """
 
 from __future__ import annotations
 
+import hashlib
 import os
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -27,13 +28,15 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from loguru import logger
 
+from spicy_regs import court_bulk
 from spicy_regs.duckdb_settings import load_public_http
-from spicy_regs.court_subjects import SUBJECT_SCHEMAS
-from spicy_regs.court_receipts import court_bulk_family, file_witness, finish_court_output, record_source_failure
+from spicy_regs.court_subjects import SUBJECT_SCHEMAS, normalize_court_row
 from spicy_regs.transforms._courtlistener_writer import check_headroom
 
 if TYPE_CHECKING:
     from spicy_docs.sources.courtlistener.listing import BulkObject
+
+    from spicy_regs.source_evidence import CaptureEvidence
 
 #: Directory of retained exports, named as the publisher names them (``citations-2026-06-30.csv.bz2``).
 RETAINED_DIR_ENV = "COURTLISTENER_BULK_DIR"
@@ -41,6 +44,9 @@ RETAINED_DIR_ENV = "COURTLISTENER_BULK_DIR"
 BATCH_ROWS = 100_000
 #: The published table whose ``cluster_id`` a cluster-naming export must not run ahead of.
 CLUSTERS_TABLE = "court_opinion_clusters.parquet"
+#: The evidence stage a downloaded export is captured under, and the journal event each table's build leaves.
+EXPORT_STAGE = "courtlistener-bulk-export"
+TABLE_EVENT = "courtlistener-bulk-table"
 
 
 @dataclass(frozen=True)
@@ -171,12 +177,17 @@ def _bucket_url(url: str) -> str:
     return url
 
 
-def export_file(published: BulkObject, work_dir: Path) -> tuple[Path, bool]:
-    """A local copy of one listed export, and whether this call downloaded it.
+def export_file(published: BulkObject, work_dir: Path, evidence: CaptureEvidence | None = None, *,
+                transport=None) -> tuple[Path, str | None]:
+    """A local copy of one listed export, and its SHA-256 when this call learned it without another read.
 
-    A retained copy must match the listed size; the bytes themselves are checked as they decode,
-    by bzip2's block checksums. A download is bound to the listed ETag and size, and refused when it
-    would take the volume below the disk floor.
+    A retained copy (``COURTLISTENER_BULK_DIR``) must match the listed size; the bytes themselves are checked as they
+    decode, by bzip2's block checksums. With ``evidence`` it is retained as the run's original (into the shared raw
+    archive, where a clone of the archive's own object adds no copy), so the rows' ``source_sha256`` names a file the
+    evidence holds. With ``evidence``, a download goes once into the shared raw archive through the run's evidence
+    transport (the per-download receipt) and is read there in place: the archive object is the only copy. Without it,
+    a download is bound to the listed ETag and size in the work directory. A download is refused when it would take
+    the volume it writes to below the disk floor. ``transport`` is the HTTP transport the evidence wraps (a test's).
     """
     retained_dir = os.environ.get(RETAINED_DIR_ENV)
     if retained_dir:
@@ -188,12 +199,19 @@ def export_file(published: BulkObject, work_dir: Path) -> tuple[Path, bool]:
                     f"not the listed {published.size}"
                 )
             logger.info("CourtListener bulk: using retained {}", retained)
-            return retained, False
+            if evidence is None:
+                return retained, None
+            held = evidence.retain_file(retained, stage=EXPORT_STAGE, raw_source=True,
+                                        original_location=published.url, source_url=published.url,
+                                        etag=published.etag)
+            return retained, held["sha256"]
+    logger.info("CourtListener bulk: downloading {} ({:.2f} GiB)", published.filename, published.size / 2**30)
+    if evidence is not None:
+        return _retain_export(published, evidence, transport=transport)
+    check_headroom(published.size, path=work_dir)
     from spicy_docs.transport.download import BoundedAcquirer
 
-    check_headroom(published.size, path=work_dir)
     store = work_dir / "courtlistener-exports"
-    logger.info("CourtListener bulk: downloading {} ({:.2f} GiB)", published.filename, published.size / 2**30)
     with BoundedAcquirer(validate_url=_bucket_url, timeout=120) as acquirer:
         receipt = acquirer.download(
             published.url,
@@ -202,23 +220,92 @@ def export_file(published: BulkObject, work_dir: Path) -> tuple[Path, bool]:
             expected_size=published.size,
             etag=published.etag,
         )
-    return store / receipt["blob_path"], True
+    return store / receipt["blob_path"], None
+
+
+#: A staged raw-archive write untouched this long has no live writer: a download rewrites its file continuously.
+STALE_PENDING_SECONDS = 6 * 3600
+_BZIP2 = b"BZh"
+
+
+def clear_stale_export_downloads(raw_root: Path, *, now: float | None = None) -> list[Path]:
+    """Remove the archive's staged writes a killed export download left (bzip2 bytes, untouched for six hours).
+
+    The archive's writer removes its own staged file on any exception, but not when the process is killed; then up
+    to 51.5 GiB stays in ``.pending`` with no receipt. Only files that begin as a bzip2 stream, as every CourtListener
+    export does, and that nothing has written for ``STALE_PENDING_SECONDS`` are removed, so another writer's file is
+    left alone. Returns what it removed.
+    """
+    import time
+
+    pending = raw_root / ".pending"
+    if not pending.is_dir():
+        return []
+    cutoff = (time.time() if now is None else now) - STALE_PENDING_SECONDS
+    removed = []
+    for entry in os.scandir(pending):
+        if not entry.is_file(follow_symlinks=False) or entry.stat(follow_symlinks=False).st_mtime > cutoff:
+            continue
+        with open(entry.path, "rb") as stream:
+            if stream.read(len(_BZIP2)) != _BZIP2:
+                continue
+        logger.warning("CourtListener bulk: removing a stale staged export download {} ({:.2f} GiB)",
+                       entry.name, entry.stat(follow_symlinks=False).st_size / 2**30)
+        os.unlink(entry.path)
+        removed.append(Path(entry.path))
+    return removed
+
+
+def _retain_export(published: BulkObject, evidence: CaptureEvidence, *, transport=None) -> tuple[Path, str]:
+    """Stream one export into the raw archive (one write, with its capture receipt); return the archive copy."""
+    import httpx
+
+    from spicy_regs.pipelines.raw_releases import raw_original
+
+    clear_stale_export_downloads(evidence.store.root)
+    check_headroom(published.size, path=evidence.store.root)
+    retained = evidence.transport(transport, stage=EXPORT_STAGE, max_bytes=published.size,
+                                  response_header_names=("etag",))
+    with httpx.Client(transport=retained, timeout=120, follow_redirects=False) as client:
+        with client.stream("GET", _bucket_url(published.url), headers={"Accept-Encoding": "identity"}) as response:
+            response.raise_for_status()
+            if response.headers.get("etag") != published.etag:
+                raise RuntimeError(f"CourtListener bulk: {published.filename} is ETag "
+                                   f"{response.headers.get('etag')}, not the listed {published.etag}")
+            for _ in response.iter_raw():  # the transport has retained every byte before it replays them
+                pass
+            capture = response.extensions["spicy_docs.completed_capture"]
+    if capture.byte_size != published.size:
+        raise RuntimeError(f"CourtListener bulk: {published.filename} is {capture.byte_size} bytes, "
+                           f"not the listed {published.size}")
+    return raw_original(evidence.store, capture.sha256, published.size), capture.sha256
+
+
+def _file_sha256(path: Path) -> str:
+    with path.open("rb") as stream:
+        return "sha256:" + hashlib.file_digest(stream, "sha256").hexdigest()
 
 
 def build_court_bulk_table(
     table: BulkTable, output_dir: Path, *, local_file: Path, dump_date: date, cluster_ceiling: int | None = None,
-    generation_id: str | None = None,
-    family_writer=None,
+    source_sha256: str | None = None, evidence: CaptureEvidence | None = None,
 ) -> Path:
     """Write ``table.output`` from one whole export; the previous file survives any failure.
 
-    With ``cluster_ceiling``, a table that names clusters is refused when any is above it.
+    Every row carries the export's edition (``dump_date``) and ``source_sha256``, the SHA-256 of the export file it
+    was read from (hashed here once when the caller did not learn it while downloading). With ``cluster_ceiling``,
+    a table that names clusters is refused when any is above it. Rows the mapping refuses or that the publisher
+    spelled other than canonically are recorded in ``<table>.exceptions.parquet`` (``court_bulk.EXCEPTION_SCHEMA``),
+    which ``evidence`` retains with the run's journal; no per-row receipt is written.
     """
     from spicy_docs.sources.courtlistener.local import CourtListenerLocalDump
 
     output_dir.mkdir(parents=True, exist_ok=True)
     out_file = output_dir / table.output
+    dataset = table.output.removesuffix(".parquet")
     staging = output_dir / f".{table.output}.{uuid4().hex}.source.parquet"
+    written = output_dir / f".{table.output}.{uuid4().hex}.partial"
+    exceptions = output_dir / f"{dataset}.exceptions.parquet"
     dump = CourtListenerLocalDump(local_file, columns=[source for _, source in table.fields], work_dir=output_dir)
     edition = dump_date.isoformat()
     pending: list[pa.RecordBatch] = []
@@ -246,34 +333,37 @@ def build_court_bulk_table(
                     f"{table.output}: the {edition} export names cluster {newest:,}, above the published "
                     f"{CLUSTERS_TABLE} (to {cluster_ceiling:,}); run run-rollup-court-opinion-clusters first"
                 )
-    except BaseException as error:
-        if isinstance(error, Exception):
-            try:
-                record_source_failure(table.output.removesuffix('.parquet'), output_dir,
-                                       witnesses=[file_witness(local_file)], error=error)
-            except Exception as receipt_error:
-                error.add_note(f'Failed to retain source failure receipt: {receipt_error}')
+        digest = source_sha256 or _file_sha256(local_file)
+        exceptions.unlink(missing_ok=True)
+        rows, recorded = court_bulk.write_table(
+            dataset, staging, written, constants={"source_sha256": digest}, exceptions=exceptions,
+            attempt=partial(normalize_court_row, dataset))
+        written.replace(out_file)
+    finally:
         staging.unlink(missing_ok=True)
-        raise
-    dataset = table.output.removesuffix('.parquet')
-    witnesses = [file_witness(local_file), file_witness(staging)]
-    out_file = (finish_court_output(dataset, staging, output_dir, witnesses=witnesses, generation_id=generation_id)
-                if family_writer is None else family_writer(dataset, staging, witnesses=witnesses))
+        written.unlink(missing_ok=True)
+    if evidence is not None:
+        evidence.event(TABLE_EVENT, table=dataset, edition=edition, source_sha256=digest, source_rows=dump.rows,
+                       rows=rows, exceptions=recorded)
+        if recorded:
+            evidence.retain_file(exceptions, stage="courtlistener-export-exceptions", table=dataset)
     logger.info(
-        "{}: {:,} rows from {} ({:.2f} GB of CSV, {} pieces)",
+        "{}: {:,} rows from {} ({:.2f} GB of CSV, {} pieces); {:,} exception records",
         table.output,
-        dump.rows,
+        rows,
         local_file.name,
         dump.decompressed_bytes / 1e9,
         dump.pieces,
+        recorded,
     )
     return out_file
 
 
 def build_court_bulk_tables(
-    tables: Sequence[BulkTable], output_dir: Path, *, dump_date: date | None = None
+    tables: Sequence[BulkTable], output_dir: Path, *, dump_date: date | None = None,
+    evidence: CaptureEvidence | None = None,
 ) -> tuple[Path, ...]:
-    """Build one complete edition and retain its source bytes and shared receipts."""
+    """Build one complete edition, a table at a time; each previous table survives until its replacement is whole."""
     from spicy_docs.sources.courtlistener.bulk import find_dump, list_bulk_dumps
 
     objects = list_bulk_dumps()
@@ -284,18 +374,18 @@ def build_court_bulk_tables(
         if ceiling is None:
             raise RuntimeError(f"CourtListener bulk: {CLUSTERS_TABLE} is not published; publish it before its children")
     built = []
-    generation_id = uuid4().hex
-    with court_bulk_family(output_dir, [table.output.removesuffix('.parquet') for table in tables],
-                           generation_id=generation_id) as writer:
-        for table in tables:
-            published = find_dump(objects, table.dataset, edition)
-            if published is None:
-                raise RuntimeError(f"CourtListener bulk: no {table.dataset} export for {edition}")
-            local_file, _ = export_file(published, output_dir)
-            built.append(
-                build_court_bulk_table(
-                    table, output_dir, local_file=local_file, dump_date=edition, cluster_ceiling=ceiling,
-                    generation_id=generation_id, family_writer=writer,
-                )
+    for table in tables:
+        published = find_dump(objects, table.dataset, edition)
+        if published is None:
+            raise RuntimeError(f"CourtListener bulk: no {table.dataset} export for {edition}")
+        if evidence is not None:
+            evidence.event("courtlistener-export-version", export_url=published.url, etag=published.etag,
+                           content_length=published.size, edition=edition.isoformat())
+        local_file, digest = export_file(published, output_dir, evidence)
+        built.append(
+            build_court_bulk_table(
+                table, output_dir, local_file=local_file, dump_date=edition, cluster_ceiling=ceiling,
+                source_sha256=digest, evidence=evidence,
             )
+        )
     return tuple(built)

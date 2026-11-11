@@ -33013,6 +33013,561 @@
       }
     },
     {
+      "id": "source-coverage:court_docket_groups:e82f9b79fd451415a17e15a97741267830cc2e35320e885727590f734ffc599a",
+      "collection_id": "family:court-docket-groups",
+      "metadata_kind": "source-coverage",
+      "table": "court_docket_groups",
+      "table_version": "sha256:e82f9b79fd451415a17e15a97741267830cc2e35320e885727590f734ffc599a",
+      "family": "court-docket-groups",
+      "publication_member": {
+        "byteSize": 9371,
+        "columns": [
+          [
+            "cl_docket_id",
+            "VARCHAR"
+          ],
+          [
+            "parent_cl_docket_id",
+            "VARCHAR"
+          ],
+          [
+            "confidence_tier",
+            "VARCHAR"
+          ],
+          [
+            "group_size",
+            "BIGINT"
+          ]
+        ],
+        "rows": 914,
+        "sha256": "sha256:808fb97a1dd71e5839dc10bd64e0c9d3526156ed984bb368305fc372a121fc1d"
+      },
+      "recorded_at": "2026-11-11T12:46:12+00:00",
+      "basis_catalog_generation": "sha256:158935b9d8365f1b0b401066e1ccc7e32dec76bd4dca3267f150053a3018f3e3",
+      "status": "reviewed",
+      "note": "CourtListener / Free Law Project source origin is known. The build reads the publisher's own dockets-2026-09-30.csv.bz2 export (sha256:f40588851cee0d95696c40b8740106473f83ea3ffd8745799e03c42a15b9399b, 5,144,011,100 bytes), held in central raw storage with its acquisition receipt, and groups the selected published court_dockets rows (11,611 rows, sha256:976cea7c703b2635f38e2562f3b25956beb84514cbc9f24098c1dafd7b98f3cb) against it; all 914 rows' ETL receipts witness both. The table bytes equal the prior generation's; only the edition read moved from 2026-06-30. Original bulk dockets and courts are known upstream routes. Complete table-required source coverage is not inferred from output row counts.",
+      "scope": "Original-source availability for the exact selected table version; historical build consumption is separate.",
+      "source_collections": [
+        {
+          "collection_id": "declared:courtlistener-bulk",
+          "role": "source association through declared parent tables",
+          "binding_scope": "recursive maintained table inputs",
+          "active": true
+        },
+        {
+          "collection_id": "family:court-docket-groups",
+          "role": "direct source association",
+          "binding_scope": "family association; exact per-table files unknown",
+          "active": true
+        },
+        {
+          "collection_id": "family:courtlistener",
+          "role": "source association through declared parent tables",
+          "binding_scope": "recursive maintained table inputs",
+          "active": true
+        }
+      ],
+      "source_identifiers": [
+        "courts"
+      ],
+      "parent_tables": [
+        {
+          "table": "court_dockets",
+          "basis": {
+            "path": "repo:spicy-regs/src/spicy_regs/explorer_sources.json",
+            "locator": "/tables/court_docket_groups/inputs"
+          },
+          "required_by": "maintained reader dependency",
+          "current_table_pin": {
+            "family": "courtlistener",
+            "version": "sha256:960766d07c97edb6ee209803f5a371fd8e101f3430cb90d8a136fdaba4261c79",
+            "descriptor": {
+              "byteSize": 2122087,
+              "columns": [
+                [
+                  "cl_docket_id",
+                  "VARCHAR"
+                ],
+                [
+                  "case_name",
+                  "VARCHAR"
+                ],
+                [
+                  "case_name_full",
+                  "VARCHAR"
+                ],
+                [
+                  "court_id",
+                  "VARCHAR"
+                ],
+                [
+                  "court",
+                  "VARCHAR"
+                ],
+                [
+                  "court_citation_string",
+                  "VARCHAR"
+                ],
+                [
+                  "docket_number",
+                  "VARCHAR"
+                ],
+                [
+                  "date_filed",
+                  "VARCHAR"
+                ],
+                [
+                  "date_terminated",
+                  "VARCHAR"
+                ],
+                [
+                  "date_argued",
+                  "VARCHAR"
+                ],
+                [
+                  "nature_of_suit",
+                  "VARCHAR"
+                ],
+                [
+                  "cause",
+                  "VARCHAR"
+                ],
+                [
+                  "jurisdiction_type",
+                  "VARCHAR"
+                ],
+                [
+                  "jury_demand",
+                  "VARCHAR"
+                ],
+                [
+                  "assigned_to",
+                  "VARCHAR"
+                ],
+                [
+                  "referred_to",
+                  "VARCHAR"
+                ],
+                [
+                  "parties",
+                  "VARCHAR[]"
+                ],
+                [
+                  "attorneys",
+                  "VARCHAR[]"
+                ],
+                [
+                  "firms",
+                  "VARCHAR[]"
+                ],
+                [
+                  "pacer_case_id",
+                  "VARCHAR"
+                ],
+                [
+                  "case_type",
+                  "VARCHAR"
+                ],
+                [
+                  "blocked",
+                  "BOOLEAN"
+                ],
+                [
+                  "date_blocked",
+                  "VARCHAR"
+                ]
+              ],
+              "rows": 11611,
+              "sha256": "sha256:976cea7c703b2635f38e2562f3b25956beb84514cbc9f24098c1dafd7b98f3cb"
+            }
+          },
+          "exact_historical_parent_version": "not inferred from current table"
+        }
+      ],
+      "recorded_family_parent_tables": [],
+      "source_set": {
+        "status": "unknown",
+        "enumerated": false,
+        "expected_count": null,
+        "scope": "required original source identity/version set for exact current table version",
+        "limits": [
+          "No enumerated required original-source identity/version population is attached to this exact table. Required source-file coverage remains unknown.",
+          "Family attribution does not prove consumption of every capture. No historical ETL reconstruction is required for this source-coverage decision."
+        ]
+      },
+      "external_dependencies": [],
+      "mapping_basis": [
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/source_catalog/config/registry.v1.json",
+          "selector": {
+            "collection_id": "family:court-docket-groups",
+            "table": "court_docket_groups",
+            "family": "court-docket-groups"
+          },
+          "kind": "explicit dataset/table/family association; generated publication-only collection may need reviewed source crosswalk",
+          "scope": "source-family association, not exact file consumption"
+        },
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/explorer_sources.json",
+          "locator": "/tables/court_docket_groups",
+          "kind": "maintained table source and input declaration"
+        }
+      ],
+      "captured_reference_review": {
+        "artifact_digest": "sha256:d1cc66fa71422cec1bd013497b6a1c622f1d64105227589375826187ec8dfccc",
+        "baseline_publication_matched": 0,
+        "baseline_publication_unmatched": 0,
+        "captured_reference_count": 0,
+        "expected_input_count": null,
+        "family": "court-docket-groups",
+        "input_list_status": "unknown-no-captured-reference-list",
+        "reference_results": {},
+        "table": "court_docket_groups"
+      },
+      "related_scoped_inventories": [
+        "local-inventory:courtlistener-june2026-members",
+        "source-inventory-review:court-docket-groups:e6913691b7fec29b91f50e248e335656b85e363aa8b7963339438264ec5c0217"
+      ],
+      "review_inputs": {
+        "private-evidence-locator:sha256:ce13db4624fb1c2cdd9bce32081d39ecf3f2153ef4930e39f07ebaaac11f3041": {
+          "sha256": "sha256:fa5b7994d4ec861f53396864646c0561aca4c138745cff46051309d9dc324793",
+          "bytes": 276203
+        },
+        "private-evidence-locator:sha256:9d9160de5edfa2b45c60fd0b4e8690b310eb6128bcca7e334f12958db7b37d69": {
+          "sha256": "sha256:97cf479f29fb6e48bfde5fa4366de918ec3b2c61465b3a1713f4ddca4927c3cc",
+          "bytes": 1143343
+        },
+        "private-evidence-locator:sha256:eb63cd9735629f7238b9045ecf5acedf17898a5b32a8fe6e21b0005da012e8f5": {
+          "sha256": "sha256:fae28f7f2922084020598d367514666bfcf416450dc22242acadb85fe210f93f",
+          "bytes": 2607808
+        },
+        "private-evidence-locator:sha256:75e0b3b62aca8b6fd0a57c4989e1c400ec07a592efd9448b743a313ed398182e": {
+          "sha256": "sha256:1d1b98672dff57291e956a380756ebbc064c14657a484ccb6521ae9219e58a25",
+          "bytes": 3025305
+        },
+        "private-evidence-locator:sha256:774d145d3a89261b56c60f5c64e75204a1a2bdee002834344fc22d84a217242c": {
+          "sha256": "sha256:af9f9f5470aee1f28f0ffb4b08efc4eb0327869694b378bddd55db606052bebe",
+          "bytes": 9224
+        }
+      },
+      "source_inventory_status": "partial",
+      "source_inventory_review": "source-inventory-review:court-docket-groups:e6913691b7fec29b91f50e248e335656b85e363aa8b7963339438264ec5c0217",
+      "source_routes": [
+        {
+          "source_id": "court-docket-groups:dockets",
+          "publisher": "CourtListener / Free Law Project (PDF download_url may name another publisher)",
+          "locator": "court_dockets.parquet",
+          "kind": "parent_table",
+          "code_refs": [
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 341,
+              "end_line": 388,
+              "symbol": "CourtListenerLocalDump.iter_batches",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 285,
+              "end_line": 339,
+              "symbol": "CourtListenerLocalDump._parse",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/bulk.py",
+              "start_line": 410,
+              "end_line": 487,
+              "symbol": "CourtListenerBulkReader.iter_records",
+              "sha256": "9aa953ed2e5feca6149383a52018ce3589e743a438806c11a46d20124c322ff5",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/bulk.py",
+              "start_line": 55,
+              "end_line": 84,
+              "symbol": "list_bulk_dumps",
+              "sha256": "9aa953ed2e5feca6149383a52018ce3589e743a438806c11a46d20124c322ff5",
+              "scope": "current checkout capability"
+            }
+          ],
+          "selection_rules": [
+            "Group selected published court_dockets against the native dockets bulk edition the raw archive holds, named by SHA-256. Original bulk dockets and courts are known upstream routes.",
+            "Only selected published docket IDs can be group members/representatives."
+          ],
+          "periods": [
+            "Known retained bulk edition 2026-09-30; export date is not case date. API additions have separate query dates."
+          ],
+          "source_collections": [
+            "family:courtlistener"
+          ]
+        },
+        {
+          "source_id": "court-docket-groups:native-export",
+          "publisher": "CourtListener / Free Law Project (PDF download_url may name another publisher)",
+          "locator": "--native-sha256 raw-archive object (CourtListener dockets-<YYYY-MM-DD>.csv.bz2)",
+          "kind": "raw",
+          "code_refs": [
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/pipelines/rollups/court_docket_groups.py",
+              "symbol": "CourtDocketGroupsRollup",
+              "start_line": 21,
+              "end_line": 38
+            },
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/transforms/build_court_docket_groups.py",
+              "symbol": "build_court_docket_groups",
+              "start_line": 141,
+              "end_line": 215
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 341,
+              "end_line": 388,
+              "symbol": "CourtListenerLocalDump.iter_batches",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 285,
+              "end_line": 339,
+              "symbol": "CourtListenerLocalDump._parse",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            }
+          ],
+          "selection_rules": [
+            "The rollup verifies the raw archive's copy against its SHA-256 and size; the build streams it once, reads id, court_id, docket_number, pacer_case_id, case_name, date_filed and federal_defendant_number for the published keys' courts, and refuses an export not read to its end.",
+            "Only selected published docket IDs can be group members/representatives."
+          ],
+          "periods": [
+            "Known retained bulk edition 2026-09-30; export date is not case date. API additions have separate query dates."
+          ],
+          "source_collections": [
+            "family:courtlistener"
+          ]
+        },
+        {
+          "source_id": "court-docket-groups:parent:court_dockets",
+          "publisher": "Parent table from its named owning family",
+          "locator": "court_dockets",
+          "kind": "parent_table",
+          "code_refs": [
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 341,
+              "end_line": 388,
+              "symbol": "CourtListenerLocalDump.iter_batches",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 285,
+              "end_line": 339,
+              "symbol": "CourtListenerLocalDump._parse",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/bulk.py",
+              "start_line": 410,
+              "end_line": 487,
+              "symbol": "CourtListenerBulkReader.iter_records",
+              "sha256": "9aa953ed2e5feca6149383a52018ce3589e743a438806c11a46d20124c322ff5",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/bulk.py",
+              "start_line": 55,
+              "end_line": 84,
+              "symbol": "list_bulk_dumps",
+              "sha256": "9aa953ed2e5feca6149383a52018ce3589e743a438806c11a46d20124c322ff5",
+              "scope": "current checkout capability"
+            }
+          ],
+          "selection_rules": [
+            "Follow parent table to original-source routes; a Parquet table is not an original publisher response."
+          ],
+          "periods": [
+            "Known retained bulk edition 2026-09-30; export date is not case date. API additions have separate query dates."
+          ],
+          "source_collections": [
+            "family:courtlistener"
+          ]
+        },
+        {
+          "source_id": "court-docket-groups:inherited:courtlistener:search",
+          "publisher": "CourtListener / Free Law Project (PDF download_url may name another publisher)",
+          "locator": "https://www.courtlistener.com/api/rest/v4/search/?type=r&nature_of_suit=899&filed_after={date}",
+          "kind": "external_native",
+          "code_refs": [
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/sources/courtlistener.py",
+              "start_line": 103,
+              "end_line": 162,
+              "symbol": "CourtListenerReader.iter_records",
+              "sha256": "6fa8ab6ba293389003e4ee6d090f1cadd4f335f7f1e19ad13fea5df676eef8f1",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
+              "start_line": 190,
+              "end_line": 269,
+              "symbol": "CourtListenerSearchReader",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 341,
+              "end_line": 388,
+              "symbol": "CourtListenerLocalDump.iter_batches",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 285,
+              "end_line": 339,
+              "symbol": "CourtListenerLocalDump._parse",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/bulk.py",
+              "start_line": 410,
+              "end_line": 487,
+              "symbol": "CourtListenerBulkReader.iter_records",
+              "sha256": "9aa953ed2e5feca6149383a52018ce3589e743a438806c11a46d20124c322ff5",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/bulk.py",
+              "start_line": 55,
+              "end_line": 84,
+              "symbol": "list_bulk_dumps",
+              "sha256": "9aa953ed2e5feca6149383a52018ce3589e743a438806c11a46d20124c322ff5",
+              "scope": "current checkout capability"
+            }
+          ],
+          "selection_rules": [
+            "Inherited through selected courtlistener parent; use its original identity scope, not the derived output-row count.",
+            "CourtListener RECAP API v4 search selects nature_of_suit=899 and a caller/default since date, with optional token; a distinct bulk route can read dockets edition. Search selection is a case cohort, not all cases.",
+            "RECAP APA search plus explicit docket_id-query fills."
+          ],
+          "periods": [
+            "Known retained bulk edition 2026-09-30; export date is not case date. API additions have separate query dates."
+          ],
+          "source_collections": [
+            "family:courtlistener"
+          ],
+          "inherited_via_family": "courtlistener"
+        },
+        {
+          "source_id": "court-docket-groups:inherited:courtlistener:bulk-originals",
+          "publisher": "CourtListener / Free Law Project (PDF download_url may name another publisher)",
+          "locator": "https://com-courtlistener-storage.s3-us-west-2.amazonaws.com/bulk-data/{dataset}-{YYYY-MM-DD}.csv.bz2; COURTLISTENER_BULK_DIR/{filename}",
+          "kind": "raw",
+          "code_refs": [
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/sources/courtlistener.py",
+              "start_line": 103,
+              "end_line": 162,
+              "symbol": "CourtListenerReader.iter_records",
+              "sha256": "6fa8ab6ba293389003e4ee6d090f1cadd4f335f7f1e19ad13fea5df676eef8f1",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/search.py",
+              "start_line": 190,
+              "end_line": 269,
+              "symbol": "CourtListenerSearchReader",
+              "sha256": "c724bc0598ac3edf1340d1ad9381a7baf37945bf333f2df74bc6bb04c8f52b22",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 341,
+              "end_line": 388,
+              "symbol": "CourtListenerLocalDump.iter_batches",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/local.py",
+              "start_line": 285,
+              "end_line": 339,
+              "symbol": "CourtListenerLocalDump._parse",
+              "sha256": "856d19dd40940c81366d280135f493f2906f6d17c3243bef15def52f21561f40",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/bulk.py",
+              "start_line": 410,
+              "end_line": 487,
+              "symbol": "CourtListenerBulkReader.iter_records",
+              "sha256": "9aa953ed2e5feca6149383a52018ce3589e743a438806c11a46d20124c322ff5",
+              "scope": "current checkout capability"
+            },
+            {
+              "path": "repo:spicy-docs/src/spicy_docs/sources/courtlistener/bulk.py",
+              "start_line": 55,
+              "end_line": 84,
+              "symbol": "list_bulk_dumps",
+              "sha256": "9aa953ed2e5feca6149383a52018ce3589e743a438806c11a46d20124c322ff5",
+              "scope": "current checkout capability"
+            }
+          ],
+          "selection_rules": [
+            "Inherited through selected courtlistener parent; use its original identity scope, not the derived output-row count.",
+            "CourtListener RECAP API v4 search selects nature_of_suit=899 and a caller/default since date, with optional token; a distinct bulk route can read dockets edition. Search selection is a case cohort, not all cases.",
+            "Original CourtListener quarterly PostgreSQL CSV/bzip2 object; exact native filename, edition, SHA, listed size/ETag are separate."
+          ],
+          "periods": [
+            "Known retained bulk edition 2026-09-30; export date is not case date. API additions have separate query dates."
+          ],
+          "source_collections": [
+            "family:courtlistener"
+          ],
+          "inherited_via_family": "courtlistener"
+        }
+      ],
+      "local_validation": {
+        "status": "reviewed-with-explicit-limits",
+        "recorded_at": "2026-11-11T12:46:12+00:00",
+        "evidence": {
+          "source": {
+            "path": "raw-archive:objects/sha256/f4/f40588851cee0d95696c40b8740106473f83ea3ffd8745799e03c42a15b9399b",
+            "sha256": "sha256:f40588851cee0d95696c40b8740106473f83ea3ffd8745799e03c42a15b9399b",
+            "bytes": 5144011100,
+            "receipt": "raw-archive:objects/sha256/27/27871cfd75e898f892725e9abe381a2cd95ac3ad58cc8ddff73428b4c94f1d13",
+            "source_url": "https://storage.courtlistener.com/bulk-data/dockets-2026-09-30.csv.bz2"
+          },
+          "etl_receipts": {
+            "key": "etl_receipts.parquet",
+            "rows": 914,
+            "sha256": "sha256:2ab421158049f8651b5dc9b5b4b555a12560c7f1a1ce14393bcfe2afdff061bf"
+          }
+        },
+        "result": "The 2026-09-30 dockets export rehashed to its digest from the central raw archive; its header carries the seven native columns the build reads. All 914 ETL receipts name edition 2026-09-30 and witness the export and court_dockets; 914 rows in 407 groups (712 per-defendant, 202 duplicate-record rows).",
+        "gap_dispositions": [
+          "court-docket-groups:4:51"
+        ],
+        "coverage_limit": "Finite native inputs and bounded samples are distinct from exact historical table membership and a complete changing publisher population.",
+        "new_capture": false,
+        "downloads": 0
+      },
+      "prior_review": "source-coverage:court_docket_groups:d1cc66fa71422cec1bd013497b6a1c622f1d64105227589375826187ec8dfccc",
+      "review_basis": {
+        "publication_index": "https://data.spicygov.ai/publication.v2.json",
+        "published_at": "2026-11-10T21:12:43Z",
+        "scope": "Counts read from the published Parquet and the build's reports; captured_reference_review, review_inputs and the source inventory review are the prior review's, carried unchanged."
+      }
+    },
+    {
       "id": "source-coverage:court_dockets:2a65a656a3c8cdcb57b95d5abc0e62f306cb81a5ed7ac80e7590e003da16e321",
       "collection_id": "family:courtlistener",
       "metadata_kind": "source-coverage",
@@ -61565,6 +62120,363 @@
         "coverage_limit": "Finite native inputs and bounded samples are distinct from exact historical table membership and a complete changing publisher population.",
         "new_capture": false,
         "downloads": 0
+      }
+    },
+    {
+      "id": "source-coverage:fec_financial_profiles:9d467c50221a216a6514bd75516ad54e2216c6ba8a46bff13348995cc87d1d98",
+      "collection_id": "publication:fec-financial-profiles",
+      "metadata_kind": "source-coverage",
+      "table": "fec_financial_profiles",
+      "table_version": "sha256:9d467c50221a216a6514bd75516ad54e2216c6ba8a46bff13348995cc87d1d98",
+      "family": "fec-financial-profiles",
+      "publication_member": {
+        "byteSize": 10659843,
+        "columns": [
+          [
+            "profile_id",
+            "VARCHAR"
+          ],
+          [
+            "scope_id",
+            "VARCHAR"
+          ],
+          [
+            "entity_kind",
+            "VARCHAR"
+          ],
+          [
+            "entity_id",
+            "VARCHAR"
+          ],
+          [
+            "entity_name",
+            "VARCHAR"
+          ],
+          [
+            "selection_status",
+            "VARCHAR"
+          ],
+          [
+            "selection_reason",
+            "VARCHAR"
+          ],
+          [
+            "coverage_status",
+            "VARCHAR"
+          ],
+          [
+            "coverage_reasons_json",
+            "VARCHAR"
+          ],
+          [
+            "period_start_raw",
+            "VARCHAR"
+          ],
+          [
+            "period_start_status",
+            "VARCHAR"
+          ],
+          [
+            "period_end_raw",
+            "VARCHAR"
+          ],
+          [
+            "period_end_status",
+            "VARCHAR"
+          ],
+          [
+            "amount_basis",
+            "VARCHAR"
+          ],
+          [
+            "captured_at",
+            "VARCHAR"
+          ],
+          [
+            "source_collection_id",
+            "VARCHAR"
+          ],
+          [
+            "source_sha256",
+            "VARCHAR"
+          ],
+          [
+            "source_table_generation",
+            "VARCHAR"
+          ],
+          [
+            "witnesses_json",
+            "VARCHAR"
+          ],
+          [
+            "source_url",
+            "VARCHAR"
+          ],
+          [
+            "publisher_profile_url",
+            "VARCHAR"
+          ],
+          [
+            "selection_policy",
+            "VARCHAR"
+          ],
+          [
+            "receipts",
+            "VARCHAR"
+          ],
+          [
+            "receipts_status",
+            "VARCHAR"
+          ],
+          [
+            "receipts_raw",
+            "VARCHAR"
+          ],
+          [
+            "receipts_native_field",
+            "VARCHAR"
+          ],
+          [
+            "disbursements",
+            "VARCHAR"
+          ],
+          [
+            "disbursements_status",
+            "VARCHAR"
+          ],
+          [
+            "disbursements_raw",
+            "VARCHAR"
+          ],
+          [
+            "disbursements_native_field",
+            "VARCHAR"
+          ],
+          [
+            "cash_on_hand",
+            "VARCHAR"
+          ],
+          [
+            "cash_on_hand_status",
+            "VARCHAR"
+          ],
+          [
+            "cash_on_hand_raw",
+            "VARCHAR"
+          ],
+          [
+            "cash_on_hand_native_field",
+            "VARCHAR"
+          ],
+          [
+            "debts_owed",
+            "VARCHAR"
+          ],
+          [
+            "debts_owed_status",
+            "VARCHAR"
+          ],
+          [
+            "debts_owed_raw",
+            "VARCHAR"
+          ],
+          [
+            "debts_owed_native_field",
+            "VARCHAR"
+          ],
+          [
+            "source_cycle",
+            "INTEGER"
+          ],
+          [
+            "witness_count",
+            "INTEGER"
+          ],
+          [
+            "period_start",
+            "DATE"
+          ],
+          [
+            "period_end",
+            "DATE"
+          ]
+        ],
+        "rows": 19260,
+        "sha256": "sha256:70ab44020ef4310231866d89658073f1e308eaf2a822e47942d475cd171a02d2"
+      },
+      "recorded_at": "2026-11-11T12:46:12+00:00",
+      "basis_catalog_generation": "sha256:158935b9d8365f1b0b401066e1ccc7e32dec76bd4dca3267f150053a3018f3e3",
+      "status": "reviewed",
+      "note": "The table is built straight from one captured pair of FEC 2026 summary CSVs, with no parent table: candidate_summary_2026.csv (sha256:f6499720c59fad24ab3e5bb8fcc738c29ec73c5b65daaa9f328eae899116bfa7, 1,754,516 bytes) and committee_summary_2026.csv (sha256:771471a957a9734bdaf8d9e026095bcf733dce3653902347c0bef2fa9b7e341c, 8,301,006 bytes), captured 2026-11-11 with acquisition receipts. They parse to 4,540 and 14,801 rows and give 19,260 profiles, one per candidate or committee; 76 committees have more than one row. FEC rewrites both files daily and the family republishes when either changes, so this note describes this generation only. Dictionary coverage remains partial. Keep its existing qualification limits and source observations separate from additive/current financial interpretation.",
+      "scope": "Original-source availability for the exact selected table version; historical build consumption is separate.",
+      "source_collections": [
+        {
+          "collection_id": "family:fec-observations",
+          "role": "direct source association",
+          "binding_scope": "table-specific source declaration",
+          "active": true
+        }
+      ],
+      "source_identifiers": [
+        "fec"
+      ],
+      "parent_tables": [],
+      "recorded_family_parent_tables": [],
+      "source_set": {
+        "status": "unknown",
+        "enumerated": false,
+        "expected_count": null,
+        "scope": "required original source identity/version set for exact current table version",
+        "limits": [
+          "No enumerated required original-source identity/version population is attached to this exact table. Required source-file coverage remains unknown.",
+          "Family attribution does not prove consumption of every capture. No historical ETL reconstruction is required for this source-coverage decision."
+        ]
+      },
+      "external_dependencies": [],
+      "mapping_basis": [
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/source_catalog/config/registry.v1.json",
+          "selector": {
+            "collection_id": "publication:fec-financial-profiles",
+            "table": "fec_financial_profiles",
+            "family": "fec-financial-profiles"
+          },
+          "kind": "explicit dataset/table/family association; generated publication-only collection may need reviewed source crosswalk",
+          "scope": "source-family association, not exact file consumption"
+        },
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/explorer_sources.json",
+          "locator": "/families/fec-financial-profiles",
+          "kind": "maintained family source declaration",
+          "scope": "individual source membership unresolved"
+        }
+      ],
+      "captured_reference_review": {
+        "artifact_digest": "sha256:847f51c252c26208d2d80b672314ce26c5930ef9cd1c05887e5ec4b0ecca55fb",
+        "baseline_publication_matched": 0,
+        "baseline_publication_unmatched": 0,
+        "captured_reference_count": 0,
+        "expected_input_count": null,
+        "family": "fec-financial-profiles",
+        "input_list_status": "unknown-no-captured-reference-list",
+        "reference_results": {},
+        "table": "fec_financial_profiles"
+      },
+      "related_scoped_inventories": [
+        "source-inventory-review:fec-financial-profiles:0260b58c074bab045d6a33fd1828b2a474b70e25f85c4318a9df3d984741b3ce"
+      ],
+      "review_inputs": {
+        "private-evidence-locator:sha256:ce13db4624fb1c2cdd9bce32081d39ecf3f2153ef4930e39f07ebaaac11f3041": {
+          "sha256": "sha256:fa5b7994d4ec861f53396864646c0561aca4c138745cff46051309d9dc324793",
+          "bytes": 276203
+        },
+        "private-evidence-locator:sha256:9d9160de5edfa2b45c60fd0b4e8690b310eb6128bcca7e334f12958db7b37d69": {
+          "sha256": "sha256:97cf479f29fb6e48bfde5fa4366de918ec3b2c61465b3a1713f4ddca4927c3cc",
+          "bytes": 1143343
+        },
+        "private-evidence-locator:sha256:eb63cd9735629f7238b9045ecf5acedf17898a5b32a8fe6e21b0005da012e8f5": {
+          "sha256": "sha256:fae28f7f2922084020598d367514666bfcf416450dc22242acadb85fe210f93f",
+          "bytes": 2607808
+        },
+        "private-evidence-locator:sha256:75e0b3b62aca8b6fd0a57c4989e1c400ec07a592efd9448b743a313ed398182e": {
+          "sha256": "sha256:1d1b98672dff57291e956a380756ebbc064c14657a484ccb6521ae9219e58a25",
+          "bytes": 3025305
+        },
+        "private-evidence-locator:sha256:774d145d3a89261b56c60f5c64e75204a1a2bdee002834344fc22d84a217242c": {
+          "sha256": "sha256:af9f9f5470aee1f28f0ffb4b08efc4eb0327869694b378bddd55db606052bebe",
+          "bytes": 9224
+        }
+      },
+      "source_inventory_status": "enumerated-direct-inputs-recursive-partial",
+      "source_inventory_review": "source-inventory-review:fec-financial-profiles:0260b58c074bab045d6a33fd1828b2a474b70e25f85c4318a9df3d984741b3ce",
+      "source_routes": [
+        {
+          "source_id": "fec-financial-profiles:summary-csvs",
+          "publisher": "Federal Election Commission (FEC)",
+          "locator": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2026/{candidate,committee}_summary_2026.csv, captured into the raw archive with acquisition receipts",
+          "kind": "raw",
+          "code_refs": [
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/pipelines/rollups/source_refreshes.py",
+              "symbol": "FecFinancialProfilesRollup",
+              "start_line": 215,
+              "end_line": 235
+            },
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/pipelines/fec_financial_profiles.py",
+              "symbol": "capture",
+              "start_line": 40,
+              "end_line": 58
+            },
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/pipelines/fec_financial_profiles.py",
+              "symbol": "profiles_table",
+              "start_line": 92,
+              "end_line": 113
+            },
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/transforms/build_fec_financial_profiles.py",
+              "symbol": "select",
+              "start_line": 95,
+              "end_line": 121
+            },
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/transforms/build_fec_financial_profiles.py",
+              "symbol": "profile",
+              "start_line": 178,
+              "end_line": 243
+            },
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/transforms/build_fec_financial_profiles.py",
+              "symbol": "build_profiles",
+              "start_line": 293,
+              "end_line": 322
+            }
+          ],
+          "selection_rules": "One cycle's captured candidate and committee summary pair, mapped by the fec-query summary mapper; one profile per candidate or committee. Equivalent witnesses select once, conflicts stay visible, and no amounts are added across entities or periods.",
+          "periods": [
+            {
+              "kind": "election-cycle",
+              "value": "2026"
+            }
+          ],
+          "source_collections": [
+            "family:fec-observations"
+          ]
+        }
+      ],
+      "local_validation": {
+        "status": "reviewed-with-explicit-limits",
+        "recorded_at": "2026-11-11T12:46:12+00:00",
+        "evidence": {
+          "hosted_run": "https://github.com/mikewolfd/spicy-regs/actions/runs/43015789720",
+          "source_evidence_artifact": "sha256:c5e1ff0d8673cece9fcb60a2dda5a25fcf8aed51bf2a4c2489547a566fb3145c",
+          "sources": [
+            {
+              "sha256": "sha256:f6499720c59fad24ab3e5bb8fcc738c29ec73c5b65daaa9f328eae899116bfa7",
+              "bytes": 1754516,
+              "source_url": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2026/candidate_summary_2026.csv"
+            },
+            {
+              "sha256": "sha256:771471a957a9734bdaf8d9e026095bcf733dce3653902347c0bef2fa9b7e341c",
+              "bytes": 8301006,
+              "source_url": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2026/committee_summary_2026.csv"
+            }
+          ]
+        },
+        "result": "Both captured CSVs from the run's audit artifact freshly hash and parse: candidate 4,540 rows (4,540 candidates); committee 14,801 rows (14,720 committees: 71 with two rows, 5 with three). The table's 4,540 candidate and 14,720 committee profiles carry 4,540 and 14,801 witnesses; median period_end 2026-09-30.",
+        "gap_dispositions": [
+          "fec-financial-profiles:4:24"
+        ],
+        "coverage_limit": "Finite native inputs and bounded samples are distinct from exact historical table membership and a complete changing publisher population.",
+        "new_capture": false,
+        "downloads": 0
+      },
+      "prior_review": "source-coverage:fec_financial_profiles:847f51c252c26208d2d80b672314ce26c5930ef9cd1c05887e5ec4b0ecca55fb",
+      "review_basis": {
+        "publication_index": "https://data.spicygov.ai/publication.v2.json",
+        "published_at": "2026-11-11T11:55:20Z",
+        "scope": "Counts read from the published Parquet and the build's reports; captured_reference_review, review_inputs and the source inventory review are the prior review's, carried unchanged."
       }
     },
     {
@@ -117536,6 +118448,200 @@
       }
     },
     {
+      "id": "source-coverage:uscode_edition_sections:038ab7c5daefafd602501bffdddfab5da8ebb6659bf50371138c870c10c8e8d4",
+      "collection_id": "publication:uscode-editions",
+      "metadata_kind": "source-coverage",
+      "table": "uscode_edition_sections",
+      "table_version": "sha256:038ab7c5daefafd602501bffdddfab5da8ebb6659bf50371138c870c10c8e8d4",
+      "family": "uscode-editions",
+      "publication_member": {
+        "byteSize": 368460251,
+        "columns": [
+          [
+            "observation_id",
+            "VARCHAR"
+          ],
+          [
+            "edition_id",
+            "VARCHAR"
+          ],
+          [
+            "source_kind",
+            "VARCHAR"
+          ],
+          [
+            "source_position",
+            "VARCHAR"
+          ],
+          [
+            "native_identifier",
+            "VARCHAR"
+          ],
+          [
+            "source_context",
+            "VARCHAR"
+          ],
+          [
+            "body_text",
+            "VARCHAR"
+          ],
+          [
+            "source_observation_json",
+            "VARCHAR"
+          ]
+        ],
+        "rows": 179833,
+        "sha256": "sha256:623143c4627562f5ace6271cbb2779580b258fe9dcdee20bbc63b7e82ccf1f31"
+      },
+      "recorded_at": "2026-11-11T12:46:12+00:00",
+      "basis_catalog_generation": "sha256:158935b9d8365f1b0b401066e1ccc7e32dec76bd4dca3267f150053a3018f3e3",
+      "status": "reviewed",
+      "note": "The complete U.S. Code corpus ZIPs for release points 119-102 and 119-138 are held locally. The 119-138 ZIP (sha256:763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152, 108,702,539 bytes) was hashed and all 58 of its title members were audited against this generation's 119-138 rows; the 119-102 and annual-2000 rows are unchanged from the prior generation. The 119-102 ZIP's hash and native title identity were checked in the 2026-10-27 review. All 31 selected annual archives for 1994–2024 are also held; these inventories do not establish every edition underlying accumulated table records.",
+      "scope": "Original-source availability for the exact selected table version; historical build consumption is separate.",
+      "source_collections": [
+        {
+          "collection_id": "declared:uscode",
+          "role": "direct source association",
+          "binding_scope": "family association; exact per-table files unknown",
+          "active": true
+        }
+      ],
+      "source_identifiers": [
+        "uscode"
+      ],
+      "parent_tables": [],
+      "recorded_family_parent_tables": [],
+      "source_set": {
+        "status": "unknown",
+        "enumerated": false,
+        "expected_count": null,
+        "scope": "required original source identity/version set for exact current table version",
+        "limits": [
+          "No enumerated required original-source identity/version population is attached to this exact table. Required source-file coverage remains unknown.",
+          "Family attribution does not prove consumption of every capture. No historical ETL reconstruction is required for this source-coverage decision."
+        ]
+      },
+      "external_dependencies": [],
+      "mapping_basis": [
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/source_catalog/config/registry.v1.json",
+          "selector": {
+            "collection_id": "publication:uscode-editions",
+            "table": "uscode_edition_sections",
+            "family": "uscode-editions"
+          },
+          "kind": "explicit dataset/table/family association; generated publication-only collection may need reviewed source crosswalk",
+          "scope": "source-family association, not exact file consumption"
+        },
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/explorer_sources.json",
+          "locator": "/tables/uscode_edition_sections",
+          "kind": "maintained table source and input declaration"
+        },
+        {
+          "kind": "current-published-family",
+          "families": [
+            "uscode-editions"
+          ]
+        },
+        {
+          "kind": "maintained-consumer",
+          "path": "repo:spicy-regs/src/spicy_regs/sources/uscode_editions.py",
+          "line": 1
+        }
+      ],
+      "captured_reference_review": {
+        "artifact_digest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+        "baseline_publication_matched": 0,
+        "baseline_publication_unmatched": 0,
+        "captured_reference_count": 0,
+        "expected_input_count": null,
+        "family": "uscode-editions",
+        "input_list_status": "unknown-no-captured-reference-list",
+        "reference_results": {},
+        "table": "uscode_edition_sections"
+      },
+      "related_scoped_inventories": [
+        "local-inventory:uscode-selected-annual-year-labels",
+        "source-inventory-review:uscode-editions:56423bd74755d20057d4df29ce97ce4f956cda95e5075e5f89cd18f9f5b9222e"
+      ],
+      "review_inputs": {
+        "private-evidence-locator:sha256:ce13db4624fb1c2cdd9bce32081d39ecf3f2153ef4930e39f07ebaaac11f3041": {
+          "sha256": "sha256:fa5b7994d4ec861f53396864646c0561aca4c138745cff46051309d9dc324793",
+          "bytes": 276203
+        },
+        "private-evidence-locator:sha256:9d9160de5edfa2b45c60fd0b4e8690b310eb6128bcca7e334f12958db7b37d69": {
+          "sha256": "sha256:97cf479f29fb6e48bfde5fa4366de918ec3b2c61465b3a1713f4ddca4927c3cc",
+          "bytes": 1143343
+        },
+        "private-evidence-locator:sha256:eb63cd9735629f7238b9045ecf5acedf17898a5b32a8fe6e21b0005da012e8f5": {
+          "sha256": "sha256:fae28f7f2922084020598d367514666bfcf416450dc22242acadb85fe210f93f",
+          "bytes": 2607808
+        },
+        "private-evidence-locator:sha256:75e0b3b62aca8b6fd0a57c4989e1c400ec07a592efd9448b743a313ed398182e": {
+          "sha256": "sha256:1d1b98672dff57291e956a380756ebbc064c14657a484ccb6521ae9219e58a25",
+          "bytes": 3025305
+        },
+        "private-evidence-locator:sha256:774d145d3a89261b56c60f5c64e75204a1a2bdee002834344fc22d84a217242c": {
+          "sha256": "sha256:af9f9f5470aee1f28f0ffb4b08efc4eb0327869694b378bddd55db606052bebe",
+          "bytes": 9224
+        }
+      },
+      "source_inventory_status": "partial",
+      "source_inventory_review": "source-inventory-review:uscode-editions:56423bd74755d20057d4df29ce97ce4f956cda95e5075e5f89cd18f9f5b9222e",
+      "source_routes": [
+        {
+          "source_id": "uscode-editions:archives",
+          "publisher": "Office of the Law Revision Counsel (OLRC)",
+          "locator": "--manifest sources[].path (annual XHTML ZIP, release-point corpus ZIP, or release-point-title ZIP); OLRC source URLs retained in original acquisition metadata",
+          "code_refs": [
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/sources/uscode_editions.py",
+              "symbol": "build",
+              "start_line": 136,
+              "end_line": 359
+            }
+          ],
+          "selection_rules": "Manifest exact bytes and code pins determine generation; ZIP member name/hash/order and native publication year/release point determine edition identity.",
+          "periods": [
+            "requested annual year",
+            "native annual publication year",
+            "native release point"
+          ],
+          "source_collections": [
+            "declared:uscode"
+          ]
+        }
+      ],
+      "local_validation": {
+        "status": "reviewed-with-explicit-limits",
+        "recorded_at": "2026-11-11T12:46:12+00:00",
+        "evidence": {
+          "source": {
+            "path": "raw-archive:objects/sha256/76/763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152",
+            "sha256": "sha256:763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152",
+            "bytes": 108702539,
+            "release_point": "119-138"
+          },
+          "source_evidence_artifact": "sha256:2080c05499a4446138258e5b9e95614ac4ff615390066d0a9f2fb2d2fae10232",
+          "audited_addition_generation": "sha256:82ee2422d433c8a1c47e8fd70b95e347a79c477d5cf08af5af96d00094f97f54"
+        },
+        "result": "The 119-138 corpus ZIP matched its digest; an independent ElementTree audit of all 58 title members approved the addition's 58 editions, 68,679 structure and 65,734 section rows. The published generation holds 177 editions (61 annual-2000, 58 per release point), 194,662 structure and 179,833 section rows; every prior row is present unchanged in every column (0 missing, 0 extra).",
+        "gap_dispositions": [
+          "uscode-editions:4:20"
+        ],
+        "coverage_limit": "Finite native inputs and bounded samples are distinct from exact historical table membership and a complete changing publisher population.",
+        "new_capture": false,
+        "downloads": 0
+      },
+      "prior_review": "source-coverage:uscode_edition_sections:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+      "review_basis": {
+        "publication_index": "https://data.spicygov.ai/publication.v2.json",
+        "published_at": "2026-11-11T12:33:40Z",
+        "scope": "Counts read from the published Parquet and the build's reports; captured_reference_review, review_inputs and the source inventory review are the prior review's, carried unchanged."
+      }
+    },
+    {
       "id": "source-coverage:uscode_edition_structure:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
       "collection_id": "publication:uscode-editions",
       "metadata_kind": "source-coverage",
@@ -117720,6 +118826,200 @@
         "coverage_limit": "Finite native inputs and bounded samples are distinct from exact historical table membership and a complete changing publisher population.",
         "new_capture": false,
         "downloads": 0
+      }
+    },
+    {
+      "id": "source-coverage:uscode_edition_structure:038ab7c5daefafd602501bffdddfab5da8ebb6659bf50371138c870c10c8e8d4",
+      "collection_id": "publication:uscode-editions",
+      "metadata_kind": "source-coverage",
+      "table": "uscode_edition_structure",
+      "table_version": "sha256:038ab7c5daefafd602501bffdddfab5da8ebb6659bf50371138c870c10c8e8d4",
+      "family": "uscode-editions",
+      "publication_member": {
+        "byteSize": 23434634,
+        "columns": [
+          [
+            "observation_id",
+            "VARCHAR"
+          ],
+          [
+            "edition_id",
+            "VARCHAR"
+          ],
+          [
+            "observation_kind",
+            "VARCHAR"
+          ],
+          [
+            "source_position",
+            "VARCHAR"
+          ],
+          [
+            "native_identifier",
+            "VARCHAR"
+          ],
+          [
+            "native_label",
+            "VARCHAR"
+          ],
+          [
+            "native_status",
+            "VARCHAR"
+          ],
+          [
+            "source_observation_json",
+            "VARCHAR"
+          ]
+        ],
+        "rows": 194662,
+        "sha256": "sha256:512a8ac968b67db7f4b9bbe1636ad5dc12a5cd739cb55f46b471bb89de0b9f94"
+      },
+      "recorded_at": "2026-11-11T12:46:12+00:00",
+      "basis_catalog_generation": "sha256:158935b9d8365f1b0b401066e1ccc7e32dec76bd4dca3267f150053a3018f3e3",
+      "status": "reviewed",
+      "note": "The complete U.S. Code corpus ZIPs for release points 119-102 and 119-138 are held locally. The 119-138 ZIP (sha256:763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152, 108,702,539 bytes) was hashed and all 58 of its title members were audited against this generation's 119-138 rows; the 119-102 and annual-2000 rows are unchanged from the prior generation. The 119-102 ZIP's hash and native title identity were checked in the 2026-10-27 review. All 31 selected annual archives for 1994–2024 are also held; these inventories do not establish every edition underlying accumulated table records.",
+      "scope": "Original-source availability for the exact selected table version; historical build consumption is separate.",
+      "source_collections": [
+        {
+          "collection_id": "declared:uscode",
+          "role": "direct source association",
+          "binding_scope": "family association; exact per-table files unknown",
+          "active": true
+        }
+      ],
+      "source_identifiers": [
+        "uscode"
+      ],
+      "parent_tables": [],
+      "recorded_family_parent_tables": [],
+      "source_set": {
+        "status": "unknown",
+        "enumerated": false,
+        "expected_count": null,
+        "scope": "required original source identity/version set for exact current table version",
+        "limits": [
+          "No enumerated required original-source identity/version population is attached to this exact table. Required source-file coverage remains unknown.",
+          "Family attribution does not prove consumption of every capture. No historical ETL reconstruction is required for this source-coverage decision."
+        ]
+      },
+      "external_dependencies": [],
+      "mapping_basis": [
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/source_catalog/config/registry.v1.json",
+          "selector": {
+            "collection_id": "publication:uscode-editions",
+            "table": "uscode_edition_structure",
+            "family": "uscode-editions"
+          },
+          "kind": "explicit dataset/table/family association; generated publication-only collection may need reviewed source crosswalk",
+          "scope": "source-family association, not exact file consumption"
+        },
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/explorer_sources.json",
+          "locator": "/tables/uscode_edition_structure",
+          "kind": "maintained table source and input declaration"
+        },
+        {
+          "kind": "current-published-family",
+          "families": [
+            "uscode-editions"
+          ]
+        },
+        {
+          "kind": "maintained-consumer",
+          "path": "repo:spicy-regs/src/spicy_regs/sources/uscode_editions.py",
+          "line": 1
+        }
+      ],
+      "captured_reference_review": {
+        "artifact_digest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+        "baseline_publication_matched": 0,
+        "baseline_publication_unmatched": 0,
+        "captured_reference_count": 0,
+        "expected_input_count": null,
+        "family": "uscode-editions",
+        "input_list_status": "unknown-no-captured-reference-list",
+        "reference_results": {},
+        "table": "uscode_edition_structure"
+      },
+      "related_scoped_inventories": [
+        "local-inventory:uscode-selected-annual-year-labels",
+        "source-inventory-review:uscode-editions:56423bd74755d20057d4df29ce97ce4f956cda95e5075e5f89cd18f9f5b9222e"
+      ],
+      "review_inputs": {
+        "private-evidence-locator:sha256:ce13db4624fb1c2cdd9bce32081d39ecf3f2153ef4930e39f07ebaaac11f3041": {
+          "sha256": "sha256:fa5b7994d4ec861f53396864646c0561aca4c138745cff46051309d9dc324793",
+          "bytes": 276203
+        },
+        "private-evidence-locator:sha256:9d9160de5edfa2b45c60fd0b4e8690b310eb6128bcca7e334f12958db7b37d69": {
+          "sha256": "sha256:97cf479f29fb6e48bfde5fa4366de918ec3b2c61465b3a1713f4ddca4927c3cc",
+          "bytes": 1143343
+        },
+        "private-evidence-locator:sha256:eb63cd9735629f7238b9045ecf5acedf17898a5b32a8fe6e21b0005da012e8f5": {
+          "sha256": "sha256:fae28f7f2922084020598d367514666bfcf416450dc22242acadb85fe210f93f",
+          "bytes": 2607808
+        },
+        "private-evidence-locator:sha256:75e0b3b62aca8b6fd0a57c4989e1c400ec07a592efd9448b743a313ed398182e": {
+          "sha256": "sha256:1d1b98672dff57291e956a380756ebbc064c14657a484ccb6521ae9219e58a25",
+          "bytes": 3025305
+        },
+        "private-evidence-locator:sha256:774d145d3a89261b56c60f5c64e75204a1a2bdee002834344fc22d84a217242c": {
+          "sha256": "sha256:af9f9f5470aee1f28f0ffb4b08efc4eb0327869694b378bddd55db606052bebe",
+          "bytes": 9224
+        }
+      },
+      "source_inventory_status": "partial",
+      "source_inventory_review": "source-inventory-review:uscode-editions:56423bd74755d20057d4df29ce97ce4f956cda95e5075e5f89cd18f9f5b9222e",
+      "source_routes": [
+        {
+          "source_id": "uscode-editions:archives",
+          "publisher": "Office of the Law Revision Counsel (OLRC)",
+          "locator": "--manifest sources[].path (annual XHTML ZIP, release-point corpus ZIP, or release-point-title ZIP); OLRC source URLs retained in original acquisition metadata",
+          "code_refs": [
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/sources/uscode_editions.py",
+              "symbol": "build",
+              "start_line": 136,
+              "end_line": 359
+            }
+          ],
+          "selection_rules": "Manifest exact bytes and code pins determine generation; ZIP member name/hash/order and native publication year/release point determine edition identity.",
+          "periods": [
+            "requested annual year",
+            "native annual publication year",
+            "native release point"
+          ],
+          "source_collections": [
+            "declared:uscode"
+          ]
+        }
+      ],
+      "local_validation": {
+        "status": "reviewed-with-explicit-limits",
+        "recorded_at": "2026-11-11T12:46:12+00:00",
+        "evidence": {
+          "source": {
+            "path": "raw-archive:objects/sha256/76/763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152",
+            "sha256": "sha256:763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152",
+            "bytes": 108702539,
+            "release_point": "119-138"
+          },
+          "source_evidence_artifact": "sha256:2080c05499a4446138258e5b9e95614ac4ff615390066d0a9f2fb2d2fae10232",
+          "audited_addition_generation": "sha256:82ee2422d433c8a1c47e8fd70b95e347a79c477d5cf08af5af96d00094f97f54"
+        },
+        "result": "The 119-138 corpus ZIP matched its digest; an independent ElementTree audit of all 58 title members approved the addition's 58 editions, 68,679 structure and 65,734 section rows. The published generation holds 177 editions (61 annual-2000, 58 per release point), 194,662 structure and 179,833 section rows; every prior row is present unchanged in every column (0 missing, 0 extra).",
+        "gap_dispositions": [
+          "uscode-editions:4:20"
+        ],
+        "coverage_limit": "Finite native inputs and bounded samples are distinct from exact historical table membership and a complete changing publisher population.",
+        "new_capture": false,
+        "downloads": 0
+      },
+      "prior_review": "source-coverage:uscode_edition_structure:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+      "review_basis": {
+        "publication_index": "https://data.spicygov.ai/publication.v2.json",
+        "published_at": "2026-11-11T12:33:40Z",
+        "scope": "Counts read from the published Parquet and the build's reports; captured_reference_review, review_inputs and the source inventory review are the prior review's, carried unchanged."
       }
     },
     {
@@ -117927,6 +119227,220 @@
         "coverage_limit": "Finite native inputs and bounded samples are distinct from exact historical table membership and a complete changing publisher population.",
         "new_capture": false,
         "downloads": 0
+      }
+    },
+    {
+      "id": "source-coverage:uscode_editions:038ab7c5daefafd602501bffdddfab5da8ebb6659bf50371138c870c10c8e8d4",
+      "collection_id": "publication:uscode-editions",
+      "metadata_kind": "source-coverage",
+      "table": "uscode_editions",
+      "table_version": "sha256:038ab7c5daefafd602501bffdddfab5da8ebb6659bf50371138c870c10c8e8d4",
+      "family": "uscode-editions",
+      "publication_member": {
+        "byteSize": 24705,
+        "columns": [
+          [
+            "edition_id",
+            "VARCHAR"
+          ],
+          [
+            "source_kind",
+            "VARCHAR"
+          ],
+          [
+            "requested_year",
+            "VARCHAR"
+          ],
+          [
+            "release_point",
+            "VARCHAR"
+          ],
+          [
+            "archive_sha256",
+            "VARCHAR"
+          ],
+          [
+            "member_name",
+            "VARCHAR"
+          ],
+          [
+            "member_sha256",
+            "VARCHAR"
+          ],
+          [
+            "member_bytes",
+            "VARCHAR"
+          ],
+          [
+            "title",
+            "VARCHAR"
+          ],
+          [
+            "native_publication_year",
+            "VARCHAR"
+          ],
+          [
+            "carried_forward",
+            "VARCHAR"
+          ],
+          [
+            "member_role",
+            "VARCHAR"
+          ],
+          [
+            "metadata_json",
+            "VARCHAR"
+          ]
+        ],
+        "rows": 177,
+        "sha256": "sha256:b5854212d565bd8852f5ee14f1e3750c293bffbac2dd7826a7cb52e260327cef"
+      },
+      "recorded_at": "2026-11-11T12:46:12+00:00",
+      "basis_catalog_generation": "sha256:158935b9d8365f1b0b401066e1ccc7e32dec76bd4dca3267f150053a3018f3e3",
+      "status": "reviewed",
+      "note": "The complete U.S. Code corpus ZIPs for release points 119-102 and 119-138 are held locally. The 119-138 ZIP (sha256:763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152, 108,702,539 bytes) was hashed and all 58 of its title members were audited against this generation's 119-138 rows; the 119-102 and annual-2000 rows are unchanged from the prior generation. The 119-102 ZIP's hash and native title identity were checked in the 2026-10-27 review. All 31 selected annual archives for 1994–2024 are also held; these inventories do not establish every edition underlying accumulated table records.",
+      "scope": "Original-source availability for the exact selected table version; historical build consumption is separate.",
+      "source_collections": [
+        {
+          "collection_id": "declared:uscode",
+          "role": "direct source association",
+          "binding_scope": "family association; exact per-table files unknown",
+          "active": true
+        }
+      ],
+      "source_identifiers": [
+        "uscode"
+      ],
+      "parent_tables": [],
+      "recorded_family_parent_tables": [],
+      "source_set": {
+        "status": "unknown",
+        "enumerated": false,
+        "expected_count": null,
+        "scope": "required original source identity/version set for exact current table version",
+        "limits": [
+          "No enumerated required original-source identity/version population is attached to this exact table. Required source-file coverage remains unknown.",
+          "Family attribution does not prove consumption of every capture. No historical ETL reconstruction is required for this source-coverage decision."
+        ]
+      },
+      "external_dependencies": [],
+      "mapping_basis": [
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/source_catalog/config/registry.v1.json",
+          "selector": {
+            "collection_id": "publication:uscode-editions",
+            "table": "uscode_editions",
+            "family": "uscode-editions"
+          },
+          "kind": "explicit dataset/table/family association; generated publication-only collection may need reviewed source crosswalk",
+          "scope": "source-family association, not exact file consumption"
+        },
+        {
+          "path": "repo:spicy-regs/src/spicy_regs/explorer_sources.json",
+          "locator": "/tables/uscode_editions",
+          "kind": "maintained table source and input declaration"
+        },
+        {
+          "kind": "current-published-family",
+          "families": [
+            "uscode-editions"
+          ]
+        },
+        {
+          "kind": "maintained-consumer",
+          "path": "repo:spicy-regs/src/spicy_regs/sources/uscode_editions.py",
+          "line": 1
+        }
+      ],
+      "captured_reference_review": {
+        "artifact_digest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+        "baseline_publication_matched": 0,
+        "baseline_publication_unmatched": 0,
+        "captured_reference_count": 0,
+        "expected_input_count": null,
+        "family": "uscode-editions",
+        "input_list_status": "unknown-no-captured-reference-list",
+        "reference_results": {},
+        "table": "uscode_editions"
+      },
+      "related_scoped_inventories": [
+        "local-inventory:uscode-selected-annual-year-labels",
+        "source-inventory-review:uscode-editions:56423bd74755d20057d4df29ce97ce4f956cda95e5075e5f89cd18f9f5b9222e"
+      ],
+      "review_inputs": {
+        "private-evidence-locator:sha256:ce13db4624fb1c2cdd9bce32081d39ecf3f2153ef4930e39f07ebaaac11f3041": {
+          "sha256": "sha256:fa5b7994d4ec861f53396864646c0561aca4c138745cff46051309d9dc324793",
+          "bytes": 276203
+        },
+        "private-evidence-locator:sha256:9d9160de5edfa2b45c60fd0b4e8690b310eb6128bcca7e334f12958db7b37d69": {
+          "sha256": "sha256:97cf479f29fb6e48bfde5fa4366de918ec3b2c61465b3a1713f4ddca4927c3cc",
+          "bytes": 1143343
+        },
+        "private-evidence-locator:sha256:eb63cd9735629f7238b9045ecf5acedf17898a5b32a8fe6e21b0005da012e8f5": {
+          "sha256": "sha256:fae28f7f2922084020598d367514666bfcf416450dc22242acadb85fe210f93f",
+          "bytes": 2607808
+        },
+        "private-evidence-locator:sha256:75e0b3b62aca8b6fd0a57c4989e1c400ec07a592efd9448b743a313ed398182e": {
+          "sha256": "sha256:1d1b98672dff57291e956a380756ebbc064c14657a484ccb6521ae9219e58a25",
+          "bytes": 3025305
+        },
+        "private-evidence-locator:sha256:774d145d3a89261b56c60f5c64e75204a1a2bdee002834344fc22d84a217242c": {
+          "sha256": "sha256:af9f9f5470aee1f28f0ffb4b08efc4eb0327869694b378bddd55db606052bebe",
+          "bytes": 9224
+        }
+      },
+      "source_inventory_status": "partial",
+      "source_inventory_review": "source-inventory-review:uscode-editions:56423bd74755d20057d4df29ce97ce4f956cda95e5075e5f89cd18f9f5b9222e",
+      "source_routes": [
+        {
+          "source_id": "uscode-editions:archives",
+          "publisher": "Office of the Law Revision Counsel (OLRC)",
+          "locator": "--manifest sources[].path (annual XHTML ZIP, release-point corpus ZIP, or release-point-title ZIP); OLRC source URLs retained in original acquisition metadata",
+          "code_refs": [
+            {
+              "path": "repo:spicy-regs/src/spicy_regs/sources/uscode_editions.py",
+              "symbol": "build",
+              "start_line": 136,
+              "end_line": 359
+            }
+          ],
+          "selection_rules": "Manifest exact bytes and code pins determine generation; ZIP member name/hash/order and native publication year/release point determine edition identity.",
+          "periods": [
+            "requested annual year",
+            "native annual publication year",
+            "native release point"
+          ],
+          "source_collections": [
+            "declared:uscode"
+          ]
+        }
+      ],
+      "local_validation": {
+        "status": "reviewed-with-explicit-limits",
+        "recorded_at": "2026-11-11T12:46:12+00:00",
+        "evidence": {
+          "source": {
+            "path": "raw-archive:objects/sha256/76/763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152",
+            "sha256": "sha256:763c3ddf5668c42ba8b138b764c8e80942766af7f18d20fcef8c706faf09e152",
+            "bytes": 108702539,
+            "release_point": "119-138"
+          },
+          "source_evidence_artifact": "sha256:2080c05499a4446138258e5b9e95614ac4ff615390066d0a9f2fb2d2fae10232",
+          "audited_addition_generation": "sha256:82ee2422d433c8a1c47e8fd70b95e347a79c477d5cf08af5af96d00094f97f54"
+        },
+        "result": "The 119-138 corpus ZIP matched its digest; an independent ElementTree audit of all 58 title members approved the addition's 58 editions, 68,679 structure and 65,734 section rows. The published generation holds 177 editions (61 annual-2000, 58 per release point), 194,662 structure and 179,833 section rows; every prior row is present unchanged in every column (0 missing, 0 extra).",
+        "gap_dispositions": [
+          "uscode-editions:4:20"
+        ],
+        "coverage_limit": "Finite native inputs and bounded samples are distinct from exact historical table membership and a complete changing publisher population.",
+        "new_capture": false,
+        "downloads": 0
+      },
+      "prior_review": "source-coverage:uscode_editions:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+      "review_basis": {
+        "publication_index": "https://data.spicygov.ai/publication.v2.json",
+        "published_at": "2026-11-11T12:33:40Z",
+        "scope": "Counts read from the published Parquet and the build's reports; captured_reference_review, review_inputs and the source inventory review are the prior review's, carried unchanged."
       }
     },
     {

@@ -6,8 +6,8 @@ searches select APA/review-of-agency cases (nature of suit 899) or named docket
 ids; opinion searches provide cluster metadata for catch-up, not full opinion
 bodies, selected by filing date or by cluster id. COURTLISTENER_API_TOKEN is
 required for live API dispatch (SpicyDocs 0.66.6 refuses keyless search) and
-travels only in a request header. Every request is paced to the published
-per-minute limit.
+travels only in a request header. Every request is paced under the published
+per-minute limit; a caller that spends an hour's worth states a longer interval.
 """
 
 from __future__ import annotations
@@ -36,10 +36,17 @@ APA_NATURE_OF_SUIT = "899"
 API_TOKEN_ENV_VAR = "COURTLISTENER_API_TOKEN"
 _MAX_PAGES = 5_000
 _MAX_REQUESTS_PER_PAGE = 6
-#: CourtListener's API help page states authenticated limits of 5 requests a
-#: minute, 50 an hour and 125 a day (checked 2026-09-26; doubled through
-#: October 1). A token's budget is shared by every run that uses it.
-MIN_REQUEST_INTERVAL_SECONDS = 12.0
+#: The account's limits, shared by every run that uses the token, are stated in
+#: "Quota" in docs/court-search-recovery.md. 13 s stays under the per-minute
+#: one; at 12.0 s, exactly that limit, 6 of 50 attempts were refused with 429
+#: (run 42727712481, ss-jran).
+MIN_REQUEST_INTERVAL_SECONDS = 13.0
+#: One search's default allocation: 50 attempts is an hour's allowance, and
+#: their 49 pacing gaps (637 s) fit the wait allowance with 263 s left for
+#: Retry-After waits. The two numbers move together: at 600 s the waits ran out
+#: before the attempts did.
+DEFAULT_MAX_REQUESTS = 50
+DEFAULT_MAX_WAIT_SECONDS = 900.0
 #: The search API refuses (and spicy-docs' search_url refuses) a longer ``q``.
 QUERY_LIMIT = 512
 
@@ -86,7 +93,8 @@ class CourtListenerReader(Reader):
 
     Every record needs a distinct positive integer identity; an omitted count, a terminal page
     that disagrees with an exact declared count, or a continuation after an empty page raises
-    ``CourtListenerError`` rather than truncating the selection.
+    ``CourtListenerError`` rather than truncating the selection. ``declared_count``
+    is the total the first page stated, once a walk has read it.
     """
 
     kind: Literal["r", "o"] = "r"
@@ -106,6 +114,7 @@ class CourtListenerReader(Reader):
         evidence: CaptureEvidence | None = None,
         traversal_budget: CourtListenerTraversalBudget | None = None,
         retained_search: RetainedCourtSearch | None = None,
+        min_request_interval_seconds: float | None = None,
     ) -> None:
         if max_records is not None and (type(max_records) is not int or max_records < 1):
             raise ValueError("max_records must be a positive integer")
@@ -118,6 +127,8 @@ class CourtListenerReader(Reader):
         self.evidence = evidence
         self.traversal_budget = traversal_budget
         self.retained_search = retained_search
+        self.min_request_interval_seconds = min_request_interval_seconds
+        self.declared_count: int | None = None
         if retained_search is not None and (evidence is None or max_records is not None):
             raise ValueError("Retained CourtListener search requires source evidence and an uncapped walk")
 
@@ -151,7 +162,10 @@ class CourtListenerReader(Reader):
             max_requests=_MAX_REQUESTS_PER_PAGE,
             max_page_bytes=16 * 1024 * 1024,
             timeout_seconds=60,
-            min_request_interval_seconds=MIN_REQUEST_INTERVAL_SECONDS,
+            min_request_interval_seconds=(
+                MIN_REQUEST_INTERVAL_SECONDS if self.min_request_interval_seconds is None
+                else self.min_request_interval_seconds
+            ),
         )
         seen = set()
         yielded = 0
@@ -162,7 +176,8 @@ class CourtListenerReader(Reader):
             self.evidence.event("selection", stage="courtlistener", url=url, max_records=self.max_records)
             transport = self.evidence.transport(transport, stage="courtlistener-response", max_bytes=budget.max_page_bytes)
         # One caller's allocation; a retained continuation also fits it to the account's usage.
-        traversal = self.traversal_budget or CourtListenerTraversalBudget(max_requests=50, max_wait_seconds=600)
+        traversal = self.traversal_budget or CourtListenerTraversalBudget(
+            max_requests=DEFAULT_MAX_REQUESTS, max_wait_seconds=DEFAULT_MAX_WAIT_SECONDS)
         recovery = (
             self.retained_search.open(
                 url=url, page_budget=budget, traversal_budget=traversal, live_transport=transport,
@@ -181,7 +196,7 @@ class CourtListenerReader(Reader):
                         if page.declared_count is None:
                             raise CourtListenerError("CourtListener search omitted its declared count")
                         if declared is None:
-                            declared = page.declared_count
+                            declared = self.declared_count = page.declared_count
                         for record in page.records:
                             self._validate_record(record, seen)
                             seen.add(record[self.identity_field])
@@ -243,6 +258,7 @@ class CourtListenerOpinionSearchReader(CourtListenerReader):
         evidence: CaptureEvidence | None = None,
         traversal_budget: CourtListenerTraversalBudget | None = None,
         retained_search: RetainedCourtSearch | None = None,
+        min_request_interval_seconds: float | None = None,
     ) -> None:
         if above is not None and (type(above) is not int or above < 0):
             raise ValueError("above must be a non-negative integer cluster id")
@@ -251,6 +267,7 @@ class CourtListenerOpinionSearchReader(CourtListenerReader):
         super().__init__(
             since=since, max_records=max_records, api_token=api_token, verbose=verbose, transport=transport,
             evidence=evidence, traversal_budget=traversal_budget, retained_search=retained_search,
+            min_request_interval_seconds=min_request_interval_seconds,
         )
         self.court = court
         self.above = above

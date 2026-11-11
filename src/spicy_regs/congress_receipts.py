@@ -48,6 +48,14 @@ ACQUISITION_POLICY = DatasetPolicy(
 )
 
 
+PROMOTED_VERSIONS = {
+    "members": "congress-subjects/3",
+    "member_terms": "congress-subjects/2",
+    "member_party_affiliations": "congress-subjects/3",
+    "roll_call_votes": "congress-subjects/3",
+}
+
+
 def policy(dataset: str) -> DatasetPolicy:
     return DatasetPolicy(
         dataset,
@@ -55,11 +63,15 @@ def policy(dataset: str) -> DatasetPolicy:
         IDENTITIES.get(dataset, ()),
         RECEIPT_FIELDS,
         policy_version=(
-            "congress-subjects/3"
+            # Each moved when its PROMOTED source fields became columns (ss-vse3).
+            PROMOTED_VERSIONS[dataset]
+            if dataset in PROMOTED_VERSIONS
+            else "congress-subjects/3"
             if dataset == "nominations"
             else "congress-subjects/2"
             if dataset
-            in {"committee_assignments", "committee_meetings", "house_communications", "member_vote_terms", "roll_call_votes"}
+            in {"committee_assignments", "committee_meetings", "house_communications", "member_vote_terms", "members",
+                "roll_call_votes"}
             else "congress-subjects/1"
         ),
         receipt_only=dataset in RECEIPT_ONLY,
@@ -97,18 +109,15 @@ def has_unmatched_failures(receipts: Path, priors: Mapping[str, Sequence[Path]] 
 def input_policy(dataset: str, subjects: Path | tuple[Path, ...] | None) -> DatasetPolicy:
     """Admit only a current or explicitly retained historical subject schema."""
     from spicy_regs.etl_receipts import receipt_policies
+    from spicy_regs.policy_migrations import earlier_policies
+    from spicy_regs.subject_catalog import policies
 
     selected = policy(dataset)
     paths = () if subjects is None else (subjects,) if isinstance(subjects, Path) else subjects
-    for candidate in receipt_policies(selected):
+    # The recorded earlier policies also when ``policy`` is not the installed one (a test's stand-in).
+    for candidate in (*receipt_policies(selected), *earlier_policies(policies()[dataset])):
         if not paths or all(pq.read_schema(path).equals(candidate.subject_schema, check_metadata=False) for path in paths):
             return candidate
-    history = json.loads(Path(__file__).with_name("navigation_policy_history.json").read_text())
-    for key in (f"{dataset}_v2", dataset):
-        if key in history:
-            earlier = DatasetPolicy.from_descriptor(history[key])
-            if all(pq.read_schema(path).equals(earlier.subject_schema, check_metadata=False) for path in paths):
-                return earlier
     raise ValueError(f"{dataset}: subject schema has no supported receipt policy")
 
 

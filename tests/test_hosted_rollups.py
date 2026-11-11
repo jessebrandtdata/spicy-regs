@@ -627,7 +627,7 @@ def test_votes_disk_probe_is_enabled_and_retained_before_audit_upload():
     workflow = yaml.safe_load((WORKFLOWS / "refresh-congress-vote-terms.yml").read_text())
     for job in ["votes", "terms"]:
         assert workflow["jobs"][job]["with"]["free_disk"] is True
-    assert workflow["jobs"]["votes"]["with"]["timeout_minutes"] == 60
+    assert workflow["jobs"]["votes"]["with"]["timeout_minutes"] == 30
     for filename in ["rollup-roll-call-votes.yml", "rollup-member-vote-terms.yml"]:
         manual = yaml.safe_load((WORKFLOWS / filename).read_text())
         assert manual["jobs"]["run"]["with"]["free_disk"] is True

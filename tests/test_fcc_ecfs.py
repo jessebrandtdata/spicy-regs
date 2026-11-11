@@ -208,13 +208,12 @@ def test_rule_section_is_published_stripped_and_the_receipt_input_keeps_it_as_wr
 
 def test_fcc_proceedings_admits_exactly_the_published_government_sources_1_policy():
     """gs/1 is the frozen descriptor fcc-proceedings published until ss-17vd (etl_policies/fcc_proceedings.json at
-    028736f3, copied into navigation_policy_history.json). gs/2 adds three ECFS columns and drops the four comment-window
+    028736f3, recorded in policy_migrations.json). gs/2 adds three ECFS columns and drops the four comment-window
     columns ECFS never filled (owner, 2026-10-31); every other column keeps its place and type."""
-    from importlib.resources import files
-
+    from spicy_regs.policy_migrations import earlier_policy
     from spicy_regs.transforms.government_receipts import EARLIER_POLICIES, POLICIES
 
-    frozen = json.loads(files("spicy_regs").joinpath("navigation_policy_history.json").read_text())["fcc_proceedings"]
+    frozen = earlier_policy("fcc_proceedings", "government-sources/1").descriptor()
     current = POLICIES["fcc_proceedings"]
     assert current.policy_version == "government-sources/2"
     assert [policy.descriptor() for policy in EARLIER_POLICIES["fcc_proceedings"]] == [frozen]

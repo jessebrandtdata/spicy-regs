@@ -434,35 +434,6 @@
         ]
       },
       {
-        "dataset": "agency_monthly_volume",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code",
-          "year",
-          "month",
-          "document_type"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "agency_stats",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "agenda_item_proceedings",
         "receipt_only": false,
         "policy_version": "regulations-native-v2",
@@ -747,20 +718,6 @@
         ]
       },
       {
-        "dataset": "cfr_sections",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "granule_id"
-        ],
-        "processing_fields": [
-          "url",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "cftc_comment_files",
         "receipt_only": false,
         "policy_version": "retained-native-collections-v1",
@@ -788,19 +745,6 @@
         "processing_fields": []
       },
       {
-        "dataset": "comment_attributes",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "comment_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "comment_periods",
         "receipt_only": false,
         "policy_version": "regulations-native-v2",
@@ -813,35 +757,6 @@
           "run_id",
           "asserted_at",
           "supersedes_id",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "comments",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "comment_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "comments_index",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code",
-          "docket_id",
-          "year",
-          "month"
-        ],
-        "processing_fields": [
           "raw_conversion_inputs",
           "input_metadata",
           "raw_source_record"
@@ -1008,37 +923,6 @@
         ]
       },
       {
-        "dataset": "court_citation_map",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citing_opinion_id",
-          "cited_opinion_id"
-        ],
-        "processing_fields": [
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_citations",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citation_id"
-        ],
-        "processing_fields": [
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
         "dataset": "court_docket_groups",
         "receipt_only": false,
         "policy_version": "courts/1",
@@ -1121,38 +1005,6 @@
         ]
       },
       {
-        "dataset": "court_opinions",
-        "receipt_only": false,
-        "policy_version": "courts/2",
-        "identity_columns": [
-          "opinion_id"
-        ],
-        "processing_fields": [
-          "local_path",
-          "extracted_by_ocr",
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_parentheticals",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "parenthetical_id"
-        ],
-        "processing_fields": [
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
         "dataset": "crs_report_files",
         "receipt_only": false,
         "policy_version": "crs-report-files/1",
@@ -1190,19 +1042,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "discovery_signals",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "agency_code"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {
@@ -2166,24 +2005,6 @@
         ]
       },
       {
-        "dataset": "federal_register",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "document_number",
-          "publication_date"
-        ],
-        "processing_fields": [
-          "html_url",
-          "pdf_url",
-          "body_html_url",
-          "regulations_dot_gov_info_json",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "federal_register_issues",
         "receipt_only": false,
         "policy_version": "historical-regulations-public-v2",
@@ -2192,19 +2013,6 @@
         ],
         "processing_fields": [
           "selection_metadata"
-        ]
-      },
-      {
-        "dataset": "feed_summary",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "docket_id"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {
@@ -2249,26 +2057,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "fr_docket_links",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "document_number",
-          "publication_date",
-          "docket_source_ordinal",
-          "docket_id"
-        ],
-        "processing_fields": [
-          "docket_normalization_rule",
-          "html_url",
-          "pdf_url",
-          "normalized_docket_candidates_json",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {
@@ -2469,175 +2257,6 @@
         ]
       },
       {
-        "dataset": "lobbying_activities",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "activity_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_activity_lobbyists",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "activity_index",
-          "lobbyist_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_affiliated_organizations",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "affiliated_organization_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_clients",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "client_id"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_conviction_disclosures",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "conviction_disclosure_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_filings",
-        "receipt_only": false,
-        "policy_version": "government-sources/2",
-        "identity_columns": [
-          "filing_uuid"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_foreign_entities",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "foreign_entity_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_registrants",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "registrant_id"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "member_party_affiliations",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id",
-          "term_index",
-          "affiliation_index"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_terms",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id",
-          "term_index"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_vote_terms",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "vote_id",
-          "member_key"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_votes",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "vote_id",
-          "member_key"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "members",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
         "dataset": "native_legal_reference_reads",
         "receipt_only": false,
         "policy_version": "legislative-documents/2",
@@ -2827,20 +2446,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "roll_call_votes",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "vote_id"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
         ]
       },
       {
@@ -3247,21 +2852,6 @@
         ]
       },
       {
-        "dataset": "unified_agenda",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "rin",
-          "agenda_edition"
-        ],
-        "processing_fields": [
-          "url",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "usaspending_recipients",
         "receipt_only": false,
         "policy_version": "government-sources/1",
@@ -3271,33 +2861,6 @@
         "processing_fields": [
           "raw_record"
         ]
-      },
-      {
-        "dataset": "uscode_edition_sections",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "observation_id"
-        ],
-        "processing_fields": []
-      },
-      {
-        "dataset": "uscode_edition_structure",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "observation_id"
-        ],
-        "processing_fields": []
-      },
-      {
-        "dataset": "uscode_editions",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "edition_id"
-        ],
-        "processing_fields": []
       }
     ]
   },
@@ -3478,7 +3041,8 @@
         "docket_ids",
         "regulation_id_numbers",
         "executive_order_number",
-        "link_source"
+        "link_source",
+        "normalized_docket_candidates"
       ]
     },
     {
@@ -3499,7 +3063,7 @@
     {
       "table": "cfr_sections",
       "label": "Code of Federal Regulations sections",
-      "summary": "One GovInfo annual CFR granule: a section, appendix or other structural unit. This is metadata, not regulatory body text. Enclosing parts come from annual volume PART headings, preserving compound and unusual numbering; printed section numbers alone do not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread volumes can retain earlier placement; the annual index package is excluded.",
+      "summary": "One GovInfo annual CFR granule: a section, appendix or other structural unit. This is metadata, not regulatory body text. Enclosing parts come from annual volume PART headings, preserving compound and unusual numbering; printed section numbers alone do not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread volumes can retain earlier placement; the annual index package is excluded. A granule's GovInfo page is `https://www.govinfo.gov/app/details/{package_id}/{granule_id}`, composed from the identifiers and not stored (until 2026-11 only the per-row receipts held it).",
       "coverage": "Window. Annual-edition section metadata from the 2025 edition and, for some titles, the 2026 edition (`SELECT DISTINCT edition_year, title` lists which), not full publication history or body text. Each section's part comes from its volume's PART heading; on 2026-09-23 every compared Title 41, 43 and 14 section agreed with eCFR's 2025-01-01 structure. Receipts: fork-execution-2026-09-21/cfr-ancestry-fix-2026-09-23/ (candidate.json, validation.json).",
       "kind": "window",
       "measured_on": "2026-10-03",
@@ -3583,7 +3147,7 @@
     {
       "table": "unified_agenda",
       "label": "Planned agency actions",
-      "summary": "One row per Regulation Identifier Number (RIN) per agenda edition, ingested from the OIRA/OMB Unified Agenda published at reginfo.gov by `build_unified_agenda`. A Tier-1 rulemaking-lifecycle source: the upstream, forward-looking catalog of rulemakings agencies *plan* to pursue, keyed by the same `rin` that appears in `federal_register` (`regulation_id_numbers`). Primary / dedup key is (`rin`, `agenda_edition`).",
+      "summary": "One row per Regulation Identifier Number (RIN) per agenda edition, ingested from the OIRA/OMB Unified Agenda published at reginfo.gov by `build_unified_agenda`. A Tier-1 rulemaking-lifecycle source: the upstream, forward-looking catalog of rulemakings agencies *plan* to pursue, keyed by the same `rin` that appears in `federal_register` (`regulation_id_numbers`). Primary / dedup key is (`rin`, `agenda_edition`). An entry's reginfo.gov page is `https://www.reginfo.gov/public/do/eAgendaViewRule?pubId={agenda_edition}&RIN={rin}`, composed from the key and not stored (until 2026-11 only the per-row receipts held it).",
       "coverage": "True range: the retained published baseline starts at 199510 and excludes the 2004 editions and spring 2012; agenda_edition names each included edition. A local source-only replay now recovers the two 2004 editions through narrowly qualified repairs; that candidate has not been published. See docs/unified-agenda-retained-rebuild.md for the qualification boundary. A rule has one row per edition that lists it, so count distinct rin, not rows, for a number of rules.",
       "kind": "true_range",
       "measured_on": "2026-10-10",
@@ -3871,7 +3435,8 @@
         "registrant_zip",
         "registrant_country",
         "registrant_ppb_country",
-        "registrant_different_address"
+        "registrant_different_address",
+        "url"
       ]
     },
     {
@@ -4022,7 +3587,8 @@
         "contact_telephone",
         "dt_updated",
         "captured_at",
-        "captured_filing_uuid"
+        "captured_filing_uuid",
+        "url"
       ]
     },
     {
@@ -4051,7 +3617,8 @@
         "ppb_country_display",
         "effective_date",
         "captured_at",
-        "captured_filing_uuid"
+        "captured_filing_uuid",
+        "url"
       ]
     },
     {
@@ -7022,7 +6589,7 @@
       "label": "Source-reported financial summary observations",
       "category": "query_data",
       "summary": "One source entity/period/summary-layout/version observation. Keeps monetary measures in a typed list with native names, raw spelling, status and unit. Reported totals are separate from itemized observations; overlapping cycle, year-to-date, quarterly and semiannual measures are not automatically additive. Resolve collection_id and source_record_id against fec_source_records in the captured source generation, using source_locator_json and source_sha256 to distinguish repeated witnesses. Stored or release-matched derived evidence routes preserve the same exact source coordinates.",
-      "coverage": "Sampled. Supported observations from retained candidate, committee, presidential and bundling summary layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration does not establish complete FEC history or current publication.",
+      "coverage": "Sampled. Supported observations from retained candidate, committee, presidential and bundling summary layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration does not establish complete FEC history or current publication. Its 2026 candidate and committee summary CSVs are the 2026-09-12 captures; fec_financial_profiles is refreshed separately from the publisher's current files, so the two can disagree for one entity.",
       "kind": "sampled",
       "measured_on": "2026-10-01",
       "data_quality": "Two layouts repeat one figure. candidate-web-summary/1 holds a candidate's row from FEC's weball file and, for a current House or Senate campaign, an identical row from webl, a subset of weball; committee-summary-csv/1 repeats a committee's row once per linked candidate. Keep one row per layout, entity, cycle and period before summing (cycle 2026, measured 2026-10-03, with 2,949 identical candidate pairs and 70 committees repeated, every repeat identical).",
@@ -7330,7 +6897,7 @@
       "table": "court_opinion_clusters",
       "label": "Court decisions and their opinion groups",
       "summary": "Decision metadata from CourtListener opinion-clusters bulk data and opinion-search catch-up. cluster_id joins court_opinions.cluster_id (and through it the citation map and parentheticals); cl_docket_id joins court_dockets.cl_docket_id only where both tables hold the same publisher docket object: an appellate decision can name a scraper-created docket while court_dockets holds the RECAP one, so match on the docket number when the id does not join. Court identity comes from a bulk docket map or a search result; jurisdiction classification uses CourtListener's court reference data. This table does not hold individual opinion bodies.",
-      "coverage": "Not a range. The complete 2026-06-30 CourtListener opinion-clusters export, every mapped source field checked against the original export; the court fields agree with the same-edition docket map and court reference data. A search catch-up adds every cluster whose id is above the export's highest, whatever its filing date; a correction to an exported cluster arrives with the next export. Opinion bodies and broader historical coverage are separate. Per-court gaps are the publisher's: cadc has no unpublished cluster between 2001-04 and 2020-07. See docs/research/fork-output-ledger-2026-09-21.md and receipt join-gaps-2026-09-26/i/.",
+      "coverage": "Not a range. The complete 2026-06-30 CourtListener opinion-clusters export, every mapped source field checked against the original export; the court fields agree with the same-edition docket map and court reference data. A daily search catch-up adds the clusters whose ids are above the export's highest, whatever their filing date, in id order and one day's request quota at a time: the table is complete through its highest cluster_id for what the publisher's search returned, and can be weeks behind the publisher (docs/court-search-recovery.md). A correction to an exported cluster arrives with the next export. Opinion bodies and broader historical coverage are separate. Per-court gaps are the publisher's: cadc has no unpublished cluster between 2001-04 and 2020-07. See docs/research/fork-output-ledger-2026-09-21.md and receipt join-gaps-2026-09-26/i/.",
       "kind": "not_a_range",
       "measured_on": "2026-09-22",
       "data_quality": "Bulk and search records expose different fields. ingest_source identifies the selected row's route; unavailable metadata may be NULL or blank. A search row never replaces a bulk row of the same export, whose ids it lies above, and a later export's bulk row replaces it. Opinion search does not index RECAP trial-court clusters, so one created after the export arrives only with the next export. Missing court scope is unknown, not proof of a non-federal court. court_dockets is a narrower selection, so unmatched docket IDs are expected. Names, judge strings and citations do not establish cross-source identity.\nOne decision can be several clusters. On the 2026-06-30 export (measured 2026-10-03), 131 of the 140 Supreme Court decisions reported in 600-606 U.S., grouped by `cl_docket_id` and U.S. citation, have two to five clusters, none with an `scdb_id`. That grouping is a heuristic: it cannot see a decision with no reporter citation yet.",
@@ -7384,7 +6951,11 @@
         "volume",
         "reporter",
         "page",
-        "citation_type"
+        "citation_type",
+        "date_created",
+        "date_modified",
+        "dump_date",
+        "source_sha256"
       ]
     },
     {
@@ -7398,7 +6969,9 @@
       "columns": [
         "citing_opinion_id",
         "cited_opinion_id",
-        "depth"
+        "depth",
+        "dump_date",
+        "source_sha256"
       ]
     },
     {
@@ -7415,7 +6988,9 @@
         "describing_opinion_id",
         "text",
         "score",
-        "group_id"
+        "group_id",
+        "dump_date",
+        "source_sha256"
       ]
     },
     {
@@ -7436,7 +7011,13 @@
         "joined_by_str",
         "page_count",
         "sha1",
-        "download_url"
+        "download_url",
+        "local_path",
+        "extracted_by_ocr",
+        "date_created",
+        "date_modified",
+        "dump_date",
+        "source_sha256"
       ]
     },
     {
@@ -7473,10 +7054,10 @@
       "table": "member_vote_terms",
       "label": "Member vote terms",
       "summary": "The term each member vote counts toward (delivery decision 2). A vote on `vote_day` counts toward the term with `term_start <= vote_day < term_end`, so the day one Congress ends and the next begins belongs to the new term. Only where that finds none is an inclusive end accepted, and only if exactly one term qualifies. The term type follows the chamber (`rep`, `sen`); a term with no end date never matches. Built by `build_member_vote_terms` from `member_votes`, whose `bioguide_id` the votes rollup resolves for a Senate row (from its LIS id) and for a House row of 1990-2002 (from its printed label), and `member_terms`. Join to `member_votes` on (`vote_id`, `member_key`) and to `member_terms` on (`bioguide_id`, `term_index`).",
-      "coverage": "Derived, and bounded by its inputs: one row for every `member_votes` row, matched to the member's term on the vote date.",
+      "coverage": "Derived, and bounded by its inputs: one row for every `member_votes` row whose term the rule establishes (`half_open` or `inclusive_end`). A vote it gives no term is left out: it is the `member_votes` row with no row here.",
       "kind": "derived",
-      "measured_on": "2026-09-23",
-      "data_quality": "On 2026-09-23 all but 18 votes matched a half-open term: 15 matched only an inclusive end date and 3 matched no term, exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).",
+      "measured_on": "2026-11-11",
+      "data_quality": "On 2026-11-11, of 10,563,782 votes, 232 matched only an inclusive end date, 12 matched no term and 2 named no resolvable member; those 14 are left out. On 2026-09-23 the same rule matched all but 18 of a frozen selection exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).",
       "columns": [
         "vote_id",
         "member_key",
@@ -7713,7 +7294,7 @@
       "table": "grants_opportunity_observations",
       "label": "Grants.gov opportunity and forecast observations",
       "summary": "One observation per source notice in a declared Grants.gov daily XML snapshot, with literal eligibility, deadlines, amounts and source revisions.",
-      "coverage": "Not a range. Designed to retain every admitted record in each explicitly selected daily snapshot. Full real-export qualification and public delivery are pending. The date records this design statement, not a source measurement. Snapshot membership does not establish active/open status, withdrawal, deletion or historical completeness.",
+      "coverage": "Not a range. Every admitted record of each explicitly selected daily export is retained. Each refresh replaces the published snapshot with the export it selects; earlier snapshots are in earlier generations, not in this table. Snapshot membership does not establish active/open status, withdrawal, deletion or historical completeness.",
       "kind": "not_a_range",
       "measured_on": "2026-10-20",
       "data_quality": null,
@@ -7764,7 +7345,7 @@
       "table": "ofac_entity_observations",
       "label": "OFAC sanctions entity observations",
       "summary": "Literal OFAC enhanced-export observations with selected-list context and retained source history.",
-      "coverage": "Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence.",
+      "coverage": "Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Each refresh replaces the published snapshots with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence.",
       "kind": "not_a_range",
       "measured_on": "2026-10-20",
       "data_quality": null,
@@ -7795,7 +7376,7 @@
       "table": "ofac_snapshots",
       "label": "OFAC sanctions snapshots",
       "summary": "Publication metadata and reference dictionaries retained once per selected OFAC snapshot.",
-      "coverage": "Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence.",
+      "coverage": "Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN and consolidated exports need not share an update time. Each refresh replaces the published snapshots with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence does not establish delisting, and no history before these captures is inferred. Qualification and public selection are recorded by the generation evidence.",
       "kind": "not_a_range",
       "measured_on": "2026-10-20",
       "data_quality": null,
@@ -7814,10 +7395,10 @@
     {
       "table": "executive_order_observations",
       "label": "Executive order text and publisher history",
-      "summary": "Every numbered executive order in an explicitly selected complete Federal Register publication year, with retained text, publisher attribution and literal history notes.",
-      "coverage": "Not a range. Designed for complete explicitly selected publication years with every admitted order represented, including explicit body acquisition failures. Full-year source and body qualification and public delivery are pending. The date records this design statement, not a source measurement.",
-      "kind": "not_a_range",
-      "measured_on": "2026-10-20",
+      "summary": "Every executive order the Federal Register API serves, with retained text, publisher attribution and literal history notes.",
+      "coverage": "True range. Every executive order the Federal Register API serves, from EO 12890 (published 1994-01-05) on; the API serves no document published before 1994. The last publication date a generation's listing covered is in its file metadata (`parquet_kv_metadata`, key `spicy_regs.executive_orders.coverage`).",
+      "kind": "true_range",
+      "measured_on": "2026-11-10",
       "data_quality": null,
       "columns": [
         "publication_year",
@@ -7848,7 +7429,8 @@
         "source_release_logical_id",
         "source_release_digest",
         "metadata_locator_json",
-        "raw_metadata_json"
+        "raw_metadata_json",
+        "source_sha256"
       ]
     },
     {
@@ -8774,9 +8356,9 @@
       "label": "Reported candidate and committee financial profiles",
       "category": "query_data",
       "summary": "Exact source-reported money for an explicitly selected candidate and committee CSV snapshot, with visible missing dates and unresolved conflicts.",
-      "coverage": "Not a range. Designed for complete explicitly selected candidate and committee summary CSV populations in one election cycle. Actual population and publication are established by the selected generation and its retained source evidence. The date records this design statement, not a source measurement.",
+      "coverage": "Not a range. Every row of one captured pair of the FEC's 2026 candidate and committee summary CSVs, which FEC rewrites daily; captured_at and period_end say how current each profile is. Each refresh replaces the published pair; earlier pairs are in earlier generations and source evidence, not in this table. The fec-query tables keep their own, older captures. The date records this design statement, not a source measurement.",
       "kind": "not_a_range",
-      "measured_on": "2026-10-20",
+      "measured_on": "2026-11-10",
       "data_quality": null,
       "columns": [
         "profile_id",
@@ -9707,7 +9289,12 @@
         "modify_date",
         "tie_breaker_by_whom",
         "tie_breaker_vote",
-        "party_totals"
+        "party_totals",
+        "source_url",
+        "match_rule",
+        "match_action_index",
+        "match_url",
+        "conflict_count"
       ]
     },
     {
@@ -9763,7 +9350,13 @@
         "current_term_state",
         "current_term_party",
         "current_term_district",
-        "name_nickname"
+        "name_nickname",
+        "name_middle",
+        "name_suffix",
+        "name_official_full",
+        "roster",
+        "observed_at",
+        "other_names_json"
       ]
     },
     {
@@ -9782,7 +9375,9 @@
         "term_end",
         "term_state",
         "term_party",
-        "term_district"
+        "term_district",
+        "observed_at",
+        "party_affiliations_state"
       ]
     },
     {
@@ -9801,7 +9396,13 @@
         "affiliation_start",
         "affiliation_end",
         "term_party",
-        "caucus"
+        "caucus",
+        "input_sha256",
+        "start_status",
+        "end_status",
+        "source_path",
+        "observed_at",
+        "source_json"
       ]
     },
     {
@@ -10201,7 +9802,7 @@
       "coverage": "True range: dated records published from 1994-01-03 on, the whole span the API serves.",
       "kind": "true_range",
       "measured_on": "2026-09-23",
-      "data_quality": "Document numbers are not globally unique: `00-111` names different records on 2000-01-14 and 2000-01-18. Current merging preserves both dates and replaces only the same dated record on a later successful fetch. This code correction does not restore historical records already lost from published files; those require a pinned historical replay and publication. A number-only source reference remains ambiguous when its input generation supplies multiple dated candidates. One RIN, docket and title can cover a rule and its later corrections, effective-date delays and confirmations, all typed `Rule` since 2008 with `subtype` NULL, so a RIN or title match picks a document family, not a document; `action` tells them apart (`Final rule; correction.`) where the Register states one. The API lists no RIN on a large share of `Rule` documents every year, some of which state one in the printed text or inside `docket_ids`. A row not read since the Register's regulations.gov link and `action` were first requested (2026-10-03) is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`, which a row read since holds as `'{}'` at least. The scheduled run re-reads the last 120 days, so a relayed comment count follows the Register's own checks to about the comment period's close.",
+      "data_quality": "Document numbers are not globally unique: `00-111` names different records on 2000-01-14 and 2000-01-18. Current merging preserves both dates and replaces only the same dated record on a later successful fetch. This code correction does not restore historical records already lost from published files; those require a pinned historical replay and publication. A number-only source reference remains ambiguous when its input generation supplies multiple dated candidates. One RIN, docket and title can cover a rule and its later corrections, effective-date delays and confirmations, all typed `Rule` since 2008 with `subtype` NULL, so a RIN or title match picks a document family, not a document; `action` tells them apart (`Final rule; correction.`) where the Register states one. The API lists no RIN on a large share of `Rule` documents every year, some of which state one in the printed text or inside `docket_ids`. A row not read since the Register's regulations.gov link and `action` were first requested (2026-10-03) is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`, which a row read since holds as `'{}'` at least. The scheduled run re-reads the last 120 days, so a relayed comment count follows the Register's own checks to about the comment period's close. `html_url`, `pdf_url`, `body_html_url` and `regulations_dot_gov_info_json` are the last columns: they were held beside the table until 2026-11 and are as the Register stated them, its nulls included: `pdf_url` is NULL on about 33,500 rows, mostly 1994, where it serves no PDF. `source_sha256` names the retained API page a row was last read from and is NULL on a row not read since it was added, which is every document published before the 120-day window of that first run. It changes nightly on every row in the window, so compare generations without it.",
       "columns": [
         "document_number",
         "title",
@@ -10240,7 +9841,12 @@
         "regulations_dot_gov_regulation_id_number",
         "regulations_dot_gov_supporting_documents_count",
         "regulations_dot_gov_supporting_documents",
-        "regulations_dot_gov_regulatory_plan_title"
+        "regulations_dot_gov_regulatory_plan_title",
+        "html_url",
+        "pdf_url",
+        "body_html_url",
+        "source_sha256",
+        "regulations_dot_gov_info_json"
       ]
     },
     {
@@ -11739,9 +11345,9 @@
       "table": "uscode_edition_sections",
       "label": "Retained U.S. Code section content",
       "summary": "One section, range, stub or other content observation within a selected edition member. Native identifiers, source context and readable text preserve the retained source meaning.",
-      "coverage": "Sampled. Selected retained annual XHTML and release-point XML members; complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.",
+      "coverage": "Sampled. The selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138); complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.",
       "kind": "sampled",
-      "measured_on": "2026-10-12",
+      "measured_on": "2026-11-11",
       "data_quality": null,
       "columns": [
         "observation_id",
@@ -11758,9 +11364,9 @@
       "table": "uscode_edition_structure",
       "label": "Retained U.S. Code structural observations",
       "summary": "One native structural occurrence linked to its edition member. Source positions, labels, status and native context remain distinct from section text.",
-      "coverage": "Sampled. Native structural observations in selected annual XHTML and release-point USLM members. Section-body coverage requires separate content qualification.",
+      "coverage": "Sampled. Native structural observations in the selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138). Section-body coverage requires separate content qualification.",
       "kind": "sampled",
-      "measured_on": "2026-10-10",
+      "measured_on": "2026-11-11",
       "data_quality": null,
       "columns": [
         "observation_id",
@@ -11777,9 +11383,9 @@
       "table": "uscode_editions",
       "label": "Retained U.S. Code edition members",
       "summary": "One native annual or release-point archive member observed in its edition. Requested year, native publication year, carried-forward state and appendices remain separate.",
-      "coverage": "Sampled. Selected retained original archive members only; edition membership and source structure do not establish complete section-body qualification.",
+      "coverage": "Sampled. Every member of the selected editions only, each added by explicit decision -- the 2000 annual XHTML archive and the complete release-point XML corpora at 119-102 and 119-138 (current through Public Law 119-138); other years and release points are not held. Edition membership and source structure do not establish complete section-body qualification.",
       "kind": "sampled",
-      "measured_on": "2026-10-10",
+      "measured_on": "2026-11-11",
       "data_quality": null,
       "columns": [
         "edition_id",

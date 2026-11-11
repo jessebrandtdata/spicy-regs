@@ -1,8 +1,149 @@
-# Retained court Search catch-up
+# Court opinion clusters: bulk exports and the Search catch-up
 
-The existing `run-rollup-court-opinion-clusters catch-up` command adds a bounded
-Search selection to an explicitly qualified **same-edition** native parent.
-Use the default command for a new bulk edition or historical corrections.
+`court_opinion_clusters` has two sources. CourtListener's quarterly bulk export
+is the complete table. Between exports, authenticated Search adds the clusters
+created since, above the highest id the table holds. The scheduled job does both
+(below); the `catch-up` subcommand at the end is the operator's explicit,
+retained route to the same append.
+
+## The daily job
+
+`run-rollup-court-opinion-clusters` runs daily at 04:20 UTC
+(`.github/workflows/rollup-court-opinion-clusters.yml`). It reads the published
+generation's own journal for the export edition the table holds and the id it
+is complete through (`held_selection`), then does one of two things:
+
+- **Rebuild.** The publisher lists a newer export, or the journal names none:
+  `build_court_opinion_clusters` reads the export and merges it over the prior,
+  whose search rows above the export are carried. It makes no Search request, so
+  no quota refusal can discard the multi-hour export read. It journals
+  `export-selection` (edition, highest id).
+- **Catch up.** Otherwise `daily_catch_up` appends one day's share of the
+  backlog and journals `catchup-selection` (edition, `above`, `through`,
+  `declared_backlog`, `clusters`, `requests`).
+
+### Quota
+
+This section is the one home for the quota numbers; code comments and workflows
+point here.
+
+The account's limits are 5 requests a minute, 50 an hour and 125 a day, in
+rolling windows ([rate limits](https://www.courtlistener.com/help/api/rest/),
+[usage API](https://wiki.free.law/c/courtlistener/help/api/rest/v4/api-usage),
+read 2026-11-10). The daily docket job (18:30 UTC, about 7 requests: 6 answered
+pages on each of 2026-11-08 and 11-09) shares them.
+
+- A catch-up makes at most **105** attempts (`DAILY_REQUESTS`), answered or not:
+  a refused or timed-out request counts, since the publisher may have counted
+  it. That leaves **20** of the 125 for everything else on the token: the
+  docket job's 7, its 7 of the day before (still inside the rolling day when it
+  runs), and 6 spare. The docket job is protected up to those 20 and no
+  further: if it and any requests made by hand exceed 20 in a day, its last
+  ones can be refused until the catch-up's leave the window.
+- Attempts are **75 seconds** apart (48 an hour), so a full day is 131 minutes
+  of pacing. No lock is held while a run waits: publication is a
+  compare-and-swap that merges other families' writes.
+- Before any Search request the run reads the usage API, which has its own
+  throttle and spends nothing. A job that spends most of a rolling day never
+  finds it idle: yesterday's requests leave the window one at a time, 24 hours
+  after each was made. So when the day's next slot frees within 90 minutes the
+  run waits for it and keeps step with yesterday's; when the quota was spent at
+  another hour it takes only what is free now, less 7; a blocked account or an
+  unreadable reply fails the run. Fewer than 2 requests is "nothing to do":
+  the run succeeds and publishes nothing.
+- A 429 is waited out by its `Retry-After`, up to 30 minutes for the whole run,
+  the backlog request included. The worst case is therefore 251 minutes of
+  waiting (90 before the first request, 131 of pacing, 30 of `Retry-After`),
+  which leaves 99 of the job's 350 for the download, append, admission and
+  upload.
+- Running out is not a failure. A `Retry-After` the run cannot wait for, the
+  last allowed attempt, or less waiting time left than one pacing gap ends the
+  day: whole windows already read are published and the run succeeds.
+- A run that is going to upload checks its R2 credentials before the usage
+  read, so one that could not publish spends nothing. A `skip_upload` dispatch
+  still spends its requests and saves nothing.
+- Other Search readers pace at 13 seconds, under 5 a minute, with a default
+  allocation of 50 attempts and 900 seconds of waits (49 pacing gaps are 637).
+
+A dispatch can lower one run's attempts with `max_requests` (2 to 105; the
+`COURT_CLUSTERS_MAX_REQUESTS` variable). Ten proves the whole route, from the
+download to the upload, for a tenth of a day.
+
+### What one catch-up does
+
+1. Reads usage (free) and decides the day's attempts.
+2. One Search request for everything above the published `through` states the
+   backlog, `B`. `B` clusters above `through` prove every id up to
+   `through + B` assigned, wherever those clusters are, because ids are given
+   out in order. The run reads no id above `through + B - 20`. With 20 or
+   fewer listed there is nothing to do.
+3. Downloads the published table and receipts (5.6 GB) against their pins, and
+   refuses if the table holds an id above the one its journal states.
+4. Walks **id windows** upward. Search can only be ordered by filing date, so a
+   half-read range cannot be resumed by id; a window is therefore read whole or
+   not kept. A window of `W` ids lists at most `W` clusters, so one sized at 20
+   ids for each page left always fits; no window is sized for more than 30
+   pages. A window that lists nothing doubles the next; a doubled window that
+   lists more than its pages is left after one request and halved. A count
+   larger than the window has ids is a fault.
+5. Appends the rows to the prior without restoring it (`_append_native`,
+   `combine_receipts`), and the ordinary generation admission and publication
+   follow.
+
+Progress lives in the published generation: the rows are the table's, and
+`through` is the end of the last whole window, in the journal that generation
+pins. The next run starts at `through + 1`, so no page is read twice and no row
+leaves the table. A day that stops early has still published every whole
+window; a day that publishes nothing leaves the previous generation current.
+
+Staying below the proven ids does two things. No cluster created during a walk
+can fall inside a window and change its count, which would fail that window.
+And a window that lists nothing has shown that its ids, all assigned, hold
+nothing listed, so `through` moves past it once any later window that day
+lists a cluster. If every readable id lists nothing, the backlog lies wholly
+above a gap wider than itself. Only a published generation can move `through`,
+and there is no row to publish, so the run **fails** and says so, rather than
+succeeding and asking the same requests every day; it clears when the backlog
+outgrows the gap.
+
+### What the table then claims
+
+- Complete through `through` for the clusters Search listed when each window
+  was read, in every publisher status. A cluster listed later, changed, merged
+  or deleted below `through` is corrected only by the next export; the catch-up
+  never updates or removes a row. Search omits unindexed RECAP clusters.
+- `declared_backlog` less `clusters` is how many listed clusters remained
+  above `through` when the run began.
+- The newest clusters wait. Once the backlog is closed the table stays about a
+  day and a half behind the publisher. About 4 of 10 ids list nothing (2,278
+  Published clusters in the 3,777 ids read on 2026-10-19), so a day's 1,685 new
+  clusters span about 2,700 ids, and that many ids are proven assigned only
+  when about 2,700 clusters are listed above `through`.
+- Ids 10,987,421 to 10,991,197 were added on 2026-10-19 by a search that
+  named no status, which the publisher reads as Published only (2,278 rows).
+  Other statuses in that range arrive with the next export.
+
+### Cost and pace (2026-11-10)
+
+- Clusters arrive at about 1,685 a day (84 pages). A full day reads about 104
+  pages, about 2,040 clusters: the backlog closes by about 350 clusters a day.
+- On 2026-11-10 the backlog was 69,088 clusters above the 2026-09-30 export.
+  At that pace it is still about 51,000 when the 2026-12-31 export arrives.
+  The rebuild then resets it to the days since that export was cut, and the
+  daily runs close that in three to four weeks and hold the table about a day
+  and a half behind the publisher until the next export.
+- A catch-up restores nothing (the weekly walk it replaces first restored 10.2
+  million rows for 47 minutes and 8 GB of memory). It rewrites the 3.4 GB
+  table and 2.2 GB receipts once each, in 25,000-row batches. On a workstation
+  on 2026-10-19 the same append and its receipts were done 6.5 minutes after
+  the run began (journal timestamps); hosted time is unmeasured.
+
+## The explicit `catch-up` command
+
+`run-rollup-court-opinion-clusters catch-up` adds one bounded Search selection
+to an explicitly qualified **same-edition** native parent, with a retained
+checkpoint. Use the default command for a new bulk edition or historical
+corrections.
 The edition evidence must establish the selected parent's edition and the courts
 original's edition; a filename or maximum cluster ID does not establish this.
 
@@ -34,7 +175,8 @@ Set `R2_PUBLIC_URL` to the intended publication. The command preserves the exist
 `--no-skip-upload` uses ordinary complete admission and conditional publication.
 `--max-requests` and `--max-wait-seconds` bound each traversal, including replay
 attempts and live pacing/retry waits.
-Replayed prefix pages count toward `--max-requests` (default 50). A longer
+Replayed prefix pages count toward `--max-requests` (default 50, with 900
+seconds of waits). A longer
 retained walk needs an explicit sufficient allocation; resuming does not make
 the traversal unlimited.
 
@@ -44,7 +186,7 @@ once. That read has its own throttle and spends no Search quota. A blocked
 account, any exhausted window, or an unreadable response stops the run before
 Search, with the checkpoint unchanged; the error names the window and its
 `reset_at`. Otherwise the live part of `--max-requests` shrinks to what every
-window too long to refill under the 12-second pacing can still absorb, so a
+window too long to refill under the 13-second pacing can still absorb, so a
 short quota ends in an ordinary checkpointed stop instead of a 429. Another job
 sharing the token can still spend the quota first; a later `Retry-After` stays
 authoritative. A complete replay makes no usage read.

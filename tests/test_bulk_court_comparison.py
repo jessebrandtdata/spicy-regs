@@ -12,7 +12,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from spicy_regs.conversion_reads import _FamilyReader
-from tests.test_court_opinions_prepared_conversion import opinions
+from tests.test_court_prepared_conversion import clusters
 from tests.test_native_conversion import DOCKET, bucket as _bucket, convert, publish_old
 
 bucket = _bucket
@@ -65,7 +65,8 @@ def verdicts(reader, dataset, original, monkeypatch, compare):
 
 
 @pytest.mark.parametrize('family, dataset, rows, column', [
-    ('court-opinions', 'court_opinions', opinions() + [r | {'opinion_id': str(90 + n)} for n, r in enumerate(opinions())], 'author_str'),
+    ('court-opinion-clusters', 'court_opinion_clusters',
+     clusters() + [r | {'cluster_id': str(90 + n)} for n, r in enumerate(clusters())], 'case_name'),
     ('courtlistener', 'court_dockets', [DOCKET, DOCKET | {'cl_docket_id': '9', 'parties_json': None}], 'case_name'),
 ])
 def test_bulk_and_row_comparisons_reach_the_same_verdict(tmp_path, monkeypatch, bucket, family, dataset, rows, column):
@@ -143,11 +144,11 @@ def test_docket_json_synthesis_uses_the_row_decoder(tmp_path, monkeypatch):
 def test_only_unproven_court_rows_reach_python(tmp_path, monkeypatch):
     from spicy_regs import court_receipts
 
-    rows = [opinions()[0] | {'opinion_id': str(i + 1), 'author_str': 'plain'} for i in range(73)]
+    rows = [clusters()[0] | {'cluster_id': str(i + 1), 'case_name': 'plain'} for i in range(73)]
     for i in (7, 62):
-        rows[i]['author_str'] = 'escape\x1b'
+        rows[i]['case_name'] = 'escape\x1b'
     original = pa.Table.from_pylist(rows, schema=pa.schema([(name, pa.string()) for name in rows[0]]))
-    with admitted_court(tmp_path, 'court_opinions', rows, original) as (reader, retained):
+    with admitted_court(tmp_path, 'court_opinion_clusters', rows, original) as (reader, retained):
         decoded, real = [], court_receipts.processing_rows
         subsets, subset = [], reader._court_subset_equal
 
@@ -158,17 +159,17 @@ def test_only_unproven_court_rows_reach_python(tmp_path, monkeypatch):
 
         def observe(values, **kwargs):
             values = list(values)
-            decoded.extend(row['opinion_id'] for row in values)
+            decoded.extend(row['cluster_id'] for row in values)
             yield from real(values, **kwargs)
 
         monkeypatch.setattr(court_receipts, 'processing_rows', observe)
         monkeypatch.setattr(reader, '_court_subset_equal', observe_subset)
-        reader.compare_original('court_opinions', retained)
+        reader.compare_original('court_opinion_clusters', retained)
         assert decoded == ['8', '63'], (subsets, reader.row_reference)
         damaged = original.to_pylist()
-        damaged[7]['author_str'] = 'different\x1b'
+        damaged[7]['case_name'] = 'different\x1b'
         pq.write_table(pa.Table.from_pylist(damaged, schema=original.schema), retained)
-        proof, bulk, reference = verdicts(reader, 'court_opinions', retained, monkeypatch,
+        proof, bulk, reference = verdicts(reader, 'court_opinion_clusters', retained, monkeypatch,
                                           _FamilyReader.compare_original)
         assert proof is False and bulk == reference
         assert reference == 'Restored processing values, order or repetitions differ from original'
@@ -182,12 +183,12 @@ def test_court_comparison_propagates_bulk_execution_failure_without_row_replay(
     import duckdb
     from spicy_regs import court_receipts, etl_bulk
 
-    row = opinions()[0]
-    rows = [row | {'opinion_id': str(i + 1)} for i in range(5)]
+    row = clusters()[0]
+    rows = [row | {'cluster_id': str(i + 1)} for i in range(5)]
     original = pa.Table.from_pylist(rows, schema=pa.schema([(name, pa.string()) for name in row]))
     failure = (duckdb.OutOfMemoryException('injected comparison memory failure') if failure_kind == 'duckdb'
                else pa.ArrowMemoryError('injected comparison allocation failure'))
-    with admitted_court(tmp_path, 'court_opinions', rows, original) as (reader, retained):
+    with admitted_court(tmp_path, 'court_opinion_clusters', rows, original) as (reader, retained):
         actual = reader.connection
         comparisons = []
 
@@ -209,6 +210,6 @@ def test_court_comparison_propagates_bulk_execution_failure_without_row_replay(
                             lambda *a, **k: pytest.fail('operational failure must not start row replay'))
         with etl_bulk.bulk_limits(threads=1, memory_limit='256MB', require_bulk=require_bulk):
             with pytest.raises(etl_bulk.BulkValidationError, match='Court comparison proof failed') as raised:
-                reader.compare_original('court_opinions', retained)
+                reader.compare_original('court_opinion_clusters', retained)
         assert raised.value.__cause__ is failure
         assert len(comparisons) == 2

@@ -44,6 +44,33 @@ DOCKET = {
 }
 
 
+
+@pytest.fixture(autouse=True)
+def cfr_on_its_receipt_route(monkeypatch):
+    """cfr-sections as it was before its receipts were retired (ss-vse3): this file's example of a one-table family.
+
+    The converter refuses the real family now (``test_the_retired_cfr_family_is_not_converted``); these tests keep its
+    rows, with the retired marker lifted through the one function every reader asks and the receipt route's rollup
+    standing in for the plain one.
+    """
+    from spicy_regs import subject_catalog
+    from spicy_regs.pipelines.rollups.subject_receipts import SubjectReceiptRollup
+    from spicy_regs.transforms.build_cfr_sections import build_cfr_sections
+
+    class CfrSectionsReceiptRoute(SubjectReceiptRollup):
+        name = "cfr-sections"
+        inputs = ()
+        output = "cfr_sections.parquet"
+
+        def build(self, output_dir):
+            return self.build_receipts(output_dir, build_cfr_sections)
+
+    retired = subject_catalog.retired_receipt_datasets()
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: retired - {"cfr_sections"})
+    found = conversion._rollup_class
+    monkeypatch.setattr(conversion, "_rollup_class", lambda family, base=None: (
+        CfrSectionsReceiptRoute if family == "cfr-sections" and base is None else found(family, base)))
+
 @pytest.fixture
 def bucket(monkeypatch):
     """The shared in-memory bucket, also answering the public reads the conversion makes outside the index."""
@@ -198,18 +225,20 @@ def test_without_publish_nothing_leaves_the_work_directory(tmp_path, monkeypatch
     refused_read(tmp_path, "cfr_sections")
 
 
-def test_comment_attributes_cli_converts_typed_rows_without_publication(tmp_path, monkeypatch, bucket):
+def test_document_attributes_cli_converts_typed_rows_without_publication(tmp_path, monkeypatch, bucket):
+    """An attribute family's typed rows through the converter (comment-attributes ran here until its receipts were
+    retired, ss-vse3: a retired table never converts back into receipts, as the next test shows)."""
     from spicy_regs import regulations_bulk
     from spicy_regs.schemas.regulations_subjects import SOURCE_COLUMNS
     from spicy_regs.transforms.regulations_shape import TYPES
 
-    schema = pa.schema([(name, TYPES[kind]) for name, kind in SOURCE_COLUMNS["comment_attributes"]])
+    schema = pa.schema([(name, TYPES[kind]) for name, kind in SOURCE_COLUMNS["document_attributes"]])
     table = pa.Table.from_pylist([
-        {"comment_id": "C-1", "page_count": 3, "withdrawn": False, "city": "é😀"},
-        {"comment_id": "C-2", "page_count": 0, "withdrawn": True, "address1": "escape\x1b"},
-        {"comment_id": "C-3"},
+        {"document_id": "D-1", "page_count": 3, "open_for_comment": False, "city": "é😀"},
+        {"document_id": "D-2", "page_count": 0, "open_for_comment": True, "address1": "escape\x1b"},
+        {"document_id": "D-3"},
     ], schema=schema)
-    old = publish_old(bucket, monkeypatch, tmp_path, "comment-attributes", {"comment_attributes": table})
+    old = publish_old(bucket, monkeypatch, tmp_path, "document-attributes", {"document_attributes": table})
     written = list(bucket.writes)
     monkeypatch.setattr(conversion, "source_state", lambda remote: dict(STATE))
     monkeypatch.setenv("SPICY_REGS_REQUIRE_BULK", "true")
@@ -222,15 +251,29 @@ def test_comment_attributes_cli_converts_typed_rows_without_publication(tmp_path
 
     monkeypatch.setattr(regulations_bulk, "write_held_dataset", observed)
     work = tmp_path / "attributes"
-    assert conversion.main(["comment-attributes", "--allow", "comment-attributes", "--work", str(work),
+    assert conversion.main(["document-attributes", "--allow", "document-attributes", "--work", str(work),
                             "--expect-main", MAIN, "--expect-spicy-docs", WHEEL]) == 0
     receipt = json.loads((work / conversion.RECEIPT).read_text())
-    assert routes == ["comment_attributes"]
+    assert routes == ["document_attributes"]
     assert receipt["captured"]["entry"] == old
     assert receipt["published"] is None and bucket.writes == written
-    assert receipt["tables"]["comment_attributes"] == {
+    assert receipt["tables"]["document_attributes"] == {
         "retained_rows": 3, "subject_rows": 3, "rows_only_in_restored": 0, "rows_only_in_retained": 0,
         "columns_only_in_restored": [], "columns_only_in_retained": [], "type_changes": {}, "metadata_changes": []}
+
+
+def test_a_retired_attribute_table_never_converts_into_receipts(tmp_path, monkeypatch, bucket):
+    from spicy_regs.schemas.regulations_subjects import SOURCE_COLUMNS
+    from spicy_regs.transforms.regulations_shape import TYPES
+
+    schema = pa.schema([(name, TYPES[kind]) for name, kind in SOURCE_COLUMNS["comment_attributes"]])
+    old = publish_old(bucket, monkeypatch, tmp_path, "comment-attributes",
+                      {"comment_attributes": pa.Table.from_pylist([{"comment_id": "C-1"}], schema=schema)})
+    written = list(bucket.writes)
+    with pytest.raises(conversion.ConversionRefused, match=r"Receipts are retired for \['comment_attributes'\]"):
+        convert("comment-attributes", tmp_path / "work", publish=True)
+    assert bucket.writes == written
+    assert publication.current_index(BASE)["families"]["comment-attributes"] == old
 
 
 def test_a_court_family_converts_through_the_court_writer(tmp_path, monkeypatch, bucket):
@@ -1712,3 +1755,9 @@ def test_court_conversion_refuses_file_metadata_the_maintained_restore_cannot_re
     assert not pq.read_schema(restored).equals(pq.read_schema(original), check_metadata=True)
     assert bucket.writes == writes
     assert publication.current_index(BASE)["families"]["courtlistener"] == old
+
+
+def test_the_retired_cfr_family_is_not_converted(tmp_path, monkeypatch, bucket):
+    """Without the stand-in, cfr-sections has no receipt route to convert through: it publishes without receipts."""
+    monkeypatch.undo()
+    assert conversion._rollup_class("cfr-sections") is None

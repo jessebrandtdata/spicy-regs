@@ -118,6 +118,13 @@ def main(tables=None):
         field_prose['fec_agency_reports',target] = f'Publisher report field {source}, retained as substantive report data.'
     field_prose['fec_relationships', 'collection_id'] = 'Collection identifier explicitly retained in this relationship\'s source locator; null when the coordinate is unavailable.'
     field_prose['fec_relationships', 'source_record_id'] = 'Individual source-record identifier explicitly retained in this relationship\'s locator. Together with collection_id and source_sha256 it identifies a source occurrence; no coordinate is invented.'
+    field_prose['federal_register', 'source_sha256'] = (
+        'SHA-256 of the retained Federal Register API page this row was last read from, as the run\'s source-evidence '
+        'journal spells it (`sha256:<hex>`); the page is `source-evidence/blobs/sha256/<hex>`. NULL on a row no run '
+        'has read since the column was added (2026-11). It is a pointer, not part of the record: the scheduled run '
+        're-reads the last 120 days, so it changes every night on every row in that window (about 8,700) whether '
+        'or not the record changed, and a comparison of two generations must leave it out. Where one run reads a '
+        'document on two pages it names the first.')
     extras = {
         'attachments':'attachments_json', 'attachment_records':'attachments_json', 'fr_document_ids':'fr_document_ids_json',
         'is_original':'is_original_raw','agency_codes':'agency_codes_json','links':'links_json','dates':'dates_json',

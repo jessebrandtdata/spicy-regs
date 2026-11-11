@@ -382,7 +382,8 @@ receives (`incoming`) from `table_joins.json`, which `spicy-regs-dict generate`
 bundles from `spicy_regs.table_joins` and `check` refuses when stale. Each join
 carries its kind (`complete`, `scope`, `design`, `empty`), the reason for a
 partial one, and its measured baseline. `scripts/check_table_joins.py` holds the
-live tables to each floor nightly in `check-rollup-freshness.yml`.
+live tables to each changed declaration's floor in PR CI, and to every floor when
+run by hand.
 
 **The meaning text lives in the record (round 5).** `joins.basis` and
 `qualification.basis` are the records' own top-level `basis`, which
@@ -595,120 +596,6 @@ That lookup reads `document_citations` alone, never a parent such as
 selection passed as an answer, after unknown kinds in round 4.
 `coverage.partial` is true when the page was capped or offset, an occurrence
 was not looked up (`coverage.reason_counts`), or the document was not read.
-
-## Receipt field lookup (`read_receipt_fields`, `receipt_lookup`)
-
-The native layout keeps a table's reader-facing columns in the subject table
-and the rest in the family's shared receipt member. The tool reads a receipt
-value by table, row key and field (owner decision 2026-10-05), replacing a
-per-column pattern match over `processing_json`.
-
-**What is on offer is worked out per call.** A table's fields are its installed
-policy's receipt fields (`etl_policies/<table>.json`) plus, while the policy
-still declares the mapping, the fields the family's registry says that mapping
-holds (`receipt_fields.json`, built by `receipt_field_declarations` and checked
-by `spicy-regs-dict check`). A policy that stops keeping a whole-row mapping
-takes its fields off offer with no rebuild, and a receipt written without a
-mapping the server still expects refuses those fields rather than reading
-them as NULL. Nothing in the tool's text promises a row's whole original
-record. Courts keep conversion inputs under keys no registry declares, and
-`build_fec_committees` keeps its whole row by an exception in its writer: only
-the declared fields of each are offered.
-
-**Record ids are the writer's.** A key is typed by the installed identity
-schema and digested by `etl_receipts.subject_identity`; text is never trimmed,
-folded or read as a number, and a key that does not fit the identity is
-refused, never answered as a miss. `etl_receipts` imports pyarrow, which the
-Cloudflare image installs for this and the other native readers
-(`deploy/cloudflare/Dockerfile`); `describe_table`'s `receipt_fields` needs
-none. Before any key is looked up, one accepted receipt per policy version has
-its stored record id recomputed from its own identity, and a publication whose
-ids this server does not reproduce is refused.
-
-**One member, read by row range.** Only the receipt member of the family that
-publishes the table is read. Its footer (`parquet_metadata`, cached per pinned
-member) gives each row group's bounds on `dataset` and `policy_version`;
-footers were 2.5 to 4.5 bytes per receipt on 2026-10-05 (sam-entities 1.98 MB
-for 797,525 receipts, scorecards 14.9 MB for 3,301,267, in 2,000-row groups).
-No published member is ordered by record id, so the record ids of the
-dataset's rows are scanned once to find the keys' rows (sam_entities, 797,525
-receipts: 399 requests, 27 MiB, about 1.5 s on 14 threads, 2026-10-05), and a
-dataset past `SCAN_ROW_BOUND` (2,000,000) is refused, from the footer alone:
-no row of a member too large to scan is read to refuse it. Matched receipts
-are then fetched in one statement whose filter is an OR of row ranges, which
-DuckDB 1.5.5 prunes to exactly those groups; one scan per group cost a HEAD
-and a footer read each at bind (11 s for 73 groups against 1.7 s). An `IN`
-list on `record_id` prunes only by the list's overall range, so it is never
-the filter that selects groups.
-
-Sorting each member at admission, so that a footer could find a key's row
-group, was built and measured on 2026-10-05, then withdrawn: the scorecards
-member (3.3 million receipts, 1.09 GB) took 38 s and 9.2 GB of spill, 8.4
-times its compressed size, on every publish, came out 41% larger because
-digest order compresses worse, and four readers that replay builder order had
-to sort it back. Receipts run 1.7 to 4.5 times their tables' bytes, so the
-larger families would not fit a runner. The bulk writer keeps builder order
-too, so nothing reads a footer for order. The planned way past the bound is a
-small index beside an untouched member, `(dataset, record_id, row number)` in
-record-id order: built in 2.1 s for sam-entities and 1.5 s for scorecards the
-same day, about 40 bytes a row. The current publication reader accepts an
-optional `etlReceipts.keyIndex` descriptor, and `receipt_key_index` checks
-sidecar pins and reads indexed positions. This tool still uses the bounded
-scan path. Activating an indexed tool path needs its own public-tool
-qualification.
-
-**What the bound counts.** The count compared with `SCAN_ROW_BOUND` is the rows of every row group whose
-`dataset` bounds admit the table's name, so it includes other tables' receipts in a group they share and is
-an upper bound on the table's own. Exact for a table alone in its member; over by at most its shared groups
-otherwise. In the retained 2026-10-05 historical publication snapshot used for
-the lookup measurement, it refused only the one table whose own receipts
-exceeded the bound. These counts describe that snapshot, not later publications:
-
-| table | rows | receipts the footer counts | |
-|---|---:|---:|---|
-| `crs_reports` | 14,162 | 14,162 |  |
-| `fcc_filings` | 6,609 | 6,609 |  |
-| `fcc_proceedings` | 21,696 | 21,696 |  |
-| `fec_candidate_history` | 130,678 | 130,678 |  |
-| `fec_committee_history` | 298,452 | 298,452 |  |
-| `gao_recommendations` | 5,427 | 5,427 |  |
-| `gao_decisions` | 6,616 | 7,695 |  |
-| `gao_reports` | 53,079 | 54,000 |  |
-| `sam_entities` | 797,525 | 797,525 |  |
-| `scorecard_items` | 19,491 | 22,000 |  |
-| `scorecard_member_item_results` | 2,197,878 | 2,203,402 | refused |
-| `scorecard_member_ratings` | 881,712 | 888,000 |  |
-| `scorecard_members` | 201,569 | 206,000 |  |
-| `scorecard_methodologies` | 12,291 | 20,000 |  |
-| `scorecard_metric_components` | 123 | 10,000 |  |
-| `scorecard_metric_items` | 13,415 | 22,000 |  |
-| `scorecard_metrics` | 2,074 | 6,000 |  |
-| `scorecard_publishers` | 71 | 2,000 |  |
-| `scorecard_snapshots` | receipt-only | 2,000 |  |
-| `scorecards` | 389 | 2,000 |  |
-| `usaspending_recipients` | 232,265 | 232,265 |  |
-
-A table could be refused on other tables' receipts only if its rows were spread through more than a thousand
-shared groups; counting its own rows first would cost a read of the `dataset` column over those groups.
-
-**Policy versions.** Admission accepts the current policy and registered
-earlier policies through `etl_receipts.receipt_policies`; a carried receipt
-keeps its version. A dataset can therefore state several versions. The tool
-reads every version the footer shows and compares one accepted receipt's stated identity
-per version with the installed policy: a different version with the same
-identity is read and named; a different identity is refused, since every
-computed id would miss and read as "no receipt".
-
-**States.** `stated`, `stated_empty`, `unread` and `not_stated` are the
-field-state views' own words (`relationship_views.core.DETAIL_STATES`), and
-`tests/test_mcp_receipt_lookup.py` holds the tool to the views' answer for
-every row and detail field. `unread` and `not_stated` are given only under a
-read marker a builder already acts on (`receipt_field_declarations.read_markers`:
-`detail_read`, the Federal Register's `regulations_dot_gov_info_json`, a roll
-call's per-chamber read columns); every other NULL is `null_unmarked`. The
-committee-report and citation read records live in another dataset's receipts
-and are not wired, so `hearing_transcripts` and `house_activity_reports`
-answer `null_unmarked`.
 
 ## Ledger qualification (`_qualification`)
 

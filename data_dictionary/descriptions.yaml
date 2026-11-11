@@ -345,7 +345,7 @@ tables:
       document_count: "Number of documents the agency posted of that type in that month."
 
   fr_docket_links:
-    grain: "One row per document–docket pair a dated Federal Register record states. Native receipt identity uses document_number, publication_date, literal docket_id and docket_source_ordinal: printed-array positions keep repeated labels distinct; the ordinal is NULL for a regulations.gov-only link, whose docket_id distinguishes the relationship. link_source is not part of the identity."
+    grain: "One row per document–docket pair a dated Federal Register record states. Its row identity is document_number, publication_date, literal docket_id and docket_source_ordinal: printed-array positions keep repeated labels distinct; the ordinal is NULL for a regulations.gov-only link, whose docket_id distinguishes the relationship. link_source is not part of the identity."
     label: "Federal Register to docket links"
     subject: rulemaking
     coverage: >-
@@ -435,7 +435,9 @@ tables:
       metadata, not regulatory body text. Enclosing parts come from annual volume PART
       headings, preserving compound and unusual numbering; printed section numbers alone do
       not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread
-      volumes can retain earlier placement; the annual index package is excluded.
+      volumes can retain earlier placement; the annual index package is excluded. A granule's
+      GovInfo page is `https://www.govinfo.gov/app/details/{package_id}/{granule_id}`, composed
+      from the identifiers and not stored (until 2026-11 only the per-row receipts held it).
     columns:
       granule_id: "GovInfo granule identifier. Primary key / dedup key, including non-section structural units."
       package_id: "GovInfo package identifier for the enclosing annual CFR title and volume."
@@ -557,7 +559,9 @@ tables:
       forward-looking catalog of rulemakings agencies *plan* to pursue, keyed by
       the same `rin` that appears in `federal_register`
       (`regulation_id_numbers`). Primary / dedup key is (`rin`,
-      `agenda_edition`).
+      `agenda_edition`). An entry's reginfo.gov page is
+      `https://www.reginfo.gov/public/do/eAgendaViewRule?pubId={agenda_edition}&RIN={rin}`,
+      composed from the key and not stored (until 2026-11 only the per-row receipts held it).
     columns:
       rin: "Regulation Identifier Number (e.g. `2060-AV12`). The RIN join key to `federal_register`. Half of the primary/dedup key."
       agency_code: "Short code of the agency that owns the RIN."
@@ -997,7 +1001,15 @@ tables:
       `regulations_dot_gov_info_json`, which a row read since holds as `'{}'`
       at least. The scheduled run re-reads the last 120 days, so a relayed
       comment count follows the Register's own checks to about the comment
-      period's close.
+      period's close. `html_url`, `pdf_url`, `body_html_url` and
+      `regulations_dot_gov_info_json` are the last columns: they were held
+      beside the table until 2026-11 and are as the Register stated them,
+      its nulls included: `pdf_url` is NULL on about 33,500 rows, mostly
+      1994, where it serves no PDF. `source_sha256` names the retained API
+      page a row was last read from and is NULL on a row not read since it
+      was added, which is every document published before the 120-day window
+      of that first run. It changes nightly on every row in the window, so
+      compare generations without it.
     columns_from: spicy_docs
   sam_entities:
     identity_columns: [uei, entity_eft_indicator]
@@ -1058,8 +1070,6 @@ tables:
       entity_url: "Entity's self-reported website URL (`coreData.entityInformation.entityURL`). Often null."
   lobbying_filings:
     identity_columns: [filing_uuid]
-    # Historical physical columns, described only while an old generation holds them.
-    legacy_columns: [lobbying_activities_json, government_entities_json, url]
     label: "Lobbying disclosure filings"
     subject: lobbying
     coverage: >-
@@ -1096,10 +1106,9 @@ tables:
       expenses: "Lobbying expenses reported by a self-filing organization for the period, in USD. Null for firms (who report `income`). An amended report (`filing_type` `1A`–`4A`) restates its quarter's amount, often unchanged, so summing over every filing counts that quarter twice; drop registrations (`RR`, `RA`) and keep the latest filing per registrant, `client_id` and quarter (see `filing_type`). A self-filing organization's expenses already include what it pays outside lobbying firms, whose `income` for that client is reported separately; do not add the two."
       lobbying_activities_json: "JSON array of lobbying activities, each `{general_issue_code, general_issue_code_display, description}` — the issue areas lobbied and their free-text descriptions."
       government_entities_json: "JSON array of the distinct government entities lobbied (`{id, name}`) — the agencies and chambers (e.g. `HOUSE OF REPRESENTATIVES`, `SENATE`) named across the filing's activities."
-      url: "URL of the filing's printable document page on lda.gov (`filing_document_url`; lda.senate.gov redirects there)."
       filing_type_display: "The publisher's label for `filing_type`, as served (e.g. `1st Quarter - Report`, `Registration`)."
       filing_period_display: "The publisher's label for `filing_period`, as served (e.g. `1st Quarter (Jan 1 - Mar 31)`)."
-      filing_document_content_type: "Media type of the filing document (the receipt's `url`), as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none."
+      filing_document_content_type: "Media type of the filing document (`url`), as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none."
       expenses_method: "The self-filer's expense accounting method code as filed (`expenses_method`). Two spellings occur, both kept as filed: lower case `a`, `b`, `c`, whose `expenses_method_display` is the long label, and upper case `A`, `B`, `C`, whose display is the bare letter; both occur in current years (a 400-page retained sample, 2026-10-30, held 751 lower-case and 286 upper-case codes). `a`/`A` is Method A (LDA definitions), `b`/`B` Method B (IRC 6033(b)(8)), `c`/`C` Method C (IRC 162(e)). Null when the filing states no method, as on most firm reports, which carry `income` instead."
       expenses_method_display: "The publisher's label for `expenses_method`, as filed: `Method A - Reporting amounts using LDA definitions only`, `Method B - Reporting amounts under section 6033(b)(8) of the Internal Revenue Code`, `Method C - Reporting amounts under section 162(e) of the Internal Revenue Code`, or the bare letter when the code is upper case."
       termination_date: "Date the registrant ended its representation of the client, on a termination report (`filing_type` `1T`–`4T`, `MT` and their no-activity forms). Null on other filings."
@@ -1112,6 +1121,7 @@ tables:
       registrant_country: "Country of the registrant's address as filed on this filing, as the publisher displays it (e.g. `United States of America`), not a country code."
       registrant_ppb_country: "Country of the registrant's principal place of business as filed, when the filing states one (display name); null otherwise."
       registrant_different_address: "The filing's flag for whether the registrant's principal place of business differs from the address filed: true, false, or null when the filing does not carry it (registrations among others)."
+      url: "The filing's `filing_document_url` as LDA served it: its printable document page (`https://lda.gov/filings/public/filing/<filing_uuid>/print/`; lda.senate.gov redirects there). Ten filings of 2006-2007 hold an API page address instead, as captured (measured 2026-11-11). Before 2026-11-11 this value was held only in the row's ETL receipt."
   lobbying_activities:
     identity_columns: [filing_uuid, activity_index]
     label: "Lobbying activities"
@@ -1301,6 +1311,7 @@ tables:
       dt_updated: "When LDA last updated this registrant record, as LDA states it."
       captured_at: "When spicy-regs captured the filing page this row was read from (UTC): the profile is LDA's record at that moment."
       captured_filing_uuid: "The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`."
+      url: "LDA's API address of this registrant record (`registrant.url`, `https://lda.gov/api/v1/registrants/<registrant_id>/`), as served."
   lobbying_clients:
     identity_columns: [client_id]
     label: "Lobbying clients (profile as last captured)"
@@ -1338,6 +1349,7 @@ tables:
       effective_date: "The client relationship's effective date in LDA's record."
       captured_at: "When spicy-regs captured the filing page this row was read from (UTC): the profile is LDA's record at that moment."
       captured_filing_uuid: "The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`."
+      url: "LDA's API address of this client record (`client.url`, `https://lda.gov/api/v1/clients/<client_id>/`), as served."
   fec_committees:
     label: "Political committees"
     subject: campaign_finance
@@ -1902,9 +1914,12 @@ tables:
       Not a range. The complete 2026-06-30 CourtListener opinion-clusters
       export, every mapped source field checked against the original export; the
       court fields agree with the same-edition docket map and court reference
-      data. A search catch-up adds every cluster whose id is above the export's
-      highest, whatever its filing date; a correction to an exported cluster
-      arrives with the next export. Opinion bodies and broader historical
+      data. A daily search catch-up adds the clusters whose ids are above the
+      export's highest, whatever their filing date, in id order and one day's
+      request quota at a time: the table is complete through its highest
+      cluster_id for what the publisher's search returned, and can be weeks
+      behind the publisher (docs/court-search-recovery.md). A correction to an exported
+      cluster arrives with the next export. Opinion bodies and broader historical
       coverage are separate. Per-court gaps are the publisher's: cadc has no
       unpublished cluster between 2001-04 and 2020-07. See
       docs/research/fork-output-ledger-2026-09-21.md and receipt
@@ -2015,6 +2030,7 @@ tables:
       date_created: "Timestamp the publisher created the citation record."
       date_modified: "Timestamp the publisher last modified the citation record."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_citation_map:
     label: "Court opinion citation map"
     subject: courts
@@ -2050,8 +2066,9 @@ tables:
     columns:
       citing_opinion_id: "CourtListener opinion ID of the opinion that cites. Joins court_opinions.opinion_id."
       cited_opinion_id: "CourtListener opinion ID of the opinion cited. Joins court_opinions.opinion_id."
-      depth: "Number of times the citing opinion cites the cited one, as text."
+      depth: "Number of times the citing opinion cites the cited one."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_parentheticals:
     label: "Court opinion parentheticals"
     subject: courts
@@ -2086,9 +2103,10 @@ tables:
       described_opinion_id: "CourtListener opinion ID of the opinion the parenthetical summarizes. Joins court_opinions.opinion_id."
       describing_opinion_id: "CourtListener opinion ID of the opinion that wrote the parenthetical. Joins court_opinions.opinion_id."
       text: "The parenthetical as the describing opinion wrote it."
-      score: "Publisher's 0-to-1 estimate of how descriptive the text is, as text."
+      score: "Publisher's 0-to-1 estimate of how descriptive the text is."
       group_id: "Publisher's group label for parentheticals making the same point; NULL when ungrouped. Compare within this table only: the publisher declares but never exports its group table."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_opinions:
     label: "Court opinions (index, no text)"
     subject: courts
@@ -2124,14 +2142,15 @@ tables:
       author_str: "Author as the publisher's source text names them; not resolved to a person."
       per_curiam: "Publisher per-curiam flag (`t` or `f`)."
       joined_by_str: "Judges joining the opinion, as the publisher's source text names them."
-      page_count: "Page count of the original document when known, as text."
+      page_count: "Page count of the original document when known."
       sha1: "Publisher's SHA-1 of the original document; not a SpicyRegs capture digest."
       download_url: "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number."
       local_path: "Path of the original document in CourtListener's storage, not a SpicyRegs file."
-      extracted_by_ocr: "Publisher flag for text extracted by OCR (`t` or `f`)."
+      extracted_by_ocr: "Publisher flag: true when the opinion's text was extracted by OCR (the export spells it `t` or `f`)."
       date_created: "Timestamp the publisher created the opinion record."
       date_modified: "Timestamp the publisher last modified the opinion record."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_opinion_texts:
     label: "Court opinion texts (Markdown)"
     subject: courts
@@ -2264,9 +2283,9 @@ tables:
       proceeding scope.
     columns:
       id_submission: >-
-        ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov
-        (`https://www.fcc.gov/ecfs/filing/<id_submission>`, the former `filing_url` column) is kept in the filing's
-        receipt, not in this table: ask `read_receipt_fields` for the field `filing_url`.
+        ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov is
+        `https://www.fcc.gov/ecfs/filing/<id_submission>`: the former `filing_url` column, which this table does not
+        hold.
       proceeding_names_json: "JSON array of proceeding (docket) numbers the filing was submitted to (e.g. `[\"17-108\"]`). Join key to `fcc_proceedings.name`."
       submission_type: "ECFS submission type description, e.g. `COMMENT`, `REPLY TO COMMENTS`, `NOTICE OF EXPARTE`."
       express_comment: "Publisher express-comment flag, normalized to BOOLEAN. NULL means the publisher omitted the flag or supplied null; retained native evidence distinguishes those states. The flag alone does not establish document availability."
@@ -2896,13 +2915,16 @@ tables:
     label: "Member vote terms"
     subject: congress
     coverage: >-
-      Derived, and bounded by its inputs: one row for every `member_votes` row,
-      matched to the member's term on the vote date.
-    measured_on: "2026-09-23"
+      Derived, and bounded by its inputs: one row for every `member_votes` row
+      whose term the rule establishes (`half_open` or `inclusive_end`). A vote
+      it gives no term is left out: it is the `member_votes` row with no row
+      here.
+    measured_on: "2026-11-11"
     data_quality: >-
-      On 2026-09-23 all but 18 votes matched a half-open term: 15 matched only
-      an inclusive end date and 3 matched no term, exactly as an independent
-      replay found
+      On 2026-11-11, of 10,563,782 votes, 232 matched only an inclusive end
+      date, 12 matched no term and 2 named no resolvable member; those 14 are
+      left out. On 2026-09-23 the same rule matched all but 18 of a frozen
+      selection exactly as an independent replay found
       (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).
     summary: >-
       The term each member vote counts toward (delivery decision 2). A vote on
@@ -9290,7 +9312,9 @@ tables:
     - record_id
     coverage: Sampled. Supported observations from retained candidate, committee, presidential and bundling summary
       layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration
-      does not establish complete FEC history or current publication.
+      does not establish complete FEC history or current publication. Its 2026 candidate and committee summary CSVs
+      are the 2026-09-12 captures; fec_financial_profiles is refreshed separately from the publisher's current files,
+      so the two can disagree for one entity.
     measured_on: '2026-10-01'
     data_quality: Two layouts repeat one figure. candidate-web-summary/1 holds a candidate's row from FEC's weball
       file and, for a current House or Senate campaign, an identical row from webl, a subset of weball;
@@ -10180,9 +10204,10 @@ tables:
     subject: reference
     summary: One native structural occurrence linked to its edition member. Source positions, labels, status
       and native context remain distinct from section text.
-    coverage: Sampled. Native structural observations in selected annual XHTML and release-point USLM members.
-      Section-body coverage requires separate content qualification.
-    measured_on: '2026-10-10'
+    coverage: Sampled. Native structural observations in the selected editions' members (the 2000 annual
+      XHTML archive; release points 119-102 and 119-138). Section-body coverage requires separate content
+      qualification.
+    measured_on: '2026-11-11'
     grain: One native structural occurrence linked to its edition member. Source positions, labels, status
       and native context remain distinct from section text.
     identity_columns:
@@ -10201,9 +10226,11 @@ tables:
     subject: reference
     summary: One native annual or release-point archive member observed in its edition. Requested year,
       native publication year, carried-forward state and appendices remain separate.
-    coverage: Sampled. Selected retained original archive members only; edition membership and source structure
+    coverage: Sampled. Every member of the selected editions only, each added by explicit decision -- the 2000
+      annual XHTML archive and the complete release-point XML corpora at 119-102 and 119-138 (current through
+      Public Law 119-138); other years and release points are not held. Edition membership and source structure
       do not establish complete section-body qualification.
-    measured_on: '2026-10-10'
+    measured_on: '2026-11-11'
     grain: One native annual or release-point archive member observed in its edition. Requested year, native
       publication year, carried-forward state and appendices remain separate.
     identity_columns:
@@ -10226,8 +10253,8 @@ tables:
     label: Retained U.S. Code section content
     subject: reference
     summary: One section, range, stub or other content observation within a selected edition member. Native identifiers, source context and readable text preserve the retained source meaning.
-    coverage: Sampled. Selected retained annual XHTML and release-point XML members; complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.
-    measured_on: '2026-10-12'
+    coverage: Sampled. The selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138); complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.
+    measured_on: '2026-11-11'
     grain: One native content observation linked to an edition member.
     identity_columns:
     - observation_id
@@ -10902,10 +10929,10 @@ tables:
     subject: spending
     summary: One observation per source notice in a declared Grants.gov daily XML snapshot, with literal eligibility,
       deadlines, amounts and source revisions.
-    coverage: Not a range. Designed to retain every admitted record in each explicitly selected daily snapshot.
-      Full real-export qualification and public delivery are pending. The date records this design statement,
-      not a source measurement. Snapshot membership does not establish active/open status, withdrawal, deletion
-      or historical completeness.
+    coverage: Not a range. Every admitted record of each explicitly selected daily export is retained. Each
+      refresh replaces the published snapshot with the export it selects; earlier snapshots are in earlier
+      generations, not in this table. Snapshot membership does not establish active/open status, withdrawal,
+      deletion or historical completeness.
     measured_on: '2026-10-20'
     grain: One source release, notice kind and native opportunity ID; publisher versions and older selected snapshots
       remain distinct.
@@ -10972,19 +10999,19 @@ tables:
   executive_order_observations:
     label: Executive order text and publisher history
     subject: reference
-    summary: Every numbered executive order in an explicitly selected complete Federal Register publication year,
-      with retained text, publisher attribution and literal history notes.
-    coverage: Not a range. Designed for complete explicitly selected publication years with every admitted order
-      represented, including explicit body acquisition failures. Full-year source and body qualification and public
-      delivery are pending. The date records this design statement, not a source measurement.
-    measured_on: '2026-10-20'
+    summary: Every executive order the Federal Register API serves, with retained text, publisher attribution and
+      literal history notes.
+    coverage: True range. Every executive order the Federal Register API serves, from EO 12890 (published
+      1994-01-05) on; the API serves no document published before 1994. The last publication date a generation's
+      listing covered is in its file metadata (`parquet_kv_metadata`, key `spicy_regs.executive_orders.coverage`).
+    measured_on: '2026-11-10'
     grain: One dated Federal Register document in the admitted source release; EO number is a lookup value,
       not the sole source identity. History is the publisher's literal notes, not an inferred legal status.
     columns:
-      publication_year: Calendar year of Federal Register publication, not the signing year.
-      executive_order_number: Exact publisher EO number used for lookup.
+      publication_year: Calendar year of Federal Register publication, not the signing year and not a completeness marker.
+      executive_order_number: Exact publisher EO number used for lookup; null where the publisher states none, as for corrections, designations and a few orders the API files under executive orders.
       document_number: Exact Federal Register document number; pair with publication_date for source identity.
-      publication_date: Federal Register publication date; determines membership in the selected year.
+      publication_date: Federal Register publication date.
       signing_date: Publisher signing date, which may precede the publication year.
       title: Literal publisher document title.
       president_identifier: Publisher president identifier; attribution from metadata, not independent signer verification.
@@ -11006,10 +11033,11 @@ tables:
       body_result_json: Per-record attempt, source release, request limits, response pins and explicit failure evidence.
       offered_renditions_json: Literal publisher rendition URLs where present; offered does not establish availability or success.
       source_record_id: Dated Federal Register source identity, checked against the admitted metadata evidence ledger.
-      source_release_logical_id: Logical identity of the admitted metadata release.
-      source_release_digest: Exact admitted metadata release digest.
+      source_release_logical_id: Logical identity of the admitted metadata release the row was read from; kept while the publisher's record and body result are unchanged.
+      source_release_digest: Exact admitted metadata release digest the row was read from; kept like source_release_logical_id.
       metadata_locator_json: Original API response digest and row locator from the admitted source evidence ledger.
       raw_metadata_json: Complete admitted native metadata; preserves missing, null and empty values even where nullable SQL columns collapse them.
+      source_sha256: SHA-256 of the retained API listing page the row was read from (`sha256:<hex>`, the locator's evidenceBlobRef); the bytes are `source-evidence/blobs/sha256/<hex>`.
   fec_financial_profiles:
     label: Reported candidate and committee financial profiles
     subject: campaign_finance
@@ -11017,16 +11045,19 @@ tables:
     - profile_id
     summary: Exact source-reported money for an explicitly selected candidate and committee CSV snapshot, with visible
       missing dates and unresolved conflicts.
-    coverage: Not a range. Designed for complete explicitly selected candidate and committee summary CSV populations
-      in one election cycle. Actual population and publication are established by the selected generation and its
-      retained source evidence. The date records this design statement, not a source measurement.
-    measured_on: '2026-10-20'
+    coverage: Not a range. Every row of one captured pair of the FEC's 2026 candidate and committee summary CSVs,
+      which FEC rewrites daily; captured_at and period_end say how current each profile is. Each refresh replaces
+      the published pair; earlier pairs are in earlier generations and source evidence, not in this table. The
+      fec-query tables keep their own, older captures. The date records this design statement, not a source measurement.
+    measured_on: '2026-11-10'
     grain: One native entity, kind, cycle and explicit snapshot scope. Equivalent witnesses select once; conflicting
       facts remain visible without choosing a winner.
     columns:
-      profile_id: Stable profile identity from selection policy, explicit scope, entity kind, native entity ID and
-        election cycle.
-      scope_id: Explicit retained snapshot selection identity. This is not an automatically refreshed latest record.
+      profile_id: Profile identity from selection policy, entity kind, native entity ID and election cycle; the same
+        entity keeps it across refreshes. Generations published before 2026-11 also hashed scope_id, so theirs changed
+        with each capture.
+      scope_id: Names the cycle and capture day of the published CSV pair; it changes with each refresh, profile_id
+        does not.
       entity_kind: Candidate or committee; candidate-wide and committee amounts must not be added together.
       entity_id: Literal FEC candidate or committee identifier from the selected source.
       entity_name: Publisher entity name when every witness agrees; null for conflicting names.
@@ -11048,9 +11079,9 @@ tables:
       captured_at: Aware timestamp of the explicitly selected original source capture. Values are only as fresh as
         this retained snapshot; no live freshness guarantee.
       source_collection_id: Exact selected candidate or committee summary CSV collection identity.
-      source_sha256: SHA-256 of the original retained CSV capture, distinct from the derived parent table.
-      source_table_generation: Exact managed fec-query generation containing the input summary table; recorded as
-        a generation parent.
+      source_sha256: SHA-256 of the original retained CSV capture the profile was mapped from.
+      source_table_generation: Null since profiles are mapped from the captured CSV itself (source_sha256). Generations
+        published before 2026-11 named the fec-query generation they were selected from.
       witnesses_json: All complete selected summary observations for this entity, including original raw measures,
         native locators, linked candidates, dates and mapping identities. Decimals serialize as exact text.
       source_url: Publisher URL recorded for the selected CSV capture; not a newly acquired source.
@@ -11102,7 +11133,8 @@ tables:
     - entity_id
     summary: Literal OFAC enhanced-export observations with selected-list context and retained source history.
     coverage: Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN
-      and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence
+      and consolidated exports need not share an update time. Each refresh replaces the published snapshots
+      with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence
       does not establish delisting, and no history before these captures is inferred. Qualification and public
       selection are recorded by the generation evidence.
     measured_on: '2026-10-20'
@@ -11147,7 +11179,8 @@ tables:
     - snapshot_id
     summary: Publication metadata and reference dictionaries retained once per selected OFAC snapshot.
     coverage: Not a range. Every entity in each explicitly admitted selected export is retained. Selected SDN
-      and consolidated exports need not share an update time. Prior selected snapshots remain on refresh; absence
+      and consolidated exports need not share an update time. Each refresh replaces the published snapshots
+      with the exports it selects; earlier snapshots are in earlier generations, not in this table. Absence
       does not establish delisting, and no history before these captures is inferred. Qualification and public
       selection are recorded by the generation evidence.
     measured_on: '2026-10-20'

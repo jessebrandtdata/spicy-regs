@@ -4,9 +4,14 @@ from copy import deepcopy
 from datetime import date
 from decimal import Decimal
 import hashlib
+from io import BytesIO
 import json
+from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import escape
+from zipfile import ZipFile
 
+import httpx
 import pyarrow.parquet as pq
 import pytest
 from rulespec_artifacts import ArtifactPin
@@ -16,6 +21,7 @@ from spicy_regs.pipelines import grants_opportunities as pipeline
 from spicy_regs.sources import publication
 from spicy_regs.transforms import build_grants_opportunities as module
 from tests.generation_fakes import Store
+from tests.published_paths import local_paths
 
 
 class Reader:
@@ -253,3 +259,80 @@ def test_changed_archive_refuses_before_table_or_generation(tmp_path):
         pipeline.build([reader], output, archives={ref: archive})
     assert not (output / module.OUTPUT).exists()
     assert not (output / "generation").exists()
+
+
+def export_zip(snapshot, rows):
+    """A small daily export in the publisher's layout: one XML member named for its date."""
+    records = "".join(
+        f"<Opportunity{kind.title()}Detail_1_0>"
+        + "".join(f"<{tag}>{escape(text)}</{tag}>" for tag, text in fields)
+        + f"</Opportunity{kind.title()}Detail_1_0>"
+        for kind, fields in rows
+    )
+    body = BytesIO()
+    with ZipFile(body, "w") as archive:
+        archive.writestr(f"GrantsDBExtract{snapshot.replace('-', '')}v2.xml",
+                         f'<Grants xmlns="{module.NAMESPACE[1:-1]}">{records}</Grants>')
+    return body.getvalue()
+
+
+def test_acquire_retains_the_export_in_raw_and_builds_from_its_capture(tmp_path, monkeypatch, capsys):
+    """The download is bound to the version the publisher states, kept in raw, and built from there."""
+    from spicy_docs.storage.raw_archive import CentralRawArchiveStore, iter_acquisition_receipts
+
+    official = "https://prod-grants-gov-chatbot.s3.amazonaws.com/extracts/GrantsDBExtract20261109v2.zip"
+    archive = export_zip("2026-11-09", [synopsis(), forecast()])
+    digest = "sha256:" + hashlib.sha256(archive).hexdigest()
+    stated = {"content-type": "application/zip", "etag": '"fixture-version-7"', "content-length": str(len(archive))}
+    requests = []
+
+    def serve(request):
+        requests.append((request.method, str(request.url), request.headers.get("if-match")))
+        return httpx.Response(200, headers=stated, content=b"" if request.method == "HEAD" else archive)
+
+    selection = pipeline.acquire(["2026-11-09"], tmp_path / "acquire", transport=httpx.MockTransport(serve))
+    assert requests == [("HEAD", official, None), ("GET", official, '"fixture-version-7"')]
+    (scope,) = selection["releases"]
+    assert scope["snapshot_date"] == "2026-11-09" and scope["member_name"] == "GrantsDBExtract20261109v2.xml"
+    assert {key: scope["capture"][key] for key in ("request_url", "response_sha256", "byte_size")} == {
+        "request_url": official, "response_sha256": digest, "byte_size": len(archive)}
+    raw = tmp_path / "central-raw"  # the archive every test is given
+    assert CentralRawArchiveStore(raw, create=False).describe_blob(digest, len(archive))["encoding"] == "raw"
+    assert [(row["source_url"], row["sha256"]) for _path, document in iter_acquisition_receipts(raw)
+            for row in document["files"]] == [(official, digest[7:])]
+
+    captures = tmp_path / "captures.json"
+    captures.write_text(json.dumps(selection))
+    output = tmp_path / "build"
+    monkeypatch.setattr("sys.argv", ["grants", "build", "--captures", str(captures), "--output-dir", str(output)])
+    pipeline.main()
+    built = json.loads(capsys.readouterr().out)
+    evidence = Path(built["sourceEvidence"])
+    # An admitted release yields its records in source-record order: the forecast precedes the synopsis.
+    second, first = pq.read_table(output / "generation" / module.OUTPUT).to_pylist()
+    assert (first["opportunity_id"], first["notice_type"], first["version"]) == ("00123", "synopsis", "Synopsis 2")
+    assert (first["snapshot_date"], first["close_date"]) == (date(2026, 11, 9), date(2026, 10, 20))
+    assert first["title"] == "Research &amp; learning" and first["award_ceiling"] == Decimal("900719925474099.01")
+    assert (second["opportunity_id"], second["notice_type"]) == ("00456", "forecast")
+    assert json.loads(first["source_locator_json"])["request_url"] == official
+    (retained,) = [event for line in (evidence / "journal.jsonl").read_text().splitlines()
+                   if (event := json.loads(line))["event"] == "retained-file"]
+    assert (retained["original_location"], retained["sha256"]) == (official, digest)
+    assert local_paths(output / "generation", evidence, also=(str(tmp_path),)) == []
+    index = publication.publish_generation(
+        output / "generation", client=Store(), bucket="fixture",
+        prior_index=publication.empty_index(), evidence_directories=(evidence,),
+    )
+    assert index["families"]["grants-opportunities"]["artifactDigest"] == built["artifactDigest"]
+
+
+def test_acquire_refuses_an_export_that_changes_after_its_version_was_stated(tmp_path):
+    archive = export_zip("2026-11-09", [synopsis()])
+
+    def serve(request):
+        version = '"stated"' if request.method == "HEAD" else '"republished"'
+        return httpx.Response(200, content=b"" if request.method == "HEAD" else archive, headers={
+            "content-type": "application/zip", "etag": version, "content-length": str(len(archive))})
+
+    with pytest.raises(ValueError, match="ETag does not match its selected version"):
+        pipeline.acquire(["2026-11-09"], tmp_path / "acquire", transport=httpx.MockTransport(serve))

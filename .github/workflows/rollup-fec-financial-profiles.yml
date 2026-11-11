@@ -1,0 +1,22 @@
+name: Rollup — fec_financial_profiles
+# Daily, about 90 minutes after FEC rewrites the files (10:13 UTC on 2026-11-10). A run whose two downloads are the
+# published CSVs publishes nothing and ends green.
+# Built here: the 2026 candidate and committee summary CSVs FEC rewrites every day (about 10:15 UTC).
+on:
+  schedule:
+    - cron: '51 11 * * *'
+  workflow_dispatch:
+    inputs:
+      skip_upload:
+        description: 'Skip R2 upload (dry run)'
+        required: false
+        default: true
+        type: boolean
+jobs:
+  run:
+    uses: ./.github/workflows/_rollup.yml
+    secrets: inherit
+    with:
+      command: run-rollup-fec-financial-profiles
+      skip_upload: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_upload || false }}
+      timeout_minutes: 15

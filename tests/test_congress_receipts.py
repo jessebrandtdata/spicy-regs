@@ -36,6 +36,23 @@ def test_member_nickname_preserves_exact_source_value_through_native_restore(tmp
     assert pq.read_table(restored).equals(pq.read_table(source), check_metadata=True)
 
 
+@pytest.mark.parametrize("names", [
+    # French Hill (H001072): a first initial, the middle name he goes by, and the House's full name.
+    {"name_middle": "French", "name_suffix": None, "name_official_full": "French Hill"},
+    {"name_middle": "T.", "name_suffix": "Jr.", "name_official_full": None},
+    {"name_middle": None, "name_suffix": "III", "name_official_full": "  Literal  "},
+])
+def test_member_name_parts_are_classified_and_kept_exactly_through_native_restore(tmp_path, names):
+    """spicy-docs 0.85.0's three name columns are subject columns of ``members``, as stated, never refused or dropped."""
+    source = shaped(tmp_path / "source.parquet", [{"bioguide_id": "X", "name_first": "J.", **names}])
+    subject, receipts = write_congress_dataset(source, tmp_path / "bundle", dataset="members", generation_id="g")
+    assert pq.read_table(subject).select(list(names)).to_pylist() == [names]
+    restored = restore_processing_input(
+        subject, receipts, tmp_path / "restored.parquet", dataset="members", generation_id="g"
+    )
+    assert pq.read_table(restored).equals(pq.read_table(source), check_metadata=True)
+
+
 @pytest.mark.parametrize("name", INDEX_SPECS)
 def test_real_index_producer_admits_native_subjects_and_resumes_from_receipts(tmp_path, name):
     first = CongressBuild("first")
@@ -216,7 +233,7 @@ def test_next_generation_names_only_its_predecessor_when_subject_changes(tmp_pat
     assert after["generation_id"] == "next"
 
 
-def test_members_source_journal_is_retained_in_shared_receipts(tmp_path):
+def test_members_source_journal_is_retained_in_shared_receipts(tmp_path, votes_receipts_unretired):
     from spicy_regs.congress_receipts import ACQUISITION_POLICY
     from spicy_regs.etl_receipts import read_attempts, select_receipts
     from spicy_regs.source_evidence import CaptureEvidence
@@ -233,7 +250,9 @@ def test_members_source_journal_is_retained_in_shared_receipts(tmp_path):
     assert [
         e["processing_fields"]["capture_event"] for e in events if "capture_event" in e["processing_fields"]
     ] == journal(evidence)
-    assert all("observed_at" not in pq.read_schema(path).names for path in subjects)
+    # The promoted source fields are columns since the members tables' receipts were retired (ss-vse3), appended last.
+    from spicy_regs.congress_subjects import PROMOTED
+    assert all(pq.read_schema(path).names[-len(PROMOTED[path.stem]):] == list(PROMOTED[path.stem]) for path in subjects)
     build.admit(tmp_path / "generation", family="members", subjects=subjects)
 
 
@@ -488,15 +507,16 @@ def test_bulk_restore_uses_retained_schema_for_python_mapped_datasets(tmp_path, 
     assert scans == [dataset] and admissions == [1]
 
 
-def test_earlier_policies_validates_roll_call_votes_current_descriptor():
+def test_earlier_policies_reads_only_for_the_exact_roll_call_votes_descriptor():
     from dataclasses import replace
     from spicy_regs.congress_receipts import policy as congress_policy
-    from spicy_regs.earlier_receipt_policies import earlier_policies
+    from spicy_regs.policy_migrations import earlier_policies
 
     current = congress_policy("roll_call_votes")
     admitted = earlier_policies(current)
-    assert len(admitted) == 1 and admitted[0].policy_version == "congress-subjects/1"
+    # /2 before its receipt-only fields became columns (ss-vse3), /1 before that.
+    assert sorted(policy.policy_version for policy in admitted) == ["congress-subjects/1", "congress-subjects/2"]
 
+    # A changed descriptor under the current label is not the recorded policy, so it reads nothing earlier.
     tampered = replace(current, subject_schema=current.subject_schema.remove(current.subject_schema.get_field_index("question")))
-    with pytest.raises(ValueError, match="Current roll_call_votes policy differs from the exact declared policy"):
-        earlier_policies(tampered)
+    assert earlier_policies(tampered) == ()
