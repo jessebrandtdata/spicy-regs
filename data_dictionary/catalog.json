@@ -2257,100 +2257,6 @@
         ]
       },
       {
-        "dataset": "lobbying_activities",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "activity_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_activity_lobbyists",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "activity_index",
-          "lobbyist_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_affiliated_organizations",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "affiliated_organization_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_clients",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "client_id"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_conviction_disclosures",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "conviction_disclosure_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_filings",
-        "receipt_only": false,
-        "policy_version": "government-sources/2",
-        "identity_columns": [
-          "filing_uuid"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_foreign_entities",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "foreign_entity_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_registrants",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "registrant_id"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
         "dataset": "native_legal_reference_reads",
         "receipt_only": false,
         "policy_version": "legislative-documents/2",
@@ -3529,7 +3435,8 @@
         "registrant_zip",
         "registrant_country",
         "registrant_ppb_country",
-        "registrant_different_address"
+        "registrant_different_address",
+        "url"
       ]
     },
     {
@@ -3680,7 +3587,8 @@
         "contact_telephone",
         "dt_updated",
         "captured_at",
-        "captured_filing_uuid"
+        "captured_filing_uuid",
+        "url"
       ]
     },
     {
@@ -3709,7 +3617,8 @@
         "ppb_country_display",
         "effective_date",
         "captured_at",
-        "captured_filing_uuid"
+        "captured_filing_uuid",
+        "url"
       ]
     },
     {

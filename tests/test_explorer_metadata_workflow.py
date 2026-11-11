@@ -99,14 +99,15 @@ def test_success_publishes_the_exact_verified_main_revision():
     ]
 
 
-def test_all_publication_triggers_share_the_gate_and_ci_completion_retries():
+def test_an_hourly_schedule_is_the_one_automatic_trigger_and_shares_the_gate():
+    """Hourly catches hosted and workstation publishes and CI-passed main revisions alike; no list to maintain."""
     workflow = _workflow()
     # PyYAML's YAML 1.1 parser treats the unquoted Actions key "on" as True.
     triggers = workflow[True]
-    assert {"push", "schedule", "workflow_dispatch", "workflow_run"} <= triggers.keys()
-    assert "CI" in triggers["workflow_run"]["workflows"]
-    assert triggers["workflow_run"]["types"] == ["completed"]
+    assert triggers.keys() == {"schedule", "workflow_dispatch"}
+    assert triggers["schedule"] == [{"cron": "7 * * * *"}]
     preflight = workflow["jobs"]["preflight"]
+    assert "if" not in preflight
     assert preflight["permissions"] == {"contents": "read", "actions": "read"}
     publish = workflow["jobs"]["publish"]
     assert publish["needs"] == "preflight"

@@ -1,0 +1,665 @@
+{
+ "families": {
+  "lobbying-filings": {
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "etlReceipts": {
+    "byteSize": 46054,
+    "columns": [
+     [
+      "receipt_id",
+      "VARCHAR"
+     ],
+     [
+      "dataset",
+      "VARCHAR"
+     ],
+     [
+      "policy_version",
+      "VARCHAR"
+     ],
+     [
+      "generation_id",
+      "VARCHAR"
+     ],
+     [
+      "record_id",
+      "VARCHAR"
+     ],
+     [
+      "subject_version",
+      "VARCHAR"
+     ],
+     [
+      "identity_json",
+      "VARCHAR"
+     ],
+     [
+      "attempt_id",
+      "VARCHAR"
+     ],
+     [
+      "outcome",
+      "VARCHAR"
+     ],
+     [
+      "processor",
+      "VARCHAR"
+     ],
+     [
+      "witnesses",
+      "STRUCT(source_id VARCHAR, source_uri VARCHAR, sha256 VARCHAR, locator VARCHAR, body_version VARCHAR)[]"
+     ],
+     [
+      "processing_json",
+      "VARCHAR"
+     ],
+     [
+      "diagnostic_json",
+      "VARCHAR"
+     ]
+    ],
+    "datasets": [
+     "lobbying_filings",
+     "lobbying_activities",
+     "lobbying_activity_lobbyists",
+     "lobbying_foreign_entities",
+     "lobbying_affiliated_organizations",
+     "lobbying_conviction_disclosures",
+     "lobbying_registrants",
+     "lobbying_clients"
+    ],
+    "generationId": "a160b3de9e804be29c9a09d0a9949027",
+    "key": "etl_receipts.parquet",
+    "rows": 152,
+    "sha256": "sha256:75b37d19d76a3df59e26491620606bc19cbe811bcf83babc99c99b0b6ab1b5d3"
+   },
+   "logicalId": "urn:spicy:artifact:spicy-regs-rollup-generation:40d719045d419495b835baefdef005b6b3c277d8e7ee27b7d894d61c4cea0c4c",
+   "prefix": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "tables": {
+    "lobbying_filings.parquet": {
+     "byteSize": 16699,
+     "columns": [
+      [
+       "filing_uuid",
+       "VARCHAR"
+      ],
+      [
+       "filing_type",
+       "VARCHAR"
+      ],
+      [
+       "filing_year",
+       "BIGINT"
+      ],
+      [
+       "filing_period",
+       "VARCHAR"
+      ],
+      [
+       "dt_posted",
+       "TIMESTAMP WITH TIME ZONE"
+      ],
+      [
+       "registrant_name",
+       "VARCHAR"
+      ],
+      [
+       "registrant_id",
+       "VARCHAR"
+      ],
+      [
+       "client_name",
+       "VARCHAR"
+      ],
+      [
+       "client_id",
+       "VARCHAR"
+      ],
+      [
+       "income",
+       "DECIMAL(38,6)"
+      ],
+      [
+       "expenses",
+       "DECIMAL(38,6)"
+      ],
+      [
+       "lobbying_activities",
+       "STRUCT(general_issue_code VARCHAR, general_issue_code_display VARCHAR, description VARCHAR)[]"
+      ],
+      [
+       "government_entities",
+       "STRUCT(id VARCHAR, \"name\" VARCHAR)[]"
+      ],
+      [
+       "filing_type_display",
+       "VARCHAR"
+      ],
+      [
+       "filing_period_display",
+       "VARCHAR"
+      ],
+      [
+       "filing_document_content_type",
+       "VARCHAR"
+      ],
+      [
+       "expenses_method",
+       "VARCHAR"
+      ],
+      [
+       "expenses_method_display",
+       "VARCHAR"
+      ],
+      [
+       "termination_date",
+       "DATE"
+      ],
+      [
+       "posted_by_name",
+       "VARCHAR"
+      ],
+      [
+       "registrant_address_1",
+       "VARCHAR"
+      ],
+      [
+       "registrant_address_2",
+       "VARCHAR"
+      ],
+      [
+       "registrant_city",
+       "VARCHAR"
+      ],
+      [
+       "registrant_state",
+       "VARCHAR"
+      ],
+      [
+       "registrant_zip",
+       "VARCHAR"
+      ],
+      [
+       "registrant_country",
+       "VARCHAR"
+      ],
+      [
+       "registrant_ppb_country",
+       "VARCHAR"
+      ],
+      [
+       "registrant_different_address",
+       "BOOLEAN"
+      ]
+     ],
+     "rows": 10,
+     "sha256": "sha256:dc7180743ab9e52634241d6e5a64516632790cd611e27227e18a37d645dbca33"
+    },
+    "lobbying_activities.parquet": {
+     "byteSize": 7912,
+     "columns": [
+      [
+       "filing_uuid",
+       "VARCHAR"
+      ],
+      [
+       "activity_index",
+       "BIGINT"
+      ],
+      [
+       "general_issue_code",
+       "VARCHAR"
+      ],
+      [
+       "general_issue_code_display",
+       "VARCHAR"
+      ],
+      [
+       "description",
+       "VARCHAR"
+      ],
+      [
+       "foreign_entity_issues",
+       "VARCHAR"
+      ],
+      [
+       "government_entities",
+       "STRUCT(id VARCHAR, \"name\" VARCHAR)[]"
+      ]
+     ],
+     "rows": 23,
+     "sha256": "sha256:88fa17a56cb631479f67eb9e2d0fed81967beae0e93f9593ac9d44eefc445f79"
+    },
+    "lobbying_activity_lobbyists.parquet": {
+     "byteSize": 5396,
+     "columns": [
+      [
+       "filing_uuid",
+       "VARCHAR"
+      ],
+      [
+       "activity_index",
+       "BIGINT"
+      ],
+      [
+       "lobbyist_index",
+       "BIGINT"
+      ],
+      [
+       "lobbyist_id",
+       "VARCHAR"
+      ],
+      [
+       "prefix",
+       "VARCHAR"
+      ],
+      [
+       "first_name",
+       "VARCHAR"
+      ],
+      [
+       "nickname",
+       "VARCHAR"
+      ],
+      [
+       "middle_name",
+       "VARCHAR"
+      ],
+      [
+       "last_name",
+       "VARCHAR"
+      ],
+      [
+       "suffix",
+       "VARCHAR"
+      ],
+      [
+       "covered_position",
+       "VARCHAR"
+      ],
+      [
+       "new",
+       "BOOLEAN"
+      ]
+     ],
+     "rows": 82,
+     "sha256": "sha256:af98d5f4bbd90fecdabf989286f585427b4ef19f20643a1ca0ecbedd395e5e12"
+    },
+    "lobbying_foreign_entities.parquet": {
+     "byteSize": 5084,
+     "columns": [
+      [
+       "filing_uuid",
+       "VARCHAR"
+      ],
+      [
+       "foreign_entity_index",
+       "BIGINT"
+      ],
+      [
+       "name",
+       "VARCHAR"
+      ],
+      [
+       "contribution",
+       "DECIMAL(38,6)"
+      ],
+      [
+       "ownership_percentage",
+       "DECIMAL(38,6)"
+      ],
+      [
+       "address",
+       "VARCHAR"
+      ],
+      [
+       "city",
+       "VARCHAR"
+      ],
+      [
+       "state",
+       "VARCHAR"
+      ],
+      [
+       "state_display",
+       "VARCHAR"
+      ],
+      [
+       "country",
+       "VARCHAR"
+      ],
+      [
+       "country_display",
+       "VARCHAR"
+      ],
+      [
+       "ppb_city",
+       "VARCHAR"
+      ],
+      [
+       "ppb_state",
+       "VARCHAR"
+      ],
+      [
+       "ppb_state_display",
+       "VARCHAR"
+      ],
+      [
+       "ppb_country",
+       "VARCHAR"
+      ],
+      [
+       "ppb_country_display",
+       "VARCHAR"
+      ]
+     ],
+     "rows": 1,
+     "sha256": "sha256:93d0ca81c13e7a425d6cb4e8093844d365c7cc6e956d05f7a1f647a753217c08"
+    },
+    "lobbying_affiliated_organizations.parquet": {
+     "byteSize": 6594,
+     "columns": [
+      [
+       "filing_uuid",
+       "VARCHAR"
+      ],
+      [
+       "affiliated_organization_index",
+       "BIGINT"
+      ],
+      [
+       "name",
+       "VARCHAR"
+      ],
+      [
+       "url",
+       "VARCHAR"
+      ],
+      [
+       "address_1",
+       "VARCHAR"
+      ],
+      [
+       "address_2",
+       "VARCHAR"
+      ],
+      [
+       "address_3",
+       "VARCHAR"
+      ],
+      [
+       "address_4",
+       "VARCHAR"
+      ],
+      [
+       "city",
+       "VARCHAR"
+      ],
+      [
+       "state",
+       "VARCHAR"
+      ],
+      [
+       "state_display",
+       "VARCHAR"
+      ],
+      [
+       "zip",
+       "VARCHAR"
+      ],
+      [
+       "country",
+       "VARCHAR"
+      ],
+      [
+       "country_display",
+       "VARCHAR"
+      ],
+      [
+       "ppb_city",
+       "VARCHAR"
+      ],
+      [
+       "ppb_state",
+       "VARCHAR"
+      ],
+      [
+       "ppb_state_display",
+       "VARCHAR"
+      ],
+      [
+       "ppb_country",
+       "VARCHAR"
+      ],
+      [
+       "ppb_country_display",
+       "VARCHAR"
+      ]
+     ],
+     "rows": 4,
+     "sha256": "sha256:818c325ed000a5ef25c3b1647aabf9ace510ce7f27f43676d1312c02b1fdee5a"
+    },
+    "lobbying_conviction_disclosures.parquet": {
+     "byteSize": 3695,
+     "columns": [
+      [
+       "filing_uuid",
+       "VARCHAR"
+      ],
+      [
+       "conviction_disclosure_index",
+       "BIGINT"
+      ],
+      [
+       "lobbyist_id",
+       "VARCHAR"
+      ],
+      [
+       "prefix",
+       "VARCHAR"
+      ],
+      [
+       "first_name",
+       "VARCHAR"
+      ],
+      [
+       "nickname",
+       "VARCHAR"
+      ],
+      [
+       "middle_name",
+       "VARCHAR"
+      ],
+      [
+       "last_name",
+       "VARCHAR"
+      ],
+      [
+       "suffix",
+       "VARCHAR"
+      ],
+      [
+       "date",
+       "DATE"
+      ],
+      [
+       "description",
+       "VARCHAR"
+      ]
+     ],
+     "rows": 1,
+     "sha256": "sha256:a6de855c5effa50ab0f1db7c942a7ab9e927c6460d7103db080ac104be9ea2e2"
+    },
+    "lobbying_registrants.parquet": {
+     "byteSize": 8281,
+     "columns": [
+      [
+       "registrant_id",
+       "VARCHAR"
+      ],
+      [
+       "house_registrant_id",
+       "VARCHAR"
+      ],
+      [
+       "name",
+       "VARCHAR"
+      ],
+      [
+       "description",
+       "VARCHAR"
+      ],
+      [
+       "address_1",
+       "VARCHAR"
+      ],
+      [
+       "address_2",
+       "VARCHAR"
+      ],
+      [
+       "address_3",
+       "VARCHAR"
+      ],
+      [
+       "address_4",
+       "VARCHAR"
+      ],
+      [
+       "city",
+       "VARCHAR"
+      ],
+      [
+       "state",
+       "VARCHAR"
+      ],
+      [
+       "state_display",
+       "VARCHAR"
+      ],
+      [
+       "zip",
+       "VARCHAR"
+      ],
+      [
+       "country",
+       "VARCHAR"
+      ],
+      [
+       "country_display",
+       "VARCHAR"
+      ],
+      [
+       "ppb_country",
+       "VARCHAR"
+      ],
+      [
+       "ppb_country_display",
+       "VARCHAR"
+      ],
+      [
+       "contact_telephone",
+       "VARCHAR"
+      ],
+      [
+       "dt_updated",
+       "TIMESTAMP WITH TIME ZONE"
+      ],
+      [
+       "captured_at",
+       "TIMESTAMP WITH TIME ZONE"
+      ],
+      [
+       "captured_filing_uuid",
+       "VARCHAR"
+      ]
+     ],
+     "rows": 15,
+     "sha256": "sha256:4f1f497d5f6b0a0b6e68384cee2af0d2b3ae5a0fdd6d26429c43bfe2e3871658"
+    },
+    "lobbying_clients.parquet": {
+     "byteSize": 7624,
+     "columns": [
+      [
+       "client_id",
+       "VARCHAR"
+      ],
+      [
+       "registrant_client_number",
+       "VARCHAR"
+      ],
+      [
+       "registrant_id",
+       "VARCHAR"
+      ],
+      [
+       "name",
+       "VARCHAR"
+      ],
+      [
+       "general_description",
+       "VARCHAR"
+      ],
+      [
+       "client_government_entity",
+       "BOOLEAN"
+      ],
+      [
+       "client_self_select",
+       "BOOLEAN"
+      ],
+      [
+       "state",
+       "VARCHAR"
+      ],
+      [
+       "state_display",
+       "VARCHAR"
+      ],
+      [
+       "country",
+       "VARCHAR"
+      ],
+      [
+       "country_display",
+       "VARCHAR"
+      ],
+      [
+       "ppb_state",
+       "VARCHAR"
+      ],
+      [
+       "ppb_state_display",
+       "VARCHAR"
+      ],
+      [
+       "ppb_country",
+       "VARCHAR"
+      ],
+      [
+       "ppb_country_display",
+       "VARCHAR"
+      ],
+      [
+       "effective_date",
+       "DATE"
+      ],
+      [
+       "captured_at",
+       "TIMESTAMP WITH TIME ZONE"
+      ],
+      [
+       "captured_filing_uuid",
+       "VARCHAR"
+      ]
+     ],
+     "rows": 16,
+     "sha256": "sha256:bd781f695535e3b50581cccdd32ad2d83bb47771f603f2d9cd5c529f9bd38942"
+    }
+   }
+  }
+ },
+ "format": "spicy-regs-publication",
+ "version": 2
+}

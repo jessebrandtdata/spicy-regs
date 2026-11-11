@@ -382,7 +382,8 @@ receives (`incoming`) from `table_joins.json`, which `spicy-regs-dict generate`
 bundles from `spicy_regs.table_joins` and `check` refuses when stale. Each join
 carries its kind (`complete`, `scope`, `design`, `empty`), the reason for a
 partial one, and its measured baseline. `scripts/check_table_joins.py` holds the
-live tables to each floor nightly in `check-rollup-freshness.yml`.
+live tables to each changed declaration's floor in PR CI, and to every floor when
+run by hand.
 
 **The meaning text lives in the record (round 5).** `joins.basis` and
 `qualification.basis` are the records' own top-level `basis`, which

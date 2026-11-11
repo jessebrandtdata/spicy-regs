@@ -3,13 +3,19 @@
 Unlike the derived rollups, this one *ingests* an external source rather than
 reading base tables from R2, so ``inputs`` is empty — the fetch + incremental
 merge with the prior published table happens inside ``build_lobbying_filings``.
+
+It publishes no per-row receipts (ss-vse3; every table's installed policy is marked
+``receipts_retired``). A row's evidence is the run's journal and the LDA pages it
+retained; the receipts of the generations before the switch stay where they are
+(``docs/pins/receipt-archive.json``), which ``GovernmentTableRollup`` checks at the start.
+
 ``LDA_FILING_YEAR`` reads one whole filing year instead of the posted-date
 window, the unit of the history backfill. ``LDA_POOL_PASSES`` raises the walks pooled before
 a tied query refuses (``build_lobbying_filings._iter_filings``).
 
 ``run-rollup-lobbying-rebuild`` builds the whole family once from retained pages instead: the latest capture of each
 filing, no prior and no request. ``LDA_RETAINED_MANIFEST`` names the page manifest and
-``LDA_RETAINED_MANIFEST_SHA256`` pins its bytes; the first generation under a new lobbying_filings policy is this one.
+``LDA_RETAINED_MANIFEST_SHA256`` pins its bytes.
 ``scripts/lobbying_retained_manifest.py`` writes that manifest from the source catalog and the central raw archive.
 """
 
@@ -18,11 +24,11 @@ from typing import ClassVar
 
 from spicy_regs.env_values import date_env, int_env, text_env
 from spicy_regs.pipelines.rollups.base import make_rollup_app
-from spicy_regs.pipelines.rollups.government import GovernmentReceiptRollup
+from spicy_regs.pipelines.rollups.government import GovernmentTableRollup
 from spicy_regs.transforms.build_lobbying_filings import build_lobbying_filings, rebuild_lobbying_filings
 
 
-class LobbyingFilingsRollup(GovernmentReceiptRollup):
+class LobbyingFilingsRollup(GovernmentTableRollup):
     """Senate Lobbying Disclosure Act filings ingested from lda.gov (key optional)."""
 
     name: ClassVar[str] = "lobbying-filings"
@@ -41,7 +47,7 @@ class LobbyingFilingsRollup(GovernmentReceiptRollup):
     def build(self, output_dir: Path) -> tuple[Path, ...]:
         return build_lobbying_filings(
             output_dir,
-            evidence=self.source_evidence, receipt_generation_id=self.receipt_generation_id,
+            evidence=self.source_evidence,
             since=date_env("LDA_SINCE"),
             until=date_env("LDA_UNTIL"),
             filing_year=int_env("LDA_FILING_YEAR"),
@@ -57,8 +63,7 @@ class LobbyingRetainedRebuild(LobbyingFilingsRollup):
         if manifest is None or digest is None:
             raise ValueError("A retained rebuild needs LDA_RETAINED_MANIFEST and LDA_RETAINED_MANIFEST_SHA256")
         return rebuild_lobbying_filings(
-            output_dir, manifest=Path(manifest), manifest_sha256=digest,
-            evidence=self.source_evidence, receipt_generation_id=self.receipt_generation_id,
+            output_dir, manifest=Path(manifest), manifest_sha256=digest, evidence=self.source_evidence,
         )
 
 

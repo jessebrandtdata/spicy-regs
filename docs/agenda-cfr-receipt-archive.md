@@ -37,8 +37,13 @@ copy.
 - The observed record: for CFR the placement marker (every row placed from its
   volume's PART headings), which lets a night skip unchanged packages; for the
   agenda the digest of the run's edition manifest. Both now live in the
-  published file's key-value metadata (`regulations_shape.mapped_table`), and
-  the next night reads them back with the prior (`published_as_source`).
+  published file's key-value metadata (`regulations_shape.mapped_table`). The
+  next night reads CFR's marker back with the prior (`published_as_source`);
+  the agenda's digest is provenance only, written and never read, and pins only
+  the editions that night read, not the whole table. On the nightly path the
+  evidence journal keeps the manifest it names; an offline source-only replay
+  (`build_table(..., source_only=True)`) deletes its work folder, so its caller
+  must keep the edition list itself.
 
 ## What changes
 

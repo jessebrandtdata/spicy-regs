@@ -69,9 +69,9 @@ POLICIES = {
     for name, schema in SCHEMAS.items()
 }
 
-# The retained CFR rebuild has its own local receipt layout. The published
-# cfr_sections table remains owned by regulations_receipts until that candidate
-# is separately migrated; regenerating declarations must not replace its policy.
+# The retained CFR rebuild has its own local receipt layout; the published
+# cfr_sections table publishes without receipts (ss-vse3). Regenerating
+# declarations must not replace its policy.
 PUBLIC_POLICIES = {
     name: POLICIES[name]
     for name in ("federal_register_issues", "ecfr_snapshots", "ecfr_snapshot_sections")

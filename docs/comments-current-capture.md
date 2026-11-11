@@ -26,11 +26,11 @@ be reproduced from the original; an unproven custom conversion remains explicit.
 Retirement receipts keep the actual retirement reason and predecessor identity
 without embedding another copy of the input history.
 
-Install `uv sync --frozen --extra comments-reader`, then use
-`uv run --frozen --extra comments-reader python -m scripts.capture_comments_current
-EXPECTED.json OUTPUT --namespace default --expected-runtime RUNTIME.json`. `EXPECTED.json` selects the complete nullable
-string schema and exact table UUID, snapshot ID and schema ID. Generate the
-runtime pins with `scripts.capture_comments_current.reader_runtime()`.
+The capture command (`scripts/capture_comments_current.py`, with its test) was
+removed after the one-shot v1 promotion it fed; comments now publish from the
+catalog table alone. Git history keeps both. It took `EXPECTED.json`, which
+selects the complete nullable string schema and exact table UUID, snapshot ID
+and schema ID, and runtime pins.
 
 The optional PyIceberg reader loads the REST table with its vended file credentials.
 It plans the selected snapshot, checks actual live file/delete types, and reads
@@ -55,10 +55,6 @@ nulls and repeats. Physical file/delete counts are observations, not a logical
 population. Local population and agency queries operate on the exported logical
 rows. Only `RESULT.json` with `status: captured`, plus the successful external
 resource result, qualifies the local input. This does not publish or convert it.
-
-See `tests/test_capture_comments_current.py` for actual pre/post Iceberg fixtures,
-position-delete duplicates and sequencing, evolved nullable fields, exact original
-values, file lifetimes and retained refusal behavior.
 
 Each planned task now writes a separate part under `OUTPUT/parts/`. A task is
 complete only after its reader and writer close and full local readback matches
