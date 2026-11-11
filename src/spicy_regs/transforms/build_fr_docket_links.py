@@ -22,8 +22,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from loguru import logger
 
-#: Rows per row group, as published before: a docket's rows are fetched by range from the group that holds them.
-ROW_GROUP_ROWS = 2000
+# A docket's rows are fetched by range from the group that holds them.
+from spicy_regs.transforms.regulations_shape import ROW_GROUP_ROWS
 #: The link's own columns; every other published column is the Register's, carried for display.
 OWN = ("docket_id", "docket_source_ordinal", "link_source", "normalized_docket_candidates")
 

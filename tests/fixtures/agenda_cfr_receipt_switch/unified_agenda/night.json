@@ -1,0 +1,1340 @@
+[
+{
+"rin": "0331-AA10",
+"agency_code": "CEQ",
+"agency_name": "Council on Environmental Quality",
+"title": "Removal of National Environmental Policy Act Implementing Regulations (edited for the switch test)",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>This interim final rule removes the Council on Environmental Quality (CEQ) regulations implementing the National Environmental Policy Act (NEPA) from the Code of Federal Regulations.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Economically Significant",
+"agenda_edition": "202510",
+"major": "Yes",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Interim Final Rule",
+"date": "02/25/2025",
+"fr_citation": "90 FR 10610"
+},
+{
+"action": "Interim Final Rule Comment Period End",
+"date": "03/27/2025",
+"fr_citation": null
+},
+{
+"action": "Interim Final Rule Effective",
+"date": "04/11/2025",
+"fr_citation": null
+},
+{
+"action": "Final Rule",
+"date": "01/08/2026",
+"fr_citation": "91 FR 618"
+}
+],
+"cfr_references": [
+"None"
+],
+"legal_authority": [
+"42 U.S.C. 4321 et seq.",
+"Executive Order 14154"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB75",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Cost Accounting Standards: CAS 413 Pension Adjustments for Extraordinary Events",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Cost Accounting Standards (CAS) Board is developing changes to its standards to clarify the application of the CAS Pension Harmonization Rule to the measurement of segment closings and benefit curtailment adjustments under 48 CFR 9904.413-50(c)(12). In the Federal Register Notice for the Pension Harmonization Rule, the Board acknowledged that there were numerous issues concerning the measurement of the actuarial liability upon the occurrence of a segment closing or benefit curtailment (CAS 413 adjustments). Because of the possibility of unintended consequences if all the issues are not fully vetted, the Board has decided to separately address the applicability of the Pension Harmonization Rule to the CAS 413-50(c)(12) adjustments and other related concerns in this proposed guidance.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Prerule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Staff Discussion Paper and Advance Notice of Proposed Rulemaking",
+"date": "12/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 9904.413-50(c)(12)"
+],
+"legal_authority": [
+"Pub. L. No. 111-350, 124 Stat. 3677, 41 U.S.C. 1502"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB78",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Adopting Commercial Standards and Accounting Practices",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>Section 820 of the FY 2017 National Defense Authorization Act, Public Law&nbsp;114-328, requires the Cost Accounting Standards (CAS) Board to ensure that the CAS used by Federal contractors rely, to the maximum extent practicable, on commercial standards and accounting practices and systems --&nbsp;<em>i.e.</em>, Generally Accepted Accounting Principles (GAAP). Contractors are subject to both CAS and GAAP, which serve different purposes. GAAP reports the financial results of operations at the macro or corporate level, while the CAS measure, assign, and allocate costs at the micro or contract level. There are areas of commonality between CAS and GAAP.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Notice – Guiding Principles",
+"date": "03/19/2020",
+"fr_citation": "85 FR 15817"
+},
+{
+"action": "Advance Notice of Proposed Rulemaking (Revenue Recognition, Lease Accounting)",
+"date": "11/05/2020",
+"fr_citation": "85 FR 70572"
+},
+{
+"action": "Notice of Proposed Rulemaking (Revenue Recognition, Lease Accounting)",
+"date": "06/27/2024",
+"fr_citation": "89 FR 53572"
+},
+{
+"action": "Notice of Proposed Rulemaking (Revenue Recognition, Lease Accounting) Comment Period End",
+"date": "08/26/2024",
+"fr_citation": null
+},
+{
+"action": "Notice of Final Rulemaking (Revenue Recognition, Lease Accounting)",
+"date": "09/11/2025",
+"fr_citation": "90 FR 43942"
+}
+],
+"cfr_references": [
+"90 FR 43942"
+],
+"legal_authority": [
+"Pub. L. No. 111-350",
+"124 Stat. 3677",
+"41 U.S.C. 1502"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB79",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Presumption of Accessibility",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p class=\"GPOHtml\">The Office of Management and Budget will prescribe regulations to require timely provision of data assets, identify statutes that exempt certain data assets from the requirement, establish standards for complying with the Privacy Act, and require a transparent process for handling requests.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "08/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"44 U.S.C. 3581"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB80",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Expanding Secure Access to CIPSEA Data Assets",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>OMB will promulgate regulations providing standards for assessing sensitivity of data assets and determining appropriate accessibility levels; standards for modifying data assets to improve their accessibility; requirements for statistical agencies and units to conduct risk assessments, and requirements for the processes established to carry out the required assessments to be transparent.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "08/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"44 U.S.C. 3582"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB84",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Conformance of CAS to GAAP for CAS 415 and CAS 416",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Office of Federal Procurement Policy (OFPP), Cost Accounting Standards Board (the Board), is releasing this notice of proposed rulemaking (NPRM) to elicit public comments on proposed changes to the Cost Accounting Standards (CAS) to conform CAS 415 and 416 to Generally Accepted Accounting Principles (GAAP).</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 9903.201-5"
+],
+"legal_authority": [
+"Pub. L. No. 114-328, sec. 820",
+"41 U.S.C. 1502"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB85",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Application of Cost Accounting Standards to Indefinite Delivery Vehicles",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Cost Accounting Standards Board is finalizing&nbsp;increases to the Cost Accounting Standards (CAS) thresholds and other matters related to the CAS program requirements. The application of Cost Accounting Standards (CAS) to indefinite delivery vehicles (IDVs). The use of IDVs has grown significantly over the last two decades and a 2018 report issued by the Advisory Panel on Streamlining Acquisition Regulations established by section 809 of the FY 2016 National Defense Authorization Act concluded that an amendment to the rules to address IDVs could help to avoid inconsistencies in the application of CAS to these vehicles.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Notice",
+"date": "06/18/2024",
+"fr_citation": "89 FR 51491"
+},
+{
+"action": "Comment Period End",
+"date": "08/19/2024",
+"fr_citation": null
+},
+{
+"action": "Notice of Proposed Rulemaking",
+"date": "03/20/2026",
+"fr_citation": "91 FR 54"
+},
+{
+"action": "Notice of Proposed Rulemaking Comment Period End",
+"date": "04/20/2026",
+"fr_citation": null
+},
+{
+"action": "Final Action",
+"date": "09/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR part 9904"
+],
+"legal_authority": [
+"Pub. L. No. 111-350",
+"124 Stat. 3677",
+"41 U.S.C. 1502"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB88",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Regulation for Federal Financial Assistance",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Office of Management and Budget (OMB) proposes to revise the Guidance for Federal Financial Assistance to improve government-wide policies and requirements related to the management of grants, cooperative agreements, and other forms of assistance. OMB is proposing revisions that would improve transparency, accountability, and oversight for Federal awards across the Federal Government.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"31 U.S.C. 503",
+"31 U.S.C. 6307",
+"Pub. L. 109-282",
+"Pub. L. 113-101"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB90",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Conformance of Cost Accounting Standards to Generally Accepted Accounting Principles for CAS 404, 408, 409 and 411",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Office of Federal Procurement Policy (OFPP), Cost Accounting Standards Board (the Board), is finalizing changes to the Cost Accounting Standards (CAS) to conform CAS 404, 408, 409, and 411 to Generally Accepted Accounting Principles (GAAP).</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "09/11/2025",
+"fr_citation": "90 FR 43994"
+},
+{
+"action": "NPRM Comment Period End",
+"date": "10/14/2025",
+"fr_citation": null
+},
+{
+"action": "Final Rule",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"Pub. L. No. 111-350",
+"124 Stat. 3677",
+"41 U.S.C. 1502"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB91",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Conformance of Cost Accounting Standards to Generally Accepted Accounting Principles for CAS 407--Use of Standard Costs for Direct Material and Direct Labor",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Office of Federal Procurement Policy (OFPP), Cost Accounting Standards Board, is proposing changes to the Cost Accounting Standards (CAS) to conform CAS 407 to Generally Accepted Accounting Principles. CAS 407 provides guidelines for using standard costs to estimate, accumulate, and report costs of direct material and direct labor. This standard ensures consistency and fairness in cost accounting practices across government contractors.&nbsp; CAS 407 was initially published April 1, 1974, at 39 FR 11869</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Notice of Proposed Rulemaking",
+"date": "03/20/2026",
+"fr_citation": "91 FR 13562"
+},
+{
+"action": "Notice of Proposed Rulemaking Comment Period End",
+"date": "04/20/2026",
+"fr_citation": null
+},
+{
+"action": "Final Action",
+"date": "09/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"Pub. L. No. 111-350",
+"124 Stat. 3677",
+"41 U.S.C. 1502"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB92",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Managing Senior Professional Performance",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Office of Personnel Management (OPM) and the Office of Management and Budget (OMB) are finalizing revisions to the rules governing the performance appraisal of senior-level (SL) and scientific or professional (ST) employees, collectively referred to as senior professionals.&rdquo; This rulemaking establishes a new subpart specifically dedicated to senior professional performance appraisal. These changes aligns more closely with the SES performance appraisal regulations, eliminate senior professional appraisal programs, remove the prohibition of a forced distribution of performance rating levels, and enhance oversight.</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "02/24/2026",
+"fr_citation": "91 FR 8763"
+},
+{
+"action": "Final Rule",
+"date": "08/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"5 CFR part 430 sub part D"
+],
+"legal_authority": [
+"Not Yet Determined"
+],
+"related_rins": [
+{
+"rin": "3206-AO88",
+"rin_relation": "Related to"
+}
+]
+},
+{
+"rin": "0348-AB93",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "American Security Drone Act of 2023; Unmanned Aircraft System List of Associated Elements",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The American Security Drone Act restricts the ability of federal agencies and recipients of federal funding to procure or operate an unmanned aircraft (drone) or associated elements that were manufactured or assembled by certain foreign entities.&nbsp;The Federal Acquisition Security Council (FASC) is issuing an interim final rule to establish the list of items that constitute associated elements subject to the Act&rsquo;s restrictions.</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Interim Final Rule",
+"date": "08/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"41 CFR chapter 201"
+],
+"legal_authority": [
+"American Security Drone Act (Drone Act) (Pub. L. 118-10, secs. 1821-32)"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB94",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Cost Accounting Practice Changes",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Office of Federal Procurement Policy and the Cost Accounting Standards Board is requesting comments on proposed changes to the Cost Accounting Standards for handing and calculating cost impacts.&nbsp; These changes will provide additional clarity of the meaning of increased costs in the aggregate as that language is used in 41 U.S.C 1503(b) and the handling of cost impacts for unilateral cost accounting practice changes.</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"Pub. L. No. 111-350",
+"124 Stat. 3677",
+"41 U.S.C. 1502"
+],
+"related_rins": null
+},
+{
+"rin": "0348-AB95",
+"agency_code": "OMB",
+"agency_name": "Office of Management and Budget",
+"title": "Application of Cost Accounting Standards to Hybrid Contracts",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Office of Federal Procurement Policy and the Cost Accounting Standards Board is proposing changes to the Cost Accounting Standards to provide clarity on the application of CAS to hybrid contracts.</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "12/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"Pub. L. No. 111-350",
+"124 Stat. 3677",
+"41 U.S.C. 1502"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AA92",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR Appendix D: Incorporating Various Changes Related to Personal Services Contracts With Individual U.S. Nationals",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The U.S. Agency for International Development (USAID) is amending Appendix D of its Acquisition Regulation that contains policies for personal services contracts with individuals who are U.S. nationals (USPSCs), to incorporate long-standing USAID internal policy into the regulation, remove obsolete material and internal policies, and make editorial amendments to clarify the regulation. This revision would provide consistency in the procurement of personal services from USPSCs, and improve compliance with the Agency&rsquo;s current regulatory and policy requirements for such staff. The rule does not impose new requirements on the public; however, it includes minor clarifying revisions to current requirements.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Withdrawn",
+"date": "11/24/2025",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 7, App. D"
+],
+"legal_authority": [
+"sec. 621, Pub. L. 87-195",
+"75 Stat. 445",
+"22 U.S.C. 2381 (as amended)",
+"E.O. 12163 (44 FR 56673)",
+"3 CFR 1979, Comp. p. 435"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AA95",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR: Safeguarding Against Exploitation, Sexual Abuse, Child Abuse, and Child Neglect",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p><span id=\"docs-internal-guid-1c9de742-7fff-2281-2a7f-d066ceb52fbb\">The United States Agency for International Development (USAID) seeks public comment on a proposed rule that would incorporate a new clause entitled \"Safeguarding Against Sexual Exploitation, Abuse, and Other Forms of Misconduct,\" into the USAID Acquisition Regulation. The clause would reflect USAID&rsquo;s zero-tolerance approach to sexual misconduct in USAID-funded activities and ensure USAID contractors have the required policies, procedures, and capacities in place to prevent, address, and report misconduct directed to, or that affects, end-users of supplies or services (referred to as \"beneficiaries\" or \"potential beneficiaries\") of USAID-funded contracts.</span></p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Long-Term Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "02/28/2024",
+"fr_citation": "89 FR 14612"
+},
+{
+"action": "NPRM Comment Period End",
+"date": "04/29/2024",
+"fr_citation": null
+},
+{
+"action": "Next Action Undetermined",
+"date": "To Be Determined",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 722, 752"
+],
+"legal_authority": [
+"Sec. 621, Pub. L. 87–195",
+"75 Stat. 445",
+"22 U.S.C. 2381 as amended",
+"E.O. 12163 (44 FR 56673)",
+"3 CFR 1979, Comp. p. 435"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AA98",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR Appendix D: Revisions to Expand Fringe Benefits for U.S. Personal Services Contractors",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p><span id=\"docs-internal-guid-eb19c8e6-7fff-accf-5c93-d6bd2f24e2d1\">&nbsp;This rule revises Appendix D of the AID Acquisition Regulation (AIDAR Appendix D) in order to revise and expand fringe benefits for personal services contracts with individuals who are U.S. nationals (USPSCs). Specifically, this rule will: 1) provide a relocation expense benefit similar to the benefit provided to USAID&rsquo;s U.S. direct-hire employees, normally Foreign Service Officers; and 2) provide a paid parental leave benefit comparable to what is available to USAID&rsquo;s U.S. direct-hire employees. </span></p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "01/13/2022",
+"fr_citation": "87 FR 2104"
+},
+{
+"action": "NPRM Comment Period End",
+"date": "03/14/2022",
+"fr_citation": null
+},
+{
+"action": "Withdrawn",
+"date": "11/24/2025",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 7, App. D"
+],
+"legal_authority": [
+"sec. 621, Pub. L. 87-195",
+"75 Stat. 445, 22 U.S.C. 2381 (as amended)",
+"E.O. 12163  (44 FR 56673)",
+"3 CFR 1979 Comp. p. 435"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AB03",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR Appendix J: Incorporating Various Changes Related to Personal Services Contracts With Individual Cooperating Country or Third Country Nationals",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The U.S. Agency for International Development (USAID) is amending Appendix J of its Acquisition Regulation that contains policies for personal services contracts with individuals who are cooperating country or third country nationals (CCNPSCs, TCNPSCs), to incorporate long-standing USAID internal policy into the regulation, remove obsolete material and internal policies, and make editorial amendments to clarify the regulation. This revision would provide consistency in the procurement of personal services from CCNPSCs and TCNPSCs, and improve compliance with the Agency&rsquo;s current regulatory and policy requirements for such staff. The rule does not impose new requirements on the public; however, it includes minor clarifying revisions to current requirements.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Withdrawn",
+"date": "11/24/2025",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 7, App. J"
+],
+"legal_authority": [
+"sec. 621, Pub. L. 87–195",
+"75 Stat. 445",
+"22 U.S.C. 2381 (as amended)",
+"E.O. 12163 (44 FR 56673)",
+"3 CFR 1979, Comp. p. 435"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AB06",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR Appendix D: Revisions to the Policies to Determine Pay Rates for U.S. Personal Services Contractors",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The U.S. Agency for International Development (USAID) seeks public comment on a proposed rule that would amend Appendix D of its Acquisition Regulation to change the standards used to determine the pay rates for U.S. personal services contracts with individuals (USPSCs), especially those used for USPSCs performing abroad.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Withdrawn",
+"date": "11/24/2025",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 7, App. D"
+],
+"legal_authority": [
+"sec. 621, Pub. L. 87–195",
+"75 Stat. 445, 22 U.S.C. 2381 (as amended)",
+"E.O. 12163 (44 FR 56673)",
+"3 CFR 1979 Comp. p. 435"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AB07",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR: Visa Requirements for Exchange Visitors",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The United States Agency for International Development is proposing to amend its Acquisition Regulation Parts 719 and 752 to comply with revisions to ADS 252 and the retirement of ADS 253. The proposed rule will remove references to obsolete participant training&nbsp;requirements in AIDAR parts 719 and 752 and add a new clause in part 752 to implement new visa requirements for exchange visitors. The purpose of the new clause will be to apply the visa requirements in ADS 252 to Exchange Visitors who are coming to the United States through contractor sponsorship. It will be a new clause in the AIDAR since there is currently nothing in the CFR that applies the Agency policy in ADS 252 to exchange visitors entering the US through contract funding.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Withdrawn",
+"date": "11/24/2025",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 719, 752"
+],
+"legal_authority": [
+"Sec. 621, Pub. L. 87–195, 75 Stat. 445, (22 U.S.C. 2381) as amended",
+"E.O. 12163, Sept. 29, 1979, 44 FR 56673",
+"3 CFR 1979 Comp. p. 435"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AB08",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID Acquisition and Assistance Regulations: Updates to Partner Vetting Policies and Procedures",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p><span id=\"docs-internal-guid-1b1789eb-7fff-5635-5f2e-643266ee043c\">The United States Agency for International Development is proposing to amend its Acquisition Regulation (AIDAR) at 48 CFR chapter 7 and its Federal Assistance regulation at 2 CFR 701 to comply with revised Agency policies and procedures pertaining to Partner Vetting.</span></p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Long-Term Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Next Action Undetermined",
+"date": "To Be Determined",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 7",
+"2 CFR 701"
+],
+"legal_authority": [
+"Sec. 621, Pub. L. 87–195",
+"75 Stat. 445",
+"(22 U.S.C. 2381) as amended",
+"E.O. 12163 (44 FR 56673)",
+"3 CFR, 1979 Comp., p. 435 and  22 U.S.C. 2251 et seq.",
+"22 U.S.C. 2151t, 22 U.S.C. 2151a, 2151b, 2151c, and 2151d",
+"22 U.S.C. 2395(b)"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AB15",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR: Strengthening Program Participant Protections Requirements through the Accountability Mechanism and the Know Your Protections Document",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p dir=\"ltr\">The U.S. Agency for International Development (USAID) is proposing to amend the Agency for International Development Acquisition Regulation (AIDAR) to introduce contract requirements related to the dissemination and use of the Agency&rsquo;s Know Your Protections (KYP) document and its accountability mechanism which will raise awareness of program participant protections and reporting channels for complaints, respectively.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Withdrawn",
+"date": "11/24/2025",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 7"
+],
+"legal_authority": [
+"Sec. 621, Pub. L. 87-195",
+"75 Stat, 445",
+"22 U.S.C. 2381 (as amended)",
+"E.O. 12163 (44 FR 56673)",
+"3 CFR 1979, Comp. p. 435"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AB16",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR: Incorporating Various Administrative Changes",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p dir=\"ltr\">The U.S. Agency for International Development (USAID) is issuing this direct final rule revising the Agency for International Development Acquisition Regulation (AIDAR) to maintain consistency with Federal and Agency regulations, remove obsolete material and internal Agency procedures, and make editorial amendments to better clarify the regulation.</p>\n<p>&nbsp;</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Long-Term Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Next Action Undetermined",
+"date": "To Be Determined",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 7"
+],
+"legal_authority": [
+"Sec. 621, Pub. L. 87-195",
+"75 Stat. 445",
+"22 U.S.C. 2381 (as amended)",
+"E.O. 12163 (44 FR 56673)",
+"3 CFR 1979, Comp. p. 435"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AB17",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID AIDAR: Strengthening Environmental Compliance Requirements for USAID Contractors",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p><span id=\"docs-internal-guid-994fbf33-7fff-e94d-3093-f685cddec5fa\">USAID proposes to add a new, standardized contract clause related to environmental compliance and USAID&rsquo;s implementation of 22 CFR 216. 22 CFR 216 outlines environmental procedures which are mandatory for all USAID programs, projects, and activities. As contractors implement USAID&rsquo;s programs, USAID proposes to amend the AIDAR to create specific contract language to ensure standard compliance with the requirements of this regulation.</span></p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Withdrawn",
+"date": "11/24/2025",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"48 CFR 7",
+"22 CFR 216"
+],
+"legal_authority": [
+"The Foreign Assistance Act of 1961, as amended",
+"EO 13677: Climate-Resilient International Development",
+"EO 12114: Environmental Effects of Major Federal Actions",
+"EO 14008: Tackling the Climate Crisis at Home and Abroad"
+],
+"related_rins": null
+},
+{
+"rin": "0412-AB18",
+"agency_code": "AID",
+"agency_name": "Agency for International Development",
+"title": "USAID Personal Services Agreements",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p><span id=\"docs-internal-guid-d3331e2e-7fff-3036-534b-e040c5042633\">This rule affirms USAID&rsquo;s statutory authority to enter into Personal Services Agreements with individuals for services abroad pursuant to 22 U.S.C 2669(c). This rule also designates authorized signatories at USAID who may sign Personal Services Agreements.</span></p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Info./Admin./Other",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Withdrawn",
+"date": "11/24/2025",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"Public Law No: 118-47, Section 7065(j)",
+"22 U.S.C 2669(c)"
+],
+"related_rins": null
+},
+{
+"rin": "0414-AA00",
+"agency_code": "MCC",
+"agency_name": "Millennium Challenge Corporation",
+"title": "Revisions to Subtitle B of Title 2 on Federal Financial Assistance",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p class=\"TableParagraph\"><em>Millennium Challenge Corporation is proposing companion revisions to the Office of Management and Budget&rsquo;s (OMB) proposed updates to Title 2 of the Code of Federal Regulations (CFR), Subtitle A Office of Management and Budget Guidance for Federal Financial Assistance. Consistent with the review requirements in 2 CFR 200.109, the intent of these proposed revisions is to improve transparency, accountability, and oversight for Federal awards across the Federal Government by ensuring continued alignment with Administration priorities, revising indirect cost policy, reducing burden, and converting guidance to regulation. </em></p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Economically Significant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"2 CFR 200"
+],
+"legal_authority": [
+"31 U.S.C. 503",
+"31 U.S.C. 6307",
+"Pub. L. 109-282",
+"Pub. L. 113-101"
+],
+"related_rins": null
+},
+{
+"rin": "0420-AA30",
+"agency_code": "PEACE",
+"agency_name": "Peace Corps",
+"title": "Implementation of the Privacy Act of 1974",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Peace Corps is reviewing its implementation of the Privacy Act of 1974 to determine appropriate revisions. The current regulation, 22 CFR 308, was promulgated in 1985. The proposed revision of the regulation takes into account a number of legal and technology changes.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "11/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"22 CFR 308"
+],
+"legal_authority": [
+"5 U.S.C. 552a",
+"22 USC Ch. 34- The Peace Corps Act"
+],
+"related_rins": null
+},
+{
+"rin": "0420-AA32",
+"agency_code": "PEACE",
+"agency_name": "Peace Corps",
+"title": "Eligibility and Standards for Peace Corps Volunteer Service",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>Pursuant to the January 20, 2025, Executive Order 14151&nbsp;\"Ending Radical and Wasteful Government DEI Programs and Preferencing\" the Peace Corps is&nbsp;proposing&nbsp;to revise this regulation in accordance with Section 2 of the E.O. which calls for \"the termination of all discriminatory programs, including illegal DEI and diversity, equity, inclusion, and accessibility (DEIA) mandates, policies, programs, preferences, and activities in the Federal Government, under whatever name they appear.\" Specifically Section 2(iii.)(B) of the Executive Order mandates the Peace Corps to \"align agency... policies [and] regulations...with the policy of equal dignity and respect identified in section 1 of this order.\" Pursuant to the Executive Order 14168 \"Defending Women Against Gender Ideology Extremisim and Restoring Biological Truth to The Federal Government\" Section 3 (e) states \"Agencies shall remove all...policies...that promote or otherwise inculcate gender ideology, and shall cease issuing such...policies, regulations.\" The Peace Corps is also&nbsp;proposing&nbsp;these revisions in consideration of the February 19, 2025, Executive Order 14219 \"Ensuring Lawful Governance and Implementing the President's 'Department of Government Efficiency' Deregulatory Initiative\" in order to address Section 2 \"class\" (i) \"unconstitutional regulations and regulations that raise serious constitutional difficulties, such as exceeding the scope of the power vested in the Federal Government by the Constitution\" and \"class\" (iii) \"regulations that are based on anything other than the best reading of the underlying statutory authority prohibition.\"&nbsp;Therefore the Peace Corps proposes to revise its regulation, 22 CFR 306 Volunteer Discrimination Complaint Procedure, to comply with these Executive Orders.&nbsp;</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "Undetermined",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"22 CFR 305"
+],
+"legal_authority": [
+"75 Stat. 612, sec. 4(b), 5(a), and 22",
+"22 U.S.C. 2504",
+"International Security and Development Cooperation Act of 1981, sec. 601",
+"95 Stat. 1519 and 1540",
+"22 USC Ch. 34- The Peace Corps Act",
+"..."
+],
+"related_rins": null
+},
+{
+"rin": "0420-AA34",
+"agency_code": "PEACE",
+"agency_name": "Peace Corps",
+"title": "Volunteer Discrimination Complaint Procedure",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>Pursuant to the January 20, 2025, Executive Order entitled, \"Ending Radical and Wasteful Government DEI Programs and Preferencing\" the Peace Corps is&nbsp;proposing to revise this regulation in accordance with Section 2 of the E.O. which calls for \"the termination of all discriminatory programs, including illegal DEI and diversity, equity, inclusion, and accessibility (DEIA) mandates, policies, programs, preferences, and activities in the Federal Government, under whatever name they appear.\" Specifically Section 2(iii.)(B) of the Executive Order mandates the Peace Corps to \"align agency... policies [and] regulations...with the policy of equal dignity and respect identified in section 1 of this order.\" The Peace Corps is also proposing these revisions in consideration of the February 19, 2025, Executive Order 14219 \"Ensuring Lawful Governance and Implementing the President's 'Department of Government Efficiency' Deregulatory Initiative\" in order to address Section 2 \"class\" (i) \"unconstitutional regulations and regulations that raise serious constitutional difficulties, such as exceeding the scope of the power vested in the Federal Government by the Constitution\" and \"class\" (iii) \"regulations that are based on anything other than the best reading of the underlying statutory authority prohibition.\"&nbsp;Therefore the Peace Corps proposes to revise its regulation, 22 CFR 306 Volunteer Discrimination Complaint Procedure, to comply with these Executive Orders.&nbsp;</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"22 CFR 306"
+],
+"legal_authority": [
+"22 USC Ch. 34- The Peace Corps Act"
+],
+"related_rins": null
+},
+{
+"rin": "0420-AA36",
+"agency_code": "PEACE",
+"agency_name": "Peace Corps",
+"title": "Implementation of the Administrative False Claims Act",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The purpose of this proposed new rule is to establish&nbsp;procedural regulations for the&nbsp;Administrative False Claims Act at the agency.&nbsp;The Administrative False Claims Act is at 31 U.S.C. 3801 through 3812.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"31 USC 3801-3812",
+"22 USC Ch. 34- The Peace Corps Act",
+"Pub. L. 118-159"
+],
+"related_rins": null
+},
+{
+"rin": "0503-AA80",
+"agency_code": "AgSEC",
+"agency_name": "Office of the Secretary",
+"title": "Implementation of HAVANA Act of 2021",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>This rule implements the HAVANA Act of 2021 for the U.S. Department of Agriculture (USDA). The Act provides the authority for the Secretary of Agriculture and other agency heads to provide payments to certain individuals who have incurred qualifying injuries to the brain. The rule covers current and former USDA employees and dependents of current or former employees.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Interim Final Rule and Request for Comments",
+"date": "11/20/2024",
+"fr_citation": "89 FR 91529"
+},
+{
+"action": "Interim Final Rule Effective",
+"date": "11/20/2024",
+"fr_citation": null
+},
+{
+"action": "Interim Final Rule Comment Period End",
+"date": "01/21/2025",
+"fr_citation": null
+},
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"7 CFR 1.900-1.903"
+],
+"legal_authority": [
+"5 U.S.C. 301",
+"22 U.S.C. 2680b"
+],
+"related_rins": null
+},
+{
+"rin": "0503-AA82",
+"agency_code": "AgSEC",
+"agency_name": "Office of the Secretary",
+"title": "Technical Guidelines for the Production of Regenerative Agricultural Biofuel Feedstocks",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>USDA previously issued an Interim Final Rule (IFR) before the start of this Administration to establish new regulations that will set requirements for the quantification, reporting, and verification of low-carbon, domestic agricultural biofuel feedstocks. The rule may create additional opportunities to produce low-carbon agricultural feedstocks sourcing biofuels, and may provide added-value market opportunities for farmers producing biofuel feedstock crops<strong>.&nbsp; </strong>In addition, the One Big Beautiful Bill Act (Public Law 119-21) includes and extends the 45Z tax credit, administered by the U.S. Department of Treasury. This rule can inform this tax policy in ways that will support the agricultural economy.</p>\n<p>&nbsp;</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "RFI",
+"date": "06/27/2024",
+"fr_citation": "89 FR 53585"
+},
+{
+"action": "RFI Comment Period End",
+"date": "07/25/2024",
+"fr_citation": null
+},
+{
+"action": "Interim Final Rule",
+"date": "01/17/2025",
+"fr_citation": "90 FR 5497"
+},
+{
+"action": "Interim Final Rule Effective",
+"date": "01/17/2025",
+"fr_citation": null
+},
+{
+"action": "Interim Final Rule Comment Period End",
+"date": "03/18/2025",
+"fr_citation": null
+},
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"7 CFR 2100"
+],
+"legal_authority": [
+"16 U.S.C. 3845 and 3846",
+"Public Law 119-21"
+],
+"related_rins": null
+},
+{
+"rin": "0503-AA84",
+"agency_code": "AgSEC",
+"agency_name": "Office of the Secretary",
+"title": "Nondiscrimination in Programs or Activities Conducted by the United States Department of Agriculture",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The&nbsp;Office of the Assistant Secretary for Civil Rights&nbsp;proposes to update its regulation on nondiscrimination in programs or activities conducted by the Department consistent with Executive Order 14168, entitled, Defending Women from Gender Ideology Extremism and Restoring Biological Truth to the Federal Government. The final rule removes gender identity as a protected base and replaces the term gender throughout with the term sex in accordance with the Executive Order 14168, entitled, Defending Women from Gender Ideology Extremism and Restoring Biological Truth to the Federal Government.&nbsp;</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"7 CFR 15d"
+],
+"legal_authority": [
+"5 U.S.C. 301"
+],
+"related_rins": null
+},
+{
+"rin": "0503-AA85",
+"agency_code": "AgSEC",
+"agency_name": "Office of the Secretary",
+"title": "Equal Opportunity for Religious Organizations",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>The Office of the Assistant Secretary for Civil Rights (OASCR) is correcting&nbsp;its&rsquo; portion of the Final Rule, Partnerships With Faith-Based and Neighborhood Organizations also known as the Nine Agency Rule&nbsp;published in the <strong>Federal Register </strong> on March 4, 2024. The summary section of the final rule stated that it clarifies protections for beneficiaries and prospective beneficiaries of federally funded social services, as well as the rights and obligations of organizations providing such services. However, the rule text &nbsp;for USDA at 7 CFR 16 specifies that the policy applies to all recipients and subrecipients of USDA assistance, without specifically referencing social service&nbsp;programs.&nbsp;This omission created an inconsistency between the summary and the rule text.&nbsp; Therefore, USDA is &nbsp;correcting 7 CFR 16.1(b) to include the reference to domestic social service programs.&nbsp; This correction ensures the regulation accurately reflects the scope and intent of the final rule and clarifies that the protections and obligations apply specifically to the provision of federally funded domestic social service programs.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"7 CFR 16"
+],
+"legal_authority": [
+"5 U.S.C. 301"
+],
+"related_rins": [
+{
+"rin": "0503-AA73",
+"rin_relation": "Related to"
+}
+]
+},
+{
+"rin": "0503-AA86",
+"agency_code": "AgSEC",
+"agency_name": "Office of the Secretary",
+"title": "USDA NEPA Amending Regulations",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>USDA interim rule based on CEQ rescission of its longstanding NEPA regulations that became effective on April 11, 2025.</p>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Completed Actions",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Interim Final Rule; Request for Comment",
+"date": "07/03/2025",
+"fr_citation": "90 FR 29632"
+},
+{
+"action": "Interim Final Rule Effective",
+"date": "07/03/2025",
+"fr_citation": null
+},
+{
+"action": "Interim Final Rule; Correction and Correcting Amendment",
+"date": "07/18/2025",
+"fr_citation": "90 FR 33871"
+},
+{
+"action": "Interim Final Rule Comment Period End",
+"date": "07/30/2025",
+"fr_citation": null
+},
+{
+"action": "Final Action",
+"date": "04/03/2026",
+"fr_citation": "91 FR 17062"
+},
+{
+"action": "Final Action Effective",
+"date": "04/03/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"7 CFR 3"
+],
+"legal_authority": [
+"42 U.S.C. 4321 et seq."
+],
+"related_rins": null
+},
+{
+"rin": "0503-AA88",
+"agency_code": "AgSEC",
+"agency_name": "Office of the Secretary",
+"title": "Removing Outdated and Unnecessary Provisions",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>USDA is removing unnecessary and outdated regulations at 7 CFR Part 15f pertaining to the adjudications of alleged non-employment related discrimination that occurred between January 1, 1981, adnd December 31, 1996.</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"7 CFR Part 15f"
+],
+"legal_authority": [
+"5 U.S.C. 301"
+],
+"related_rins": null
+},
+{
+"rin": "0503-AA89",
+"agency_code": "AgSEC",
+"agency_name": "Office of the Secretary",
+"title": "Rescinding Portions of the Department of Agriculture's Title VI Regulations to Implement EO 14281 and to conform more closely with the statutory text and the Department of Justice's Regulations.",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>USDA's amendments would&nbsp;remove its regulatory provisions that currently treat practices producing disparate impacts as unlawful under Title VI of the Civil Rights Act of 1964.&nbsp; Specifically, USDA is rescinding portions of its regulations promulgated pursuant to Title VI of the Civil Rights Act of 1964, to more closely align its regulations to the language that Congress enacted in Title VI of the Civil Rights Act of 1964 prohibiting intentionally discriminatory conduct.</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"7 CFR Part 15"
+],
+"legal_authority": [
+"5 U.S.C. 301",
+"42 U.S.C. 2000d"
+],
+"related_rins": null
+},
+{
+"rin": "0503-AA90",
+"agency_code": "AgSEC",
+"agency_name": "Office of the Secretary",
+"title": "Equal Participation of Faith-Based Organizations in USDA's Programs and Activities: Implementation of Executive Order 14205",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p>This proposed rule would amend USDA's regulations to implement Executive Order 14205 (Establishment of a White House Faith and Opportunity Initiative). Among other changes, this rule proposes to provide clarity regarding the rights of faith-based organizations participating in&nbsp;USDA programs. This proposed rulemaking aligns with USDA's goal of implementing its programs and activities consistent with the First Amendment to the Constitution and the requirements of federal law, including the Religious Freedom Restoration Act.</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Proposed Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "NPRM",
+"date": "11/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"7 CFR Part 16"
+],
+"legal_authority": [
+"5 U.S.C. 301",
+"42 U.S.C. 2000bb et seq"
+],
+"related_rins": null
+},
+{
+"rin": "0505-AA19",
+"agency_code": "OCFO",
+"agency_name": "Office of Chief Financial Officer",
+"title": "Application of 2 CFR Part 200 to For-Profit Entities and Mutual Interest Agreement Authorities",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<p><strong>For-profits (this will go in 2 CFR part 200)</strong></p>\n<p>USDA will adopt 2 CFR part 200 for use with for-profit entities. The USDA assistance regulations applied to for-profits from their creation in 1981 to 2013, when the Uniform Guidance was implemented. The Uniform Guidance does not require the application of 2 CFR part 200 to for-profits. USDA should have taken an independent regulatory action to bring the for-profits back in, but it was not done. During this period, the USDA agencies and staff offices have been binding for-profits to comply with 2 CFR part 200 at the level of the individual awards. In discussion with OGC, this proposed action will ensure uniformity in the regulatory body and ensure clarity of application of 2 CFR part 200 to for-profits.</p>\n<p>&nbsp;</p>\n<p><strong>Mutual interest agreements and 2 CFR part 200 (this will go in 7 CFR)</strong></p>\n<p>USDA has several authorities which, by statute, are neither assistance nor procurement. However, in an evaluation of the activities completed and the relationships established, they are more like assistance than procurement. In alignment with GAO direction on these types of authorities, it is more appropriate to then apply requirements (and appropriations law concepts) relating to financial assistance than procurement. To reduce administrative burden, it is appropriate to adopt 2 CFR part 200 for use and applicability to these authorities, which will increase consistency in agency and staff office procedures and reduce burden on recipients/cooperators.</p>\n</body>\n</html>",
+"rin_status": "First Time Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Substantive, Nonsignificant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"Not Yet Determined"
+],
+"legal_authority": [
+"Not Yet Determined"
+],
+"related_rins": null
+},
+{
+"rin": "1018-AW66",
+"agency_code": "FWS",
+"agency_name": "United States Fish and Wildlife Service",
+"title": "Wildlife and Fisheries; Clean Vessel Act Grant Program",
+"abstract": "<!DOCTYPE html>\n<html>\n<head>\n</head>\n<body>\n<div class=\"OutlineElement Ltr SCXW114963379 BCX8\">\n<p class=\"Paragraph TrackedChange SCXW114963379 BCX8\"><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">This direct final rule (DFR) rescinds the U.S. Fish and Wildlife Service&rsquo;s (Service) regulations at 50 CFR 85, which </span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">contain</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\"> general provisions for the Clean Vessel Act Grant Program (CVA) authorized under the Dingell-Johnson Sport Fish Restoration Act. This DFR removes redundant and outdated sections. A review comparing 50 CFR 8</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">5</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\"> with existing statutes and regulations confirmed that all essential provisions are already addressed in: 2 CFR 200; 50 CFR Part 80; and the statutory authority.</span></span><span class=\"EOP TrackedChange SCXW114963379 BCX8\" data-ccp-props=\"{&quot;134233117&quot;:false,&quot;134233118&quot;:false,&quot;134245417&quot;:false,&quot;201341983&quot;:0,&quot;335559685&quot;:137,&quot;335559738&quot;:0,&quot;335559739&quot;:0,&quot;335559740&quot;:240}\">&nbsp;</span></p>\n</div>\n<div class=\"OutlineElement Ltr SCXW114963379 BCX8\">\n<p class=\"Paragraph TrackedChange SCXW114963379 BCX8\"><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">Rescinding 50 CFR 8</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">5</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\"> will not reduce oversight or program integrity. Instead, it </span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">eliminates</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\"> duplication, removes unnecessary restrictions, and allows the Service to respond more effectively to legislative changes, market conditions, and program needs. The removal will </span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">maintain</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\"> program goals and preserve the Federal-State partnership. </span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">By administering the </span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">CVA</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\"> grant program through a Notice of Funding Opportunity (NOFO) instead, we will provide stakeholders with clear, consistent guidance and have greater flexibility to efficiently administer </span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\">CVA</span></span><span class=\"TrackedChange SCXW114963379 BCX8\"><span class=\"TextRun SCXW114963379 BCX8\" lang=\"EN-US\" xml:lang=\"EN-US\" data-contrast=\"auto\"> awards.</span></span></p>\n</div>\n</body>\n</html>",
+"rin_status": "Previously Published in The Unified Agenda",
+"rule_stage": "Final Rule Stage",
+"priority_category": "Other Significant",
+"agenda_edition": "202510",
+"major": "No",
+"publication_id": "202510",
+"timetable": [
+{
+"action": "ANPRM",
+"date": "09/14/2015",
+"fr_citation": "80 FR 55078"
+},
+{
+"action": "ANPRM Comment Period End",
+"date": "11/13/2015",
+"fr_citation": null
+},
+{
+"action": "Final Action",
+"date": "07/00/2026",
+"fr_citation": null
+}
+],
+"cfr_references": [
+"50 CFR 85"
+],
+"legal_authority": [
+"33 U.S.C. 1322 as amended",
+"16 U.S.C. 777c"
+],
+"related_rins": null
+}
+]

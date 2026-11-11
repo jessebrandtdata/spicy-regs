@@ -972,7 +972,7 @@
   "cfr_sections": {
     "table": "cfr_sections",
     "label": "Code of Federal Regulations sections",
-    "summary": "One GovInfo annual CFR granule: a section, appendix or other structural unit. This is metadata, not regulatory body text. Enclosing parts come from annual volume PART headings, preserving compound and unusual numbering; printed section numbers alone do not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread volumes can retain earlier placement; the annual index package is excluded.",
+    "summary": "One GovInfo annual CFR granule: a section, appendix or other structural unit. This is metadata, not regulatory body text. Enclosing parts come from annual volume PART headings, preserving compound and unusual numbering; printed section numbers alone do not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread volumes can retain earlier placement; the annual index package is excluded. A granule's GovInfo page is `https://www.govinfo.gov/app/details/{package_id}/{granule_id}`, composed from the identifiers and not stored (until 2026-11 only the per-row receipts held it).",
     "coverage": "Window. Annual-edition section metadata from the 2025 edition and, for some titles, the 2026 edition (`SELECT DISTINCT edition_year, title` lists which), not full publication history or body text. Each section's part comes from its volume's PART heading; on 2026-09-23 every compared Title 41, 43 and 14 section agreed with eCFR's 2025-01-01 structure. Receipts: fork-execution-2026-09-21/cfr-ancestry-fix-2026-09-23/ (candidate.json, validation.json).",
     "kind": "window",
     "measured_on": "2026-10-03",
@@ -1275,7 +1275,7 @@
   "unified_agenda": {
     "table": "unified_agenda",
     "label": "Planned agency actions",
-    "summary": "One row per Regulation Identifier Number (RIN) per agenda edition, ingested from the OIRA/OMB Unified Agenda published at reginfo.gov by `build_unified_agenda`. A Tier-1 rulemaking-lifecycle source: the upstream, forward-looking catalog of rulemakings agencies *plan* to pursue, keyed by the same `rin` that appears in `federal_register` (`regulation_id_numbers`). Primary / dedup key is (`rin`, `agenda_edition`).",
+    "summary": "One row per Regulation Identifier Number (RIN) per agenda edition, ingested from the OIRA/OMB Unified Agenda published at reginfo.gov by `build_unified_agenda`. A Tier-1 rulemaking-lifecycle source: the upstream, forward-looking catalog of rulemakings agencies *plan* to pursue, keyed by the same `rin` that appears in `federal_register` (`regulation_id_numbers`). Primary / dedup key is (`rin`, `agenda_edition`). An entry's reginfo.gov page is `https://www.reginfo.gov/public/do/eAgendaViewRule?pubId={agenda_edition}&RIN={rin}`, composed from the key and not stored (until 2026-11 only the per-row receipts held it).",
     "coverage": "True range: the retained published baseline starts at 199510 and excludes the 2004 editions and spring 2012; agenda_edition names each included edition. A local source-only replay now recovers the two 2004 editions through narrowly qualified repairs; that candidate has not been published. See docs/unified-agenda-retained-rebuild.md for the qualification boundary. A rule has one row per edition that lists it, so count distinct rin, not rows, for a number of rules.",
     "kind": "true_range",
     "measured_on": "2026-10-10",
@@ -39543,20 +39543,6 @@
         ]
       },
       {
-        "dataset": "cfr_sections",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v1",
-        "identity_columns": [
-          "granule_id"
-        ],
-        "processing_fields": [
-          "url",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "cftc_comment_files",
         "receipt_only": false,
         "policy_version": "retained-native-collections-v1",
@@ -41871,21 +41857,6 @@
           "source_metadata",
           "source_schema",
           "entry_kind"
-        ]
-      },
-      {
-        "dataset": "unified_agenda",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "rin",
-          "agenda_edition"
-        ],
-        "processing_fields": [
-          "url",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {

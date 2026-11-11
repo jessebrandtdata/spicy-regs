@@ -524,7 +524,6 @@ EVIDENCE_EXEMPT = {
     "FecSourceCatalogRollup": _UNWIRED,
     "PressReleasesRollup": _UNWIRED,
     "SenateExpendituresRollup": _UNWIRED,
-    "UnifiedAgendaRollup": _UNWIRED,
 }
 
 

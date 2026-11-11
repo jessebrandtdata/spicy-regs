@@ -575,7 +575,7 @@ def test_rollup_passes_replace_all_from_the_workflow_input(monkeypatch, tmp_path
     calls = []
     monkeypatch.setattr(
         rollup.CfrSectionsRollup,
-        "build_receipts",
+        "build_table",
         lambda self, directory, builder, **kwargs: builder(directory, **kwargs),
     )
     monkeypatch.setattr(rollup, "build_cfr_sections", lambda output_dir, **kwargs: calls.append(kwargs) or output_dir)
