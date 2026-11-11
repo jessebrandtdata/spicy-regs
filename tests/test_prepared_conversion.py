@@ -11,11 +11,13 @@ from spicy_regs import native_conversion as conversion
 from spicy_regs.sources import publication
 from tests.test_native_conversion import (
     BASE, BUCKET, CFR, COMMON, DOCKET, MAIN, PINNED_WHEEL, STATE, WHEEL,
-    bucket as _bucket,
+    bucket as _bucket, cfr_on_its_receipt_route as _cfr_on_its_receipt_route,
     convert, prepared_digest, publish_old, publish_old_with_evidence, publish_split_sections, stored,
 )
 
 bucket = _bucket  # Expose the existing hermetic fixture to pytest in this module.
+#: cfr-sections on its former receipt route, this file's example family (autouse; tests/test_native_conversion.py).
+cfr_on_its_receipt_route = _cfr_on_its_receipt_route
 
 
 def publish_prepared(path, family="cfr-sections", **kwargs):

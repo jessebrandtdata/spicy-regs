@@ -176,6 +176,20 @@ def published_table(
     return path if (path.exists() or download_prior(f"{name}.parquet", path)) else None
 
 
+def published_prior(key: str, path: Path) -> bool:
+    """Download the table the captured index pins for ``key``; ``False`` when no family publishes it.
+
+    Never a bare-key object: the receipt route read only selected generations, and neither does a family that merges
+    at its published table (ss-vse3).
+    """
+    from spicy_regs.sources import publication
+
+    public_url = os.getenv("R2_PUBLIC_URL")
+    if not public_url or publication.table_owner(publication.current_index(public_url), key) is None:
+        return False
+    return r2.download(key, path)
+
+
 def download_prior_members(remote_key: str, directory: Path) -> list[Path]:
     """:func:`r2.download_members` for a prior; none while R2 is unconfigured or no family publishes the table.
 

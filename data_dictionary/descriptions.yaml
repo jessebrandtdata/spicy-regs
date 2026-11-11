@@ -435,7 +435,9 @@ tables:
       metadata, not regulatory body text. Enclosing parts come from annual volume PART
       headings, preserving compound and unusual numbering; printed section numbers alone do
       not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread
-      volumes can retain earlier placement; the annual index package is excluded.
+      volumes can retain earlier placement; the annual index package is excluded. A granule's
+      GovInfo page is `https://www.govinfo.gov/app/details/{package_id}/{granule_id}`, composed
+      from the identifiers and not stored (until 2026-11 only the per-row receipts held it).
     columns:
       granule_id: "GovInfo granule identifier. Primary key / dedup key, including non-section structural units."
       package_id: "GovInfo package identifier for the enclosing annual CFR title and volume."
@@ -557,7 +559,9 @@ tables:
       forward-looking catalog of rulemakings agencies *plan* to pursue, keyed by
       the same `rin` that appears in `federal_register`
       (`regulation_id_numbers`). Primary / dedup key is (`rin`,
-      `agenda_edition`).
+      `agenda_edition`). An entry's reginfo.gov page is
+      `https://www.reginfo.gov/public/do/eAgendaViewRule?pubId={agenda_edition}&RIN={rin}`,
+      composed from the key and not stored (until 2026-11 only the per-row receipts held it).
     columns:
       rin: "Regulation Identifier Number (e.g. `2060-AV12`). The RIN join key to `federal_register`. Half of the primary/dedup key."
       agency_code: "Short code of the agency that owns the RIN."

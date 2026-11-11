@@ -266,18 +266,18 @@ def test_a_re_map_that_loses_a_row_fails_the_merge(tmp_path, monkeypatch):
     """The count is the prior's as published, so a re-map that drops a row cannot pass as a smaller prior."""
     import pyarrow.parquet as pq
 
-    from spicy_regs.transforms import build_federal_register as builder
+    from spicy_regs.transforms import regulations_shape
 
-    mapped = builder._mapped
+    mapped = regulations_shape.mapped_table
 
-    def losing(text, destination, schema):
-        mapped(text, destination, schema)
+    def losing(dataset, text, destination, **options):
+        mapped(dataset, text, destination, **options)
         if destination.name == "_fr_prior.parquet":
             table = pq.read_table(destination)
             pq.write_table(table.slice(1), destination)
         return destination
 
-    monkeypatch.setattr(builder, "_mapped", losing)
+    monkeypatch.setattr(regulations_shape, "mapped_table", losing)
     _prior(tmp_path, without=("topics",))
     with pytest.raises(ValueError, match="lost or repeated a record.*'prior_rows': 3.*'rows': 2"):
         merge_federal_register(tmp_path, since=date(2024, 3, 1), documents=lambda start: iter(()),

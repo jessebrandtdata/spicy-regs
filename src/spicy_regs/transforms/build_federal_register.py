@@ -47,16 +47,14 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from loguru import logger
 
-from spicy_regs.sources import r2
+from spicy_regs.transforms.regulations_shape import ROW_GROUP_ROWS
+from spicy_regs.transforms.table_merge import published_prior
 
 OUTPUT = "federal_register.parquet"
 
 #: The column naming the retained API page a row was last read from; appended after the contract's columns.
 POINTER = "source_sha256"
 
-#: Rows per row group of the published table, as the receipt writer left it (507 groups for 1,012,333 rows on
-#: 2026-11-09): readers fetch by range, so the layout is part of what is published.
-ROW_GROUP_ROWS = 2000
 
 # The oldest documents the API serves. A backfill with no prior table starts here.
 FR_EPOCH = date(1994, 1, 1)
@@ -295,21 +293,6 @@ def build_federal_register(
     return out_file
 
 
-def published_prior(key: str, path: Path) -> bool:
-    """Download the table the captured index pins for ``key``; ``False`` when no family publishes it.
-
-    Never a bare-key object: the receipt route read only selected generations, and so does this one.
-    """
-    from os import getenv
-
-    from spicy_regs.sources import publication
-
-    public_url = getenv("R2_PUBLIC_URL")
-    if not public_url or publication.table_owner(publication.current_index(public_url), key) is None:
-        return False
-    return r2.download(key, path)
-
-
 def merge_federal_register(
     output_dir: Path,
     *,
@@ -336,7 +319,9 @@ def merge_federal_register(
     """
     import duckdb
 
-    from spicy_regs.transforms.regulations_shape import IDENTITIES, PROMOTED_LAST, published_as_source, subject_schema
+    from spicy_regs.transforms.regulations_shape import (
+        IDENTITIES, PROMOTED_LAST, mapped_table, published_as_source, subject_schema,
+    )
 
     schema = subject_schema("federal_register")
     key = ", ".join(IDENTITIES["federal_register"])
@@ -365,14 +350,15 @@ def merge_federal_register(
                                      and not held.field(field.name).type.equals(field.type)]}
         logger.info("FR: the prior differs from the published columns ({}); mapping its {:,} rows again", remap,
                     prior_rows)
-        prior = _mapped(published_as_source("federal_register", prior, scratch[1]), scratch[2], schema)
+        prior = mapped_table("federal_register", published_as_source("federal_register", prior, scratch[1]),
+                             scratch[2])
     if since is None:
         prior_max = _prior_max_publication_date(prior) if have_prior else None
         since = (prior_max - timedelta(days=OVERLAP_DAYS)) if prior_max else FR_EPOCH
     # The night's observations alone (no prior to merge), moved off the table's name before the merge writes it.
     observed = build_federal_register(output_dir, since=since, documents=documents, evidence=evidence
                                       ).replace(scratch[3])
-    fresh = _mapped(observed, scratch[4], schema)
+    fresh = mapped_table("federal_register", observed, scratch[4])
     read_rows = pq.ParquetFile(fresh).metadata.num_rows
     names = ", ".join(f"{_PUBLISHED_RIN_SQL} AS rin" if name == "rin" else f'"{name}"' for name in schema.names)
     merged = output_dir / "_fr_merged.parquet"
@@ -405,16 +391,3 @@ def merge_federal_register(
     logger.info("Federal Register: {:,} rows ({:,} read, {:,} new)", total, read_rows, added)
     return out_file
 
-
-def _mapped(text: Path, destination: Path, schema: pa.Schema) -> Path:
-    """``text``'s rows, in the text shape the builder writes, mapped to the published columns a batch at a time.
-
-    One mapper for the night's rows and a prior read back from another width; a row it refuses fails the run.
-    """
-    from spicy_regs.transforms.regulations_shape import shape_records
-
-    with pq.ParquetWriter(destination, schema, compression="zstd") as writer:
-        for batch in pq.ParquetFile(text).iter_batches(batch_size=5000):
-            writer.write_table(pa.Table.from_pylist(shape_records("federal_register", batch.to_pylist()),
-                                                    schema=schema))
-    return destination

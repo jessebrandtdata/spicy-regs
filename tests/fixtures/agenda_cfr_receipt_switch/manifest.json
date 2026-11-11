@@ -1,0 +1,34 @@
+{
+ "unified_agenda": {
+  "family": "unified-agenda",
+  "artifactDigest": "sha256:ab8eb2989a156a2cbf8deae048430decb5bfe8ab0bacb063034ea327c4d7f115",
+  "publishedAt": "2026-11-10T20:20:59Z",
+  "generationId": "118e1e3970a94dd5988623b3752874e7",
+  "rows": 70,
+  "receipts": 71,
+  "cut": "the first 40 rins of edition 202510 and 30 of 202504 (rows with related_rins first), by rin",
+  "night": {
+   "edition": "202510",
+   "records": 40,
+   "not_reread": "0301-AA02",
+   "added": "1018-AW66",
+   "edited_title": "0331-AA10"
+  }
+ },
+ "cfr_sections": {
+  "family": "cfr-sections",
+  "artifactDigest": "sha256:897008e4a0fd9b1763d624ada093613ef7f7911efd03939af32505d9f0450c0e",
+  "publishedAt": "2026-11-09T20:52:01Z",
+  "generationId": "5471b0eee3f24cb7a38c883e96c60305",
+  "rows": 93,
+  "receipts": 94,
+  "cut": "every row of CFR-2025-title50-vol6, CFR-2025-title50-vol2 and CFR-2025-title40-vol9",
+  "night": {
+   "changed_package": "CFR-2025-title40-vol9",
+   "lastModified": "2026-11-10T06:00:00Z",
+   "edited_heading": "CFR-2025-title40-vol9-chapI",
+   "granules": 93
+  }
+ },
+ "basis": "Rows and their receipts exactly as the live generations published them (the run's observed input record included); night.json is the next night's input read from those receipts' text rows, with the labelled edits. scratchpad agendacfr/scripts/ac_fixture.py wrote it."
+}

@@ -626,62 +626,6 @@ def test_unified_agenda_related_rins_refuse_an_unknown_member():
     assert shape_record("unified_agenda", row)["related_rins"] == [{"rin": "1000-AA01", "rin_relation": "Related to"}]
 
 
-def test_native_unified_agenda_source_ingest_keeps_partial_dates_and_prior_editions(tmp_path):
-    from spicy_regs.transforms.regulations_ingest import unified_agenda_generation
-
-    prior = write(
-        tmp_path, "unified_agenda", [{"rin": "1000-AA00", "agenda_edition": "202510", "timetable_json": "[]"}]
-    )
-    target = tmp_path / "agenda-new"
-    unified_agenda_generation(
-        {
-            "202604": [
-                {
-                    "rin": "1000-AA00",
-                    "agenda_edition": "202604",
-                    "rin_status": "Completed",
-                    "timetable": [{"action": "Final Rule", "date": "04/00/2026", "fr_citation": None}],
-                }
-            ]
-        },
-        target,
-        generation_id="agenda2",
-        witnesses=context().witnesses,
-        prior=prior,
-    )
-    rows = pq.read_table(target / "unified_agenda.parquet").to_pylist()
-    assert len(rows) == 2
-    latest = next(r for r in rows if r["agenda_edition"] == "202604")
-    assert latest["timetable"][0]["date"] == "04/00/2026"
-    assert latest["rin_status"] == "Completed"
-
-
-def test_native_cfr_source_ingest_keeps_source_modified_date(tmp_path):
-    from contextlib import nullcontext
-    from spicy_regs.transforms.regulations_ingest import cfr_sections_generation
-
-    target = tmp_path / "cfr-new"
-    cfr_sections_generation(
-        [
-            {
-                "granuleId": "CFR-2025-title1-vol1-part1",
-                "packageId": "CFR-2025-title1-vol1",
-                "lastModified": "2026-01-03",
-                "title": "General Provisions",
-                "granuleClass": "PART",
-            }
-        ],
-        target,
-        acquirer=nullcontext(object()),
-        generation_id="cfr2",
-        witnesses=context().witnesses,
-    )
-    [row] = pq.read_table(target / "cfr_sections.parquet").to_pylist()
-    assert row["last_modified"] == "2026-01-03"
-    assert row["part"] == "1"
-    assert "url" not in row
-
-
 def test_native_staging_merge_keeps_integer_counts_and_source_recency(tmp_path, monkeypatch):
     """The receipt route's staging merge, with comments as its example table.
 
@@ -880,7 +824,7 @@ def test_resealed_inconsistent_processor_input_refuses_before_processing(tmp_pat
 
 
 @pytest.mark.parametrize('loose_prior', [False, True])
-def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_identity(tmp_path, monkeypatch, loose_prior):
+def test_scheduled_rulemaking_reads_the_published_agenda_and_preserves_prior_identity(tmp_path, monkeypatch, loose_prior):
     import shutil
     from spicy_regs.pipelines.rulemaking_dataset import RulemakingDatasetPipeline
     from spicy_regs.selected_generations import SelectedDataset, remember_selection
@@ -893,17 +837,13 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
         'documents': [{'document_id': 'EPA-2026-0001-0001', 'docket_id': 'EPA-2026-0001',
                        'agency_code': 'EPA', 'document_type': 'Proposed Rule', 'posted_date': '2026-01-01',
                        'modify_date': '2026-01-01', 'comment_end_date': '2026-03-01', 'title': 'Proposal'}],
-        'unified_agenda': [{'rin': '1000-AA00', 'agenda_edition': '202510', 'title': 'A rule',
-                           'agency_code': '2000', 'rule_stage': 'Proposed Rule', 'timetable_json': '[]',
-                           'legal_authority_json': '["5 U.S.C. 301"]', 'cfr_references_json': '["40 CFR 1"]',
-                           'url': 'https://www.reginfo.gov/public/do/eAgendaViewRule?pubId=202510&RIN=1000-AA00'}],
     }
     inputs = [write(tmp_path, name, rows, label=name) for name, rows in source_rows.items()]
     work = tmp_path / 'scheduled'
     work.mkdir()
     remember_selection(work, [SelectedDataset(s.dataset, s.subjects, s.receipts, s.generation_id) for s in inputs])
-    # The two Register tables are read as published (ss-vse3): native lists, no receipt pair. A local run reads
-    # the tables beside it; the stages still get the Register's lists as JSON text.
+    # The Register and agenda tables are read as published (ss-vse3): native lists, no receipt pair. A local run
+    # reads the tables beside it; the stages still get their lists as JSON text.
     from spicy_regs.transforms.regulations_shape import shape_record
     published = {
         'federal_register': {'document_number': '2026-00001', 'publication_date': '2026-01-02', 'title': 'Proposal',
@@ -912,6 +852,9 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
                              'cfr_references_json': '[{"title": 40, "part": 60}]', 'agency_slugs': 'epa'},
         'fr_docket_links': {'docket_id': 'EPA-2026-0001', 'docket_source_ordinal': 0, 'link_source': 'printed',
                             'document_number': '2026-00001', 'publication_date': '2026-01-02'},
+        'unified_agenda': {'rin': '1000-AA00', 'agenda_edition': '202510', 'title': 'A rule', 'agency_code': '2000',
+                           'rule_stage': 'Proposed Rule', 'timetable_json': '[]',
+                           'legal_authority_json': '["5 U.S.C. 301"]', 'cfr_references_json': '["40 CFR 1"]'},
     }
     for name, row in published.items():
         pq.write_table(pa.Table.from_pylist([shape_record(name, row)], schema=subject_schema(name)),
@@ -930,9 +873,11 @@ def test_scheduled_rulemaking_uses_selected_native_agenda_and_preserves_prior_id
     assert not (work / '_proceedings_receipts.parquet').exists()
     assert 'authority_refs' in native[0] and 'authority_refs_json' not in native[0]
     manifest = json.loads((work / 'rulemaking-dataset-manifest.json').read_text())
-    assert manifest['inputs']['native_inputs']['unified_agenda']['generationId'] == 'g1'
     # No receipt pair stands behind a published source; with an index its pin would name the generation read.
-    assert manifest['inputs']['native_inputs']['federal_register'] == {}
+    assert manifest['inputs']['native_inputs']['federal_register'] == manifest['inputs']['native_inputs'][
+        'unified_agenda'] == {}
+    staged_agenda = pq.read_table(work / 'unified_agenda.parquet').to_pylist()[0]
+    assert (staged_agenda['legal_authority_json'], staged_agenda['timetable_json']) == ('["5 U.S.C. 301"]', '[]')
     assert set(manifest['inputs']['native_inputs']) == {
         'dockets', 'documents', 'unified_agenda', 'federal_register', 'fr_docket_links'}
     staged = pq.read_table(work / 'federal_register.parquet').to_pylist()[0]

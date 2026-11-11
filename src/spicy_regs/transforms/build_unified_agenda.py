@@ -196,11 +196,15 @@ def build_unified_agenda(
     download_prior: Callable[[str, Path], bool] | None = None,
     source_only: bool = False,
     source_receipts: list[dict] | None = None,
+    evidence=None,
 ) -> Path:
     """Build incremental editions, or replay explicit offline editions without a prior.
 
     ``source_only`` requires a caller-selected offline reader. Success receipts
     supplied by that reader retain original pins and any exact historical repair.
+    ``evidence`` (a ``CaptureEvidence``) retains each edition file the default
+    reader fetches, and journals the editions' manifest as
+    ``unified-agenda-editions``.
     """
     import duckdb
 
@@ -244,7 +248,8 @@ def build_unified_agenda(
     read = (
         records
         if records is not None
-        else (lambda edition: UnifiedAgendaReader(editions=(edition,), on_source=source_receipts.append).iter_records())
+        else (lambda edition: UnifiedAgendaReader(editions=(edition,), on_source=source_receipts.append,
+                                                  evidence=evidence).iter_records())
     )
     new_file = output_dir / "_ua_new.parquet"
     total_new = 0
@@ -320,8 +325,10 @@ def build_unified_agenda(
             "Unified Agenda: {:,} restored rows in editions read this run were not in the re-read; "
             "their related_rins stay unread (NULL)", unread[0])
 
+    if evidence is not None:
+        evidence.event("unified-agenda-editions", editions=source_receipts)
     if source_receipts:
-        # Receipt conversion retains this manifest's digest and repair evidence.
+        # The published table's file metadata pins this manifest and carries its repairs.
         encoded = (json.dumps(source_receipts, sort_keys=True, separators=(",", ":")) + "\n").encode()
         (output_dir / "unified_agenda_source_inputs.json").write_bytes(encoded)
         metadata = {

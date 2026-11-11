@@ -546,27 +546,6 @@
     "feed_url": "The per-Congress feed the item was read from, the one keyless request a re-read repeats."
    }
   },
-  "cfr_sections": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "granule_id",
-     "part_granule",
-     "package_id",
-     "cfr_ref",
-     "title",
-     "part",
-     "section",
-     "heading",
-     "structure_level",
-     "edition_year",
-     "last_modified",
-     "url"
-    ]
-   },
-   "meanings": {
-    "url": "Canonical GovInfo details URL composed from the package and granule identifiers."
-   }
-  },
   "cftc_comment_files": {},
   "cftc_comments": {},
   "cftc_rule_observations": {},
@@ -3969,43 +3948,6 @@
      "basis": "detail_read is 'true' on a row whose Congress.gov detail record was read."
     }
    ]
-  },
-  "unified_agenda": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "rin",
-     "agency_code",
-     "agency_name",
-     "title",
-     "abstract",
-     "rin_status",
-     "rule_stage",
-     "priority_category",
-     "agenda_edition",
-     "major",
-     "publication_id",
-     "timetable_json",
-     "cfr_references_json",
-     "legal_authority_json",
-     "first_action_date",
-     "next_action_date",
-     "url",
-     "related_rins_json"
-    ]
-   },
-   "renamed": {
-    "cfr_references_json": "cfr_references",
-    "legal_authority_json": "legal_authority",
-    "related_rins_json": "related_rins",
-    "timetable_json": "timetable"
-   },
-   "meanings": {
-    "cfr_references_json": "JSON array of CFR citations affected by the rulemaking. The join key to the CFR.",
-    "legal_authority_json": "JSON array of legal-authority citations the agency cites for the rulemaking.",
-    "related_rins_json": "JSON array of the RINs the publisher lists as related to this entry, each with its stated relation (`rin`, `rin_relation`), in source order. Values are stripped of leading and trailing whitespace and otherwise kept as written: no RIN shape is checked, so self-references, repeated pairs, malformed RINs and the cut-off relations `Related t` and `Previously report` remain. NULL when the edition states no related-RIN list.",
-    "timetable_json": "JSON array of planned and actual milestone actions with literal source dates and Federal Register citations. A date with day 00 has month precision; labels such as To Be Determined remain unchanged.",
-    "url": "URL of the entry's detail page on reginfo.gov."
-   }
   },
   "usaspending_recipients": {
    "containers": {

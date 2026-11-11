@@ -44,6 +44,33 @@ DOCKET = {
 }
 
 
+
+@pytest.fixture(autouse=True)
+def cfr_on_its_receipt_route(monkeypatch):
+    """cfr-sections as it was before its receipts were retired (ss-vse3): this file's example of a one-table family.
+
+    The converter refuses the real family now (``test_the_retired_cfr_family_is_not_converted``); these tests keep its
+    rows, with the retired marker lifted through the one function every reader asks and the receipt route's rollup
+    standing in for the plain one.
+    """
+    from spicy_regs import subject_catalog
+    from spicy_regs.pipelines.rollups.subject_receipts import SubjectReceiptRollup
+    from spicy_regs.transforms.build_cfr_sections import build_cfr_sections
+
+    class CfrSectionsReceiptRoute(SubjectReceiptRollup):
+        name = "cfr-sections"
+        inputs = ()
+        output = "cfr_sections.parquet"
+
+        def build(self, output_dir):
+            return self.build_receipts(output_dir, build_cfr_sections)
+
+    retired = subject_catalog.retired_receipt_datasets()
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: retired - {"cfr_sections"})
+    found = conversion._rollup_class
+    monkeypatch.setattr(conversion, "_rollup_class", lambda family, base=None: (
+        CfrSectionsReceiptRoute if family == "cfr-sections" and base is None else found(family, base)))
+
 @pytest.fixture
 def bucket(monkeypatch):
     """The shared in-memory bucket, also answering the public reads the conversion makes outside the index."""
@@ -1728,3 +1755,9 @@ def test_court_conversion_refuses_file_metadata_the_maintained_restore_cannot_re
     assert not pq.read_schema(restored).equals(pq.read_schema(original), check_metadata=True)
     assert bucket.writes == writes
     assert publication.current_index(BASE)["families"]["courtlistener"] == old
+
+
+def test_the_retired_cfr_family_is_not_converted(tmp_path, monkeypatch, bucket):
+    """Without the stand-in, cfr-sections has no receipt route to convert through: it publishes without receipts."""
+    monkeypatch.undo()
+    assert conversion._rollup_class("cfr-sections") is None

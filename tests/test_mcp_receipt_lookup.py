@@ -139,12 +139,13 @@ def _regulations():
     from spicy_regs.schemas.regulations_subjects import SOURCE_COLUMNS
     from spicy_regs.transforms.regulations_shape import shape_record
 
-    # The Unified Agenda keeps one field beside its table (``url``) and the row as its mapper received it.
-    raw = {**dict.fromkeys(name for name, _ in SOURCE_COLUMNS["unified_agenda"]), "rin": "2060-AV12",
-           "agenda_edition": "202604", "url": "https://www.reginfo.gov/public/do/eAgendaViewRule?RIN=2060-AV12",
-           "major": "No"}
-    return ("unified_agenda", {**shape_record("unified_agenda", raw), "input_metadata": {}},
-            {"url": "https://www.reginfo.gov/public/do/eAgendaViewRule?RIN=2060-AV12", "major": "No"})
+    # An agenda item keeps one field beside its table (``scope_basis``, among its run fields) and the row as its
+    # mapper received it. (The Unified Agenda was the example until its receipts were retired, ss-vse3.)
+    raw = {**dict.fromkeys(name for name, _ in SOURCE_COLUMNS["regulatory_agenda_items"]),
+           "agenda_item_id": "agenda-item:2060-AV12", "rin": "2060-AV12", "scope_status": "single_observed",
+           "scope_basis": "one_evidence_linked_proceeding"}
+    return ("regulatory_agenda_items", {**shape_record("regulatory_agenda_items", raw), "input_metadata": {}},
+            {"scope_basis": "one_evidence_linked_proceeding", "scope_status": "single_observed"})
 
 
 def _fec_identity():
@@ -221,24 +222,24 @@ def test_a_policy_that_keeps_no_whole_row_mapping_takes_its_fields_off_offer(tmp
     declaration, so nothing here assumes a receipt holds a whole original record."""
     from spicy_regs import subject_catalog
 
-    assert carried("unified_agenda")["major"] == "raw_conversion_inputs"
+    assert carried("regulatory_agenda_items")["scope_status"] == "raw_conversion_inputs"
     installed = subject_catalog.descriptors()
-    slim = {**installed["unified_agenda"],
-            "receipt_fields": [name for name in installed["unified_agenda"]["receipt_fields"]
+    slim = {**installed["regulatory_agenda_items"],
+            "receipt_fields": [name for name in installed["regulatory_agenda_items"]["receipt_fields"]
                                if name != "raw_conversion_inputs"] + ["source_row_sha256"]}
-    monkeypatch.setattr(lookup, "descriptors", lambda: {**installed, "unified_agenda": slim})
+    monkeypatch.setattr(lookup, "descriptors", lambda: {**installed, "regulatory_agenda_items": slim})
     table, record, _ = _regulations()
     one_family(tmp_path, monkeypatch, {table: [record]})
-    key = [{"rin": "2060-AV12", "agenda_edition": "202604"}]
-    message = refused(table, key, ["major"])
-    assert "unified_agenda receipts do not carry 'major'" in message
+    key = [{"agenda_item_id": "agenda-item:2060-AV12"}]
+    message = refused(table, key, ["scope_status"])
+    assert "regulatory_agenda_items receipts do not carry 'scope_status'" in message
     offered = message.split("They carry: ")[1]
-    assert "url" in offered and "source_row_sha256" in offered and "agenda_edition" not in offered
+    assert "scope_basis" in offered and "source_row_sha256" in offered and "rin" not in offered.split(", ")
     # A field the policy still declares answers as before, and a newly declared one needs no other declaration.
-    reply = call(table, key, ["url", "source_row_sha256"])
-    assert states(reply) == {"url": "stated", "source_row_sha256": "null_unmarked"}
+    reply = call(table, key, ["scope_basis", "source_row_sha256"])
+    assert states(reply) == {"scope_basis": "stated", "source_row_sha256": "null_unmarked"}
     described = _tool_data(server.build_server(), "describe_table", {"table": table})["receipt_fields"]["fields"]
-    assert "source_row_sha256" in described and "major" not in described
+    assert "source_row_sha256" in described and "scope_status" not in described
 
 
 def test_a_receipt_written_without_the_mapping_refuses_its_fields_instead_of_calling_them_null(tmp_path, monkeypatch):
@@ -246,13 +247,13 @@ def test_a_receipt_written_without_the_mapping_refuses_its_fields_instead_of_cal
     table, record, _ = _regulations()
     record = {name: value for name, value in record.items() if name != "raw_conversion_inputs"}
     one_family(tmp_path, monkeypatch, {table: [record]})
-    key = [{"rin": "2060-AV12", "agenda_edition": "202604"}]
-    message = refused(table, key, ["url", "major"])
-    assert "unified_agenda receipts do not carry 'major' in this generation" in message
+    key = [{"agenda_item_id": "agenda-item:2060-AV12"}]
+    message = refused(table, key, ["scope_basis", "scope_status"])
+    assert "regulatory_agenda_items receipts do not carry 'scope_status' in this generation" in message
     assert "they hold no raw_conversion_inputs" in message
     offered = message.split("They carry: ")[1]
-    assert "url" in offered and "major" not in offered and "raw_conversion_inputs" not in offered
-    assert states(call(table, key, ["url"])) == {"url": "stated"}
+    assert "scope_basis" in offered and "scope_status" not in offered and "raw_conversion_inputs" not in offered
+    assert states(call(table, key, ["scope_basis"])) == {"scope_basis": "stated"}
 
 
 # Refusal 3: a key that does not parse for the table's identity is refused, never answered as a miss.

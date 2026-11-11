@@ -4,7 +4,7 @@
 
 **Code of Federal Regulations sections**
 
-One GovInfo annual CFR granule: a section, appendix or other structural unit. This is metadata, not regulatory body text. Enclosing parts come from annual volume PART headings, preserving compound and unusual numbering; printed section numbers alone do not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread volumes can retain earlier placement; the annual index package is excluded.
+One GovInfo annual CFR granule: a section, appendix or other structural unit. This is metadata, not regulatory body text. Enclosing parts come from annual volume PART headings, preserving compound and unusual numbering; printed section numbers alone do not identify a part. `cfr_ref` supplies the printed citation. Unchanged or unread volumes can retain earlier placement; the annual index package is excluded. A granule's GovInfo page is `https://www.govinfo.gov/app/details/{package_id}/{granule_id}`, composed from the identifiers and not stored (until 2026-11 only the per-row receipts held it).
 
 **Coverage.** Window. Annual-edition section metadata from the 2025 edition and, for some titles, the 2026 edition (`SELECT DISTINCT edition_year, title` lists which), not full publication history or body text. Each section's part comes from its volume's PART heading; on 2026-09-23 every compared Title 41, 43 and 14 section agreed with eCFR's 2025-01-01 structure. Receipts: fork-execution-2026-09-21/cfr-ancestry-fix-2026-09-23/ (candidate.json, validation.json). *(measured 2026-10-03)*
 
