@@ -1,82 +1,13 @@
 name: Publish explorer metadata
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/spicy_regs/table_metadata.json'
-      - 'src/spicy_regs/table_joins.json'
-      - 'src/spicy_regs/table_joins.py'
-      - 'src/spicy_regs/join_audit.json'
-      - 'src/spicy_regs/explorer_*'
-      - 'src/spicy_regs/navigation_measurements.py'
-      - 'tests/test_navigation_measurements.py'
-      - 'src/spicy_regs/data_dictionary.py'
-      - 'data_dictionary/descriptions.yaml'
-      - 'scripts/publish_explorer_metadata.py'
-      - 'scripts/explorer_metadata_unchanged.py'
-      - 'tests/test_explorer_inputs.py'
-      - 'tests/test_explorer_metadata.py'
-      - 'tests/test_explorer_publications.py'
-      - 'tests/test_column_navigation.py'
-      - '.github/workflows/publish-explorer-metadata.yml'
   workflow_dispatch:
-  # Also catches workstation publications and new publishing workflows. GitHub
-  # may delay scheduled runs; consumers expose missing/stale metadata meanwhile.
+  # One trigger for every publisher: hosted rollups, workstation publishes (which
+  # fire no workflow_run) and main revisions once their push CI passes. Hourly is
+  # fresh enough while nothing consumes the bundle; a run whose revision and R2
+  # inputs are unchanged exits in seconds. This replaced a 15-minute cron, push
+  # paths and a workflow_run list of 49 names kept by hand (896 runs in 7 days).
   schedule:
-    - cron: '7,22,37,52 * * * *'
-  workflow_run:
-    workflows:
-      - "CI"
-      - "Rollup — agency_monthly_volume"
-      - "Rollup — agency_stats"
-      - "Rollup — amendments"
-      - "Rollup — bill family"
-      - "Rollup — bill_subjects"
-      - "Rollup — cfr_sections"
-      - "Rollup — committee_meetings"
-      - "Rollup — committee_reports"
-      - "Rollup — committee_rosters"
-      - "Rollup — court_citations, court_citation_map, court_parentheticals"
-      - "Rollup — court_dockets"
-      - "Rollup — court_opinion_clusters"
-      - "Rollup — crs_reports"
-      - "Rollup — discovery_signals"
-      - "Rollup — docket_search"
-      - "Rollup — fcc_filings"
-      - "Rollup — fcc_proceedings"
-      - "Rollup — fec_candidate_history"
-      - "Rollup — fec_committee_history"
-      - "Rollup — fec_committees"
-      - "Rollup — fec_source_catalog"
-      - "Rollup — federal_register"
-      - "Rollup — feed_summary"
-      - "Rollup — fr_docket_links"
-      - "Rollup — gao_recommendations"
-      - "Rollup — gao_reports"
-      - "Rollup — house_communications"
-      - "Rollup — laws"
-      - "Rollup — lobbying_filings"
-      - "Rollup — member_vote_terms"
-      - "Rollup — members"
-      - "Rollup — nominations"
-      - "Rollup — org_committee_links"
-      - "Rollup — press_releases"
-      - "Rollup — print_citations"
-      - "Rollup — record_issues"
-      - "Rollup — retained FEC observations"
-      - "Rollup — roll_call_votes"
-      - "Rollup — sam_entities"
-      - "Rollup — senate_expenditures"
-      - "Rollup — treaties"
-      - "Rollup — unified_agenda"
-      - "Rollup — usaspending_recipients"
-      - "ETL (new pipeline)"
-      - "Refresh congressional votes and terms"
-      - "Sweep Regulations.gov attributes"
-      - "Publish comments mirror"
-      - "Materialize — rulemaking join surface"
-    types: [completed]
-    branches: [main]
+    - cron: '7 * * * *'
 permissions:
   contents: read
 concurrency:
@@ -84,7 +15,6 @@ concurrency:
   cancel-in-progress: false
 jobs:
   preflight:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -113,7 +43,7 @@ jobs:
             const latest = runs[0];
             if (!latest || latest.status !== 'completed' || latest.conclusion !== 'success') {
               const state = latest ? `${latest.status}/${latest.conclusion ?? 'pending'}` : 'no push CI run yet';
-              core.notice(`Skipping publication for ${sha}: CI is ${state}. A successful CI completion will retry.`);
+              core.notice(`Skipping publication for ${sha}: CI is ${state}. The next hourly run retries.`);
               return;
             }
             core.setOutput('publish', 'true');
