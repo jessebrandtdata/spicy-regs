@@ -8,7 +8,31 @@ from spicy_regs.transforms.government_receipts import POLICIES
 from spicy_regs.transforms.government_source_shapes import SUBJECT_SCHEMAS
 
 
-class GovernmentReceiptRollup(RollupPipeline):
+class GovernmentTableRollup(RollupPipeline):
+    """A government-source family's tables, admitted under their declared public schemas (``SUBJECT_SCHEMAS``).
+
+    A family whose receipts are retired (ss-vse3) subclasses this directly. Its run refuses at its start, in seconds,
+    while docs/pins/receipt-archive.json does not pin the live generation that still lists those receipts
+    (``publication.require_live_receipt_pins``), which its first receipts-free publish would refuse at the end.
+    """
+
+    def generation_schemas(self):
+        schemas = super().generation_schemas()
+        for key in self.outputs or (self.output,):
+            dataset = key.removesuffix(".parquet")
+            schemas[dataset] = described_schema(SUBJECT_SCHEMAS[dataset])
+        return schemas
+
+    def _prime(self, output_dir, snapshot=None):
+        if snapshot is not None:
+            from spicy_regs.sources import publication
+
+            publication.require_live_receipt_pins(
+                snapshot, [key.removesuffix(".parquet") for key in self.outputs or (self.output,)])
+        return super()._prime(output_dir, snapshot)
+
+
+class GovernmentReceiptRollup(GovernmentTableRollup):
     def run(self, *, read_operation=None):
         try:
             return super().run(read_operation=read_operation)
@@ -42,13 +66,6 @@ class GovernmentReceiptRollup(RollupPipeline):
                     paths.append(path)
                 combine_receipts(paths, directory / "etl_receipts.parquet")
             raise
-
-    def generation_schemas(self):
-        schemas = super().generation_schemas()
-        for key in self.outputs or (self.output,):
-            dataset = key.removesuffix(".parquet")
-            schemas[dataset] = described_schema(SUBJECT_SCHEMAS[dataset])
-        return schemas
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

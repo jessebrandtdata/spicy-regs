@@ -37,10 +37,12 @@ jobs:
       lda_until: ${{ inputs.until || '' }}
       lda_filing_year: ${{ inputs.filing_year || '' }}
       # A filing year is read at about 875 filings a minute keyed (2026's 56,887 took 65 minutes), and
-      # LDA's largest year, 2025, states 108,999 (~125 minutes). The daily window takes minutes when current, but a
-      # capped 30-day catch-up reached admission only after 29 minutes (run 41232319025, 25,007 filings). Its watermark
-      # moves only on publish, so a limit it cannot finish under would repeat every night.
-      timeout_minutes: ${{ inputs.filing_year && 240 || 90 }}
+      # LDA's largest year, 2025, states 108,999 (~125 minutes). The window's watermark moves only on publish, so a
+      # limit it cannot finish under would repeat every night. Without receipts (ss-vse3) a nightly is the read plus
+      # about 5 minutes (9 on the first night, which fills url from the last receipts): the 2026-11-10 run spent 23 s
+      # reading and about 20 of its 29 minutes on receipts (run 42882128420). A capped 30-day catch-up (25,007
+      # filings) took at most 26 minutes to read, merge and write receipts (run 41232319025), so at most about 35 now.
+      timeout_minutes: ${{ inputs.filing_year && 240 || 45 }}
   freshness:
     # Inspect the selected public data even when acquisition or publication failed.
     # A successful empty interval must not leave an old posting watermark unnoticed.

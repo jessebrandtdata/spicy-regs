@@ -1,7 +1,9 @@
 """Transform: build ``lobbying_filings.parquet`` from the Senate LDA REST API.
 
-Produces native domain tables and separate ETL receipts. ``lobbying_filings`` is keyed by
-``filing_uuid``, with ordered native activity and entity arrays.
+Produces the family's public tables; it writes no per-row ETL receipts (ss-vse3: every
+table's installed policy is marked ``receipts_retired``). A row's evidence is the run's
+journal and the LDA pages it retained. ``lobbying_filings`` is keyed by ``filing_uuid``,
+with ordered native activity and entity arrays.
 ``lobbying_activities`` holds one row per activity a filing reports, keyed
 ``(filing_uuid, activity_index)``. ``lobbying_activity_lobbyists`` holds one row
 per lobbyist an activity names, keyed ``(filing_uuid, activity_index,
@@ -17,16 +19,15 @@ Incremental by design (mirrors ``build_federal_register``): a full re-fetch of
 the multi-million-row LDA archive every run would be wasteful *and* would trip
 the R2 catastrophic-shrink guard on any short run. Instead we:
 
-1. Best-effort download the prior ``lobbying_filings.parquet`` from R2.
-2. Fetch only filings posted since its max ``dt_posted`` (minus a short overlap
-   to catch late-posted / amended filings).
-3. Write receipts for the fetched window, then merge the native tables on their
-   keys, preferring freshly fetched rows and retaining unchanged prior receipts.
+1. Select each table the captured index pins (``SelectedInputs``: its public table).
+2. Fetch only filings posted since the filings table's max ``dt_posted`` (minus a
+   short overlap to catch late-posted / amended filings).
+3. Map the fetched window to the public columns and upsert it over each table on
+   its key (``native_merge.upsert_subjects``): a fetched row replaces the prior row
+   of its key, every other prior row is carried as published.
 
-With no prior table (first run) step 2 becomes a full backfill. A legacy prior
-is converted once with the fetched window; a native prior is admitted and
-merged without restoring all source rows. The reader is functional keyless,
-so this runs in CI with or without ``LDA_API_KEY``.
+With no prior table (first run) step 2 becomes a full backfill. The reader is
+functional keyless, so this runs in CI with or without ``LDA_API_KEY``.
 """
 
 from __future__ import annotations
@@ -47,16 +48,16 @@ import pyarrow.parquet as pq
 from loguru import logger
 
 from spicy_regs.transforms.parquet_rows import str_or_none
-from spicy_regs.sources import r2
-from spicy_regs.transforms.government_receipts import (
-    BUILD_METADATA, _digest, has_native_prior, internal_prior, receipt_builder, selected_native_prior,
+from spicy_regs.transforms.government_receipts import _digest
+from spicy_regs.transforms.government_source_shapes import (
+    IDENTITY_FIELDS, LEGACY_COLUMNS, PROMOTED_LAST, SUBJECT_SCHEMAS, map_subject,
 )
-from spicy_regs.transforms.government_source_shapes import LEGACY_COLUMNS
 from spicy_regs.transforms.table_merge import merge_local_prior
 
 if TYPE_CHECKING:
     from spicy_docs.sources.lda import LdaFilingsReader
 
+    from spicy_regs.selected_generations import SelectedInputs
     from spicy_regs.source_evidence import CaptureEvidence
 
 OUTPUT = "lobbying_filings.parquet"
@@ -397,24 +398,6 @@ def _prior_max_dt_posted(prior_file: Path) -> date | None:
         return None
 
 
-def _stage_prior(output_dir: Path, key: str, target: Path) -> bool:
-    """Reuse the last completed local build before an older staged or remote prior.
-
-    ``internal_prior`` checks the selected subject and receipt hashes after this
-    copy. The staged pair stays intact while the producer writes the next window.
-    """
-    local = output_dir / key
-    metadata_path = output_dir / BUILD_METADATA
-    metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
-    expected = metadata.get("subjects", {}).get(key.removesuffix(".parquet"), {}).get("sha256")
-    if expected is not None and local.exists() and _digest(local) == expected:
-        shutil.copyfile(local, target)
-        return True
-    # A failed producer may have replaced the public path with its raw window;
-    # keep the prior staged before that attempt until a completed build pins it.
-    return target.exists() or r2.download(key, target)
-
-
 def _embedded(filing: dict, field: str) -> dict | None:
     value = filing.get(field)
     if value is None:
@@ -538,11 +521,11 @@ def _write_fresh(filings: Iterable[dict], output_dir: Path) -> dict[str, Path]:
     return paths
 
 
-def _merge_fresh(output_dir: Path, fresh: dict[str, Path], *, priors: dict[str, tuple[Path, bool]] | None,
-                 memory_limit: str) -> tuple[Path, ...]:
-    """Deduplicate and order each fresh table; a legacy prior joins here, a native one in the receipt builder.
+def _deduplicated(output_dir: Path, fresh: dict[str, Path], *, memory_limit: str) -> dict[str, Path]:
+    """Each fetched table deduplicated on its key and ordered, still in the builder's text shape.
 
-    ``priors`` None is a full replacement: no table stages or selects a prior.
+    A window can serve one filing twice (a walk pooled from several passes, a filing posted again); the same rule
+    as every earlier build keeps one row per key (``table_merge.merge_local_prior``).
     """
     import duckdb
 
@@ -565,40 +548,127 @@ def _merge_fresh(output_dir: Path, fresh: dict[str, Path], *, priors: dict[str, 
         REGISTRANTS_OUTPUT: ("registrant_id", "CAST(registrant_id AS BIGINT)"),
         CLIENTS_OUTPUT: ("client_id", "CAST(client_id AS BIGINT)"),
     }
-    outputs = []
+    deduplicated = {}
     try:
         for key, columns, _ in (*_TABLES, *_PROFILES):
             identity, order_by = shapes[key]
-            dataset = key.removesuffix(".parquet")
-            table_prior, table_has_prior = output_dir / f"_{dataset}_prior.parquet", False
-            if priors is not None and key in priors:
-                table_prior, table_has_prior = priors[key]
-            elif priors is not None:
-                selected = selected_native_prior(dataset)
-                table_has_prior = selected is not None or _stage_prior(output_dir, key, table_prior)
-                table_prior = selected or table_prior
-                if table_has_prior:
-                    table_prior = internal_prior(dataset, table_prior, keep_native=True)
-            new_file = fresh[key]
-            out = output_dir / key
-            # A selected native pair stays immutable until the receipt builder upserts
-            # these fetched rows. Only a legacy first run needs the full source merge.
-            native_prior = has_native_prior(dataset)
-            merge_local_prior(con, columns=columns, identity=identity, order_by=order_by,
-                              prior_file=table_prior if table_has_prior and not native_prior else None,
-                              new_file=new_file, out_file=out)
-            # Housekeeping: drop scratch files so they aren't mistaken for outputs.
-            new_file.unlink(missing_ok=True)
-            if table_has_prior and not native_prior:
-                table_prior.unlink(missing_ok=True)
-            outputs.append(out)
-            logger.info("{}: {:,} rows", key, pq.ParquetFile(out).metadata.num_rows)
+            out = output_dir / f"_{key.removesuffix('.parquet')}_window.parquet"
+            merge_local_prior(con, columns=columns, identity=identity, order_by=order_by, prior_file=None,
+                              new_file=fresh[key], out_file=out)
+            fresh[key].unlink(missing_ok=True)
+            deduplicated[key] = out
     finally:
         con.close()
+    return deduplicated
+
+
+def _public(text: Path, destination: Path, dataset: str) -> Path:
+    """``text``'s rows mapped to the public columns (``map_subject``), a batch at a time; a refused row fails the run.
+
+    Python per row, over the window only (thousands a night, about 1.2M for the largest filing year).
+    """
+    schema = SUBJECT_SCHEMAS[dataset]
+    with pq.ParquetWriter(destination, schema, compression="zstd") as writer:
+        for batch in pq.ParquetFile(text).iter_batches(batch_size=_FLUSH_ROWS):
+            writer.write_table(pa.Table.from_pylist([map_subject(dataset, row) for row in batch.to_pylist()],
+                                                    schema=schema))
+    return destination
+
+
+def _with_promoted(dataset: str, prior: Path, session: SelectedInputs, work: Path) -> Path:
+    """``prior`` with the columns only its receipts held (``PROMOTED_LAST``), filled from those receipts if it lacks them.
+
+    Only the night the live generation still lists the family's receipts (its last with them, which
+    docs/pins/receipt-archive.json pins): they are read once more, through the reader every receipt prior used
+    (``government_receipts.internal_prior``, which admits the pair), and each restored row's values are joined to
+    the published row at its position, refused unless every row's key agrees. A prior that lacks them with no
+    receipts listed is refused: carried, its rows would publish NULL for values only receipts held.
+    """
+    import duckdb
+
+    from spicy_regs.sources import publication
+    from spicy_regs.transforms.government_receipts import internal_prior
+
+    held = pq.read_schema(prior).names
+    if not (missing := [name for name in PROMOTED_LAST.get(dataset, ()) if name not in held]):
+        return prior
+    index = session.index
+    owner = publication.table_owner(index, dataset + ".parquet") if index is not None else None
+    listed = owner[1].get("etlReceipts") if owner is not None else None
+    if index is None or listed is None or dataset not in listed["datasets"] or not session.public_url:
+        raise LobbyingFilingsError(
+            f"The published {dataset} lacks {missing}, which generations before 2026-11-11 held only in their "
+            "receipts, and its family lists none to fill them from: carried, its rows would publish NULL for them. "
+            "Point the family back at its last generation with receipts (docs/pins/receipt-archive.json)")
+    receipts = work / "last-receipts.parquet"
+    if not receipts.exists():
+        [member] = publication.receipt_members(index, dataset=dataset)
+        if not publication.fetch_member(session.public_url, member, receipts, "lobbying receipts"):
+            raise LobbyingFilingsError("The live lobbying receipt member is missing")
+    restored = internal_prior(dataset, prior, receipt_path=receipts, generation_id=listed["generationId"])
+    identity = IDENTITY_FIELDS[dataset]
+    filled = work / f"{dataset}.promoted.parquet"
+    schema = SUBJECT_SCHEMAS[dataset]
+    with duckdb.connect() as con:
+        con.execute(f"CREATE VIEW joined AS SELECT p.*, {', '.join(f'r.{name} AS _r_{name}' for name in (*identity, *missing))} "
+                    f"FROM read_parquet('{prior}') p POSITIONAL JOIN read_parquet('{restored}') r")
+        disagree = " OR ".join(f"p_{name} IS DISTINCT FROM CAST({name} AS VARCHAR)" for name in identity)
+        [(rows, unmatched)] = con.execute(
+            f"SELECT count(*), count(*) FILTER (WHERE {disagree.replace('p_', '_r_')}) FROM joined").fetchall()
+        if unmatched or rows != pq.ParquetFile(prior).metadata.num_rows:
+            raise LobbyingFilingsError(f"{dataset}: {unmatched:,} of {rows:,} restored rows name another key")
+        names = ", ".join(f"_r_{name} AS {name}" if name in missing else name for name in schema.names)
+        with pq.ParquetWriter(filled, schema, compression="zstd") as writer:
+            for batch in con.execute(f"SELECT {names} FROM joined").to_arrow_reader(50_000):
+                writer.write_table(pa.Table.from_batches([batch]).cast(schema))
+    restored.unlink(missing_ok=True)
+    logger.info("{}: {} filled from the last receipts on all {:,} rows", dataset, missing, rows)
+    return filled
+
+
+def _upserted(output_dir: Path, window: dict[str, Path], session: SelectedInputs | None,
+              evidence: CaptureEvidence | None) -> tuple[Path, ...]:
+    """Each table: the window, mapped, upserted over its selected prior on the table's key in ``NATIVE_ORDERS``.
+
+    ``session`` None is a full replacement (the retained rebuild): the window alone, in its own order. The counts go
+    to the run's journal beside the pages it read.
+    """
+    from spicy_regs.native_merge import upsert_subjects
+
+    work = output_dir / ".lobbying-priors"
+    work.mkdir(exist_ok=True)
+    staged, counts = {}, {}
+    for key, text in window.items():
+        dataset = key.removesuffix(".parquet")
+        fresh = _public(text, output_dir / f"_{dataset}_fresh.parquet", dataset)
+        text.unlink()
+        out = output_dir / f"_{dataset}_merged.parquet"
+        if session is None or (selected := session.select(dataset)) is None:
+            fresh.replace(out)
+            counts[dataset] = {"prior_rows": 0, "read_rows": pq.ParquetFile(out).metadata.num_rows}
+        else:
+            if len(selected.subjects) != 1:
+                raise LobbyingFilingsError(f"{dataset}: its prior must be one published file")
+            prior = _with_promoted(dataset, selected.subjects[0], session, work)
+            merged = upsert_subjects(SUBJECT_SCHEMAS[dataset], identity=IDENTITY_FIELDS[dataset], fresh=fresh,
+                                     prior=prior, order_by=NATIVE_ORDERS[dataset], subjects=out)
+            fresh.unlink()
+            counts[dataset] = {"prior_rows": merged.kept + merged.replaced, "read_rows": merged.replaced + merged.added,
+                               "new_rows": merged.added}
+        counts[dataset]["rows"] = pq.ParquetFile(out).metadata.num_rows
+        staged[key] = out
+    if session is not None:
+        session.check()  # every prior read unchanged, before any table is replaced
+    outputs = []
+    for key, out in staged.items():
+        outputs.append(out.replace(output_dir / key))
+        logger.info("{}: {}", key, counts[key.removesuffix(".parquet")])
+    shutil.rmtree(work)
+    if evidence is not None:
+        evidence.event("lobbying-merge", tables=counts)
     return tuple(outputs)
 
 
-@receipt_builder(native_orders=NATIVE_ORDERS)
 def build_lobbying_filings(
     output_dir: Path,
     *,
@@ -609,24 +679,21 @@ def build_lobbying_filings(
     max_records: int | None = None,
     max_passes: int | None = None,
 ) -> tuple[Path, ...]:
-    """Build every lobbying table (filings, their child lists, registrants, clients), each merged with its prior table."""
-    prior_file = output_dir / "_lda_prior.parquet"
+    """Build every lobbying table (filings, their child lists, registrants, clients), each upserted over its prior."""
+    from spicy_regs.selected_generations import SelectedInputs, unique_build_directory
 
-    # 1. Pull the prior table (best effort — absence just means full backfill).
-    selected = selected_native_prior("lobbying_filings")
-    have_prior = selected is not None or _stage_prior(output_dir, OUTPUT, prior_file)
-    prior_file = selected or prior_file
-    if have_prior:
-        prior_file = internal_prior("lobbying_filings", prior_file, keep_native=True)
-    if have_prior:
-        logger.info("LDA: merging against prior table {}", prior_file)
-    else:
-        logger.info("LDA: no prior table found — full backfill")
+    # 1. The captured index's tables (absence just means a full backfill). Locally, without R2_PUBLIC_URL, the
+    # tables the last local run wrote here.
+    session = SelectedInputs(output_dir, unique_build_directory(output_dir))
+    filings = session.select("lobbying_filings")
+    prior_file = filings.subjects[0] if filings is not None else None
+    logger.info("LDA: merging against prior table {}", prior_file) if prior_file else logger.info(
+        "LDA: no prior table found — full backfill")
 
     # 2. Decide the fetch window start. A filing year is read whole: the
     # posted-date watermark would narrow a history year to its last days.
     if since is None and filing_year is None:
-        prior_max = _prior_max_dt_posted(prior_file) if have_prior else None
+        prior_max = _prior_max_dt_posted(prior_file) if prior_file else None
         since = (prior_max - timedelta(days=OVERLAP_DAYS)) if prior_max else None
     # A stale watermark must not create an ever-growing request that repeatedly
     # hits the 30-minute CI timeout. Walk toward today in bounded windows; the
@@ -656,12 +723,10 @@ def build_lobbying_filings(
     with LdaFilingsReader(budget=budget, api_key=api_key, transport=transport) as reader:
         fresh = _write_fresh(_iter_filings(reader, url, max_records=max_records, max_passes=max_passes), output_dir)
 
-    # 4. Dedup the fetched rows. Only a legacy prior joins here; the receipt
-    # builder merges a native prior after converting this window.
-    # The prior grows with every backfilled year and the dedup window reads all of it: at 4GB the 2013 run
-    # (36356691399, 36362663551) ran out of memory in merge_local_prior. Hosted runners have 16 GB; leave room
-    # for Python and the OS, and let DuckDB spill the rest to temp_directory.
-    return _merge_fresh(output_dir, fresh, priors={OUTPUT: (prior_file, have_prior)}, memory_limit="12GB")
+    # 4. Dedup the fetched rows, map them and upsert them over each prior table. Only the window is deduplicated and
+    # mapped; a prior is read once by the narrow-key upsert. A filing year's window is about 1.2M child rows; hosted
+    # runners have 16 GB, so leave room for Python and the OS and let DuckDB spill the rest.
+    return _upserted(output_dir, _deduplicated(output_dir, fresh, memory_limit="12GB"), session, evidence)
 
 
 def read_retained_manifest(manifest: Path) -> list[tuple[datetime, str, int]]:
@@ -750,8 +815,6 @@ def _iter_retained_filings(pages: list[tuple[datetime, str, int]], store) -> Ite
                 "kept one, which the digest order chose", len(seen), len(pages), ties)
 
 
-# No native_orders: a rebuild selects no prior to merge onto, with or without R2_PUBLIC_URL.
-@receipt_builder
 def rebuild_lobbying_filings(
     output_dir: Path,
     *,
@@ -763,9 +826,9 @@ def rebuild_lobbying_filings(
 ) -> tuple[Path, ...]:
     """Rebuild the whole family from retained LDA pages: the latest capture of each filing, no prior, no request.
 
-    The first generation under a new policy is this full replacement (``POLICY_VERSIONS``): every filing, its
-    activities and its lobbyists come from one capture, the newest the archive holds. ``memory_limit`` bounds the
-    dedup connection; the default keeps a local run under 8 GB.
+    Every filing, its activities and its lobbyists come from one capture, the newest the archive holds; no prior is
+    selected, with or without R2_PUBLIC_URL. ``memory_limit`` bounds the dedup connection; the default keeps a local
+    run under 8 GB.
     """
     from spicy_docs.storage.raw_archive import CentralRawArchiveStore
 
@@ -778,4 +841,4 @@ def rebuild_lobbying_filings(
                        pages=len(pages))
     store = store or CentralRawArchiveStore(create=False)
     fresh = _write_fresh(_iter_retained_filings(pages, store), output_dir)
-    return _merge_fresh(output_dir, fresh, priors=None, memory_limit=memory_limit)
+    return _upserted(output_dir, _deduplicated(output_dir, fresh, memory_limit=memory_limit), None, evidence)

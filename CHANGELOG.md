@@ -9,6 +9,21 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **The eight lobbying tables publish without per-row receipts** (ss-vse3).
+  `lobbying_filings` and its seven sibling tables are marked
+  `receipts_retired`; the nightly re-uploaded 2.94 GB of receipts (16.3M rows,
+  every one `accepted`) for 0.73 GB of tables and spent most of its 29 minutes
+  on them. The receipts held one field the tables lacked, `url` on
+  `lobbying_filings`, `lobbying_registrants` and `lobbying_clients`, now the
+  last column of each as LDA served it (policies `government-sources/3`,
+  `/2`, `/2`); every other field equals its column, only spelled differently.
+  A night maps the fetched window and upserts it over each published table
+  (`native_merge.upsert_subjects`); the first night fills `url` from the
+  receipts of the pinned last generation with them (`233aef1f`). On the same
+  real prior and window, all eight tables equal the receipt route's on every
+  existing column, both ways and in order (`docs/lobbying-receipt-archive.md`).
+  The lobbying-only native receipt merge in `government_receipts` is gone, and
+  the workflow's limit for the window path is now 45 minutes, not 90.
 - **The U.S. Code edition tables publish without per-row receipts, and the
   family takes release point 119-138** (ss-coca). `uscode_editions`,
   `uscode_edition_structure` and `uscode_edition_sections` are marked
