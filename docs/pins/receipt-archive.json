@@ -56,6 +56,24 @@
    "artifactDigest": "sha256:a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773",
    "publishedAt": "2026-11-10T22:06:19Z",
    "receipts": "generations/fr-docket-links/a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773/etl_receipts.parquet"
+  },
+  "uscode_edition_sections": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
+  },
+  "uscode_edition_structure": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
+  },
+  "uscode_editions": {
+   "family": "uscode-editions",
+   "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",
+   "publishedAt": "2026-10-14T02:17:42Z",
+   "receipts": "generations/uscode-editions/792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0/etl_receipts.parquet"
   }
  }
 }
