@@ -101,22 +101,27 @@ def test_a_promotion_the_generator_records_keeps_every_frozen_answer(tmp_path, s
 
 
 def test_no_published_prior_becomes_unreadable():
-    """Each policy a live family root declared on 2026-11-10 is installed, or read by the installed policy.
+    """Each policy a live family root declared on 2026-11-10 is recorded in the ledger and read by the code.
 
-    The two regulatory-checkpoints logs are not installed policies and were missing from the ledger before this
-    change too (``python -m spicy_regs.policy_migrations`` names them).
+    An installed policy reads it. The two regulatory-checkpoints logs have no installed policy file: the checkpoint
+    writer builds theirs (``checkpoint_policy``), and the ledger records exactly that policy (ss-p6yh; before it, the
+    live check ``python -m spicy_regs.policy_migrations`` named both).
     """
+    from spicy_regs.transforms.regulations_checkpoints import checkpoint_policy
+
     installed = installed_policies()
-    unrecorded = []
+    built_by_code = []
     for family, declared in _fixture("live_declared_20261110.json")["families"].items():
         for dataset, version, digest in declared:
-            if dataset not in installed:
-                unrecorded.append((family, dataset))
-                continue
             assert digest in shipped(dataset), (family, dataset, version)
+            if dataset not in installed:
+                built_by_code.append((family, dataset))
+                assert digest == descriptor_digest(checkpoint_policy(dataset)), (family, dataset, version)
+                continue
             readable = {descriptor_digest(p): p for p in receipt_policies(installed[dataset])}
             assert digest in readable and replay_reason(readable[digest]) is None, (family, dataset, version)
-    assert unrecorded == [("regulatory-checkpoints", "failed_keys"), ("regulatory-checkpoints", "pending_comment_text")]
+    assert built_by_code == [("regulatory-checkpoints", "failed_keys"),
+                             ("regulatory-checkpoints", "pending_comment_text")]
 
 
 def test_a_changed_policy_fails_until_recorded_with_its_predecessor_as_an_earlier_entry():
