@@ -11,7 +11,6 @@ import pyarrow.parquet as pq
 import pytest
 
 from spicy_regs.sources import uscode_editions as reader
-from spicy_regs.etl_receipts import validate_receipt_bundle
 from spicy_docs.sources.uscode import UsCodeSourceError
 from spicy_docs.sources.uscode.annual import ANNUAL_FIELDS
 
@@ -88,10 +87,10 @@ def test_annual_editions_keep_carried_year_sidecars_and_unexpanded_native_labels
     assert len(content) == 2 and all(r["body_text"] is None for r in content)
     assert {r["edition_id"] for r in content} == {r["edition_id"] for r in records}
     assert result["baseline_inputs"] == []
-    receipts = pq.read_table(output / "etl_receipts.parquet").to_pylist()
-    assert len(receipts) == 7 and all(r["generation_id"] == result["generation"] for r in receipts)
-    assert str(tmp_path) not in json.dumps(receipts)
-    assert all(r["witnesses"][0]["source_uri"] == result["inputs"][0]["sha256"] for r in receipts)
+    # Receipts are retired: the candidate is the three tables and the build's own selection and record.
+    assert sorted(p.relative_to(output).as_posix() for p in output.rglob("*") if p.is_file()) == sorted(
+        ["progress.jsonl", "rebuild.json", "selection.json", *(f"{name}/{name}.parquet" for name in reader.SCHEMAS)])
+    assert all(editions[0]["archive_sha256"] == result["inputs"][0]["sha256"] for _ in editions)
     repeated = reader.build(pin, tmp_path / "second")
     assert repeated["generation"] == result["generation"]
     assert repeated["outputs"] == result["outputs"]
@@ -205,7 +204,7 @@ def test_content_conversion_never_writes_more_than_64_rows_and_keeps_every_occur
             return self.writer.__exit__(*args)
 
         def write_table(self, table, *args, **kwargs):
-            if self.path.name == "uscode_edition_sections.parquet":
+            if "uscode_edition_sections" in self.path.parts:
                 observed.append(table.num_rows)
             return self.writer.write_table(table, *args, **kwargs)
 
@@ -219,25 +218,5 @@ def test_content_conversion_never_writes_more_than_64_rows_and_keeps_every_occur
     assert [row["native_identifier"] for row in content] == ["/us/usc/t1/s" + str(i + 1) for i in range(129)]
     assert len({row["observation_id"] for row in content}) == 129
     assert all(row["source_context"] == "main-body-candidate" for row in content)
-    subjects = {name: [output / name / (name + ".parquet")] for name in reader.POLICIES}
-    validate_receipt_bundle(subjects, [output / "etl_receipts.parquet"], list(reader.POLICIES.values()))
-    receipts = pq.read_table(output / "etl_receipts.parquet").to_pylist()
-    assert len(receipts) == 1 + 130 + 129
-    assert str(tmp_path) not in str(receipts)
-
-
-def test_all_uscode_tables_select_reference_validation(tmp_path, monkeypatch):
-    from spicy_regs import etl_bulk
-
-    def unexpected_bulk(*args, **kwargs):
-        pytest.fail("U.S. Code output entered the bulk validator")
-
-    monkeypatch.setattr(etl_bulk, "validate_bundle", unexpected_bulk)
-    pin = manifest(
-        tmp_path,
-        ({"kind": "release-point-title", "release_point": "119-103", "title": "01"}, zipped(("usc01.xml", XML))),
-    )
-    output = tmp_path / "output"
-    result = reader.build(pin, output)
-    assert all(result["outputs"][name]["rows"] > 0 for name in reader.POLICIES)
-    assert rows(output, "uscode_edition_sections")[0]["body_text"] == "Text."
+    assert not (output / "etl_receipts.parquet").exists()
+    assert str(tmp_path) not in json.dumps(content)

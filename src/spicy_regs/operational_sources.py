@@ -74,10 +74,10 @@ def annual(config, phase, candidate, output):
         )
         # The candidate is exactly the builder's closed file set, nothing more or less.
         rebuild = read_json(candidate / "rebuild.json")
-        names = {"selection.json", "rebuild.json", "progress.jsonl", "etl_receipts.parquet"}
+        names = {"selection.json", "rebuild.json", "progress.jsonl"}
         for table, rows in expected["expected_rows"].items():
             require(rebuild["outputs"][table]["rows"] == rows, "Rebuild counts differ: " + table)
-            names.update([table + "/" + table + ".parquet", table + "/etl_receipts.parquet"])
+            names.add(table + "/" + table + ".parquet")
         require(set(rebuild["outputs"]) == set(expected["expected_rows"]), "Rebuild output tables differ")
         actual = {path.relative_to(candidate).as_posix() for path in candidate.rglob("*") if path.is_file()}
         require(actual == names, "Candidate extra/missing files")

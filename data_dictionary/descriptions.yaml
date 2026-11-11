@@ -10193,9 +10193,10 @@ tables:
     subject: reference
     summary: One native structural occurrence linked to its edition member. Source positions, labels, status
       and native context remain distinct from section text.
-    coverage: Sampled. Native structural observations in selected annual XHTML and release-point USLM members.
-      Section-body coverage requires separate content qualification.
-    measured_on: '2026-10-10'
+    coverage: Sampled. Native structural observations in the selected editions' members (the 2000 annual
+      XHTML archive; release points 119-102 and 119-138). Section-body coverage requires separate content
+      qualification.
+    measured_on: '2026-11-11'
     grain: One native structural occurrence linked to its edition member. Source positions, labels, status
       and native context remain distinct from section text.
     identity_columns:
@@ -10214,9 +10215,11 @@ tables:
     subject: reference
     summary: One native annual or release-point archive member observed in its edition. Requested year,
       native publication year, carried-forward state and appendices remain separate.
-    coverage: Sampled. Selected retained original archive members only; edition membership and source structure
+    coverage: Sampled. Every member of the selected editions only, each added by explicit decision -- the 2000
+      annual XHTML archive and the complete release-point XML corpora at 119-102 and 119-138 (current through
+      Public Law 119-138); other years and release points are not held. Edition membership and source structure
       do not establish complete section-body qualification.
-    measured_on: '2026-10-10'
+    measured_on: '2026-11-11'
     grain: One native annual or release-point archive member observed in its edition. Requested year, native
       publication year, carried-forward state and appendices remain separate.
     identity_columns:
@@ -10239,8 +10242,8 @@ tables:
     label: Retained U.S. Code section content
     subject: reference
     summary: One section, range, stub or other content observation within a selected edition member. Native identifiers, source context and readable text preserve the retained source meaning.
-    coverage: Sampled. Selected retained annual XHTML and release-point XML members; complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.
-    measured_on: '2026-10-12'
+    coverage: Sampled. The selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138); complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.
+    measured_on: '2026-11-11'
     grain: One native content observation linked to an edition member.
     identity_columns:
     - observation_id

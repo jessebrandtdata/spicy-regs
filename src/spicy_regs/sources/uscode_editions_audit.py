@@ -2,7 +2,8 @@
 
 No acquisition/content reader is called. Expectations come from raw ZIP bytes,
 native comments, an independent field stack, and standard HTML parser events.
-Maintained helpers supply declared schemas and receipt protocol checks only.
+Maintained helpers supply declared schemas only; the tables publish no
+per-row receipts, so each row is checked against the original itself.
 The library returns evidence without writing files; main reserves fresh reports.
 """
 
@@ -22,8 +23,7 @@ import platform
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from spicy_regs.etl_receipts import RECEIPT_SCHEMA, exact_json, subject_identity, validate_receipt_row
-from spicy_regs.sources.uscode_editions import POLICIES, SCHEMAS
+from spicy_regs.sources.uscode_editions import SCHEMAS
 
 # Explicit retained annual selection; admitting a year does not qualify its
 # contents. The one-archive manifest, native year and all-field checks below
@@ -353,12 +353,12 @@ def audit(candidate: Path, selection: Path, *, annual_year: int) -> dict:
     candidate, selection = Path(candidate).resolve(), Path(selection).resolve()
     rebuild_bytes = (candidate / "rebuild.json").read_bytes()
     selection_bytes = selection.read_bytes()
-    receipt = json.loads(rebuild_bytes)
+    rebuild = json.loads(rebuild_bytes)
     selected = json.loads(selection_bytes)
     selection_sha = "sha256:" + hashlib.sha256(selection_bytes).hexdigest()
     rebuild_sha = "sha256:" + hashlib.sha256(rebuild_bytes).hexdigest()
     require((candidate / "selection.json").read_bytes() == selection_bytes, "candidate selection differs")
-    require(receipt["manifest_sha256"] == selection_sha, "selection digest differs")
+    require(rebuild["manifest_sha256"] == selection_sha, "selection digest differs")
     require(
         selected.get("format") == "spicy-uscode-edition-inputs" and selected.get("version") == 1,
         "unsupported selection format",
@@ -377,84 +377,32 @@ def audit(candidate: Path, selection: Path, *, annual_year: int) -> dict:
     if not source.is_absolute():
         source = selection.parent / source
     require(sha(source) == spec["sha256"], "original archive differs")
-    require(receipt["baseline_inputs"] == [], "unexpected baseline input")
+    require(rebuild["baseline_inputs"] == [], "unexpected baseline input")
     code = reader_pins()
-    require(code == receipt["reader_sha256"], "isolated reader package identity differs from candidate")
+    require(code == rebuild["reader_sha256"], "isolated reader package identity differs from candidate")
     require(
-        receipt["generation"] == identity("uscode-editions-public-v2", selection_sha, code),
+        rebuild["generation"] == identity("uscode-editions-public-v2", selection_sha, code),
         "generation differs from selected manifest and reader recipe",
     )
-    require(set(receipt["outputs"]) == set(SCHEMAS), "missing/extra output tables")
+    require(set(rebuild["outputs"]) == set(SCHEMAS), "missing/extra output tables")
     evidence_paths = [candidate / "rebuild.json", candidate / "selection.json", selection, source, Path(__file__)]
-    for name, entry in receipt["outputs"].items():
+    for name, entry in rebuild["outputs"].items():
         require(entry["path"] == f"{name}/{name}.parquet", "unexpected output path")
-        evidence_paths.extend((candidate / entry["path"], candidate / name / "etl_receipts.parquet"))
+        evidence_paths.append(candidate / entry["path"])
         path = candidate / entry["path"]
         require(sha(path) == entry["sha256"], "output digest differs " + name)
         parquet = pq.ParquetFile(path)
         require(parquet.schema_arrow == SCHEMAS[name], "schema differs " + name)
         require(parquet.metadata.num_rows == entry["rows"], "row count differs " + name)
-    require(pq.ParquetFile(candidate / "etl_receipts.parquet").schema_arrow == RECEIPT_SCHEMA, "receipt schema differs")
-    evidence_paths.append(candidate / "etl_receipts.parquet")
     evidence_before = {str(path): sha(path) for path in evidence_paths}
-    shards = {}
-    for name in SCHEMAS:
-        path = candidate / name / "etl_receipts.parquet"
-        require(pq.ParquetFile(path).schema_arrow == RECEIPT_SCHEMA, "shard receipt schema differs")
-        shards[name] = rows(path)
-    combined = rows(candidate / "etl_receipts.parquet")
     counts = collections.Counter()
     categories = collections.Counter()
-    edition_rows = list(rows(candidate / receipt["outputs"]["uscode_editions"]["path"]))
+    edition_rows = list(rows(candidate / rebuild["outputs"]["uscode_editions"]["path"]))
     require(len({e["edition_id"] for e in edition_rows}) == len(edition_rows), "duplicate edition IDs")
     member_map = {}
 
-    def row_receipt(table, row, edition):
+    def checked(table, row):
         public(row, table)
-        etl = next(combined)
-        require(next(shards[table]) == etl, "shard/combined receipt differs")
-        public(etl, "receipt")
-        validate_receipt_row(etl, POLICIES)
-        rid, version, key = subject_identity(POLICIES[table], row)
-        require(
-            (etl["record_id"], etl["subject_version"], etl["identity_json"]) == (rid, version, key),
-            "subject receipt binding differs",
-        )
-        require(
-            etl["dataset"] == table and etl["generation_id"] == receipt["generation"],
-            "dataset/generation binding differs",
-        )
-        require(
-            etl["outcome"] == "accepted" and etl["attempt_id"] == edition["edition_id"],
-            "receipt outcome/member attempt differs",
-        )
-        require(
-            etl["policy_version"] == POLICIES[table].policy_version
-            and etl["processor"] == "uscode-editions-public-v2"
-            and etl["processing_json"] == exact_json({})
-            and etl["diagnostic_json"] == exact_json({}),
-            "complete declared receipt processing fields differ",
-        )
-        require(
-            etl["witnesses"]
-            == [
-                dict(
-                    source_id=spec["sha256"],
-                    source_uri=spec["sha256"],
-                    sha256=spec["sha256"],
-                    locator=None,
-                    body_version=None,
-                ),
-                dict(
-                    source_id=edition["edition_id"],
-                    source_uri=None,
-                    sha256=edition["member_sha256"],
-                    locator=edition["member_name"],
-                    body_version=None,
-                ),
-            ],
-            "complete declared receipt witnesses differ",
-        )
         counts[table] += 1
 
     with zipfile.ZipFile(source) as archive:
@@ -511,12 +459,12 @@ def audit(candidate: Path, selection: Path, *, annual_year: int) -> dict:
                     "sidecar metadata differs",
                 )
             member_map[edition["edition_id"]] = info
-            row_receipt("uscode_editions", edition, edition)
+            checked("uscode_editions", edition)
             del body
 
         require(str(annual_year) in native_years, "archive has no title of expected year")
         for table in ("uscode_edition_structure", "uscode_edition_sections"):
-            observed = rows(candidate / receipt["outputs"][table]["path"])
+            observed = rows(candidate / rebuild["outputs"][table]["path"])
             for edition in edition_rows:
                 if edition["member_role"] != "title":
                     continue
@@ -571,14 +519,12 @@ def audit(candidate: Path, selection: Path, *, annual_year: int) -> dict:
                         row["observation_id"] == identity(edition["edition_id"], kind, position),
                         "observation identity differs",
                     )
-                    row_receipt(table, row, edition)
+                    checked(table, row)
                 del body
             require(next(observed, None) is None, "extra native positions/rows")
-    require(next(combined, None) is None, "extra receipts")
-    require(all(next(stream, None) is None for stream in shards.values()), "extra shard receipts")
-    require(all(counts[k] == receipt["outputs"][k]["rows"] for k in SCHEMAS), "verified table counts differ")
+    require(all(counts[k] == rebuild["outputs"][k]["rows"] for k in SCHEMAS), "verified table counts differ")
     require(
-        sha(source) == spec["sha256"] and sha(selection) == receipt["manifest_sha256"],
+        sha(source) == spec["sha256"] and sha(selection) == rebuild["manifest_sha256"],
         "source/selection drift during audit",
     )
     require({str(path): sha(path) for path in evidence_paths} == evidence_before, "audit evidence changed during reads")
@@ -588,15 +534,15 @@ def audit(candidate: Path, selection: Path, *, annual_year: int) -> dict:
         "selection changed during audit",
     )
     require(
-        all(sha(candidate / entry["path"]) == entry["sha256"] for entry in receipt["outputs"].values()),
+        all(sha(candidate / entry["path"]) == entry["sha256"] for entry in rebuild["outputs"].values()),
         "final output digest differs from rebuild",
     )
-    # Recalculate independent reader pins after source and receipt checks.
+    # Recalculate independent reader pins after the source checks.
     require(reader_pins() == code, "reader packages changed during audit")
     result = dict(
         status=f"verified-complete-selected-annual{annual_year}-archive",
         verdict="APPROVE",
-        generation=receipt["generation"],
+        generation=rebuild["generation"],
         source_sha256=spec["sha256"],
         selection_sha256=selection_sha,
         rebuild_sha256=rebuild_sha,
@@ -604,8 +550,9 @@ def audit(candidate: Path, selection: Path, *, annual_year: int) -> dict:
         rows=dict(counts),
         content_categories=dict(categories),
         complete_original_members=len(edition_rows),
-        scope=f"All member identities, original annual itempath positions, document pairing, headings, hierarchy labels, range/stub pieces, named field spans/nesting/rendered text, nullable body text, issues, every row receipt, public field/value closure including decoded JSON. One complete selected {annual_year} archive only; no whole-corpus, publication or deletion proof.",
-        independence="Expected source observations use only raw ZIP bytes, independent comment/field scan and standard HTML parser events. Maintained helpers validate receipt protocol and declared output schemas only.",
+        evidence_sha256=evidence_before,
+        scope=f"All member identities, original annual itempath positions, document pairing, headings, hierarchy labels, range/stub pieces, named field spans/nesting/rendered text, nullable body text, issues, public field/value closure including decoded JSON. One complete selected {annual_year} archive only; no whole-corpus, publication or deletion proof.",
+        independence="Expected source observations use only raw ZIP bytes, independent comment/field scan and standard HTML parser events. Maintained helpers declare output schemas only.",
         limits="Text rendering verified against the documented transformation, not legal interpretation or facsimile typography. Public closure checks declared schemas plus local-locator and credential-key exclusion; not an assertion that all publisher prose is free of sensitive content. One original member and Arrow batch of 32 at a time; no temporary row store.",
     )
     return result

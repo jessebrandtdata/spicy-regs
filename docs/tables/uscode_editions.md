@@ -6,7 +6,7 @@
 
 One native annual or release-point archive member observed in its edition. Requested year, native publication year, carried-forward state and appendices remain separate.
 
-**Coverage.** Sampled. Selected retained original archive members only; edition membership and source structure do not establish complete section-body qualification. *(measured 2026-10-10)*
+**Coverage.** Sampled. Every member of the selected editions only, each added by explicit decision -- the 2000 annual XHTML archive and the complete release-point XML corpora at 119-102 and 119-138 (current through Public Law 119-138); other years and release points are not held. Edition membership and source structure do not establish complete section-body qualification. *(measured 2026-11-11)*
 
 - **Parquet file:** `uscode_editions.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.

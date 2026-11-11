@@ -4443,9 +4443,6 @@
     "observed_at": "When the ranking response page this row was read from was captured (UTC, ISO 8601). NULL on a row carried from before per-row capture evidence, whose read time was not retained; a carried row never takes a later run's time.",
     "source_capture_sha256": "SHA-256 of the retained ranking response page this row was read from, so its values trace to one captured response. NULL exactly when `observed_at` is NULL."
    }
-  },
-  "uscode_edition_sections": {},
-  "uscode_edition_structure": {},
-  "uscode_editions": {}
+  }
  }
 }
