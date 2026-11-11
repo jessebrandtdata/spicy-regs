@@ -250,9 +250,9 @@ def test_members_source_journal_is_retained_in_shared_receipts(tmp_path, votes_r
     assert [
         e["processing_fields"]["capture_event"] for e in events if "capture_event" in e["processing_fields"]
     ] == journal(evidence)
-    # The capture instant is a column since the members tables' receipts were retired (ss-vse3), appended last.
-    assert all(pq.read_schema(path).names[-1] in {"other_names_json", "party_affiliations_state", "observed_at"}
-               for path in subjects)
+    # The promoted source fields are columns since the members tables' receipts were retired (ss-vse3), appended last.
+    from spicy_regs.congress_subjects import PROMOTED
+    assert all(pq.read_schema(path).names[-len(PROMOTED[path.stem]):] == list(PROMOTED[path.stem]) for path in subjects)
     build.admit(tmp_path / "generation", family="members", subjects=subjects)
 
 
