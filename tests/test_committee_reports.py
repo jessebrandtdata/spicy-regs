@@ -612,10 +612,11 @@ def test_an_unavailable_hearing_detail_is_awaited_for_90_days_then_settled(
     warnings = [line for line in capsys.readouterr().out.splitlines() if line.startswith("::warning")]
     awaited = [line for line in warnings if "hearing details awaited" in line]
     assert bool(awaited) is not settles and all(CHRG_ID in line for line in awaited)
-    # The transient refusal warns and is retried; the run does not fail on it.
+    # The transient refusal warns and is retried; 63127 read, so the collection did not fail.
     assert [line for line in warnings if "acquisition pending" in line] == [
-        "::warning title=Committee reports: acquisition pending::1 package(s) unread (0 deferred by the "
-        f"200-package cap, 0 refused), retried next run: {JACKET_64431}"]
+        "::warning title=Committee reports: acquisition pending::1 package(s) pending, retried next run: "
+        f"1 refused ({JACKET_64431}), 0 deferred by the 200-package cap (none)"]
+    assert coverage["nothing_read"] == []
 
     def from_first(remote_key: str, local_path: Path) -> bool:
         source = first / remote_key
@@ -778,3 +779,54 @@ def test_a_held_link_takes_its_hearings_code_without_a_read_and_one_without_code
     assert acquirer.requested == [CRPT_ID], "neither hearing is read again"
     assert sorted((row["package_id"], row["committee_system_code"]) for row in tables["hearing_bill_links"]) == [
         (JACKET_61487, "hsas00"), (CHRG_ID, "HSHM00")]
+
+
+def test_cap_deferral_alone_warns_and_names_refusals_first(tmp_path, monkeypatch, capsys):
+    """A package left behind by the cap is retried next run: a warning, never a failure."""
+    monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
+    coverage: dict = {}
+    build_committee_reports(tmp_path, reader=TwoHearingsDiscovery(), acquirer=HearingBodyAcquirer(),
+                            hearings=StubHearings(), download_prior=_no_prior, max_packages=1, coverage=coverage)
+    assert (coverage["deferred"], coverage["pending"], coverage["nothing_read"]) == (1, 1, [])
+    warning = [line for line in capsys.readouterr().out.splitlines() if "acquisition pending" in line]
+    assert len(warning) == 1 and "0 refused (none), 1 deferred by the 1-package cap (CHRG-" in warning[0]
+
+
+@pytest.mark.parametrize("broken", ["CRPT", "CHRG"])
+def test_a_collection_that_reads_nothing_it_attempted_is_named_while_the_other_reads(tmp_path, monkeypatch, broken):
+    """A reader regression that refuses every package of one collection must not hide behind the other's reads."""
+    monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
+
+    class Broken(StubBodyAcquirer):
+        def acquire(self, package_id: str, *, max_bytes=None, prefer=()):
+            if broken == "CHRG":
+                raise ValueError("stub: reader regression")
+            return super().acquire(package_id, max_bytes=max_bytes, prefer=prefer)
+
+        def acquire_parts(self, package_id: str, *, max_bytes=None, prefer=()):
+            if broken == "CRPT":
+                raise ValueError("stub: reader regression")
+            return super().acquire_parts(package_id, max_bytes=max_bytes, prefer=prefer)
+
+    coverage: dict = {}
+    build_committee_reports(tmp_path, reader=StubDiscovery(), acquirer=Broken(), hearings=StubHearings(),
+                            download_prior=_no_prior, coverage=coverage)
+    assert coverage["nothing_read"] == [broken] and coverage["refused"] == 1
+
+
+@pytest.mark.parametrize(("nothing_read", "fails"), [([], False), (["CRPT"], True)])
+def test_the_rollup_fails_after_publishing_only_when_a_collection_read_nothing(tmp_path, monkeypatch,
+                                                                               nothing_read, fails):
+    from spicy_regs.pipelines.rollups.committee_reports import CommitteeReportsRollup
+
+    def build_receipts(self, output_dir, builder, **kwargs):
+        kwargs["coverage"].update(pending=57, deferred=56, nothing_read=nothing_read)
+        return ()
+
+    monkeypatch.setattr(CommitteeReportsRollup, "build_receipts", build_receipts)
+    monkeypatch.delenv("COMMITTEE_REPORTS_REREAD", raising=False)
+    rollup = CommitteeReportsRollup(output_dir=tmp_path)
+    rollup.build(tmp_path)
+    assert (rollup.deferred_failure is not None) is fails
+    if fails:
+        assert "read none of the packages attempted in CRPT" in str(rollup.deferred_failure)

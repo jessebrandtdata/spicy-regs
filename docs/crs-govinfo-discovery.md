@@ -1,11 +1,13 @@
 # CRS and GovInfo discovery
 
 A generated table does not establish acquisition completeness. These families
-record `acquisition-coverage` in their retained source-evidence journal. A print
-run with retryable or deferred work generates its candidate and then raises
-through the existing deferred-failure path. A committee run publishes and names
-its pending packages in a warning instead: a spicy-docs release re-reads every
-report, more than one night's cap. CRS detail failures are likewise separate
+record `acquisition-coverage` in their retained source-evidence journal. The
+print and CRS rollups also expose `acquisition_status`; a print run with
+retryable or deferred work generates its candidate and then raises through the
+existing deferred-failure path. A committee run names its pending packages in a
+warning instead, since a spicy-docs release re-reads every report, more than one
+night's cap; it raises through that path only when a collection read none of the
+packages it attempted. CRS detail failures are likewise separate
 from list acquisition. Publisher-stated missing root renditions remain a distinct
 outcome. None of these outcomes establishes complete historical coverage.
 

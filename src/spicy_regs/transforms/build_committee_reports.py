@@ -349,6 +349,12 @@ def _settled(row: dict, collection: str, modified: str | None = None) -> bool:
     return settled(row, collection, modified, bounds=REFUSAL_BOUNDS, max_body_bytes=BODY_BUDGET.max_body_bytes)
 
 
+def _completed(row: dict, collection: str) -> bool:
+    """Read this run: complete, or a hearing whose body read and whose Congress.gov detail is absent (404)."""
+    return row.get("outcome") == "complete" or (
+        row.get("outcome") == DETAIL_REFUSED and row.get("rule_version") != RULE_VERSIONS[collection])
+
+
 def _section_input(derived: BodyText) -> str | tuple[PageResult, ...]:
     """What ``parse_agency_blocks`` reads: the pages, where the rendition states them, so a section cites its pages.
 
@@ -593,6 +599,7 @@ def build_committee_reports(
     mentions: Counter[str] = Counter()
     meetings: Counter[str] = Counter()
     refused = unchanged = linked = deferred = listed_count = 0
+    attempted: dict[str, list[str]] = {}
 
     for collection in ("CRPT", "CHRG"):
         if reread:
@@ -625,7 +632,8 @@ def build_committee_reports(
                                  "outcome": "pending", "rule_version": RULE_VERSIONS[collection],
                                  "observed_at": observed_at}
         logger.info("{}: {} pending; {} deferred by package cap", collection, len(pending), max(0, len(pending) - max_packages))
-        for package_id in list(pending)[:max_packages]:
+        attempted[collection] = list(pending)[:max_packages]
+        for package_id in attempted[collection]:
             state = reads[package_id]
             try:
                 bodies = _read_bodies(acquirer, package_id, collection, evidence)
@@ -751,15 +759,26 @@ def build_committee_reports(
     # every spicy-docs release re-reads all CRPT checkpoints (``code=`` in RULE_VERSIONS), more than one
     # night's cap, and one Congress.gov 500 left the run red for nights it had published (runs 42558022791,
     # 42751350570, 42954778184). A package that never reads stays named here and in acquisition-coverage.
-    pending = sorted(key for key, row in reads.items()
-                     if not _settled(row, key.split("-", 1)[0]) and not awaited(row, key.split("-", 1)[0]))
+    pending = [key for key, row in reads.items()
+               if not _settled(row, key.split("-", 1)[0]) and not awaited(row, key.split("-", 1)[0])]
+    retrying = sorted(key for key in pending if reads[key]["outcome"] != "pending")
+    waiting_cap = sorted(key for key in pending if reads[key]["outcome"] == "pending")
     if pending:
+        named = [*retrying, *waiting_cap][:20]
         annotate("warning", "Committee reports: acquisition pending",
-                 f"{len(pending)} package(s) unread ({deferred} deferred by the {max_packages}-package cap, "
-                 f"{refused} refused), retried next run: {', '.join(pending[:20])}{' ...' if len(pending) > 20 else ''}")
+                 f"{len(pending)} package(s) pending, retried next run: {len(retrying)} refused "
+                 f"({', '.join(key for key in named if key in retrying) or 'none'}), {len(waiting_cap)} deferred "
+                 f"by the {max_packages}-package cap ({', '.join(key for key in named if key in waiting_cap) or 'none'})"
+                 f"{' ...' if len(pending) > 20 else ''}")
+    # The one pending state that fails the run (through the rollup's deferred failure, after publishing): a
+    # collection that attempted packages and completed none of them, the signature of a reader or source that
+    # refuses everything. A body read whose hearing detail was refused for a reason a later run may not meet
+    # is not complete; a final refusal (size, parts) is not complete either.
+    nothing_read = [collection for collection, keys in attempted.items()
+                    if keys and not any(_completed(reads[key], collection) for key in keys)]
     status = {"discovery": "not_requested" if reread else "complete", "since": None if reread else since,
               "until": until, "listed": listed_count, "unchanged": unchanged, "refused": refused, "deferred": deferred,
-              "pending": len(pending),
+              "pending": len(pending), "nothing_read": nothing_read,
               "awaiting_detail": len(waiting),
               "table_generation": "prepared", "atomic_snapshot": False, "whole_history_complete": False}
     if coverage is not None:
