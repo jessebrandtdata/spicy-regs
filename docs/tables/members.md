@@ -38,3 +38,6 @@ One row per legislator in one capture of the community crosswalk. Split from `me
 | `name_middle` | `VARCHAR` | The crosswalk's own name.middle for the person, as it spells it; NULL means the crosswalk states none, not that the person has none. |
 | `name_suffix` | `VARCHAR` | The crosswalk's own name.suffix for the person, as it spells it; NULL means the crosswalk states none, not that the person has none. |
 | `name_official_full` | `VARCHAR` | The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none. |
+| `roster` | `VARCHAR` | Which file this record came from: current or historical. |
+| `observed_at` | `VARCHAR` | When the file was captured; the merge prefers the larger value. |
+| `other_names_json` | `VARCHAR` | Source other_names patches in order, with literal date bounds and nulls; absent is NULL. |

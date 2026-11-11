@@ -7,6 +7,10 @@ import pytest
 from spicy_regs.selected_generations import SelectedInputs
 from spicy_regs.sources import publication
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def fixture(tmp_path, monkeypatch, *, mutate=None, fail=False):
     values = {'members.parquet': b'verified', 'laws.parquet': b'law', 'etl_receipts.parquet': b'receipts'}

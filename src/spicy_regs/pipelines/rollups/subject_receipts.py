@@ -83,13 +83,24 @@ class SelectedPriors:
         self.selected = SelectedInputs(
             root or self.directory, self.directory / "native", index=index, public_url=public_url
         )
-        self.ranged = frozenset(ranged) & set(CONGRESS)
+        from spicy_regs.congress_subjects import PROMOTED
+        from spicy_regs.subject_catalog import retired_receipt_datasets
+
+        #: Retired Congress tables with fields their receipts alone held: while their live generation still lists
+        #: those receipts (its first receipts-free night), the prior is restored through them, by row group, which
+        #: back-fills the promoted columns (``congress_tables``).
+        self.last_receipts = frozenset(PROMOTED) & retired_receipt_datasets()
+        self.ranged = (frozenset(ranged) | self.last_receipts) & set(CONGRESS)
         self.restored = {}
         self.selections = {}
         self.scoped = {}
         self.processing_members = {}
         #: dataset -> (subjects, scoped receipts, generation, policy version, reason) of a replay-required prior.
         self.replaced = {}
+
+    def select(self, dataset):
+        """The selection of ``dataset``, read as this reader reads it (:attr:`ranged`, :attr:`last_receipts`)."""
+        return self.selected.select(dataset, ranged=dataset in self.ranged, last_receipts=dataset in self.last_receipts)
 
     def get(self, dataset):
         if dataset in self.restored:
@@ -100,12 +111,12 @@ class SelectedPriors:
     def _get(self, dataset):
         if dataset in self.restored:
             if self.restored[dataset] is not None:
-                self.selected.select(dataset, ranged=dataset in self.ranged)
+                self.select(dataset)
                 self._check_processing(dataset)
             return self.restored[dataset]
         selected_policy = dataset_policy(dataset)
         with phase_log("prior-select", dataset=dataset):
-            selection = self.selected.select(dataset, ranged=dataset in self.ranged)
+            selection = self.select(dataset)
         if selection is None:
             self.restored[dataset] = None
             return None
@@ -209,19 +220,24 @@ class SelectedPriors:
     def _published(self, dataset, subjects):
         """A retired dataset's prior: its pinned public table, as its mapper's builders read their input.
 
-        Only the regulations mapper reads a published table back into its builders' shape
-        (``regulations_shape.published_as_source``); any other dataset refuses by name rather than hand a builder a
-        table it would misread. Its consumers then wait for such a reader here, or switch first.
+        The regulations mapper (``regulations_shape.published_as_source``) and the Congress mapper
+        (``congress_tables.as_builder_input``, for its ``READABLE`` tables) read a published table back into their
+        builders' shape; any other dataset refuses by name rather than hand a builder a table it would misread. Its
+        consumers then wait for such a reader here, or switch first.
         """
+        from spicy_regs.congress_tables import READABLE, as_builder_input
         from spicy_regs.transforms.regulations_shape import SOURCE_COLUMNS, published_as_source
 
-        if dataset not in SOURCE_COLUMNS:
+        if dataset not in SOURCE_COLUMNS and dataset not in READABLE:
             raise ValueError(f"{dataset}: its receipts are retired and its mapper has no reader of the published "
                              "table (SelectedPriors._published); add one before its consumers read it")
         output = self.directory / dataset / "processing" / (dataset + ".parquet")
         output.parent.mkdir(parents=True)
         with phase_log("prior-published-input", dataset=dataset):
-            published_as_source(dataset, subjects, output)
+            if dataset in READABLE:
+                as_builder_input(dataset, subjects, output)
+            else:
+                published_as_source(dataset, subjects, output)
         self.selections[dataset] = (subjects, None, None)
         self.restored[dataset] = output
         self.processing_members[dataset] = (output,)
@@ -337,6 +353,21 @@ class NativeReceiptLifecycle(RollupPipeline):
             return private, prior
         return self._new_receipt_work(output_dir)
 
+    def _call_builder(self, prior, work, builder, kwargs):
+        """Hand ``builder`` its declared inputs in ``work`` and the selected priors' readers it asks for; run it."""
+        for key in self.inputs:
+            if not prior.download(key, work / key):
+                raise ValueError(f"Required selected processing input unavailable: {key}")
+        parameters = inspect.signature(builder).parameters
+        if "download_prior" in parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
+            kwargs["download_prior"] = prior.download
+        if "download_members" in parameters:
+            kwargs["download_members"] = prior.download_members
+        if "selected_input" in parameters:
+            kwargs["selected_input"] = prior.input_provenance
+        with phase_log("builder", family=self.name):
+            return builder(work, **kwargs)
+
     def _prime(self, output_dir, snapshot=None):
         from spicy_regs.sources import publication
 
@@ -346,7 +377,7 @@ class NativeReceiptLifecycle(RollupPipeline):
             dataset = key.removesuffix(".parquet")
             if prior.get(dataset) is None:
                 raise ValueError(f"Required selected processing input unavailable: {key}")
-            selection = prior.selected.select(dataset)
+            selection = prior.select(dataset)
             index = prior.selected.index
             owner = publication.table_owner(index, key) if index is not None else None
             if self._own(key, owner[0] if owner else None):
@@ -435,19 +466,8 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
         work.mkdir()
         candidate = private / "candidate"
         candidate.mkdir()
-        for key in self.inputs:
-            if not prior.download(key, work / key):
-                raise ValueError(f"Required selected processing input unavailable: {key}")
-        parameters = inspect.signature(builder).parameters
-        if "download_prior" in parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
-            kwargs["download_prior"] = prior.download
-        if "download_members" in parameters:
-            kwargs["download_members"] = prior.download_members
-        if "selected_input" in parameters:
-            kwargs["selected_input"] = prior.input_provenance
         try:
-            with phase_log("builder", family=self.name):
-                built = builder(work, **kwargs)
+            built = self._call_builder(prior, work, builder, kwargs)
         except Exception as error:
             if any(p.dataset == ACQUISITION_POLICY.dataset for p in self.receipt_policies):
                 _build_events(candidate, self.receipt_generation_id, builder.__name__, self.source_evidence, error)
@@ -581,4 +601,54 @@ class SubjectReceiptRollup(NativeReceiptLifecycle):
                     for policy in self.receipt_policies
                 ],
             )
+        return tuple(visible) if self.outputs else visible[0]
+
+
+class SubjectTableRollup(NativeReceiptLifecycle):
+    """A Congress family whose tables publish no per-row receipts (ss-vse3; its policies are ``receipts_retired``).
+
+    The builder runs as under :class:`SubjectReceiptRollup`, on the same selected priors and inputs: each published
+    table read back as builder input, or, on the night its live generation still lists receipts for a field they
+    alone held, restored through them (:class:`SelectedPriors`). Each output it writes is mapped to its public table
+    by ``congress_tables.to_public``; nothing writes or reads a receipt of this family afterwards. A run refuses at
+    its start, before any read, while ``docs/pins/receipt-archive.json`` does not pin the live generation that still
+    lists this family's receipts (``publication.require_live_receipt_pins``).
+    """
+
+    def __init_subclass__(cls, **kwargs):
+        from spicy_regs.subject_catalog import retired_receipt_datasets
+
+        super().__init_subclass__(**kwargs)
+        names = {str(key).removesuffix(".parquet") for key in (cls.outputs or (cls.output,))}
+        if unretired := sorted(names - retired_receipt_datasets()):
+            raise ValueError(f"{cls.__name__}: {unretired} still publish receipts; use SubjectReceiptRollup")
+
+    def _prime(self, output_dir, snapshot=None):
+        if snapshot is not None:
+            from spicy_regs.sources import publication
+
+            publication.require_live_receipt_pins(snapshot, [key.removesuffix(".parquet")
+                                                             for key in (self.outputs or (self.output,))])
+        return super()._prime(output_dir, snapshot)
+
+    def build_tables(self, output_dir, builder, **kwargs):
+        from loguru import logger
+
+        from spicy_regs.congress_tables import summary, to_public
+
+        private, prior = self._receipt_work(output_dir)
+        work = private / "source-output"
+        work.mkdir()
+        built = self._call_builder(prior, work, builder, kwargs)
+        paths = built if isinstance(built, tuple) else (built,)
+        keys = self.outputs or (self.output,)
+        if {path.stem for path in paths} != {key.removesuffix(".parquet") for key in keys}:
+            raise ValueError("Producer outputs differ from the complete classified family")
+        visible = []
+        for path in paths:
+            with phase_log("public-table", dataset=path.stem):
+                left_out, shown = to_public(path.stem, path, output_dir / path.name)
+            if left_out:
+                logger.info(summary(path.stem, left_out, shown))
+            visible.append(output_dir / path.name)
         return tuple(visible) if self.outputs else visible[0]

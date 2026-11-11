@@ -21143,10 +21143,10 @@
     "table": "member_vote_terms",
     "label": "Member vote terms",
     "summary": "The term each member vote counts toward (delivery decision 2). A vote on `vote_day` counts toward the term with `term_start <= vote_day < term_end`, so the day one Congress ends and the next begins belongs to the new term. Only where that finds none is an inclusive end accepted, and only if exactly one term qualifies. The term type follows the chamber (`rep`, `sen`); a term with no end date never matches. Built by `build_member_vote_terms` from `member_votes`, whose `bioguide_id` the votes rollup resolves for a Senate row (from its LIS id) and for a House row of 1990-2002 (from its printed label), and `member_terms`. Join to `member_votes` on (`vote_id`, `member_key`) and to `member_terms` on (`bioguide_id`, `term_index`).",
-    "coverage": "Derived, and bounded by its inputs: one row for every `member_votes` row, matched to the member's term on the vote date.",
+    "coverage": "Derived, and bounded by its inputs: one row for every `member_votes` row whose term the rule establishes (`half_open` or `inclusive_end`). A vote it gives no term is left out: it is the `member_votes` row with no row here.",
     "kind": "derived",
-    "measured_on": "2026-09-23",
-    "data_quality": "On 2026-09-23 all but 18 votes matched a half-open term: 15 matched only an inclusive end date and 3 matched no term, exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).",
+    "measured_on": "2026-11-11",
+    "data_quality": "On 2026-11-11, of 10,563,782 votes, 232 matched only an inclusive end date, 12 matched no term and 2 named no resolvable member; those 14 are left out. On 2026-09-23 the same rule matched all but 18 of a frozen selection exactly as an independent replay found (fork-execution-2026-09-21/votes-qualification/complete-member-join-replay.json).",
     "columns": [
       {
         "column_name": "vote_id",
@@ -30158,12 +30158,44 @@
         "column_name": "party_totals",
         "column_type": "STRUCT(party VARCHAR, \"yea-total\" BIGINT, \"nay-total\" BIGINT, \"present-total\" BIGINT, \"not-voting-total\" BIGINT)[]",
         "description": "The Clerk's totals by party, as a Native list in the file's order: each object the party as the Clerk names it (Republican, Democratic, Independent; member_votes.party spells the same parties R, D and I) and its yea-total, nay-total, present-total and not-voting-total. [] when a captured Clerk file states none (a Speaker election). NULL on Senate rows, whose files state none; on linkage-only rows; and on House rows captured before this column until they are read again. Stored as native nested values; list order, repeated values, null and empty collections remain distinct."
+      },
+      {
+        "column_name": "source_url",
+        "column_type": "VARCHAR",
+        "description": "The publisher's own URL for this roll call."
+      },
+      {
+        "column_name": "match_rule",
+        "column_type": "VARCHAR",
+        "description": "Which vote-matching rule named that bill: bill_action_recorded_vote (the bill's own action records this roll call), house_vote_legislation (Congress.gov's House vote list), vote_file_legislation (the vote file names the bill: the Clerk's legis-num, or the Senate's document or amended document), or unmatched."
+      },
+      {
+        "column_name": "match_action_index",
+        "column_type": "BIGINT",
+        "description": "Position of the action whose recordedVote named this roll call, where one did."
+      },
+      {
+        "column_name": "match_url",
+        "column_type": "VARCHAR",
+        "description": "The reference URL the match was read from."
+      },
+      {
+        "column_name": "conflict_count",
+        "column_type": "BIGINT",
+        "description": "How many later references disagreed with the one that won; kept, never dropped."
       }
     ],
     "subject": "congress",
     "grain": "One row per roll call: the publisher's own tally, and the bill it refers to.",
     "identity_columns": [
       "vote_id"
+    ],
+    "later_policy_columns": [
+      "source_url",
+      "match_rule",
+      "match_action_index",
+      "match_url",
+      "conflict_count"
     ]
   },
   "member_votes": {
@@ -30376,6 +30408,21 @@
         "column_name": "name_official_full",
         "column_type": "VARCHAR",
         "description": "The crosswalk's own name.official_full for the person, as it spells it; NULL means the crosswalk states none, not that the person has none."
+      },
+      {
+        "column_name": "roster",
+        "column_type": "VARCHAR",
+        "description": "Which file this record came from: current or historical."
+      },
+      {
+        "column_name": "observed_at",
+        "column_type": "VARCHAR",
+        "description": "When the file was captured; the merge prefers the larger value."
+      },
+      {
+        "column_name": "other_names_json",
+        "column_type": "VARCHAR",
+        "description": "Source other_names patches in order, with literal date bounds and nulls; absent is NULL."
       }
     ],
     "subject": "congress",
@@ -30386,7 +30433,10 @@
     "later_policy_columns": [
       "name_middle",
       "name_suffix",
-      "name_official_full"
+      "name_official_full",
+      "roster",
+      "observed_at",
+      "other_names_json"
     ]
   },
   "member_terms": {
@@ -30437,6 +30487,16 @@
         "column_name": "term_district",
         "column_type": "VARCHAR",
         "description": "District for this term, spelled as the publisher does; absent for a Senate term."
+      },
+      {
+        "column_name": "observed_at",
+        "column_type": "VARCHAR",
+        "description": "The parent capture's instant, carried so a term list versions with the member row it came from."
+      },
+      {
+        "column_name": "party_affiliations_state",
+        "column_type": "VARCHAR",
+        "description": "Nested list state: unread, absent, null, empty or populated."
       }
     ],
     "subject": "congress",
@@ -30444,6 +30504,10 @@
     "identity_columns": [
       "bioguide_id",
       "term_index"
+    ],
+    "later_policy_columns": [
+      "observed_at",
+      "party_affiliations_state"
     ]
   },
   "member_party_affiliations": {
@@ -30494,6 +30558,36 @@
         "column_name": "caucus",
         "column_type": "VARCHAR",
         "description": "Complete affiliation object, retaining absent, null and unknown fields. This column retains the source property caucus."
+      },
+      {
+        "column_name": "input_sha256",
+        "column_type": "VARCHAR",
+        "description": "Digest of the complete retained crosswalk JSON bytes."
+      },
+      {
+        "column_name": "start_status",
+        "column_type": "VARCHAR",
+        "description": "Calendar spelling status: absent, empty, valid or invalid."
+      },
+      {
+        "column_name": "end_status",
+        "column_type": "VARCHAR",
+        "description": "Calendar spelling status: absent, empty, valid or invalid."
+      },
+      {
+        "column_name": "source_path",
+        "column_type": "VARCHAR",
+        "description": "JSON pointer to the affiliation in the retained capture."
+      },
+      {
+        "column_name": "observed_at",
+        "column_type": "VARCHAR",
+        "description": "Caller-supplied capture instant; not a source affiliation date."
+      },
+      {
+        "column_name": "source_json",
+        "column_type": "VARCHAR",
+        "description": "Complete affiliation object, retaining absent, null and unknown fields."
       }
     ],
     "subject": "congress",
@@ -30502,6 +30596,14 @@
       "bioguide_id",
       "term_index",
       "affiliation_index"
+    ],
+    "later_policy_columns": [
+      "input_sha256",
+      "start_status",
+      "end_status",
+      "source_path",
+      "observed_at",
+      "source_json"
     ]
   },
   "committee_reports": {
@@ -41190,81 +41292,6 @@
         ]
       },
       {
-        "dataset": "member_party_affiliations",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id",
-          "term_index",
-          "affiliation_index"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_terms",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "bioguide_id",
-          "term_index"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_vote_terms",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "vote_id",
-          "member_key"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "member_votes",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/1",
-        "identity_columns": [
-          "vote_id",
-          "member_key"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
-        "dataset": "members",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "bioguide_id"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
-        ]
-      },
-      {
         "dataset": "native_legal_reference_reads",
         "receipt_only": false,
         "policy_version": "legislative-documents/2",
@@ -41454,20 +41481,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "roll_call_votes",
-        "receipt_only": false,
-        "policy_version": "congress-subjects/2",
-        "identity_columns": [
-          "vote_id"
-        ],
-        "processing_fields": [
-          "source_fields",
-          "source_metadata",
-          "source_schema",
-          "entry_kind"
         ]
       },
       {

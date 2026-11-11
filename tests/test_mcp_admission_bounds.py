@@ -11,6 +11,10 @@ from spicy_regs.runtime_bounds import RequestBound, checkpoint, current_bound
 from tests.test_local_native_selection import selected_family
 from tests.test_mcp_server import _listed, _records, _tool_data
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 @pytest.fixture(autouse=True)
 def reset_connections():

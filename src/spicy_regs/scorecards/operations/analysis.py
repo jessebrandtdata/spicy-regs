@@ -14,7 +14,9 @@ from spicy_regs.scorecards.inputs import stage_member
 from spicy_regs.scorecards.etl import ANALYSIS_NAMES, generation_options
 from spicy_regs.generations import build_generation
 from spicy_regs.source_evidence import CaptureEvidence, verify_evidence
-from spicy_regs.scorecards.analysis_inputs import convert_published_official_input, PROJECTED_NATIVE_OFFICIAL_TABLES
+from spicy_regs.scorecards.analysis_inputs import (
+    PROJECTED_NATIVE_OFFICIAL_TABLES, convert_published_official_input, published_input,
+)
 from spicy_regs.sources import publication, r2
 from spicy_regs.transforms.build_scorecard_analysis import (
     INPUTS, OFFICIAL_TABLES, OUTPUTS, analysis_input_entries, build_scorecard_analysis,
@@ -36,7 +38,8 @@ def main(argv=None):
     client = r2.get_r2_client()
     snapshot, _ = publication._stored_index(client, "spicy-regs")
     entries = analysis_input_entries(snapshot, convert_published_official_inputs=args.convert_published_official_inputs)
-    project_official = all("etlReceipts" in entries[name] for name in PROJECTED_NATIVE_OFFICIAL_TABLES)
+    project_official = all("etlReceipts" in entries[name] or published_input(entries[name], name)
+                           for name in PROJECTED_NATIVE_OFFICIAL_TABLES)
     index_path = args.output / "publication.v2.json"
     index_path.write_text(json.dumps(snapshot, indent=2) + "\n")
     paths, pins, parents = {}, {}, {}
@@ -91,7 +94,7 @@ def main(argv=None):
     for name in OFFICIAL_TABLES:
         if project_official and name in PROJECTED_NATIVE_OFFICIAL_TABLES:
             continue
-        if name not in official_receipts:
+        if name not in official_receipts and not published_input(entries[name], name):
             selected, proof = convert_published_official_input(
                 snapshot, name, paths[name], args.output / "official-conversions" / name,
                 generation_id=conversion_generation,

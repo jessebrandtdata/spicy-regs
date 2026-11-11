@@ -43,6 +43,7 @@ def selected_native_rows(snapshot, name, paths, columns, filter_column, values):
     """
     from spicy_regs.congress_receipts import policy as congress_policy
     from spicy_regs.local_data import file_signature, file_state_from_stat
+    from spicy_regs.scorecards.analysis_inputs import published_input
     from spicy_regs.scorecards.etl import POLICIES
     from spicy_regs.sources import publication
 
@@ -50,7 +51,8 @@ def selected_native_rows(snapshot, name, paths, columns, filter_column, values):
                     "scorecard_methodologies", "bill_cosponsors"}:
         raise ValueError("Unsupported action-comparison native input")
     owner = publication.table_owner(snapshot, name + ".parquet")
-    if owner is None or name not in owner[1].get("etlReceipts", {}).get("datasets", ()):
+    if owner is None or (name not in owner[1].get("etlReceipts", {}).get("datasets", ())
+                         and not published_input(owner[1], name)):  # member_votes publishes none (ss-vse3)
         raise ValueError("Action comparison requires selected native inputs")
     members = publication.table_members(snapshot, name + ".parquet")
     if not paths or len(paths) != len(members):

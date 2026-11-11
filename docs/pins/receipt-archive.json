@@ -57,6 +57,42 @@
    "publishedAt": "2026-11-10T22:06:19Z",
    "receipts": "generations/fr-docket-links/a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773/etl_receipts.parquet"
   },
+  "member_party_affiliations": {
+   "family": "members",
+   "artifactDigest": "sha256:26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780",
+   "publishedAt": "2026-11-11T03:15:15Z",
+   "receipts": "generations/members/26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780/etl_receipts.parquet"
+  },
+  "member_terms": {
+   "family": "members",
+   "artifactDigest": "sha256:26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780",
+   "publishedAt": "2026-11-11T03:15:15Z",
+   "receipts": "generations/members/26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780/etl_receipts.parquet"
+  },
+  "member_vote_terms": {
+   "family": "member-vote-terms",
+   "artifactDigest": "sha256:27ebf57b795752295e4225c79413c4ee652a52b49ade95a66c094baf4f0c9469",
+   "publishedAt": "2026-11-11T04:31:03Z",
+   "receipts": "generations/member-vote-terms/27ebf57b795752295e4225c79413c4ee652a52b49ade95a66c094baf4f0c9469/etl_receipts.parquet"
+  },
+  "member_votes": {
+   "family": "roll-call-votes",
+   "artifactDigest": "sha256:a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c",
+   "publishedAt": "2026-11-11T04:05:38Z",
+   "receipts": "generations/roll-call-votes/a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c/etl_receipts.parquet"
+  },
+  "members": {
+   "family": "members",
+   "artifactDigest": "sha256:26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780",
+   "publishedAt": "2026-11-11T03:15:15Z",
+   "receipts": "generations/members/26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780/etl_receipts.parquet"
+  },
+  "roll_call_votes": {
+   "family": "roll-call-votes",
+   "artifactDigest": "sha256:a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c",
+   "publishedAt": "2026-11-11T04:05:38Z",
+   "receipts": "generations/roll-call-votes/a77051b2e3b1e1c22ca48363b1a636c2969b886224c4cf833866a85cdc20a46c/etl_receipts.parquet"
+  },
   "uscode_edition_sections": {
    "family": "uscode-editions",
    "artifactDigest": "sha256:792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0",

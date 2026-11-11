@@ -233,7 +233,7 @@ def test_next_generation_names_only_its_predecessor_when_subject_changes(tmp_pat
     assert after["generation_id"] == "next"
 
 
-def test_members_source_journal_is_retained_in_shared_receipts(tmp_path):
+def test_members_source_journal_is_retained_in_shared_receipts(tmp_path, votes_receipts_unretired):
     from spicy_regs.congress_receipts import ACQUISITION_POLICY
     from spicy_regs.etl_receipts import read_attempts, select_receipts
     from spicy_regs.source_evidence import CaptureEvidence
@@ -250,7 +250,9 @@ def test_members_source_journal_is_retained_in_shared_receipts(tmp_path):
     assert [
         e["processing_fields"]["capture_event"] for e in events if "capture_event" in e["processing_fields"]
     ] == journal(evidence)
-    assert all("observed_at" not in pq.read_schema(path).names for path in subjects)
+    # The promoted source fields are columns since the members tables' receipts were retired (ss-vse3), appended last.
+    from spicy_regs.congress_subjects import PROMOTED
+    assert all(pq.read_schema(path).names[-len(PROMOTED[path.stem]):] == list(PROMOTED[path.stem]) for path in subjects)
     build.admit(tmp_path / "generation", family="members", subjects=subjects)
 
 
@@ -512,7 +514,8 @@ def test_earlier_policies_reads_only_for_the_exact_roll_call_votes_descriptor():
 
     current = congress_policy("roll_call_votes")
     admitted = earlier_policies(current)
-    assert len(admitted) == 1 and admitted[0].policy_version == "congress-subjects/1"
+    # /2 before its receipt-only fields became columns (ss-vse3), /1 before that.
+    assert sorted(policy.policy_version for policy in admitted) == ["congress-subjects/1", "congress-subjects/2"]
 
     # A changed descriptor under the current label is not the recorded policy, so it reads nothing earlier.
     tampered = replace(current, subject_schema=current.subject_schema.remove(current.subject_schema.get_field_index("question")))
