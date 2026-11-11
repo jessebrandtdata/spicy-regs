@@ -612,9 +612,9 @@ def _with_promoted(dataset: str, prior: Path, session: SelectedInputs, work: Pat
     with duckdb.connect() as con:
         con.execute(f"CREATE VIEW joined AS SELECT p.*, {', '.join(f'r.{name} AS _r_{name}' for name in (*identity, *missing))} "
                     f"FROM read_parquet('{prior}') p POSITIONAL JOIN read_parquet('{restored}') r")
-        disagree = " OR ".join(f"p_{name} IS DISTINCT FROM CAST({name} AS VARCHAR)" for name in identity)
+        disagree = " OR ".join(f"_r_{name} IS DISTINCT FROM CAST({name} AS VARCHAR)" for name in identity)
         [(rows, unmatched)] = con.execute(
-            f"SELECT count(*), count(*) FILTER (WHERE {disagree.replace('p_', '_r_')}) FROM joined").fetchall()
+            f"SELECT count(*), count(*) FILTER (WHERE {disagree}) FROM joined").fetchall()
         if unmatched or rows != pq.ParquetFile(prior).metadata.num_rows:
             raise LobbyingFilingsError(f"{dataset}: {unmatched:,} of {rows:,} restored rows name another key")
         names = ", ".join(f"_r_{name} AS {name}" if name in missing else name for name in schema.names)
@@ -726,7 +726,9 @@ def build_lobbying_filings(
     # 4. Dedup the fetched rows, map them and upsert them over each prior table. Only the window is deduplicated and
     # mapped; a prior is read once by the narrow-key upsert. A filing year's window is about 1.2M child rows; hosted
     # runners have 16 GB, so leave room for Python and the OS and let DuckDB spill the rest.
-    return _upserted(output_dir, _deduplicated(output_dir, fresh, memory_limit="12GB"), session, evidence)
+    outputs = _upserted(output_dir, _deduplicated(output_dir, fresh, memory_limit="12GB"), session, evidence)
+    shutil.rmtree(session.directory)  # the selected priors' copies; the outputs replace them
+    return outputs
 
 
 def read_retained_manifest(manifest: Path) -> list[tuple[datetime, str, int]]:
