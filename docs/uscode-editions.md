@@ -1,10 +1,16 @@
 # Retained U.S. Code editions
 
+The `uscode-editions` family holds selected editions of the Code from the Office
+of the Law Revision Counsel (OLRC): the 2000 annual XHTML archive and the complete
+release-point XML corpora at 119-102 and 119-138. Editions are added by explicit
+decision, one at a time, after an independent audit of the new original; rows of
+editions already published never change.
+
 `build-uscode-editions --manifest selection.json --output fresh-directory`
-builds separate local tables from pinned Office of the Law Revision Counsel
-archives. It accepts annual XHTML archives, a complete release-point XML archive,
-or an explicitly selected title XML archive. It reads original ZIP files directly
-and uses the maintained SpicyDocs archive and structure readers.
+builds the three tables from pinned original archives: annual XHTML archives, a
+complete release-point XML archive, or an explicitly selected title XML archive.
+It reads original ZIP files directly and uses the maintained SpicyDocs archive and
+structure readers.
 
 The manifest has format `spicy-uscode-edition-inputs`, version `1`, and a `sources`
 array. Every source requires `path`, `sha256` (with the `sha256:` prefix), and
@@ -12,6 +18,8 @@ array. Every source requires `path`, `sha256` (with the `sha256:` prefix), and
 `release_point`; `release-point-title` entries also require `title`. Relative
 paths resolve against the manifest directory. Select one pinned version of each
 edition or title; conflicting or duplicate selections are refused.
+
+## Tables
 
 `uscode_editions` identifies every admitted archive member, including supporting
 files. Annual archive year and native publication year remain separate. A carried
@@ -35,46 +43,62 @@ See SpicyDocs' `docs/sources/uscode-section-bodies.md` for exact reader semantic
 These destinations do not replace enacted-law text or determine legal status;
 original members retain exact markup.
 
-The tables use `DatasetPolicy` and row receipts. The build verifies original
-archive hashes, reader identity and selected input stability, stages provisional
-rows privately, and installs the output only after all archives succeed. It
-refuses an existing output directory and retains a `rebuild.json` containing
-input pins, reader pins, output hashes and scope. No baseline or network access
-is used by the producer.
+## Evidence without per-row receipts
 
-These are implemented local destinations. They are intentionally absent from the
-published table registry until a separate publication selects their outputs.
-The shared source catalog records their route choices and qualification evidence.
-See `../../docs/historical-source-rebuilds-2026-10-10.md` in the workspace for the
-retained corpus qualification and baseline decisions.
+The tables publish no per-row ETL receipts (their policies are marked
+`receipts_retired`). Each row is a cleaned one-to-one copy of a native
+observation; its evidence is its edition row's `archive_sha256` and
+`member_sha256`, the original in the shared raw archive, and the generation's
+source-evidence journal, which names each original under its OLRC URL. The last
+generation with receipts, `792cbaa7f8ea134201736db8e98ed9a5630408ab8465164fb894cc44147dd5b0`
+(2026-10-14, the 2000 edition and 119-102), keeps them and is pinned in
+`pins/receipt-archive.json`. Policy version `uscode-editions-public-v2` is
+unchanged: retirement changed no column.
 
-The `uscode-editions-public-v2` recipe creates fresh row receipts whose archive
-witness references use content digests. Private archive paths remain in
-`selection.json` and `rebuild.json`; exclude those files from public artifact
-members. Publish only selected subject Parquet members and their fresh
-`etl_receipts.parquet`. Earlier path-bearing receipt history must not be inherited.
+The build verifies original archive hashes, reader identity and selected input
+stability, stages rows privately, and installs the output only after all archives
+succeed. It refuses an existing output directory and retains a `rebuild.json`
+containing input pins, reader pins (every `*.py` of SpicyDocs, rulespec-artifacts
+and SpicyRegs, plus `pyproject.toml` and `uv.lock`), output hashes and scope; any
+change to them makes a different build. No baseline or network access is used by
+the build. Section content is written in batches of at most 64 records, the
+others in batches of 2,000. Bodies and observations can be large, so a row bound
+is not a byte or memory bound: supervise the build's memory.
 
-Section-content output uses batches of at most64records through the maintained
-receipt writer. Bodies and complete source observations can contain large text,
-so a row-count bound does not establish a byte or process-memory bound. Edition
-and structure output keep the writer's default batching. Qualification still
-requires measured resource limits and independent content and receipt checks
-for the selected originals.
+## Adding an edition
 
-All edition, structure and content outputs explicitly select the maintained
-reference row validator. This preserves complete schema, subject and receipt
-checks while avoiding the bulk validator's fixed DuckDB resource settings.
-It does not establish a process-memory bound; Parquet reading and normalization
-still batch rows. Resource qualification requires an independently supervised
-run of the exact selected inputs.
+Five steps, all run through `uv run --frozen --extra comments-reader`, from one
+checkout that does not change between them. The 119-138 addition on 2026-11-11
+measured: acquire 17 s and 0.6 GiB; the build, audit and preparation figures are
+in the addition's PR.
 
-`audit-uscode-editions candidate --selection selection.json --annual-year 1996
---output fresh-report.json` independently checks one complete retained annual
-archive. The admitted annual selection spans 1994 through 2024, as recorded in
-the corpus's `metadata/historical-rebuilds/20261010/uscode/selection.json`.
-Admission is not qualification: each run checks its exact manifest year,
-original ZIP hash, complete member inventory, native metadata and year,
-headings, structure, body fields, nulls, stubs and every row receipt. Carried
-native years remain separate from the requested year. The auditor refuses
-multi-archive selections, baseline inputs, source or recipe drift, and report
-paths that could overwrite inputs. XML body qualification remains separate.
+```sh
+# 1. Capture the corpus zip into the shared raw archive (one request, ~110 MB).
+python -m spicy_regs.sources.uscode_editions acquire --release-point 119-138 \
+  --output-dir "$WORK/acquire" --selection-out "$WORK/selection.json"
+# 2. Build the candidate from the raw archive's stored file.
+python -m spicy_regs.sources.uscode_editions --manifest "$WORK/selection.json" --output "$WORK/candidate"
+# 3. Audit it independently (docs/uscode-editions-audit.md).
+python -m spicy_regs.sources.uscode_xml_audit "$WORK/candidate" --selection "$WORK/selection.json" \
+  --output "$WORK/audit.json"
+# 4. Union it after the live generation's rows.
+python -m spicy_regs.uscode_edition_publication --prior "$LIVE_USCODE" --candidate "$WORK/candidate" \
+  --audit "$WORK/audit.json" --audit-sha256 "sha256:$(shasum -a 256 "$WORK/audit.json" | cut -d' ' -f1)" \
+  --audit-bytes "$(stat -f %z "$WORK/audit.json")" --index "$LIVE_INDEX" --expected-prior "$PRIOR" \
+  --output "$WORK/addition"
+# 5. Publish (docs/local-family-refresh.md), from prepared.json's generation and evidence.
+publish-local-generation --family uscode-editions --generation "$WORK/addition/generation" \
+  --evidence "$EVIDENCE" --expect-prior "$PRIOR" --output "$WORK/publish-receipt"
+```
+
+`acquire` uses the SpicyDocs acquirer, which proves every member's native title
+and release point before the bytes are kept, and commits the capture receipt
+(URL, time, status, digest) to the raw archive. Its selection names the archive's
+own stored file. `$LIVE_USCODE` and `$LIVE_INDEX` come from
+`spicy-regs mirror --family uscode-editions` (about 600 MB); `$PRIOR` is the live
+digest. The preparation requires the audit's `APPROVE` verdict and its
+`evidence_sha256` pins over the build record, selection and every candidate
+table; checks the prior against the index it read; refuses a duplicate identity
+across prior and candidate; and compares the union with its inputs slice by
+slice. It reads each accepted original once, to retain it into the generation's
+evidence and the raw archive under its OLRC URL; it never publishes.

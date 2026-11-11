@@ -9,6 +9,21 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **The U.S. Code edition tables publish without per-row receipts, and the
+  family takes release point 119-138** (ss-coca). `uscode_editions`,
+  `uscode_edition_structure` and `uscode_edition_sections` are marked
+  `receipts_retired`; their receipts held no field beyond the rows, and each
+  row already names its archive and member by digest. The last generation with
+  receipts (`792cbaa7`, the 2000 edition and 119-102) is pinned. The builder
+  writes plain tables; a new `acquire` command captures a release point's
+  corpus zip into the raw archive with its capture receipt; `uscode_xml_audit`
+  now audits a whole release-point corpus, member by member, and both auditors
+  report `evidence_sha256`; the additive preparation leaves the prior's
+  receipts behind and retains the addition's original into the generation's
+  evidence under its OLRC URL. The family is published by hand with
+  `publish-local-generation`. Editions stay selected: 119-138 is added beside
+  the 2000 edition and 119-102, whose rows are unchanged
+  (`docs/uscode-editions.md`).
 - **Court opinions and the three citation tables publish without per-row
   receipts** (ss-vse3). `court_opinions`, `court_citations`,
   `court_citation_map` and `court_parentheticals` are rebuilt whole from one
