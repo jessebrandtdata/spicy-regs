@@ -68,9 +68,12 @@ is not a byte or memory bound: supervise the build's memory.
 ## Adding an edition
 
 Five steps, all run through `uv run --frozen --extra comments-reader`, from one
-checkout that does not change between them. The 119-138 addition on 2026-11-11
-measured: acquire 17 s and 0.6 GiB; the build, audit and preparation figures are
-in the addition's PR.
+checkout that does not change between them: a changed `*.py` file makes the
+audit refuse the build. The 119-138 addition on 2026-11-11 measured, peak RSS
+under the watchdog: acquire 17 s and 0.6 GiB; build 91 s and 0.5 GiB; audit
+127 s and 2.4 GiB; preparation 21 s and 5.7 GiB (it verifies the whole live
+prior, receipts included); about 1.1 GB of scratch. A publish uploads about
+0.98 GB: the three rewritten tables and the zip.
 
 ```sh
 # 1. Capture the corpus zip into the shared raw archive (one request, ~110 MB).
