@@ -21,7 +21,13 @@ Not every table has receipts yet. Tables are moving to the newer layout one
 group at a time, and a table has receipts only after it has been published that
 way. `describe_table('etl_receipts')` lists, under `publication`, each group
 that has them and the tables in it (`datasets`). A table that is not named
-there has no receipts: everything it holds is in the table itself. (The other
+there has no receipts this server can query. Most such tables have none:
+everything they hold is in the table itself. The eight rulemaking snapshot
+tables (`rule_targets`, `proceedings`, `regulatory_agenda_items`,
+`agenda_item_proceedings`, `comment_periods`, `rulemaking_lifecycles`,
+`lifecycle_events`, `agency_lifecycle_stats`) are the exception: their receipts
+sit in the snapshot's own internal file, which this server does not read, so a
+value kept only there cannot be read here. (The other
 `datasets` list in that reply, under `metadata`, names every table that is set
 up to have receipts, whether or not it has published any.)
 

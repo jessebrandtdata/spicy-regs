@@ -360,9 +360,12 @@ The read-only MCP server provides `list_sources(subject=None)`, `describe_table(
 `query_sql(sql)`, `resolve_document_citations(...)` and
 `lookup_agency(namespace, identifier, on_date=None)`.
 
-A source field a reader wants is a column of its table; the per-row receipt
-lookup is retired (2026-11-10), and each family moves its receipt-only fields
-into columns when it stops writing receipts.
+The per-row receipt lookup is retired (2026-11-10). A field kept only in a
+table's receipts becomes a column when that table's family stops writing
+receipts. Until then, a family that still writes them keeps the field in the
+`etl_receipts` view, which `query_sql` reads (`describe_table('etl_receipts')`
+explains how); the eight rulemaking snapshot tables keep it only in the
+snapshot's internal receipt file, which the server does not read (ss-ijt2).
 
 `lookup_agency` uses the pinned reviewed RefSpec mapping. Its exact namespaces
 are `regulations.gov:agency` (for example, `OPM`) and
