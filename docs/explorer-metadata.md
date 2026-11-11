@@ -128,8 +128,9 @@ Navigation targets expose `requiredMainFields`, `requiredElementFields` and
 `missing`. Native nested fields are checked against the selected STRUCT schema.
 JSON paths are checked by the shared key recipes for each occurrence. Missing
 row context, nested keys or target columns disable only the affected target.
-`receiptFields` remain inspection context and never make operational keys
-available. Unpublished sources and targets retain explicit dispositions.
+`receiptFields` is always `[]`: it named what the retired receipt lookup read,
+and stays only because the deployed site refuses a recipe without it (ss-v5my
+makes it optional there; the key can go after that). Unpublished sources and targets retain explicit dispositions.
 
 `directions.forward` and `.reverse` describe each route's availability,
 measurement scope and lookup capability. Unknown measurements stay unknown;

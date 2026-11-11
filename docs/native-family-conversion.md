@@ -357,7 +357,7 @@ retired on 2026-11-11, `docs/lobbying-receipt-archive.md`; the JSON arrays becom
 | `table_joins.py`, `join_audit.json`, `join_measurements.json` | `filing_uuid`; `(filing_uuid, activity_index)` | Fine: both sides retype together. |
 | MCP `describe_table`/`list_sources`, `data_dictionary`, `docs/tables`, `table_metadata.json` | the dictionary already declares the native columns | Fine, and better: `schema_matches_declared` becomes true; `test_legacy_lobbying_descriptions.py` keeps the old meanings readable. |
 | `publish-explorer-metadata.yml`, the SpicyGov explorer | `explorer-metadata.v1.json`, fetched at run time and republished after this rollup | Fine. `spicygov/lib/data/table_joins.json` is read only by one test, as a fixture. |
-| Saved user SQL | the removed columns, `filing_year = '2025'` style text compares | Not checked, as for every family; `url` is `read_receipt_fields`. |
+| Saved user SQL | the removed columns, `filing_year = '2025'` style text compares | Not checked, as for every family; `url` is a column again since the receipt switch of 2026-11-11 (ss-vse3). |
 | `spicygov/content/coverage-definitions/regulation.json` | an exact `schema` per table; `build-coverage-maps.py` refuses drift ("Published schema needs coverage review") | Needs a change before the next coverage build: replace the three `schema` arrays with the native ones. The dimensions already cast to VARCHAR, so `dt_posted` and `filing_year` keep working. `content/coverage-reviews` pin generation `8374129a`; the new generation needs its review. |
 | `spicysearch/vendor`, RefSpec evidence, `spicy-docs`, `spicyengine`, `spicyregs-web`, DocSpec, BillTrax | a vendored dictionary copy and research files; no code reads the tables | Fine. |
 

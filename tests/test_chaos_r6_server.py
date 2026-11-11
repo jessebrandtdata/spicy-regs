@@ -29,7 +29,6 @@ VALID = {
     "query_sql": {"sql": "SELECT 1"},
     "lookup_agency": {"namespace": "regulations.gov:agency", "identifier": "OPM"},
     "resolve_document_citations": {"document_kind": "govinfo_package", "document_key": "CRPT-example"},
-    "read_receipt_fields": {"table": "fcc_filings", "keys": [{"id_submission": "26110079156"}], "fields": ["filing_url"]},
 }
 
 

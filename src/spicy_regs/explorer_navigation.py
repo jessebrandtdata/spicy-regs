@@ -36,10 +36,12 @@ def route(table: str, columns: tuple[str, ...], keys: tuple[dict, ...], *guards:
 
 
 def array(identifier: str, source: str, fields: tuple[str, ...], targets: tuple[dict, ...], *,
-          meaning: str, receipt_fields: tuple[str, ...] = (), element_path: tuple[str, ...] = (),
+          meaning: str, element_path: tuple[str, ...] = (),
           mode: str = "array", candidates: bool = False) -> dict:
+    # receiptFields named what the site's receipt lookup read beside a reference; the lookup is retired
+    # (ss-vse3, 2026-11-10), and the key stays, empty, because the deployed site refuses a recipe without it.
     return {"id": identifier, "source": source, "fields": list(fields), "targets": list(targets),
-            "mode": mode, "candidates": candidates, "meaning": meaning, "receiptFields": list(receipt_fields),
+            "mode": mode, "candidates": candidates, "meaning": meaning, "receiptFields": [],
             "elementPath": list(element_path), "ruleVersion": "source-navigation/1"}
 
 
@@ -230,7 +232,7 @@ def _fec_witness_scope():
 
 
 def declarations(processing_joins: tuple = ()) -> list[dict]:
-    """Explicit source relationships; receipt fields retain inspection context only."""
+    """Explicit source relationships, over published main fields only."""
     specs = [
         array("meeting_nominations", "committee_meetings", ("nomination_references_json",), (NOMINATION,),
               meaning="Nominations explicitly listed for this meeting; nomination partitions stay distinct."),
@@ -260,8 +262,7 @@ def declarations(processing_joins: tuple = ()) -> list[dict]:
               meaning="Recorded extraction URLs. Status and digest describe retained results; public capture and text access remain unverified."),
         array("house_communication_record", "house_communications", (),
               (route("record_issues", ("package_id",), (key(part("record_package_id", row=True)),)),),
-              meaning="The exact Congressional Record package that supplied this communication.",
-              receipt_fields=("record_package_id", "record_granule_id", "record_entry_text"), mode="row"),
+              meaning="The exact Congressional Record package that supplied this communication.", mode="row"),
         array("member_fec_ids", "members", ("fec_ids", "fec_ids_json"),
               (route("fec_candidate_history", ("candidate_id",), (key(part(""), pattern=r"[HSP][0-9][A-Z0-9]{7}"),)),),
               meaning="Source-asserted candidate IDs; returns retained cycle observations, not an adjudicated person identity."),
@@ -321,7 +322,6 @@ def declarations(processing_joins: tuple = ()) -> list[dict]:
                            guard("target_status", values=("found", "ambiguous")))
                      for r in {(r.table, r.identity): r for r in NATIVE_ROUTES.values()}.values()]
     specs.append(array("native_legal_targets", "native_legal_references", ("target_candidates", "target_candidates_json"), tuple(legal_targets),
-                       receipt_fields=("target_candidates_json",),
                        candidates=True,
                        meaning="Recorded candidate identities, including ambiguous matches. Links check the currently selected target table; recorded resolution and pins do not prove a current match. Missing, unsupported and unchecked outcomes remain visible."))
     specs.append(array("native_legal_read", "native_legal_references", (),
@@ -680,8 +680,7 @@ def _bind_fec_witness_generation(spec, target, generation_pins):
 def published_navigation(specs, schemas, identities=None, *, generation_pins=None):
     """Admit only main-field routes and retain dispositions for unpublished sources.
 
-    Receipt fields describe separately inspectable evidence. They never recover
-    operational keys or make a source route available. Native nested fields bind
+    Only published fields recover keys or make a source route available. Native nested fields bind
     against selected schemas; JSON paths remain guarded per source occurrence.
     """
     identities = identities or {}
@@ -693,10 +692,6 @@ def published_navigation(specs, schemas, identities=None, *, generation_pins=Non
         spec["field"] = next((name for name in spec["fields"] if name in fields), None)
         for target in spec["targets"]:
             generation_available = _bind_fec_witness_generation(spec, target, generation_pins)
-            if target["table"].startswith("@receipt:"):
-                dataset = target["table"].removeprefix("@receipt:")
-                if set(target["columns"]) <= set(dict(schemas.get(dataset, []))):
-                    target["table"] = dataset
             main, nested = _dependencies(target, fields, spec["field"], spec["mode"], candidates=spec["candidates"])
             target["requiredMainFields"], target["requiredElementFields"] = main, nested
             target["sourceAvailable"] = spec["source"] in schemas and all(

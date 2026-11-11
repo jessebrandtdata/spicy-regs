@@ -41,7 +41,6 @@ def test_describe_table_uses_the_selected_generation_field_meaning(monkeypatch, 
         view: {"metadata": {"column_lineage": {"selected_pin": [table, column]}}}})
     monkeypatch.setattr(mcp_server, "_qualification", lambda *args, **kwargs: ({}, None))
     monkeypatch.setattr(mcp_server, "_table_joins", lambda *args, **kwargs: [])
-    monkeypatch.setattr(mcp_server.receipt_lookup, "selected_member", lambda *args, **kwargs: None)
     with duckdb.connect(config={"threads": 1, "memory_limit": "64MB"}) as con:
         con.execute(f'CREATE TABLE "{table}" ("{column}" VARCHAR)')
         con.execute(f'CREATE VIEW "{view}" AS SELECT "{column}" AS selected_pin FROM "{table}"')

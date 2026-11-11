@@ -15,7 +15,7 @@ One FCC ECFS submission, including comments, replies, ex-parte notices and lette
 
 | Column | Type | Description |
 | --- | --- | --- |
-| `id_submission` | `VARCHAR` | ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov (`https://www.fcc.gov/ecfs/filing/<id_submission>`, the former `filing_url` column) is kept in the filing's receipt, not in this table: ask `read_receipt_fields` for the field `filing_url`. |
+| `id_submission` | `VARCHAR` | ECFS submission id (e.g. `26109947027`). Primary key / dedup key. The filing's page on fcc.gov is `https://www.fcc.gov/ecfs/filing/<id_submission>`: the former `filing_url` column, which this table does not hold. |
 | `proceedings` | `STRUCT("name" VARCHAR, id_proceeding VARCHAR, bureau_code VARCHAR, bureau_name VARCHAR, created_date VARCHAR, date_closed VARCHAR, description VARCHAR, description_display VARCHAR, sunshine_start_date VARCHAR, sunshine_end_date VARCHAR, filing_status VARCHAR)[]` | Source-listed FCC proceedings with their names and identifiers; repeated occurrences remain distinct. Stored as native nested values; list order, repeated values, null and empty collections remain distinct. |
 | `submission_type` | `VARCHAR` | ECFS submission type description, e.g. `COMMENT`, `REPLY TO COMMENTS`, `NOTICE OF EXPARTE`. |
 | `express_comment` | `BOOLEAN` | Publisher express-comment flag, normalized to BOOLEAN. NULL means the publisher omitted the flag or supplied null; retained native evidence distinguishes those states. The flag alone does not establish document availability. |

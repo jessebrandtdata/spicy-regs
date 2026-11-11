@@ -13,7 +13,7 @@ import pyarrow.parquet as pq
 from spicy_regs import citation_receipts as inputs, mcp_server
 from tests.test_citation_receipts import select, occurrence
 from tests.test_mcp_server import _listed, _tool_data
-from tests.receipt_lookup_fixtures import index_of, published
+from tests.published_generation_fixtures import index_of, published
 
 
 def locked():
