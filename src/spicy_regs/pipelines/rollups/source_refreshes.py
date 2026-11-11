@@ -13,7 +13,8 @@ from os import getenv
 from pathlib import Path
 
 from spicy_regs.pipelines import (
-    administration_policy, executive_orders, grants_opportunities, house_disbursements, ofac, treasury_fiscal,
+    administration_policy, executive_orders, fec_financial_profiles, grants_opportunities, house_disbursements, ofac,
+    treasury_fiscal,
 )
 from spicy_regs.pipelines.raw_releases import (
     journal_snapshot_releases, published_before, restore_originals, snapshot_readers,
@@ -21,7 +22,9 @@ from spicy_regs.pipelines.raw_releases import (
 from spicy_regs.pipelines.rollups.base import RollupPipeline, Unchanged, make_rollup_app
 from spicy_regs.schemas.house_disbursements import PARTITION_COLUMNS as HOUSE_PARTITIONS, TABLES as HOUSE_TABLES
 from spicy_regs.sources import r2, retained_collections
-from spicy_regs.transforms import build_executive_orders, build_grants_opportunities, build_ofac, build_treasury_fiscal
+from spicy_regs.transforms import (
+    build_executive_orders, build_fec_financial_profiles, build_grants_opportunities, build_ofac, build_treasury_fiscal,
+)
 
 #: How many days back a Grants.gov run looks for the newest daily export before it reports the source as stalled.
 GRANTS_LOOKBACK_DAYS = 7
@@ -209,9 +212,33 @@ class HouseDisbursementsRollup(SourceRefreshRollup):
                                            transport=self.transport)
 
 
+class FecFinancialProfilesRollup(SourceRefreshRollup):
+    """Publish the FEC's current candidate and committee summary CSVs of a cycle as the family's profiles.
+
+    FEC overwrites both files every day, so the day's bytes are captured and their evidence sent to R2 before
+    anything parses them: a refused build keeps them. A run whose two downloads are the published bytes
+    publishes nothing; a file that lost more than ``MAX_ROW_LOSS`` of its published rows refuses.
+    """
+
+    name = fec_financial_profiles.FAMILY
+    output = build_fec_financial_profiles.OUTPUT
+    #: The one cycle the family holds (``select`` builds from one cycle's pair).
+    cycle = 2026
+
+    def build(self, output_dir: Path) -> Path:
+        evidence = self.evidence
+        captures = fec_financial_profiles.acquire([self.cycle], output_dir / "capture", transport=self.transport,
+                                                  publish=not self.skip_upload)["captures"]
+        if all(published_before(evidence, fec_financial_profiles.STAGE, item["response_sha256"]) for item in captures):
+            raise Unchanged(f"both {self.cycle} summary files are the published ones")
+        (published,) = self.published_tables(output_dir / "published")
+        return fec_financial_profiles.profiles_table(evidence, captures, output_dir, published=published)
+
+
 ofac_sanctions_app = make_rollup_app(OfacSanctionsRollup)
 grants_opportunities_app = make_rollup_app(GrantsOpportunitiesRollup)
 administration_policy_app = make_rollup_app(AdministrationPolicyRollup)
 treasury_fiscal_app = make_rollup_app(TreasuryFiscalRollup)
 executive_orders_app = make_rollup_app(ExecutiveOrdersRollup)
 house_disbursements_app = make_rollup_app(HouseDisbursementsRollup)
+fec_financial_profiles_app = make_rollup_app(FecFinancialProfilesRollup)

@@ -2,13 +2,13 @@
 
 These published families are refreshed from a workstation: `treasury-fiscal`,
 `administration-policy`, `ofac-sanctions`, `house-disbursements`,
-`grants-opportunities` and `executive-orders`. Each hand refresh is the same
-five steps: acquire, build, dry-run publish, publish, read back. What each
-command does and refuses is in the family's own page
+`grants-opportunities`, `executive-orders` and `fec-financial-profiles`. Each
+hand refresh is the same five steps: acquire, build, dry-run publish, publish,
+read back. What each command does and refuses is in the family's own page
 ([Treasury](treasury-fiscal.md), [administration policy](retained-collections.md),
 [OFAC](ofac-sanctions.md), [House](congressional-disbursements.md),
-[Grants](grants-opportunities.md), [executive orders](executive-orders.md));
-this page is only the order.
+[Grants](grants-opportunities.md), [executive orders](executive-orders.md),
+[FEC profiles](fec-financial-profiles.md)); this page is only the order.
 
 ## Before any family
 
@@ -259,6 +259,30 @@ The hosted `rollup-executive-orders.yml` runs on weekdays; it restores the
 published bodies from R2 source evidence and publishes nothing when nothing is
 new.
 
+## fec-financial-profiles
+
+Mirror it first (`--family fec-financial-profiles`, 10 MB). FEC rewrites both
+2026 summary CSVs about 10:15 UTC each day; `acquire` takes seconds (10 MB) and
+a capture record from an earlier `acquire` of the day serves as well. The build
+takes about 20 seconds and 650 MB of memory; a publish uploads the 10 MB table
+and both originals.
+
+```sh
+$UV python -m spicy_regs.pipelines.fec_financial_profiles acquire --cycle 2026 \
+  --output-dir "$WORK/fec-acquire" --captures-out "$WORK/fec-captures.json"
+$UV python -m spicy_regs.pipelines.fec_financial_profiles build --captures "$WORK/fec-captures.json" \
+  --cycle 2026 --read-index "$LIVE_INDEX" --output-dir "$WORK/fec-build"
+```
+
+The published table then holds this one pair. Compare the build with the live
+table by `entity_kind` and `entity_id` (or `profile_id`, which a refresh keeps):
+profiles the new files add or drop, and amounts and `period_end` that moved with
+newer reports. A file with more than 10% fewer rows than the live table records
+for its kind refuses; after reviewing it, `build --accept-shrink candidate` (or
+`committee`) accepts the loss. The fec-query tables stay at their September
+captures ([what that means for a
+reader](fec-financial-profiles.md#build-from-a-captured-pair)).
+
 ## After a publish
 
 Nothing in the repository fails when these go stale; each is prose or a
@@ -329,6 +353,7 @@ receive them.
 | `house-disbursements` | Captures the House's two listing pages and reads the published tables (162 MB); when the pages list a CSV the published rows lack, restores the published originals from R2 evidence, downloads the new ones and rebuilds every quarter | The pages list no new CSV |
 | `grants-opportunities` | Finds the newest daily export of the last seven days and publishes it as the one snapshot | That export date is published |
 | `executive-orders` | Lists every order the API serves, restores the published bodies from R2 evidence and fetches only the bodies the published generation lacks; scheduled on weekdays from the start | No order was added, changed or removed |
+| `fec-financial-profiles` | Downloads both 2026 summary CSVs and sends their evidence to R2 before parsing (a refused build keeps the day's files), then publishes them as the family's one pair; a file with more than 10% fewer rows than the live table refuses until a hand refresh accepts it | Both files are the published bytes |
 
 The Treasury run needs the three-table generation, so it can start only after
 the first hand refresh above. It adds debt days only: a new monthly statement
@@ -349,4 +374,7 @@ Schedules to add once the rehearsals pass, each beside `workflow_dispatch`:
 # rollup-administration-policy.yml
   schedule:
     - cron: '13 23 * * *'
+# rollup-fec-financial-profiles.yml: after FEC rewrites the summaries (about 10:15 UTC)
+  schedule:
+    - cron: '51 11 * * *'
 ```

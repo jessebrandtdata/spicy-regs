@@ -27,6 +27,7 @@ from spicy_regs.sources.publication import PublicationError
 LOCAL_FAMILIES = frozenset({
     "administration-policy",
     "executive-orders",
+    "fec-financial-profiles",
     "grants-opportunities",
     "house-disbursements",
     "ofac-sanctions",
