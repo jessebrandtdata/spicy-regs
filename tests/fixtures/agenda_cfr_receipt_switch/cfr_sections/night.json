@@ -1,0 +1,653 @@
+[
+{
+"granuleId": "CFR-2025-title40-vol9-chapI",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "ENVIRONMENTAL PROTECTION AGENCY (CONTINUED) (edited for the switch test)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-chapI-subchapC",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "AIR PROGRAMS (CONTINUED)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-chapI-toc-id4",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "STANDARDS OF PERFORMANCE FOR NEW STATIONARY SOURCES (CONTINUED)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appA",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Test Methods 1 through 2F",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appA-id10",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Test Methods 4 through 5I",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appA-id11",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Test Methods 6 through 10B",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appA-id12",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Test Methods 11 through 15A",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appA-id13",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Test Methods 16 through 18",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appA-id14",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Test Methods 19 through 25E",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appA-id15",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Test Methods 26 through 30B",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appA-id9",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Test Methods 2G through 3C",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appB",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Performance Specifications",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appC",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Determination of Emission Rate Change",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appD",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Required Emission Inventory Information",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appE",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "[Reserved]",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appF",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Quality Assurance Procedures",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appG",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Provisions for an Alternative Method of Demonstrating Compliance With 40 CFR 60.43 for the Newton Power Station of Central Illinois Public Service Company",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appH",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "[Reserved]",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appI",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Owner's Manuals and Temporary Labels for Wood Heaters Subject to Subparts AAA and QQQQ of Part 60",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appJ",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "[Reserved]",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-appK",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Determination of Volatile Organic Compound and Greenhouse Gas Leaks Using Optical Gas Imaging",
+"granuleClass": "APPENDIX",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-part60-toc-id7",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title40-vol9-toc-id2",
+"_package_id": "CFR-2025-title40-vol9",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-10T06:00:00Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-chapI",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "UNITED STATES FISH AND WILDLIFE SERVICE, DEPARTMENT OF THE INTERIOR (CONTINUED)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-chapI-subchapB",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "TAKING, POSSESSION, TRANSPORTATION, SALE, PURCHASE, BARTER, EXPORTATION, AND IMPORTATION OF WILDLIFE AND PLANTS (CONTINUED)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-chapI-toc-id4",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "ENDANGERED AND THREATENED WILDLIFE AND PLANTS",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartA",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Introduction and General Provisions",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartB",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Lists",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartC",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Endangered Wildlife",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartD",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Threatened Wildlife",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartE",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Similarity of Appearance",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartF",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Endangered Plants",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartG",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Threatened Plants",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartH",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Experimental Populations",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-subpartI",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Interagency Cooperation",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-part17-toc-id7",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-1",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Purpose of regulations.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-11",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Endangered and threatened wildlife.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-12",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Endangered and threatened plants.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-2",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Scope of regulations.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-21",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Prohibitions.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-22",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Permits for endangered species.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-23",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Economic hardship permits.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-3",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Definitions.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-31",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Prohibitions.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-32",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Permits for threatened species.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-4",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Pre-Act wildlife.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-40",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-mammals.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-41",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-birds.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-42",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-reptiles.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-43",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-amphibians.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-44",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-fishes.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-45",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-snails and clams.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-46",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-crustaceans.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-47",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-insects.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-48",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "[Reserved]",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-5",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Alaska natives.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-50",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "General.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-51",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Treatment as endangered or threatened.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-52",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Permits-similarity of appearance.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-6",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "State cooperative agreements. [Reserved]",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-61",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Prohibitions.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-62",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Permits for scientific purposes or for the enhancement of propagation or survival.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-63",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Economic hardship permits.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-7",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Raptor exemption.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-71",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Prohibitions.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-72",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Permits-general.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-73",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-flowering plants.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-74",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-conifers and cycads.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-75-17-78",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "[Reserved]",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-8",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Import exemption for threatened, CITES Appendix-II wildlife.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-80",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Definitions.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-81",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Listing.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-82",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Prohibitions.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-83",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Interagency cooperation.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-84",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-vertebrates.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-85",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Species-specific rules-invertebrates.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-86",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "[Reserved]",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-9",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Permit applications and information collection requirements.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-94",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Critical habitats.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-sec17-95",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Critical habitat-fish and wildlife.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol2-toc-id2",
+"_package_id": "CFR-2025-title50-vol2",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-07T20:00:43Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-chapI",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "UNITED STATES FISH AND WILDLIFE SERVICE, DEPARTMENT OF THE INTERIOR (CONTINUED)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T19:59:01Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-chapI-subchapB",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "TAKING, POSSESSION, TRANSPORTATION, SALE, PURCHASE, BARTER, EXPORTATION, AND IMPORTATION OF WILDLIFE AND PLANTS (CONTINUED)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T19:59:01Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-chapI-toc-id4",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-07T19:59:01Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-part17",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "ENDANGERED AND THREATENED WILDLIFE AND PLANTS (CONTINUED)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T19:59:01Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-part17-subpartI",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "Interagency Cooperation (Continued)",
+"granuleClass": "NODE",
+"lastModified": "2026-11-07T19:59:01Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-part17-toc-id7",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-07T19:59:01Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-sec17-96",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "Critical habitat-plants.",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T19:59:01Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-sec17-97-17-98",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "[Reserved]",
+"granuleClass": "CONTENT",
+"lastModified": "2026-11-07T19:59:01Z"
+},
+{
+"granuleId": "CFR-2025-title50-vol6-toc-id2",
+"_package_id": "CFR-2025-title50-vol6",
+"title": "Table Of Contents",
+"granuleClass": "TOC",
+"lastModified": "2026-11-07T19:59:01Z"
+}
+]

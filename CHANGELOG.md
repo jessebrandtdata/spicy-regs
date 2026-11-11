@@ -9,6 +9,24 @@ Entries link to the pull request that introduced the change.
 
 ### Changed
 
+- **The Unified Agenda and CFR sections tables publish without per-row
+  receipts** (ss-vse3). `unified_agenda` and `cfr_sections` are marked
+  `receipts_retired`. Their receipts held the builder's text row, which maps to
+  exactly the published table, and `url`, which on every row is a fixed
+  template of the row's identity: it is not promoted, and the dictionary states
+  the template. The builders are unchanged; their prior is now the published
+  table read back into their text shape (`RegulationsTableRollup`), and their
+  table is mapped once, in their order, with no receipt written. The CFR
+  placement marker and the agenda's edition-manifest digest move from the
+  receipts' input record to the table's file metadata; the CFR job's first
+  night places every package once because the last receipt-route table lacks
+  the marker. Each Unified Agenda edition file a run reads is now kept as
+  source evidence. The agenda job's limit falls from 60 to 30 minutes; CFR's
+  stays at 60, set by GovInfo's listing. The last generations with receipts
+  are pinned; `regulations_ingest` is removed. Equality and first-night checks:
+  `docs/agenda-cfr-receipt-archive.md`. Policies unchanged
+  (`regulations-native-v2`, `regulations-native-v1`).
+
 - **The eight lobbying tables publish without per-row receipts** (ss-vse3).
   `lobbying_filings` and its seven sibling tables are marked
   `receipts_retired`; the nightly re-uploaded 2.94 GB of receipts (16.3M rows,

@@ -17,10 +17,13 @@ from spicy_regs import native_conversion as conversion
 from spicy_regs.conversion_reads import ConversionReadOperation
 from spicy_regs.sources import publication
 from tests.test_native_conversion import (
-    BASE, BUCKET, CFR, MAIN, STATE, WHEEL, bucket as _bucket, convert, publish_old, stored,
+    BASE, BUCKET, CFR, MAIN, STATE, WHEEL, bucket as _bucket, cfr_on_its_receipt_route as _cfr_on_its_receipt_route,
+    convert, publish_old, stored,
 )
 
 bucket = _bucket
+#: cfr-sections on its former receipt route, this file's example family (autouse; tests/test_native_conversion.py).
+cfr_on_its_receipt_route = _cfr_on_its_receipt_route
 
 
 def prepare(tmp_path, monkeypatch, bucket):

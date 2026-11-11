@@ -63,11 +63,14 @@ class UnifiedAgendaReader(Reader):
         verbose: bool = False,
         transport: httpx.BaseTransport | None = None,
         on_source: Callable[[dict], object] | None = None,
+        evidence=None,
     ) -> None:
         self.editions = editions or (DEFAULT_EDITION,)
         self.verbose = verbose
         self.transport = transport
         self.on_source = on_source
+        #: A ``CaptureEvidence``: each edition file is retained as read, before it is parsed.
+        self.evidence = evidence
 
     def iter_records(self) -> Iterator[dict]:
         # Base CLI/MCP installations can import source names without the optional
@@ -95,6 +98,8 @@ class UnifiedAgendaReader(Reader):
         with UnifiedAgendaAcquirer(budget=budget, transport=self.transport) as source:
             for edition in self.editions:
                 acquired = source.acquire_edition(UnifiedAgendaEdition(edition))
+                if self.evidence is not None:
+                    self.evidence.capture(acquired.capture, stage="unified-agenda-edition", edition=edition)
                 rows = normalize_retained_edition(acquired.capture.body, edition=edition, on_source=self.on_source)
                 logger.info("Unified Agenda: edition {} yielded {:,} records", edition, len(rows))
                 yield from rows

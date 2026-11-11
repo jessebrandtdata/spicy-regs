@@ -25,7 +25,7 @@ from spicy_regs.transforms.build_rule_targets import build_rule_targets
 
 #: Sources read as their pinned published tables, never through receipts: every field a stage reads is a public
 #: column there, and their families stop publishing receipts (ss-vse3).
-PUBLISHED_SOURCES = ("federal_register.parquet", "fr_docket_links.parquet")
+PUBLISHED_SOURCES = ("federal_register.parquet", "unified_agenda.parquet", "fr_docket_links.parquet")
 
 
 def stage_text(dataset: str, path: Path) -> None:
@@ -161,8 +161,8 @@ class RulemakingDatasetPipeline(MaterializedDatasetPipeline):
             purge_urls([f"{public_url.rstrip('/')}/{publication.SNAPSHOT_POINTER}"])
 
     def _prime_sources(self, output_dir: Path) -> None:
-        """Restore stage inputs from one captured index: native pairs through their receipts, and the two
-        Register tables (``PUBLISHED_SOURCES``) as their pinned published tables."""
+        """Restore stage inputs from one captured index: native pairs through their receipts, and the Register and
+        agenda tables (``PUBLISHED_SOURCES``) as their pinned published tables, read back as the stages read them."""
         from contextlib import nullcontext
 
         from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
@@ -179,7 +179,8 @@ class RulemakingDatasetPipeline(MaterializedDatasetPipeline):
                 # A local run reads the table already beside it, as every materialized source does.
                 elif not (not public_url and (output_dir / key).exists()) and not r2.download(key, output_dir / key):
                     raise ValueError(f"Rulemaking requires published input {key}")
-        stage_text("federal_register", output_dir / "federal_register.parquet")
+        for dataset in ("federal_register", "unified_agenda"):
+            stage_text(dataset, output_dir / f"{dataset}.parquet")
 
     def _prime_previous_generation(self, output_dir: Path) -> dict | None:
         """Restore proceedings identity only from its admitted materialized pair."""
@@ -324,7 +325,6 @@ class RulemakingDatasetPipeline(MaterializedDatasetPipeline):
                 "timetable_json",
                 "first_action_date",
                 "next_action_date",
-                "url",
             ),
             "fr_docket_links.parquet": (
                 "document_number",

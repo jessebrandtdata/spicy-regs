@@ -209,7 +209,7 @@ def build_regulatory_agenda(
 
     observed_rins: set[str] = set()
     seen_dates: dict[str, set[str]] = defaultdict(set)
-    observation_keys: dict[str, set[tuple[str, str]]] = defaultdict(set)
+    observation_keys: dict[str, set[str]] = defaultdict(set)
     latest_agenda: dict[str, dict] = {}
     relationships: dict[tuple[str, str, str, str], dict] = {}
 
@@ -337,13 +337,12 @@ def build_regulatory_agenda(
 
     for row in iter_parquet_rows(
         paths["unified_agenda"],
-        columns=("rin", "agenda_edition", "url", "priority_category", "first_action_date", "next_action_date"),
+        columns=("rin", "agenda_edition", "priority_category", "first_action_date", "next_action_date"),
     ):
         rin = normalize_rin(row.get("rin"))
         if not rin:
             continue
         edition = str(row.get("agenda_edition") or "").strip()
-        url = str(row.get("url") or "").strip()
         edition_date = _agenda_date(edition)
         observe(
             rin,
@@ -351,7 +350,9 @@ def build_regulatory_agenda(
             row.get("first_action_date"),
             row.get("next_action_date"),
         )
-        observation_keys[rin].add((edition, url))
+        # One observation per edition: the page it was read from is a function of RIN and edition (ss-vse3; the
+        # former (edition, url) key counted the same on all 46,562 RINs of 2026-11-10).
+        observation_keys[rin].add(edition)
         if rin not in latest_agenda or edition > str(latest_agenda[rin].get("agenda_edition") or ""):
             latest_agenda[rin] = row
 
