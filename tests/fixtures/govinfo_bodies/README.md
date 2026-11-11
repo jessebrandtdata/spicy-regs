@@ -84,8 +84,8 @@ the `context` attribute is the publisher's own statement of *how*:
 at `~/Work/corpora/supply-2026-09-02/receipts/report-bill-linkage-2026-09-19/`
 — 146 requests, with its own README stating the method and the per-package
 verdicts. The restatements elsewhere in this repository (the transform
-docstring, the two dictionary entries and `PLAN.md`) cite that receipt rather
-than re-deriving the numbers.
+docstring and the two dictionary entries) cite that receipt rather than
+re-deriving the numbers.
 
 Offline tests establish behavior for these shapes; they do not establish
 coverage or continuing live availability. Replace the CRPT file only by
