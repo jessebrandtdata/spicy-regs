@@ -2386,12 +2386,14 @@ def build_bill_family(
             else evidence.transport(stage="bill-summary-bulk", max_bytes=bulk_budget.max_bytes),
         )
         prior_status, prior_billsum = prior_summary_pairs(prior_paths.get(REPLAYED_FROM_STATUS), billsum_scope)
-        fresh_status = {
-            (row["bill_id"], row["summary_version_code"])
-            for tables in families
-            for row in tables.bill_publisher_summaries
-            if row.get("source_schema_version") != BILLSUM_SCHEMA_CONTEXT
-        }
+        fresh_status: set[tuple[str, str]] = set()
+        for tables in families:
+            for row in tables.bill_publisher_summaries:
+                bill_id, version_code = row["bill_id"], row["summary_version_code"]
+                if row.get("source_schema_version") == BILLSUM_SCHEMA_CONTEXT:
+                    continue
+                if bill_id is not None and version_code is not None:
+                    fresh_status.add((bill_id, version_code))
         billsum = run_billsum_supplement(
             summary_source,
             billsum_scope,
