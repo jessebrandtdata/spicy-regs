@@ -79,6 +79,9 @@ def rows(path):
     return {(row["document_number"], row["publication_date"]): row for row in pq.read_table(path).to_pylist()}
 
 
+#: The v1 prior lacks every column that left receipts; carried, its rows would publish NULL for them.
+V1_REFUSAL = (r"lacks \['html_url', 'pdf_url', 'body_html_url', 'source_sha256', 'regulations_dot_gov_info_json'\], "
+              r"which a generation before 2026-11-10 held only in its receipts")
 #: A Register row's identity, and a link row's: a printed label may repeat, so its position is part of it.
 KEY = ("document_number", "publication_date")
 LINK_KEY = ("docket_id", *KEY, "docket_source_ordinal")
@@ -151,56 +154,65 @@ def assert_edge_rows(table, *, night):
     assert len(held) == MANIFEST["prior"]["rows"] + (6 if night == 1 else 13)
 
 
-def test_the_receipt_route_fills_the_promoted_columns_from_an_earlier_policy_prior(tmp_path, monkeypatch):
-    """Step 1's nightly: the prior restores through its receipts although its policy is earlier (no replay marker),
-    one run gives every row the values its receipts held, and the next run carries them. ``expected/`` is this."""
+def journal_events(root, family, name):
+    """Every event ``name`` in the journal ``family``'s generation published with its inputs under ``root``."""
+    [journal] = (root / "generation-inputs" / family).glob("*/evidence-0/journal.jsonl")
+    return [event for line in journal.read_text().splitlines() if (event := json.loads(line)).get("event") == name]
+
+
+def test_the_plain_route_publishes_what_the_receipt_route_published(tmp_path, monkeypatch):
+    """Step 3 on the fixture, through ``receipt_switch``: the prior is the public table the receipt route published
+    after night 1 (``expected/night-1``), handed over with no receipts file at all; night 2's page through the plain
+    route equals the table the receipt route published from the same inputs, and so do the links built from it."""
     from spicy_regs.pipelines.rollups.federal_register import FederalRegisterRollup
     from spicy_regs.pipelines.rollups.fr_docket_links import FrDocketLinksRollup
-    from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
-    from spicy_regs.selected_generations import SelectedDataset, remember_selection
+    from spicy_regs.receipt_switch import receipt_files, table_differences
 
     root = tmp_path / "output"
-    prior = tmp_path / "prior"
-    shutil.copytree(FIXTURE / "prior", prior)
-    assert not set(PROMOTED) & set(pq.read_schema(prior / "federal_register.parquet").names)
-    remember_selection(root, [SelectedDataset("federal_register", (prior / "federal_register.parquet",),
-                                              prior / "etl_receipts.parquet", MANIFEST["prior"]["generationId"])])
-    # The selected prior is carried, never replay-required: the bill-family freeze of ss-aj7t cannot happen here.
-    selected = SelectedPriors(tmp_path / "probe", root=root, public_url="")
-    assert selected.get("federal_register") is not None and not selected.replaced
-
-    serve(monkeypatch, tmp_path, "night-1")
-    FederalRegisterRollup(output_dir=root).run()
-    first = published(root)
-    assert (first / "etl_receipts.parquet").is_file()
-    assert pq.read_schema(first / "federal_register.parquet").names[-5:] == list(PROMOTED)
-    assert_edge_rows(first / "federal_register.parquet", night=1)
-    assert_same_table(first / "federal_register.parquet", FIXTURE / "expected/night-1.parquet")
-    # Every row night 1 did not re-read holds the values its receipt held, read through admission.
-    assert prior_receipt_copies(first / "federal_register.parquet", reread=("night-1",)) == []
-    # The links read the published Register table; nothing of the Register's is restored through receipts.
-    with monkeypatch.context() as links_only:
-        links_only.setattr(SelectedPriors, "get", lambda self, dataset: pytest.fail(f"restored {dataset}"))
-        FrDocketLinksRollup(output_dir=root).run()
-    first_links = published(root, before=(first,))
-    assert_links(first_links / "fr_docket_links.parquet", first / "federal_register.parquet")
-    # A declared input, pinned as the generation's parent at the bytes read: the table the Register run published.
-    assert FrDocketLinksRollup.inputs == FrDocketLinksRollup.published_inputs == ("federal_register.parquet",)
-    parents = json.loads((first_links / "artifact.json").read_text())["spec"]["parents"]
-    assert parents["federal_register.parquet"]["sha256"] == "sha256:" + hashlib.sha256(
-        (first / "federal_register.parquet").read_bytes()).hexdigest()
-    assert_same_table(first_links / "fr_docket_links.parquet", FIXTURE / "expected/links-night-1.parquet")
-
+    root.mkdir()
+    shutil.copyfile(FIXTURE / "expected/night-1.parquet", root / "federal_register.parquet")
     serve(monkeypatch, tmp_path, "night-2")
     FederalRegisterRollup(output_dir=root).run()
-    second = published(root, before=(first, first_links))
-    assert_edge_rows(second / "federal_register.parquet", night=2)
-    assert_same_table(second / "federal_register.parquet", FIXTURE / "expected/night-2.parquet")
-    assert prior_receipt_copies(second / "federal_register.parquet", reread=("night-1", "night-2")) == []
+    register = published(root)
+    assert table_differences(register / "federal_register.parquet", FIXTURE / "expected/night-2.parquet",
+                             key=KEY) == []
+    assert_edge_rows(register / "federal_register.parquet", night=2)
+    # Rows neither night re-read carry the values the 2026-10-30 receipts held, read through their admission.
+    assert prior_receipt_copies(register / "federal_register.parquet", reread=("night-1", "night-2")) == []
+    # The journal names the page read and counts the merge.
+    [pages] = journal_events(root, "federal-register", "federal-register-pages")
+    # The stand-in fetcher answers every request with the one page, so each page entry names it.
+    assert {page["sha256"] for page in pages["pages"]} == {MANIFEST["pages"]["night-2"]["sha256"]}
+    assert MANIFEST["pages"]["night-2"]["records"] in [page["records"] for page in pages["pages"]]
+    [merge] = journal_events(root, "federal-register", "federal-register-merge")
+    assert {key: merge[key] for key in ("prior_rows", "read_rows", "new_rows", "rows")} == {
+        "prior_rows": 170, "read_rows": MANIFEST["pages"]["night-2"]["records"], "new_rows": 7, "rows": 177}
+
     FrDocketLinksRollup(output_dir=root).run()
-    second_links = published(root, before=(first, first_links, second))
-    assert_links(second_links / "fr_docket_links.parquet", second / "federal_register.parquet")
-    assert_same_table(second_links / "fr_docket_links.parquet", FIXTURE / "expected/links-night-2.parquet")
+    links = published(root, before=(register,))
+    assert table_differences(links / "fr_docket_links.parquet", FIXTURE / "expected/links-night-2.parquet",
+                             key=LINK_KEY) == []
+    assert_links(links / "fr_docket_links.parquet", register / "federal_register.parquet")
+    parents = json.loads((links / "artifact.json").read_text())["spec"]["parents"]
+    assert parents["federal_register.parquet"]["sha256"] == "sha256:" + hashlib.sha256(
+        (register / "federal_register.parquet").read_bytes()).hexdigest()
+    # Neither generation states receipts, and no receipts file was written or fetched anywhere under the run.
+    for generation in (register, links):
+        assert "etlReceipts" not in json.loads((generation / "artifact.json").read_text())["spec"]
+    assert receipt_files(root) == []
+
+
+def test_the_plain_route_refuses_a_prior_published_before_the_promoted_columns(tmp_path, monkeypatch):
+    """Step 3 merges only after step 1's night: carried, such a prior would publish NULL where receipts held values."""
+    from spicy_regs.pipelines.rollups.federal_register import FederalRegisterRollup
+
+    root = tmp_path / "output"
+    root.mkdir()
+    shutil.copyfile(FIXTURE / "prior/federal_register.parquet", root / "federal_register.parquet")
+    serve(monkeypatch, tmp_path, "night-1")
+    with pytest.raises(ValueError, match=V1_REFUSAL):
+        FederalRegisterRollup(output_dir=root).run()
+    assert not (root / "generations").exists() or not list((root / "generations").iterdir())
 
 
 def stored(remote, monkeypatch):
@@ -230,7 +242,7 @@ def stored(remote, monkeypatch):
 
 def publish_prior(remote, monkeypatch, tmp_path):
     """Put the fixture's pair in the bucket as main published it: under the policy it was written with."""
-    from spicy_regs import etl_policy_registry
+    from spicy_regs import etl_policy_registry, subject_catalog
     from spicy_regs.etl_receipts import receipt_policies
     from spicy_regs.generations import build_generation
     from spicy_regs.sources import publication
@@ -242,38 +254,13 @@ def publish_prior(remote, monkeypatch, tmp_path):
     directory = tmp_path / "prior-generation"
     with monkeypatch.context() as as_published:
         as_published.setattr(etl_policy_registry, "installed_policies", lambda: {"federal_register": earlier})
+        as_published.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset())
         build_generation(
             directory, family="federal-register", files=[FIXTURE / "prior/federal_register.parquet"],
             expected_keys=["federal_register.parquet"], receipt_path=FIXTURE / "prior/etl_receipts.parquet",
             receipt_policies=[earlier], receipt_generation_id=MANIFEST["prior"]["generationId"])
         publication.publish_generation(directory, client=remote, bucket="spicy-regs",
                                        prior_index=publication.empty_index())
-
-
-def test_publication_accepts_the_promoted_columns_over_the_earlier_policy_prior(tmp_path, monkeypatch, remote):
-    """The step-1 generation against a prior of the live shape: fewer columns, receipts owned, an earlier policy.
-    Its columns differ, so the shrink guard's rows-and-columns rule does not apply and the ordinary byte ratio
-    holds (the table grows here, as it will live: the promoted columns were 44 MB of receipts)."""
-    from spicy_regs.pipelines.rollups.federal_register import FederalRegisterRollup
-
-    index = stored(remote, monkeypatch)
-    publish_prior(remote, monkeypatch, tmp_path)
-    before = index()["families"]["federal-register"]
-    assert before["etlReceipts"]["datasets"] == ["federal_register"]
-    serve(monkeypatch, tmp_path, "night-1")
-    monkeypatch.setenv("R2_PUBLIC_URL", "https://example.test")
-    FederalRegisterRollup(output_dir=tmp_path / "output", skip_upload=False).run()
-    after = index()["families"]["federal-register"]
-    assert after["artifactDigest"] != before["artifactDigest"]
-    assert after["etlReceipts"]["datasets"] == ["federal_register"]
-    table, prior = after["tables"]["federal_register.parquet"], before["tables"]["federal_register.parquet"]
-    # Every published column is kept. This v1 cut also gains v2's three; the promoted five are the last.
-    assert [column for column in table["columns"] if column in prior["columns"]] == prior["columns"]
-    assert {name for name, _ in table["columns"]} - {name for name, _ in prior["columns"]} == {
-        "president_json", "disposition_notes", "executive_order_notes", *PROMOTED}
-    assert [name for name, _ in table["columns"][-5:]] == list(PROMOTED)
-    assert (table["rows"], prior["rows"]) == (170, 164) and table["byteSize"] > prior["byteSize"]
-    assert_same_table(published(tmp_path / "output") / "federal_register.parquet", FIXTURE / "expected/night-1.parquet")
 
 
 def test_the_rulemaking_stages_read_the_published_table_as_they_read_the_restored_one(tmp_path):
@@ -342,11 +329,14 @@ def test_receipts_leave_a_published_table_only_by_its_retired_marker_and_never_r
 
     before = index()["families"]["federal-register"]
     # Unmarked, a generation without receipts is refused before it is even built: the policy still requires them.
-    with pytest.raises(ValueError, match="Registered datasets require ETL receipts"):
-        publish("unmarked", FIXTURE / "expected/night-1.parquet")
+    with monkeypatch.context() as unmarked:
+        unmarked.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset())
+        with pytest.raises(ValueError, match="Registered datasets require ETL receipts"):
+            publish("unmarked", FIXTURE / "expected/night-1.parquet")
     assert index()["families"]["federal-register"] == before
 
-    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: frozenset({"federal_register"}))
+    # Marked, as its installed policy file now is; the archive pins the generation its receipts leave.
+    assert "federal_register" in subject_catalog.retired_receipt_datasets()
     from tests.test_receipts_retired import _pin, pin_archive
 
     pin_archive(monkeypatch, tmp_path, {"federal_register": _pin("federal-register", before["artifactDigest"])})
@@ -405,59 +395,49 @@ def test_a_retirement_covers_only_the_tables_it_marks(tmp_path, monkeypatch):
                          receipt_policies=policies[:1], receipt_generation_id="build-1")
 
 
-def test_links_refuse_a_register_table_that_predates_the_promoted_columns(tmp_path):
-    """The live table's shape on the day of the merge: 38 columns under regulations-native-v2, no html_url.
-
-    The standalone "Rollup — fr_docket_links" workflow, run before the first v3 Register generation, pins exactly
-    that; it failed in DuckDB's binder (``"fr" does not have a column named "html_url"``)."""
-    import pyarrow as pa
-
-    from spicy_regs.etl_receipts import receipt_policies
-    from spicy_regs.transforms.build_fr_docket_links import build_fr_docket_links
-    from spicy_regs.transforms.regulations_receipts import policy
-    from spicy_regs.transforms.regulations_shape import shape_record
-
-    [live] = [p for p in receipt_policies(policy("federal_register")) if p.policy_version == "regulations-native-v2"]
-    assert len(live.subject_schema.names) == 38 and "html_url" not in live.subject_schema.names
-    row = shape_record("federal_register", {"document_number": "2026-00001", "publication_date": "2026-01-02",
-                                            "docket_ids_json": '["EPA-2026-0001"]'})
-    pq.write_table(pa.Table.from_pylist([{name: row.get(name) for name in live.subject_schema.names}],
-                                        schema=live.subject_schema), tmp_path / "federal_register.parquet")
-    with pytest.raises(ValueError, match=r"predates its promoted columns \(html_url, pdf_url\).*must publish first"):
-        build_fr_docket_links(tmp_path)
-    assert not (tmp_path / "fr_docket_links.parquet").exists()
-
-
-def test_the_hosted_links_job_pins_the_published_register_table_and_waits_for_its_promotion(
-        tmp_path, monkeypatch, remote):
-    """Hosted mode against the fake bucket: the links read the Register table the index pins, by download, and
-    record it as their parent with its family and generation. Before the Register job has published its promoted
-    columns the links job refuses and publishes nothing."""
+def test_both_hosted_jobs_merge_at_the_pinned_public_table_and_publish_no_receipts(tmp_path, monkeypatch, remote):
+    """Hosted mode against the fake bucket, on the night the switch merges. The live prior is the receipt route's
+    last generation; the Register job refuses one that predates the promoted columns and publishes nothing, then
+    over the promoted table it publishes night 2 without receipts, and the links job pins that table as its parent."""
+    from spicy_regs.generations import build_generation
     from spicy_regs.pipelines.rollups.federal_register import FederalRegisterRollup
     from spicy_regs.pipelines.rollups.fr_docket_links import FrDocketLinksRollup
-    from spicy_regs.pipelines.rollups.subject_receipts import SelectedPriors
+    from spicy_regs.receipt_switch import table_differences
     from spicy_regs.sources import publication
 
     index = stored(remote, monkeypatch)
     publish_prior(remote, monkeypatch, tmp_path)
-    monkeypatch.setenv("R2_PUBLIC_URL", "https://example.test")
-    with pytest.raises(ValueError, match="predates its promoted columns"):
-        FrDocketLinksRollup(output_dir=tmp_path / "early", skip_upload=False).run()
-    assert "fr-docket-links" not in index()["families"]
-
+    before = index()["families"]["federal-register"]
     serve(monkeypatch, tmp_path, "night-1")
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://example.test")
+    with pytest.raises(ValueError, match=V1_REFUSAL):
+        FederalRegisterRollup(output_dir=tmp_path / "early", skip_upload=False).run()
+    assert index()["families"]["federal-register"] == before
+
+    # Step 1's night published the promoted table; this one is the first without receipts.
+    (tmp_path / "night-1").mkdir()
+    shutil.copyfile(FIXTURE / "expected/night-1.parquet", tmp_path / "night-1/federal_register.parquet")
+    build_generation(tmp_path / "promoted", family="federal-register",
+                     files=[tmp_path / "night-1/federal_register.parquet"], expected_keys=["federal_register.parquet"])
+    from tests.test_receipts_retired import _pin, pin_archive
+
+    # The receipts leave here: the archive must pin the generation they leave in, the live one (ss-ag1j review).
+    pin_archive(monkeypatch, tmp_path, {"federal_register": _pin("federal-register", before["artifactDigest"])})
+    publication.publish_generation(tmp_path / "promoted", client=remote, bucket="spicy-regs", prior_index=index())
+    serve(monkeypatch, tmp_path, "night-2")
     monkeypatch.setenv("R2_PUBLIC_URL", "https://example.test")
     FederalRegisterRollup(output_dir=tmp_path / "register", skip_upload=False).run()
     register = index()["families"]["federal-register"]
-    with monkeypatch.context() as links_only:
-        links_only.setattr(SelectedPriors, "get", lambda self, dataset: pytest.fail(f"restored {dataset}"))
-        FrDocketLinksRollup(output_dir=tmp_path / "links", skip_upload=False).run()
+    assert "etlReceipts" not in register and register["tables"]["federal_register.parquet"]["rows"] == 177
+    assert table_differences(published(tmp_path / "register") / "federal_register.parquet",
+                             FIXTURE / "expected/night-2.parquet", key=KEY) == []
+    FrDocketLinksRollup(output_dir=tmp_path / "links", skip_upload=False).run()
     links = index()["families"]["fr-docket-links"]
-    assert links["etlReceipts"]["datasets"] == ["fr_docket_links"]
+    assert "etlReceipts" not in links
     root = publication.family_root(remote.objects[links["prefix"] + "/artifact.json"], links)
     table = register["tables"]["federal_register.parquet"]
     assert root["spec"]["parents"] == {"federal_register.parquet": {
         "sha256": table["sha256"], "byteSize": table["byteSize"],
         "family": "federal-register", "artifactDigest": register["artifactDigest"]}}
-    assert_same_table(published(tmp_path / "links") / "fr_docket_links.parquet",
-                      FIXTURE / "expected/links-night-1.parquet")
+    assert table_differences(published(tmp_path / "links") / "fr_docket_links.parquet",
+                             FIXTURE / "expected/links-night-2.parquet", key=LINK_KEY) == []

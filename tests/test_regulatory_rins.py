@@ -42,7 +42,7 @@ def test_native_federal_register_keeps_every_rin_in_proceeding(tmp_path):
     assert native["regulation_id_numbers"] == ["3206-AO36", "3206-AO80"]
     shaped = project_federal_register_document(native)
     assert json.loads(shaped["regulation_id_numbers_json"] or "null") == native["regulation_id_numbers"]
-    fr_path = build_federal_register(tmp_path, documents=lambda since: [native], download_prior=lambda *args: False)
+    fr_path = build_federal_register(tmp_path, documents=lambda since: [native])
     [hosted] = pq.read_table(fr_path).to_pylist()
     assert hosted["rin"] == "3206-AO36"
     assert json.loads(hosted["regulation_id_numbers_json"] or "null") == native["regulation_id_numbers"]
