@@ -6,7 +6,7 @@ import pyarrow as pa
 import pytest
 
 from spicy_regs.congress_subjects import (
-    INPUT_COLUMNS, NATIVE, PROCESSING, RECEIPT_ONLY, map_record, subject_schema,
+    INPUT_COLUMNS, NATIVE, PROCESSING, PROMOTED, RECEIPT_ONLY, map_record, subject_schema,
 )
 
 
@@ -20,7 +20,8 @@ def test_every_declared_field_has_a_destination_and_unknown_fields_refuse(datase
     else:
         assert mapped.subject is not None
         assert set(mapped.subject) == set(subject_schema(dataset).names)
-        assert not set(mapped.subject) & PROCESSING[dataset]
+        # A field the receipts alone held stays out, unless its table publishes it since its receipts retired.
+        assert set(mapped.subject) & PROCESSING[dataset] == set(PROMOTED.get(dataset, ())) & PROCESSING[dataset]
     with pytest.raises(ValueError, match='unclassified source fields'):
         map_record(dataset, raw | {'unreviewed_property': 'new fact'})
 

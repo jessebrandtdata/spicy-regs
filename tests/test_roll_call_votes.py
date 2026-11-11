@@ -1512,7 +1512,7 @@ def test_a_dispatch_names_its_chambers_and_cap_and_refuses_anything_else(monkeyp
     def binding(dataset):
         return {"dataset": dataset}
 
-    monkeypatch.setattr(rollup.RollCallVotesRollup, "build_receipts",
+    monkeypatch.setattr(rollup.RollCallVotesRollup, "build_tables",
                         lambda self, directory, builder, **kwargs: builder(directory, selected_input=binding, **kwargs))
     monkeypatch.setattr(rollup, "build_roll_call_votes", lambda output_dir, **kwargs: seen.update(kwargs) or ())
     rollup.RollCallVotesRollup().build(Path("unused"))

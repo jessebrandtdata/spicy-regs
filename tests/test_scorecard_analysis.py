@@ -15,6 +15,10 @@ from spicy_regs.sources import publication as pub
 from spicy_regs.transforms.build_scorecard_analysis import _read
 from tests.generation_fakes import Store
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def test_old_member_artifact_reports_missing_votesmart_column(tmp_path):
     path = tmp_path / "members.parquet"
@@ -24,7 +28,12 @@ def test_old_member_artifact_reports_missing_votesmart_column(tmp_path):
         _read([path], OFFICIAL_COLUMNS["members"])
 
 
-def _inputs(tmp_path, *, row_overrides=None):
+def _inputs(tmp_path, *, row_overrides=None, published=frozenset()):
+    """Published scorecards and official inputs; the ``published`` official tables as a family without receipts.
+
+    Those are mapped to their public tables (``congress_tables.to_public``) as a family whose receipts are retired
+    publishes them (ss-vse3); every other official table is written with its receipts, as before.
+    """
     source = tmp_path / "inputs"
     source.mkdir()
     provenance = {
@@ -94,7 +103,7 @@ def _inputs(tmp_path, *, row_overrides=None):
     store = Store()
     index = pub.publish_generation(scorecard_generation, client=store, bucket='test', prior_index=pub.empty_index())
 
-    files, receipts = [], []
+    files, receipts, plain = [], [], []
     official_names = (*OFFICIAL_COLUMNS, "member_votes", "bill_cosponsors")
     for name in official_names:
         partitions = [('118', [{'bill_id': '118-hr-1', 'congress': '118'}]),
@@ -107,6 +116,13 @@ def _inputs(tmp_path, *, row_overrides=None):
                              "bill_cosponsors": ("bill_id", "cosponsor_index", "bioguide_id", "sponsorship_date", "sponsorship_withdrawn_date")}
             schema = pa.schema([(c, pa.string()) for c in dict.fromkeys((*OFFICIAL_COLUMNS.get(name, extra_columns.get(name, ())), *(records[0] if records else ())))])
             pq.write_table(pa.Table.from_pylist(records, schema=schema), raw)
+            if name in published:
+                from spicy_regs.congress_tables import to_public
+
+                (source / 'plain').mkdir(exist_ok=True)
+                to_public(name, raw, source / 'plain' / (name + '.parquet'))
+                plain.append(source / 'plain' / (name + '.parquet'))
+                continue
             subject, receipt = write_congress_dataset(raw, source / (raw.stem + '-native'),
                 dataset=name, generation_id='official-v1')
             receipts.append(receipt)
@@ -124,8 +140,13 @@ def _inputs(tmp_path, *, row_overrides=None):
         expected_keys=tuple(p.name if p.is_file() else p.name + '.parquet' for p in files),
         partitioned={'congress_bills.parquet': ('congress',)},
         receipt_path=combine_receipts(receipts, source / 'official-receipts.parquet'),
-        receipt_policies=[policy(name) for name in official_names], receipt_generation_id='official-v1')
+        receipt_policies=[policy(name) for name in official_names if name not in published],
+        receipt_generation_id='official-v1')
     index = pub.publish_generation(artifact, client=store, bucket='test', prior_index=index)
+    if plain:
+        build_generation(tmp_path / 'published-plain', family='test-plain-inputs', files=plain,
+                         expected_keys=[path.name for path in plain])
+        index = pub.publish_generation(tmp_path / 'published-plain', client=store, bucket='test', prior_index=index)
     return store, index
 
 

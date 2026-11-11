@@ -23,3 +23,5 @@ One row per term a legislator served, in the crosswalk's own order.
 | `term_state` | `VARCHAR` | State this term was served for. |
 | `term_party` | `VARCHAR` | The separate source term-level party assertion, not a dated history. |
 | `term_district` | `VARCHAR` | District for this term, spelled as the publisher does; absent for a Senate term. |
+| `observed_at` | `VARCHAR` | The parent capture's instant, carried so a term list versions with the member row it came from. |
+| `party_affiliations_state` | `VARCHAR` | Nested list state: unread, absent, null, empty or populated. |

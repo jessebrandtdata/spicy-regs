@@ -160,16 +160,14 @@ def read_markers() -> tuple[ReadMarker, ...]:
     """Every read marker a builder or view already acts on, from its own definition.
 
     ``detail_read`` governs the list a field-state view reads with it and the lists a Congress.gov index shaper
-    leaves NULL for a read detail that states none (``build_congress_index._stale_sql``'s derivation). A roll
-    call's read columns are stated by every captured file of its chamber, so a NULL in any says the row predates
-    their read: they govern themselves, and nothing declares which other columns the same file backs. The
+    leaves NULL for a read detail that states none (``build_congress_index._stale_sql``'s derivation). The
     committee-report and citation read records (``committee_report_reads``, ``document_citation_reads``) are rows
-    of another dataset's receipts, and are not wired here.
+    of another dataset's receipts, and are not wired here. ``roll_call_votes``' read columns had a marker until its
+    receipts were retired (ss-vse3); its dictionary entry states the same rule for its own columns.
     """
     from spicy_regs.relationship_views.congress import CONGRESS_RELATIONSHIPS
     from spicy_regs.relationship_views.regulatory import REGULATORY_RELATIONSHIPS
     from spicy_regs.transforms.build_congress_index import DETAIL_READ, INDEX_SPECS
-    from spicy_regs.transforms.build_roll_call_votes import _READ_COLUMNS
 
     detail: dict[str, list[str]] = {}
     for view in (*CONGRESS_RELATIONSHIPS, *REGULATORY_RELATIONSHIPS):
@@ -182,18 +180,11 @@ def read_markers() -> tuple[ReadMarker, ...]:
             unstated = spec.shape({}, {})
             detail.setdefault(table, []).extend(
                 column for column, value in unstated.items() if value is None and column.endswith("_json"))
-    markers = [
+    return tuple(
         ReadMarker(table, (DETAIL_READ,), tuple(dict.fromkeys(fields)), read_value="true", empty_unread=True,
                    basis=f"{DETAIL_READ} is 'true' on a row whose Congress.gov detail record was read.")
         for table, fields in detail.items()
-    ]
-    markers.extend(
-        ReadMarker("roll_call_votes", columns, columns, where=(("chamber", chamber),),
-                   basis=f"Every captured {chamber} vote file states these columns ('' at least), so a NULL in "
-                         "any says the row was published before they were read. It speaks for these columns "
-                         "only, not for the row's other file-backed fields.")
-        for chamber, columns in _READ_COLUMNS.items())
-    return tuple(markers)
+    )
 
 
 def _prose() -> dict[str, dict[str, str]]:

@@ -16,6 +16,16 @@ from spicy_regs.sources import publication
 PROJECTED_NATIVE_OFFICIAL_TABLES = frozenset({"congress_bills", "amendments", "roll_call_votes"})
 
 
+def published_input(entry: Mapping, name: str) -> bool:
+    """Whether input ``name`` is read as its published table: its receipts are retired and its family lists none.
+
+    Until that family's first generation without them, the receipts it still lists are read as before (ss-vse3).
+    """
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    return name in retired_receipt_datasets() and name not in entry.get("etlReceipts", {}).get("datasets", ())
+
+
 def read_published_native_resolver_rows(snapshot, name, paths):
     """Read complete pinned main fields when the resolver needs no processing fields.
 
@@ -24,13 +34,17 @@ def read_published_native_resolver_rows(snapshot, name, paths):
     This path admits exact native schemas, bytes and populations, and does not
     claim to revalidate source receipts or reconstruct the original source row.
     """
-    from spicy_regs.congress_receipts import policy
+    from spicy_regs.congress_receipts import input_policy
     from spicy_regs.local_data import file_signature, file_state_from_stat
     if name not in PROJECTED_NATIVE_OFFICIAL_TABLES:
         raise ValueError("Resolver main-field reads are not qualified for: " + name)
     owner = publication.table_owner(snapshot, name + ".parquet")
-    if owner is None or name not in owner[1].get("etlReceipts", {}).get("datasets", ()):
+    if owner is None or (name not in owner[1].get("etlReceipts", {}).get("datasets", ())
+                         and not published_input(owner[1], name)):
         raise ValueError("Resolver main-field reads require a selected native publication")
+    # The installed schema or an earlier one the ledger records: a table that promoted columns still reads its
+    # generations from before (policy_migrations).
+    schema = input_policy(name, tuple(path.resolve(strict=True) for path in paths)).subject_schema
     members = publication.table_members(snapshot, name + ".parquet")
     if not paths or len(paths) != len(members):
         raise ValueError("Resolver main-field reads require every selected member")
@@ -46,7 +60,7 @@ def read_published_native_resolver_rows(snapshot, name, paths):
         if digest != member.sha256 or retained.stat().st_size != member.byte_size:
             raise ValueError("Resolver main input differs from its selected immutable pin")
         with pq.ParquetFile(retained) as source:
-            if not source.schema_arrow.equals(policy(name).subject_schema, check_metadata=False):
+            if not source.schema_arrow.equals(schema, check_metadata=False):
                 raise ValueError("Resolver main input differs from its exact native schema")
             for batch in source.iter_batches(batch_size=2000, columns=list(OFFICIAL_COLUMNS[name])):
                 rows.extend(batch.to_pylist())

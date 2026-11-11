@@ -12,6 +12,10 @@ from spicy_regs.transforms.build_scorecard_analysis import (
 )
 from tests.test_scorecard_analysis import _inputs, _serve
 
+# The votes trio's tables publish no receipts since ss-vse3; here they stand in for the receipt route it last
+# published under (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("votes_receipts_unretired")
+
 
 def fixture_owner(index, key):
     selected = publication.table_owner(index, key)
