@@ -1,8 +1,10 @@
 name: Rollup — fec_financial_profiles
-# Dispatch only until one hosted rehearsal with skip_upload has passed; the schedule to add then is in
-# docs/local-family-refresh.md. A run whose two downloads are the published CSVs publishes nothing and ends green.
+# Daily, about 90 minutes after FEC rewrites the files (10:13 UTC on 2026-11-10). A run whose two downloads are the
+# published CSVs publishes nothing and ends green.
 # Built here: the 2026 candidate and committee summary CSVs FEC rewrites every day (about 10:15 UTC).
 on:
+  schedule:
+    - cron: '51 11 * * *'
   workflow_dispatch:
     inputs:
       skip_upload:

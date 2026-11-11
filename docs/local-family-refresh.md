@@ -338,6 +338,9 @@ until one hosted run with `skip_upload` (the default when dispatched) has
 passed for each; a schedule starts running the day it reaches main.
 `treasury-fiscal` passed its rehearsal on 2026-11-10 (it built and admitted the
 generation with the newly listed debt day) and has run daily at 22:43 UTC since.
+`fec-financial-profiles` passed its rehearsal on 2026-11-11 (run 42933717394
+built and admitted 19,260 profiles) and the real run after it published at
+00:47:29Z; it runs daily at 11:51 UTC, after FEC rewrites the summaries.
 
 A hosted runner has no shared raw archive. Each run downloads through its
 generation's source evidence, and publication uploads every evidence blob to
@@ -374,7 +377,4 @@ Schedules to add once the rehearsals pass, each beside `workflow_dispatch`:
 # rollup-administration-policy.yml
   schedule:
     - cron: '13 23 * * *'
-# rollup-fec-financial-profiles.yml: after FEC rewrites the summaries (about 10:15 UTC)
-  schedule:
-    - cron: '51 11 * * *'
 ```
