@@ -3,6 +3,7 @@
 import gzip
 import hashlib
 import json
+import re
 import tomllib
 import zipfile
 from pathlib import Path
@@ -18,8 +19,11 @@ def test_pinned_reader_wheel_matches_its_receipt():
     project = tomllib.loads((root / "pyproject.toml").read_text())
     wheel = root / project["tool"]["uv"]["sources"]["spicy-docs"]["path"]
     version = wheel.name.removeprefix("spicy_docs-").removesuffix("-py3-none-any.whl")
+    # A numbered release only: a local build such as 0.86.0+foo.1 is not pinned without changing this line.
+    assert re.fullmatch(r"\d+\.\d+\.\d+", version), version
     receipt = json.loads((root / f"vendor/spicy_docs-{version}.json").read_text())
     assert receipt["filename"] == wheel.name and receipt["version"] == version
+    assert receipt["byte_size"] == wheel.stat().st_size
     assert hashlib.sha256(wheel.read_bytes()).hexdigest() == receipt["sha256"]
     with zipfile.ZipFile(wheel) as archive:
         assert {"spicy_docs/storage/raw_archive.py", "spicy_docs/reading/refusals.py"} <= set(archive.namelist())
