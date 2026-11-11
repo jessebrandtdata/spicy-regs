@@ -3839,7 +3839,7 @@
       "end_status": "Calendar spelling status: absent, empty, valid or invalid.",
       "source_path": "JSON pointer to the affiliation in the retained capture.",
       "observed_at": "Caller-supplied capture instant; not a source affiliation date.",
-      "source_json": "Complete affiliation object as received, retaining absent, null and unknown fields; party, affiliation_start, affiliation_end and caucus are read from it."
+      "source_json": "Complete affiliation object, retaining absent, null and unknown fields."
     }
   },
   "member_terms": {

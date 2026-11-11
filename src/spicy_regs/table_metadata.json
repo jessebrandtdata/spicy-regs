@@ -30587,7 +30587,7 @@
       {
         "column_name": "source_json",
         "column_type": "VARCHAR",
-        "description": "Complete affiliation object as received, retaining absent, null and unknown fields; party, affiliation_start, affiliation_end and caucus are read from it."
+        "description": "Complete affiliation object, retaining absent, null and unknown fields."
       }
     ],
     "subject": "congress",
