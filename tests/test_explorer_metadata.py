@@ -60,7 +60,7 @@ def test_financial_profile_source_identity_and_current_schema():
     table = bundle["tables"][TABLE]
     assert table["metadataStatus"] == table["sourceStatus"] == "documented"
     assert table["sources"][0]["id"] == "fec"
-    assert table["inputs"] == ["fec_reported_financial_summaries"]
+    assert table["inputs"] == []  # mapped from the captured CSVs, not from a fec-query table
     assert table["recordIdentity"] == {
         "columns": ["profile_id"], "basis": "declared_main_key", "uniqueness": "unknown"}
     assert table["family"] == "fec-financial-profiles" and table["publicationSchema"] == columns

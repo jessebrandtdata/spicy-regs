@@ -531,10 +531,7 @@
       "sources": [
         "fec"
       ],
-      "inputs": [
-        "fec_reported_financial_summaries"
-      ],
-      "transformation": "Selects exact source-reported amounts from explicitly pinned candidate and committee summary CSV snapshots. Equivalent witnesses select once; conflicting snapshots and unresolved coverage remain visible. No amounts are added across entities or periods.",
+      "transformation": "Maps one captured pair of the FEC's candidate and committee summary CSVs with the fec-query summary mapper and selects exact source-reported amounts per entity. Equivalent witnesses select once; conflicting snapshots and unresolved coverage remain visible. No amounts are added across entities or periods.",
       "evidence": "src/spicy_regs/transforms/build_fec_financial_profiles.py"
     },
     "fec-source-catalog": {
