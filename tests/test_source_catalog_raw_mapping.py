@@ -536,7 +536,8 @@ def test_unified_agenda_and_courtlistener_local_code_refs_match_installed_spicy_
         return next(m for m in cls_node.body if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef)) and m.name == meth_name)
 
     walk(registry)
-    assert len(found) == 13 + 132 + 134
+    # + 12: the court_docket_groups e82f9b79 coverage note's CourtListener refs (ss-coca).
+    assert len(found) == 13 + 132 + 134 + 12
     for ref in found:
         rel = ref["path"].removeprefix("repo:spicy-docs/src/spicy_docs/")
         source_file = sd_root / rel
