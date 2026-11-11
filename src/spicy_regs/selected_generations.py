@@ -317,7 +317,10 @@ class SelectedInputs:
             subjects = (
                 tuple(fetch(m) for m in publication.table_members(self.index, dataset + ".parquet")) if owner else ()
             )
-            if not owners:
+            if not owners or retired:
+                # A retired table is its published table, even while its live generation still lists the receipts
+                # it last published with: they are never read again, so they are not fetched (4.2 GiB for
+                # comment_attributes on its first receipts-free night).
                 self.cache[dataset] = SelectedDataset(dataset, subjects, None, None)
                 return self.cache[dataset]
             receipts = publication.receipt_members(self.index, dataset=dataset)

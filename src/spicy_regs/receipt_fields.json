@@ -570,46 +570,6 @@
   "cftc_comment_files": {},
   "cftc_comments": {},
   "cftc_rule_observations": {},
-  "comment_attributes": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "comment_id",
-     "address1",
-     "address2",
-     "city",
-     "country",
-     "display_properties_json",
-     "doc_abstract",
-     "field1",
-     "field2",
-     "file_formats_json",
-     "gov_agency",
-     "gov_agency_type",
-     "legacy_id",
-     "object_id",
-     "page_count",
-     "postmark_date",
-     "reason_withdrawn",
-     "restrict_reason",
-     "restrict_reason_type",
-     "state_province_region",
-     "submitter_rep",
-     "submitter_rep_address",
-     "submitter_rep_city_state",
-     "tracking_nbr",
-     "withdrawn",
-     "zip"
-    ]
-   },
-   "renamed": {
-    "display_properties_json": "display_properties",
-    "file_formats_json": "file_formats"
-   },
-   "meanings": {
-    "display_properties_json": "The agency's labels for this record's fields: a JSON array of {label, name, tooltip}, name being the attribute it labels; json_column spelling.",
-    "file_formats_json": "Renditions of the comment's own content file, rarely stated: a JSON array of {fileUrl, format, size}; json_column spelling. Attached files are in the thin table's attachments_json."
-   }
-  },
   "comment_periods": {
    "containers": {
     "raw_conversion_inputs": [

@@ -2,7 +2,8 @@
 
 Scheduled refresh jobs preserve the selected generation's source evidence while
 rebinding receipts to the newly sealed generation. No bare processing copy is a
-publication input.
+publication input. A table whose receipts are retired has nothing to rebind:
+the ETL's generation stands, and its family publishes nothing.
 """
 
 import hashlib
@@ -12,7 +13,7 @@ from typing import ClassVar
 import duckdb
 import pyarrow.parquet as pq
 
-from spicy_regs.pipelines.rollups.base import RollupPipeline, make_rollup_app
+from spicy_regs.pipelines.rollups.base import RollupPipeline, Unchanged, make_rollup_app
 from spicy_regs.schemas.regulations import RECORD_TYPES
 from spicy_regs.sources import r2
 from spicy_regs.etl_receipts import select_receipts, rebind_receipt, RECEIPT_SCHEMA
@@ -42,8 +43,14 @@ class _BaseTableFamily(RollupPipeline):
         return {dataset: described_schema(policy(dataset).subject_schema)}
 
     def build(self, output_dir: Path) -> Path:
+        from spicy_regs.subject_catalog import retired_receipt_datasets
+
         path = output_dir / self.output
         dataset = self.output.removesuffix(".parquet")
+        if dataset in retired_receipt_datasets() and type(self).annotate is _BaseTableFamily.annotate:
+            # The ETL publishes this table without receipts (ss-vse3); a republish would only copy it, or, while the
+            # live generation still has receipts, state them again, which admission refuses.
+            raise Unchanged(f"{dataset} publishes without receipts: the ETL's generation is the family's own")
         selected = SelectedPriors(output_dir / ".selected")
         processing = selected.get(dataset)
         if processing is None:

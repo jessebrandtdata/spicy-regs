@@ -152,8 +152,17 @@ def _receipts_by_id(subject_path, receipts_path):
 
 
 def test_the_nights_attribute_rows_upsert_over_the_selected_native_table_without_restoring_it(tmp_path, monkeypatch):
+    """The receipt route's upsert, still the docket and document attributes' route, proven on comment-shaped rows.
+
+    comment_attributes itself publishes without receipts (ss-vse3; tests/test_comment_attributes_receipt_switch.py),
+    so its marker is set aside here for the whole test, as it was before the switch.
+    """
+    from spicy_regs import subject_catalog
     from spicy_regs.pipelines.regulatory_publication import finish_attribute_dataset, finish_dataset, restore_dataset
     from spicy_regs.selected_generations import SelectedInputs
+
+    retired = subject_catalog.retired_receipt_datasets() - {"comment_attributes"}
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: retired)
 
     root = tmp_path / "root"
     seed = _fresh(tmp_path, "seed", [
@@ -180,6 +189,7 @@ def test_the_nights_attribute_rows_upsert_over_the_selected_native_table_without
                         lambda *a, **k: pytest.fail("row validation of a bundle the SQL validator proves"))
     finish_attribute_dataset(root, "comment_attributes", fresh, publish=False, inputs=inputs)
     monkeypatch.undo()
+    monkeypatch.setattr(subject_catalog, "retired_receipt_datasets", lambda: retired)
 
     inputs = SelectedInputs(root, root / "selected-after", public_url="")
     after = inputs.select("comment_attributes")
