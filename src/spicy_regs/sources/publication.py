@@ -1672,7 +1672,23 @@ def _require_receipt_archive_pins(family: str, live: str, datasets) -> None:
         if pin.get("artifactDigest") != live or pin.get("family") != family:
             raise PublicationError(
                 f"{name} leaves its receipts in {family} generation {live}, but docs/pins/receipt-archive.json pins "
-                f"{pin.get('family')} {pin.get('artifactDigest')}: pin the live generation before this publish")
+                f"{pin.get('family')} {pin.get('artifactDigest')}: pin the live generation before this publish "
+                f"(scripts/pin_receipt_archive.py {family})")
+
+
+def require_live_receipt_pins(index: dict, datasets) -> None:
+    """Refuse at a run's start, before any work, a publish :func:`_require_receipt_archive_pins` would refuse at its end.
+
+    For each of ``datasets`` whose receipts are retired and whose live family still lists them (its first
+    receipts-free publication is still to come), the pin must name that live generation. A sweep republishes some
+    such families after every batch, so a pin written before the merge can be overtaken by a run on the old code.
+    """
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    for name in sorted(set(datasets) & retired_receipt_datasets()):
+        owner = table_owner(index, name + ".parquet")
+        if owner is not None and name in owner[1].get("etlReceipts", {}).get("datasets", ()):
+            _require_receipt_archive_pins(owner[0], owner[1]["artifactDigest"], [name])
 
 
 def _stage_verified_generation(

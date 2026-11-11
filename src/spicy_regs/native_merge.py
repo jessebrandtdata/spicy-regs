@@ -172,9 +172,10 @@ def upsert_subjects(
     """:func:`native_merge`'s subjects for a table whose receipts are retired (ss-vse3): no receipt is read or written.
 
     The prior table's rows whose ``identity`` the fresh table does not carry, plus the fresh rows, in ``order_by`` order
-    then prior first: the same rows in the same order :func:`native_merge` writes. Identity columns are compared as
-    values (the receipt route compares their digests). Only the narrow keys are sorted; wide rows are gathered by
-    ordinal, as there.
+    then prior first: the same rows in the same order :func:`native_merge` writes, for identities with no NULL part.
+    Identity columns are compared as values, where NULL matches nothing; the receipt route compares their digests,
+    where two NULLs match. So a NULL in any identity column, on either side, is refused rather than merged otherwise.
+    Only the narrow keys are sorted; wide rows are gathered by ordinal, as there.
     """
     names = schema.names
     if any(name.startswith("_") for name in names) or not order_by or not set(_order_columns(order_by)) <= set(names):
@@ -190,6 +191,9 @@ def upsert_subjects(
         for view, path in (("fresh_s", fresh), ("prior_s", prior)):
             con.execute(f"CREATE VIEW {view} AS SELECT {keys}, {columns}, file_row_number AS _o "
                         f"FROM read_parquet({lit(str(path))}, file_row_number = true)")
+            nulls = " OR ".join(f"{_q(name)} IS NULL" for name in identity)
+            if con.execute(f"SELECT count(*) FILTER (WHERE {nulls}) FROM {view}").fetchone()[0]:
+                raise ValueError(f"{view.removesuffix('_s')} subjects have a NULL identity ({', '.join(identity)})")
             if con.execute(f"SELECT count(*) - count(DISTINCT row({keys})) FROM {view}").fetchone()[0]:
                 raise ValueError(f"{view.removesuffix('_s')} subjects repeat an identity")
         prior_rows, fresh_rows = (pq.ParquetFile(path).metadata.num_rows for path in (prior, fresh))

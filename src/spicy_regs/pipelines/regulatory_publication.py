@@ -100,13 +100,18 @@ def finish_dataset(root: Path, dataset: str, source: Path, *, publish: bool, inp
                  check_refusals=dataset not in CARRY_DATASETS)
 
 
+def _refuse_refusals(dataset: str, receipts: Path) -> None:
+    """Stop the write when a receipts file records a refused or failed conversion; the checkpoint stays put."""
+    for batch in pq.ParquetFile(receipts).iter_batches(columns=['outcome']):
+        if any(value in {'refused', 'error'} for value in batch.column(0).to_pylist()):
+            raise ValueError(f'{dataset}: native conversion refused; checkpoint remains unadvanced')
+
+
 def _seal(root, dataset, directory, artifact, *, publish, inputs, check_refusals):
     """Publish (when asked) and remember a built generation of one dataset."""
     if check_refusals:
         # A current source conversion must be complete.
-        for batch in pq.ParquetFile(directory / 'etl_receipts.parquet').iter_batches(columns=['outcome']):
-            if any(value in {'refused', 'error'} for value in batch.column(0).to_pylist()):
-                raise ValueError(f'{dataset}: native conversion refused; checkpoint remains unadvanced')
+        _refuse_refusals(dataset, directory / 'etl_receipts.parquet')
     published = _publish(directory, inputs=inputs) if publish else None
     _remember(root, [dataset], directory, artifact.root['spec'].get('etlReceipts', {}).get('generationId'),
               inputs=inputs, published=published)
@@ -161,9 +166,7 @@ def finish_attribute_dataset(root: Path, dataset: str, fresh: Path, *, publish: 
                 for batch in held.iter_batches(batch_size=10_000):
                     writer.write_batch(batch.replace_schema_metadata(metadata))
         fresh_pair = write_held_dataset(dataset, source, work / 'fresh', generation_id=generation, bulk=True, validate=False)
-        for batch in pq.ParquetFile(fresh_pair[1]).iter_batches(columns=['outcome']):
-            if any(value in {'refused', 'error'} for value in batch.column(0).to_pylist()):
-                raise ValueError(f'{dataset}: native conversion refused; checkpoint remains unadvanced')
+        _refuse_refusals(dataset, fresh_pair[1])
         merged = native_merge(declared, fresh=fresh_pair, prior=(prior.subjects[0], scoped),
                               order_by=declared.identity_fields, subjects=work / f'{dataset}.parquet',
                               receipts=work / 'etl_receipts.parquet', refusal_identity=refusal_identity(dataset))
@@ -194,9 +197,7 @@ def _finish_retired_attributes(root, dataset, fresh, prior, directory, *, family
         work = Path(temporary)
         fresh_subjects, fresh_receipts = write_held_dataset(dataset, fresh, work / 'fresh', generation_id=generation,
                                                             bulk=True, validate=False)
-        for batch in pq.ParquetFile(fresh_receipts).iter_batches(columns=['outcome']):
-            if any(value in {'refused', 'error'} for value in batch.column(0).to_pylist()):
-                raise ValueError(f'{dataset}: native conversion refused; checkpoint remains unadvanced')
+        _refuse_refusals(dataset, fresh_receipts)
         merged = upsert_subjects(declared.subject_schema, identity=declared.identity_fields, fresh=fresh_subjects,
                                  prior=prior, order_by=declared.identity_fields, subjects=work / f'{dataset}.parquet')
         logger.info('{}: {:,} rows kept, {:,} replaced, {:,} added', dataset, merged.kept, merged.replaced, merged.added)

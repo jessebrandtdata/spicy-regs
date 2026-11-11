@@ -40,13 +40,14 @@ def test_the_plain_upsert_is_the_receipt_routes_upsert(tmp_path):
     from spicy_regs.transforms.regulations_receipts import policy
 
     declared = policy(DATASET)
+    (tmp_path / "out").mkdir()
     merged = upsert_subjects(declared.subject_schema, identity=declared.identity_fields,
                              fresh=_fresh_subjects(tmp_path), prior=FIXTURE / "expected/prior.parquet",
-                             order_by=declared.identity_fields, subjects=tmp_path / "merged.parquet")
+                             order_by=declared.identity_fields, subjects=tmp_path / "out" / "merged.parquet")
     assert table_differences(merged.subjects, FIXTURE / "expected/merged.parquet", key=KEY) == []
     assert merged._asdict() | {"subjects": None} == {"subjects": None, **json.loads(
         (FIXTURE / "expected/counts.json").read_text())}
-    assert receipt_files(tmp_path / "merged.parquet") == []
+    assert receipt_files(tmp_path / "out") == [], "the upsert writes no receipts file"
 
 
 def _local_run(tmp_path: Path):
@@ -110,6 +111,14 @@ def test_an_upsert_refuses_a_repeated_identity_or_another_schema(tmp_path):
 
     with pytest.raises(ValueError, match="repeat an identity"):
         upsert(repeated)
+    # NULL never matches in the value join, where the receipt route's digests match two NULLs: refused, not merged.
+    nulled = tmp_path / "nulled.parquet"
+    ids = fresh["comment_id"].to_pylist()
+    ids[0] = None
+    pq.write_table(fresh.set_column(fresh.schema.get_field_index("comment_id"), fresh.schema.field("comment_id"),
+                                    pa.array(ids, pa.string())), nulled)
+    with pytest.raises(ValueError, match="NULL identity"):
+        upsert(nulled)
     narrowed = tmp_path / "narrowed.parquet"
     pq.write_table(fresh.drop(["zip"]), narrowed)
     with pytest.raises(ValueError, match="differ from the table's schema"):
@@ -129,3 +138,77 @@ def test_the_refresh_republishes_nothing_for_a_retired_attribute_table(tmp_path,
         regulatory_base.CommentAttributesFamily(output_dir=tmp_path).build(tmp_path)
     # The other attribute tables still publish with receipts.
     assert {"docket_attributes", "document_attributes"}.isdisjoint(retired_receipt_datasets())
+
+
+def test_a_retired_table_whose_live_generation_still_lists_receipts_is_selected_without_them(tmp_path, monkeypatch):
+    """The first receipts-free batch reads the table alone: the 4.2 GiB receipt member is never fetched."""
+    import hashlib
+
+    from spicy_regs.selected_generations import SelectedInputs
+    from spicy_regs.sources import publication
+
+    table = FIXTURE / "expected/prior.parquet"
+    index = {"families": {"comment-attributes": {
+        "prefix": "generations/comment-attributes/" + "a" * 64,
+        "tables": {f"{DATASET}.parquet": {"sha256": "sha256:" + hashlib.sha256(table.read_bytes()).hexdigest(),
+                                          "byteSize": table.stat().st_size, "rows": pq.read_metadata(table).num_rows}},
+        "etlReceipts": {"datasets": [DATASET], "generationId": "last-receipts", "key": "etl_receipts.parquet",
+                        "sha256": "sha256:" + "b" * 64, "byteSize": 4_174_881_789, "rows": 1}}}}
+    fetched = []
+
+    def fetch(base, member, target, path):
+        fetched.append(member.path)
+        target.write_bytes(table.read_bytes())
+        return True
+
+    monkeypatch.setattr(publication, "fetch_member", fetch)
+    selected = SelectedInputs(tmp_path / "root", tmp_path / "selected", index=index,
+                              public_url="https://x.invalid").select(DATASET)
+    assert selected is not None and selected.receipts is None and selected.generation_id is None
+    assert fetched == [f"generations/comment-attributes/{'a' * 64}/{DATASET}.parquet"]
+
+
+def test_a_stale_pin_refuses_the_run_before_any_batch_work():
+    """A sweep on the old code can republish the family after the pin was written: the next batch refuses at once."""
+    from spicy_regs import generation_retention
+    from spicy_regs.sources.publication import PublicationError, require_live_receipt_pins
+
+    pinned = generation_retention.receipt_archive_pins()[DATASET]["artifactDigest"]
+
+    def index(digest, *, receipts=True):
+        entry = {"artifactDigest": digest, "tables": {f"{DATASET}.parquet": {}}}
+        if receipts:
+            entry["etlReceipts"] = {"datasets": [DATASET]}
+        return {"families": {"comment-attributes": entry}}
+
+    require_live_receipt_pins(index(pinned), [DATASET, "documents"])
+    with pytest.raises(PublicationError, match=r"scripts/pin_receipt_archive.py comment-attributes"):
+        require_live_receipt_pins(index("sha256:" + "c" * 64), [DATASET])
+    # Once the family publishes without receipts, its pin no longer moves and nothing is checked.
+    require_live_receipt_pins(index("sha256:" + "c" * 64, receipts=False), [DATASET])
+    # A batch that writes no retired table is never refused for another's pin.
+    require_live_receipt_pins(index("sha256:" + "c" * 64), ["documents", "document_attributes"])
+
+
+def test_a_sweep_refuses_a_stale_pin_before_its_dockets_and_documents_pass(tmp_path, monkeypatch):
+    """The check runs as ``run`` captures the index, for the whole run's types, before the manifest is read."""
+    from spicy_regs.pipelines import regulations
+    from spicy_regs.sources import publication
+
+    stale = {"families": {"comment-attributes": {"artifactDigest": "sha256:" + "c" * 64,
+                                                 "tables": {f"{DATASET}.parquet": {}},
+                                                 "etlReceipts": {"datasets": [DATASET]}}}}
+    monkeypatch.setenv("R2_PUBLIC_URL", "https://test.invalid")
+    monkeypatch.setattr(publication, "current_index", lambda base: stale)
+    monkeypatch.setattr(regulations.Manifest, "load", lambda *a, **k: pytest.fail("the manifest was read"))
+    pipeline = regulations.RegulationsPipeline(allow_fresh_start=True, agency="EPA", output_dir=tmp_path / "output",
+                                               use_iceberg=True, enrich_text=False, skip_upload=False)
+    with pytest.raises(publication.PublicationError, match="pin_receipt_archive.py comment-attributes"):
+        pipeline.run(record_types=[regulations.RECORD_TYPES["dockets"]])
+    # Without comments in the run, or without upload, nothing is checked.
+    monkeypatch.setattr(regulations.Manifest, "load", lambda *a, **k: (_ for _ in ()).throw(LookupError("read")))
+    for options in ({"skip_comments": True, "skip_upload": False}, {"skip_upload": True}):
+        with pytest.raises(LookupError):
+            regulations.RegulationsPipeline(allow_fresh_start=True, agency="EPA", output_dir=tmp_path / "output",
+                                            use_iceberg=True, enrich_text=False, **options).run(
+                record_types=[regulations.RECORD_TYPES["dockets"]])

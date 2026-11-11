@@ -26,17 +26,19 @@ About 33 to 38 of those minutes were receipts. The refresh's
 
 ## What the receipts held
 
-Live generation `e5528b66…` (2026-11-10 20:34Z): 26,499,409 rows (440 MB) and
+The live generation of 2026-11-10 20:34Z: 26,499,409 rows (440 MB) and
 26,499,410 receipts (4.17 GB), every one `accepted` except one `observed`
 (the input file's metadata). A receipt's processing holds two things:
-`input_metadata`, empty in every sampled row, and `raw_conversion_inputs`, the
-row's own contract-shape copy (each field, with the two lists as their JSON
-text). None holds a source record or a pointer to one.
+`input_metadata`, empty, and `raw_conversion_inputs`, the row's own
+contract-shape copy (each field, with the two lists as their JSON text). None
+holds a source record or a pointer to one.
 
-Every copy is implied by the published row: on 271,550 receipts from 8 row
-groups across the file, read by range, each value equalled the published value,
-and each list's JSON text was the canonical (sorted, compact) spelling of the
-published list. No column is added.
+The review of this change read a later generation's whole receipts member
+(26,500,505 receipts): one processor and policy, `input_metadata`
+empty in every receipt, no `raw_source_record`, and an order-independent typed
+hash of every row's contract copy equal to the same hash of the published table
+(26,500,504 rows). Every copy is implied by the published row, so no column is
+added.
 
 ## What changes
 
@@ -60,8 +62,8 @@ existing rows, half of them changed, and 1,000 new): conversion 2.5 s, upsert
 upload (0.44 GB each way): an estimated 3 to 6 minutes a batch hosted, against
 about 46, so about 40 minutes saved a batch and, at three comment batches a
 run, about two hours a run, plus the refresh job's. The first batch after the
-merge also downloads the receipts member once (4.2 GiB, about 1.5 minutes),
-because the live generation still lists it.
+merge reads the table alone, though the live generation still lists the
+receipts (`SelectedInputs.select`).
 
 ## Equality with the receipt route
 
@@ -95,7 +97,8 @@ manual sweeps, so the pin is written right before the merge:
    `gh run list -R mikewolfd/spicy-regs --workflow etl-new-pipeline.yml --status in_progress`
    must list nothing, nor any other run that holds the `comments-catalog-write`
    group (`publish-comments-mirror.yml`, `fill-comment-fields.yml` and the
-   other comment workflows).
+   other comment workflows), nor `convert-native-family.yml`, which can also
+   publish this family.
 2. On the branch: `uv run --frozen --extra comments-reader python
    scripts/pin_receipt_archive.py comment-attributes`. It writes the entry from
    the live index and commits the generation's root as
@@ -107,9 +110,10 @@ manual sweeps, so the pin is written right before the merge:
    `https://data.spicygov.ai/publication.v2.json` is still the pinned one. If
    anything published it in between, repeat step 2.
 
-If the pin is stale anyway, the first batch's publish is refused and nothing is
-published: re-pin from the live generation (still the last with receipts) and
-run again.
+If the pin is stale anyway, every batch refuses at its start, in seconds,
+naming `scripts/pin_receipt_archive.py` (`publication.require_live_receipt_pins`),
+and nothing is published: re-pin from the live generation (still the last with
+receipts) and run again.
 
 ## After the first receipts-free batch
 
@@ -128,5 +132,7 @@ run again.
 - The refresh's 180-minute limit and `free_disk` for this job: it now takes the
   setup's few minutes; `tests/test_sweep_budget.py` pins the expression, which
   the sweep's own pull requests also change.
+- A full rebuild of this table from source: native conversion refuses a
+  retired table, so only sweep upserts write it.
 - The comments catalog's receipt table, through which the sweep's catalog merge
   still restores rows (6 to 11 minutes a batch): the regulations path's step.

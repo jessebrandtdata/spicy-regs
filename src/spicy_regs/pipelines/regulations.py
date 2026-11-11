@@ -195,6 +195,15 @@ class RegulationsPipeline(Pipeline):
         from spicy_regs.selected_generations import SelectedInputs, unique_build_directory
         self._selected_inputs = SelectedInputs(output_dir, unique_build_directory(output_dir))
         self._publication_index = self._selected_inputs.index
+        if not self.skip_upload and self._publication_index is not None:
+            # A stale receipt-archive pin would refuse a publish of this run at its end; refuse it now, in seconds,
+            # also in a sweep's dockets and documents pass, which precedes the comment batches that would refuse.
+            from spicy_regs.sources.publication import require_live_receipt_pins
+            from spicy_regs.transforms.regulations_attributes import ATTRIBUTE_TABLES
+
+            names = {rt.name for rt in (*record_types, *self._record_types())}
+            require_live_receipt_pins(self._publication_index, [
+                *(names - {"comments"}), *(ATTRIBUTE_TABLES[name] for name in names & ATTRIBUTE_TABLES.keys())])
         self._pending_text: PendingCommentText | None = None
         self._text_pool: DerivedTextPool | None = None
         started = monotonic()

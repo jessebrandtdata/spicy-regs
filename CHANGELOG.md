@@ -174,7 +174,8 @@ Entries link to the pull request that introduced the change.
   is added. A batch now converts its rows with the same writer and upserts them
   over the published table (`native_merge.upsert_subjects`); the refresh's
   `run-rollup-comment-attributes` publishes nothing. The last generation with
-  receipts is pinned at merge (`scripts/pin_receipt_archive.py`); the window and
+  receipts is pinned at merge (`scripts/pin_receipt_archive.py`), and a batch
+  whose pin a later publish overtook refuses at its start; the window and
   checks are in `docs/comment-attributes-receipt-archive.md`.
 
 - **`fec_financial_profiles` is built from a captured pair of FEC summary CSVs,
