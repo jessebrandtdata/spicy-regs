@@ -3,6 +3,12 @@
  "version": 1,
  "basis": "One entry per dataset whose installed policy is marked receipts_retired (subject_catalog.RECEIPTS_RETIRED): the last generation its family published with per-row ETL receipts, which holds the only complete copy of them. Weekly retention keeps every generation a file under docs/ cites by eight or more hex digits, so this file keeps each one for good; tests/test_receipt_archive_pins.py holds every retired dataset to an entry here. Never delete an entry: it is the archive's only pin.",
  "archives": {
+  "cfr_sections": {
+   "family": "cfr-sections",
+   "artifactDigest": "sha256:897008e4a0fd9b1763d624ada093613ef7f7911efd03939af32505d9f0450c0e",
+   "publishedAt": "2026-11-09T20:52:01Z",
+   "receipts": "generations/cfr-sections/897008e4a0fd9b1763d624ada093613ef7f7911efd03939af32505d9f0450c0e/etl_receipts.parquet"
+  },
   "comment_attributes": {
    "family": "comment-attributes",
    "artifactDigest": "sha256:252751c8589ce4c4bbff6fa5d35099db86b95df2d2debf1071d47ef739cf02a6",
@@ -56,6 +62,12 @@
    "artifactDigest": "sha256:a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773",
    "publishedAt": "2026-11-10T22:06:19Z",
    "receipts": "generations/fr-docket-links/a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773/etl_receipts.parquet"
+  },
+  "unified_agenda": {
+   "family": "unified-agenda",
+   "artifactDigest": "sha256:ab8eb2989a156a2cbf8deae048430decb5bfe8ab0bacb063034ea327c4d7f115",
+   "publishedAt": "2026-11-10T20:20:59Z",
+   "receipts": "generations/unified-agenda/ab8eb2989a156a2cbf8deae048430decb5bfe8ab0bacb063034ea327c4d7f115/etl_receipts.parquet"
   },
   "uscode_edition_sections": {
    "family": "uscode-editions",
