@@ -231,3 +231,53 @@ def test_all_registry_views_bind_without_reading_rows():
         for name in spec.names:
             assert results[name]['status'] == 'available'
             assert con.cursor().execute(f'SELECT * FROM "{name}" LIMIT 0').fetchall() == []
+
+
+#: One stated value per detail-backed list, as the Congress shaper writes it.
+_DETAIL_LISTS = {
+    "committee_meetings": {
+        "bill_ids_json": '["119-hr-1"]', "hearing_jackets_json": '["60491"]',
+        "committees_json": '[{"name":"Agriculture","systemCode":"hsag00","url":"https://api.congress.gov/c"}]',
+        "document_urls_json": '["https://docs.house.gov/a.pdf"]',
+        "witness_documents_json": '[{"documentType":"Statement","format":"PDF","url":"https://docs.house.gov/w.pdf"}]',
+        "meeting_documents_json": '[{"description":"d","documentType":"Notice","format":"PDF","name":"n","url":"https://docs.house.gov/m.pdf"}]',
+        "witnesses_json": '[{"name":"A Witness","position":"Director","organization":"Org"}]',
+    },
+    "house_communications": {
+        "rin_occurrences_json": '[{"rin":"0648-AC64","matched_text":"0648-AC64","span_start":"1","span_end":"10"}]',
+    },
+}
+
+
+@pytest.mark.parametrize("table", sorted(_DETAIL_LISTS))
+def test_every_detail_backed_list_answers_the_same_state_for_the_same_read_and_value(table):
+    """Every field-state view governed by ``detail_read`` gives one answer per (detail_read, value), across all four
+    states. This held the retired receipt lookup to the views; with the lookup gone it holds the views to each other
+    and to the meeting_bills cases above, for every detail-backed list rather than one."""
+    from spicy_regs.congress_subjects import INPUT_COLUMNS
+    from spicy_regs.relationship_views.core import DETAIL_STATES
+
+    lists = _DETAIL_LISTS[table]
+    views = [view for view in RELATIONSHIP_VIEWS if view.source_table == table and view.detail_read_column]
+    assert {view.source_field for view in views} == set(lists)
+    keys = views[0].source_keys
+    grid, values = [], []
+    for read in ("true", "false", None):
+        for kind in ("null", "empty", "stated"):
+            grid.append((read, kind))
+            row: dict[str, str | None] = {
+                **dict.fromkeys(INPUT_COLUMNS[table]), **{key: str(len(grid)) for key in keys}, "detail_read": read,
+                **{field: None if kind == "null" else "[]" if kind == "empty" else value
+                   for field, value in lists.items()}}
+            values.append(tuple(row[column] for column in INPUT_COLUMNS[table]))
+    con: Any = duckdb.connect()
+    fixture(con, table, list(INPUT_COLUMNS[table]), values)
+    install_arrays(con, [table], views)
+    expected = {("true", "null"): "not_stated", ("true", "empty"): "stated_empty", ("true", "stated"): "stated",
+                ("false", "null"): "unread", ("false", "empty"): "unread", ("false", "stated"): "stated",
+                (None, "null"): "unread", (None, "empty"): "unread", (None, "stated"): "stated"}
+    for view in views:
+        states = {tuple(r[key] for key in keys): r["field_state"] for r in rows(con, view.names[2])}
+        assert [states[tuple(str(n) for _ in keys)] for n in range(1, len(grid) + 1)] == [
+            expected[cell] for cell in grid], view.source_field
+    assert set(expected.values()) == set(DETAIL_STATES)
