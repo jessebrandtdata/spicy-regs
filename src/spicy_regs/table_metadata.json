@@ -30583,6 +30583,11 @@
         "column_name": "observed_at",
         "column_type": "VARCHAR",
         "description": "Caller-supplied capture instant; not a source affiliation date."
+      },
+      {
+        "column_name": "source_json",
+        "column_type": "VARCHAR",
+        "description": "Complete affiliation object as received, retaining absent, null and unknown fields; party, affiliation_start, affiliation_end and caucus are read from it."
       }
     ],
     "subject": "congress",
@@ -30597,7 +30602,8 @@
       "start_status",
       "end_status",
       "source_path",
-      "observed_at"
+      "observed_at",
+      "source_json"
     ]
   },
   "committee_reports": {

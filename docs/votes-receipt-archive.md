@@ -27,20 +27,19 @@ appended after the existing ones (`congress_subjects.PROMOTED`):
 | --- | --- | --- |
 | `members` | `roster`, `observed_at`, `other_names_json` | the roster file; the capture instant, the merge's version column; the alias patches as received: the native `other_names` cannot tell an omitted key from a null one, 2 of the 5 patches state a null, and the scorecard resolver reads an omitted `first` as the member's own |
 | `member_terms` | `observed_at`, `party_affiliations_state` | version column; the scorecard links serialize whole term rows |
-| `member_party_affiliations` | `input_sha256`, `start_status`, `end_status`, `source_path`, `observed_at` | the roster file's digest and the path in it: the pointer to the retained original |
+| `member_party_affiliations` | `input_sha256`, `start_status`, `end_status`, `source_path`, `observed_at`, `source_json` | the roster file's digest and the path in it: the pointer to the retained original; the affiliation object as received, so a later affiliation with no `end` (or a new key) carries forward exactly |
 | `roll_call_votes` | `source_url`, `match_rule`, `match_action_index`, `match_url`, `conflict_count` | the builder relinks every held roll call from its own columns, these included |
 
 `member_votes` and `member_vote_terms` held nothing their tables lack.
 `match_action_index` and `conflict_count` are integers, as the table's other
-counts. The affiliation's `source_json` is not a column: its `party`, `start`
-and `end` equal the table's `party`, `affiliation_start` and `affiliation_end`
-on all 59 rows and `caucus` is a column; the original is at `source_path` in the
-roster file `input_sha256` names, which the members job keeps as evidence.
+counts. The affiliation's `source_json` is published as received (59 short
+rows) rather than rebuilt from `party`, `affiliation_start`, `affiliation_end`
+and `caucus`: the columns cannot tell an omitted key from a null one.
 `congress_acquisition`, the run journal copied into receipts, is the job's
 retained journal.
 
 Policies moved for the new columns (`congress-subjects/3` for `members` and
-`roll_call_votes`, `/2` for `member_terms` and `member_party_affiliations`;
+`roll_call_votes` and `member_party_affiliations`, `/2` for `member_terms`;
 `policy_migrations.json` reads the earlier ones), and all six carry
 `"receipts_retired": true`.
 
@@ -131,3 +130,8 @@ After the first night (the 03:00Z refresh):
   every own prior and `members`' tables are `prior-published-input`.
 - The three jobs finish inside 15, 30 and 30 minutes.
 - Each pinned generation's `etl_receipts.parquet` still answers a HEAD.
+
+Once those checks hold, delete the one-night route: `SelectedPriors.last_receipts`,
+`SelectedInputs.select(last_receipts=)` (its cache does not key on it), the
+"predates promoted columns" refusal and the `votes_receipts_unretired` test
+fixture. The pins stay.

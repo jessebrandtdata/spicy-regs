@@ -28,3 +28,4 @@ One member, input digest, term index and affiliation index. Literal dates and th
 | `end_status` | `VARCHAR` | Calendar spelling status: absent, empty, valid or invalid. |
 | `source_path` | `VARCHAR` | JSON pointer to the affiliation in the retained capture. |
 | `observed_at` | `VARCHAR` | Caller-supplied capture instant; not a source affiliation date. |
+| `source_json` | `VARCHAR` | Complete affiliation object as received, retaining absent, null and unknown fields; party, affiliation_start, affiliation_end and caucus are read from it. |

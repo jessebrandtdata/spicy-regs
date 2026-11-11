@@ -38,15 +38,6 @@ from spicy_regs.congress_subjects import (
 #: The tables whose published rows are read back as a builder's input: a votes family table, or a reader of one.
 READABLE = frozenset({"members", "member_terms", "member_party_affiliations", "roll_call_votes", "member_votes",
                       "member_vote_terms"})
-#: A flattened source object read back from public columns: each of its keys and the column holding its value. A key
-#: whose value is NULL is left out, as the crosswalk leaves out ``caucus``; every other key it states every time
-#: (``end``, ``party``, ``start`` on all 59 rows of 2026-11-11, equal to these columns).
-OBJECTS = {
-    ("member_party_affiliations", "source_json"): {"caucus": "caucus", "end": "affiliation_end", "party": "party",
-                                                   "start": "affiliation_start"},
-}
-#: Keys of :data:`OBJECTS` stated even when NULL.
-_ALWAYS = frozenset({"end", "party", "start"})
 #: Rows written per Arrow batch on either path.
 _BATCH = 100_000
 #: Keys of left-out rows returned for the log.
@@ -181,15 +172,10 @@ def _source_row(dataset: str, row: dict) -> dict:
     source = {}
     promoted = PROMOTED.get(dataset, ())
     for name in INPUT_COLUMNS[dataset]:
-        if (dataset, name) in OBJECTS:
-            stated = {key: row.get(column) for key, column in OBJECTS[dataset, name].items()}
-            source[name] = json_column({key: value for key, value in stated.items()
-                                        if value is not None or key in _ALWAYS})
-            continue
-        if (dataset, name) in FLATTEN or (dataset, name) in JOINED:
-            raise ValueError(f"{dataset}.{name}: no inverse of its mapping")
         if name in promoted:
             value = row.get(name)
+        elif (dataset, name) in FLATTEN or (dataset, name) in JOINED:
+            raise ValueError(f"{dataset}.{name}: no inverse of its mapping")
         elif name in PROCESSING.get(dataset, ()):
             value = None
         elif (dataset, name) in NATIVE:

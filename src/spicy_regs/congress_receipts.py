@@ -51,7 +51,7 @@ ACQUISITION_POLICY = DatasetPolicy(
 PROMOTED_VERSIONS = {
     "members": "congress-subjects/3",
     "member_terms": "congress-subjects/2",
-    "member_party_affiliations": "congress-subjects/2",
+    "member_party_affiliations": "congress-subjects/3",
     "roll_call_votes": "congress-subjects/3",
 }
 

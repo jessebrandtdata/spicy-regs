@@ -9548,7 +9548,8 @@
         "start_status",
         "end_status",
         "source_path",
-        "observed_at"
+        "observed_at",
+        "source_json"
       ]
     },
     {

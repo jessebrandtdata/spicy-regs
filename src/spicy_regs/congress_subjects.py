@@ -249,13 +249,14 @@ PROCESSING = {
 #: publish no per-row receipts (ss-vse3): what only the receipts held, or what only their literal text keeps.
 #: ``members.other_names_json`` is the source text beside the native ``other_names``, whose structs cannot tell an
 #: omitted key from a null one (2 of the 5 patches held on 2026-11-11 state a null); the scorecard resolver reads a
-#: missing ``first`` as the member's own. The rest were PROCESSING: capture instants (the merge's version column),
+#: missing ``first`` as the member's own. ``member_party_affiliations.source_json`` is the complete affiliation
+#: object as received (absent, null and unknown keys kept), beside its flattened ``caucus``. The rest were PROCESSING: capture instants (the merge's version column),
 #: the roster file, the roster digest and path, and the roll call's file URL and bill-link rule, which the votes
 #: builder reads back on every held row.
 PROMOTED = {
     'members': ('roster', 'observed_at', 'other_names_json'),
     'member_terms': ('observed_at', 'party_affiliations_state'),
-    'member_party_affiliations': ('input_sha256', 'start_status', 'end_status', 'source_path', 'observed_at'),
+    'member_party_affiliations': ('input_sha256', 'start_status', 'end_status', 'source_path', 'observed_at', 'source_json'),
     'roll_call_votes': ('source_url', 'match_rule', 'match_action_index', 'match_url', 'conflict_count'),
 }
 
