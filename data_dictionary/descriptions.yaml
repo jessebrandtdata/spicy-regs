@@ -2026,6 +2026,7 @@ tables:
       date_created: "Timestamp the publisher created the citation record."
       date_modified: "Timestamp the publisher last modified the citation record."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_citation_map:
     label: "Court opinion citation map"
     subject: courts
@@ -2061,8 +2062,9 @@ tables:
     columns:
       citing_opinion_id: "CourtListener opinion ID of the opinion that cites. Joins court_opinions.opinion_id."
       cited_opinion_id: "CourtListener opinion ID of the opinion cited. Joins court_opinions.opinion_id."
-      depth: "Number of times the citing opinion cites the cited one, as text."
+      depth: "Number of times the citing opinion cites the cited one."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_parentheticals:
     label: "Court opinion parentheticals"
     subject: courts
@@ -2097,9 +2099,10 @@ tables:
       described_opinion_id: "CourtListener opinion ID of the opinion the parenthetical summarizes. Joins court_opinions.opinion_id."
       describing_opinion_id: "CourtListener opinion ID of the opinion that wrote the parenthetical. Joins court_opinions.opinion_id."
       text: "The parenthetical as the describing opinion wrote it."
-      score: "Publisher's 0-to-1 estimate of how descriptive the text is, as text."
+      score: "Publisher's 0-to-1 estimate of how descriptive the text is."
       group_id: "Publisher's group label for parentheticals making the same point; NULL when ungrouped. Compare within this table only: the publisher declares but never exports its group table."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_opinions:
     label: "Court opinions (index, no text)"
     subject: courts
@@ -2135,14 +2138,15 @@ tables:
       author_str: "Author as the publisher's source text names them; not resolved to a person."
       per_curiam: "Publisher per-curiam flag (`t` or `f`)."
       joined_by_str: "Judges joining the opinion, as the publisher's source text names them."
-      page_count: "Page count of the original document when known, as text."
+      page_count: "Page count of the original document when known."
       sha1: "Publisher's SHA-1 of the original document; not a SpicyRegs capture digest."
       download_url: "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number."
       local_path: "Path of the original document in CourtListener's storage, not a SpicyRegs file."
-      extracted_by_ocr: "Publisher flag for text extracted by OCR (`t` or `f`)."
+      extracted_by_ocr: "Publisher flag: true when the opinion's text was extracted by OCR (the export spells it `t` or `f`)."
       date_created: "Timestamp the publisher created the opinion record."
       date_modified: "Timestamp the publisher last modified the opinion record."
       dump_date: "The CourtListener bulk export the row was copied from (ISO date)."
+      source_sha256: "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
   court_opinion_texts:
     label: "Court opinion texts (Markdown)"
     subject: courts
@@ -9297,7 +9301,9 @@ tables:
     - record_id
     coverage: Sampled. Supported observations from retained candidate, committee, presidential and bundling summary
       layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration
-      does not establish complete FEC history or current publication.
+      does not establish complete FEC history or current publication. Its 2026 candidate and committee summary CSVs
+      are the 2026-09-12 captures; fec_financial_profiles is refreshed separately from the publisher's current files,
+      so the two can disagree for one entity.
     measured_on: '2026-10-01'
     data_quality: Two layouts repeat one figure. candidate-web-summary/1 holds a candidate's row from FEC's weball
       file and, for a current House or Senate campaign, an identical row from webl, a subset of weball;
@@ -11025,16 +11031,19 @@ tables:
     - profile_id
     summary: Exact source-reported money for an explicitly selected candidate and committee CSV snapshot, with visible
       missing dates and unresolved conflicts.
-    coverage: Not a range. Designed for complete explicitly selected candidate and committee summary CSV populations
-      in one election cycle. Actual population and publication are established by the selected generation and its
-      retained source evidence. The date records this design statement, not a source measurement.
-    measured_on: '2026-10-20'
+    coverage: Not a range. Every row of one captured pair of the FEC's 2026 candidate and committee summary CSVs,
+      which FEC rewrites daily; captured_at and period_end say how current each profile is. Each refresh replaces
+      the published pair; earlier pairs are in earlier generations and source evidence, not in this table. The
+      fec-query tables keep their own, older captures. The date records this design statement, not a source measurement.
+    measured_on: '2026-11-10'
     grain: One native entity, kind, cycle and explicit snapshot scope. Equivalent witnesses select once; conflicting
       facts remain visible without choosing a winner.
     columns:
-      profile_id: Stable profile identity from selection policy, explicit scope, entity kind, native entity ID and
-        election cycle.
-      scope_id: Explicit retained snapshot selection identity. This is not an automatically refreshed latest record.
+      profile_id: Profile identity from selection policy, entity kind, native entity ID and election cycle; the same
+        entity keeps it across refreshes. Generations published before 2026-11 also hashed scope_id, so theirs changed
+        with each capture.
+      scope_id: Names the cycle and capture day of the published CSV pair; it changes with each refresh, profile_id
+        does not.
       entity_kind: Candidate or committee; candidate-wide and committee amounts must not be added together.
       entity_id: Literal FEC candidate or committee identifier from the selected source.
       entity_name: Publisher entity name when every witness agrees; null for conflicting names.
@@ -11056,9 +11065,9 @@ tables:
       captured_at: Aware timestamp of the explicitly selected original source capture. Values are only as fresh as
         this retained snapshot; no live freshness guarantee.
       source_collection_id: Exact selected candidate or committee summary CSV collection identity.
-      source_sha256: SHA-256 of the original retained CSV capture, distinct from the derived parent table.
-      source_table_generation: Exact managed fec-query generation containing the input summary table; recorded as
-        a generation parent.
+      source_sha256: SHA-256 of the original retained CSV capture the profile was mapped from.
+      source_table_generation: Null since profiles are mapped from the captured CSV itself (source_sha256). Generations
+        published before 2026-11 named the fec-query generation they were selected from.
       witnesses_json: All complete selected summary observations for this entity, including original raw measures,
         native locators, linked candidates, dates and mapping identities. Decimals serialize as exact text.
       source_url: Publisher URL recorded for the selected CSV capture; not a newly acquired source.

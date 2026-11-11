@@ -1,31 +1,29 @@
-"""Capture the FEC summary CSVs, and build ordinary FEC profiles offline from exact selected summary bytes.
+"""Capture the FEC summary CSVs, and build the financial profiles from one captured pair.
 
 ``acquire`` saves each cycle's candidate and committee summary CSVs into the raw archive with their acquisition
 receipts. FEC rewrites both files every day under the same URL, so a day not captured cannot be fetched again.
-``build`` reads the summaries as the published fec-query generation mapped them (docs/fec-financial-profiles.md).
+``build`` maps one cycle's captured pair straight from the raw archive (docs/fec-financial-profiles.md).
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 from pathlib import Path
 
 from spicy_regs.contract_types import described_schema
 from spicy_regs.generations import build_generation
-from spicy_regs.pipelines.raw_releases import download_original
-from spicy_regs.source_evidence import CaptureEvidence, acquisition_evidence, without_local_paths
+from spicy_regs.pipelines.raw_releases import READ_INDEX_HELP, download_original, inherit_read_index, raw_original
+from spicy_regs.source_evidence import CaptureEvidence, acquisition_evidence
 from spicy_regs.sources import publication
 from spicy_regs.transforms.build_fec_financial_profiles import (
-    MEASURES, OUTPUT, PARENT, SCHEMA, TABLE, build_profiles, json_bytes,
+    MAX_SUMMARY_BYTES, MEASURES, OUTPUT, SCHEMA, TABLE, build_profiles, collection_id, json_bytes, published_rows,
+    select,
 )
 
 FAMILY = "fec-financial-profiles"
 STAGE = "fec-summary-capture"
-#: A runaway bound: the 2026 committee summary was 8.3 MB on 2026-11-10.
-MAX_SUMMARY_BYTES = 256 * 1024**2
 #: Where an append-only index of each published capture run goes, beside the shared evidence blobs.
 INDEX_FAMILY = "fec-summaries"
 
@@ -55,8 +53,8 @@ def capture(evidence, cycles, *, transport=None) -> list[dict]:
                     validate_prefix=lambda chunk: validate_original_prefix(chunk, url=url)),
                 stage=STAGE, max_bytes=MAX_SUMMARY_BYTES, validate_url=official_url, transport=transport,
             )
-            captures.append({"entity_kind": kind, "cycle": cycle,
-                             "collection_id": f"bulk-{kind}_summary_{cycle}-csv", **descriptor})
+            captures.append({"entity_kind": kind, "cycle": cycle, "collection_id": collection_id(kind, cycle),
+                             **descriptor})
     return captures
 
 
@@ -91,31 +89,53 @@ def acquire(cycles, output_dir: Path, *, transport=None, publish: bool = False) 
     return {"captures": captures, **({"published": published} if published else {})}
 
 
-def build(selection, output_dir):
+def profiles_table(evidence, captures: list[dict], output_dir: Path, *, published: Path | None = None,
+                   accept_shrink=()) -> Path:
+    """Build the profiles of one captured pair, in ``evidence``'s raw archive, into ``output_dir``.
+
+    Both originals are cited in ``evidence`` by digest and URL; the selection and the population reconciliation
+    are journaled, and the witnesses name the selection's digest. ``published`` is the live profiles table: a CSV
+    that lost more than ``MAX_ROW_LOSS`` of its rows refuses unless its kind is in ``accept_shrink``.
+    """
+    selection = select(captures)
+    for item in selection["captures"]:
+        original = raw_original(evidence.store, item["response_sha256"], item["byte_size"])
+        # The request URL, not the local path: this journal is published.
+        saved = evidence.retain_file(original, stage=STAGE, raw_source=True, source_url=item["request_url"],
+                                     original_location=item["request_url"], observed_at=item["observed_at"])
+        if saved.get("sha256") != item["response_sha256"]:
+            raise ValueError("Summary original differs from its captured digest")
+    selected = evidence.retain_bytes(json_bytes(selection), stage="profile-selection")
+    table = Path(output_dir) / OUTPUT
+    summary = build_profiles(selection, evidence.store, table, selection_sha256=selected["sha256"],
+                             prior_rows=published_rows(published) if published else None, accept_shrink=accept_shrink)
+    evidence.retain_bytes(json_bytes(summary), stage="profile-population-reconciliation")
+    return table
+
+
+def build(captures: list[dict], output_dir: Path, *, read_index: Path | None = None, accept_shrink=()):
+    """Build a generation from one captured pair, citing both originals in the raw archive the capture used.
+
+    With ``read_index`` the live table beside it in the ``spicy-regs mirror`` holds each CSV to its published
+    rows; without it there is no prior to compare with.
+    """
     output_dir = Path(output_dir)
     if (output_dir / "generation").exists():
         raise ValueError("Use a fresh directory for each financial-profile generation")
-    index_bytes = Path(selection["publication"]["path"]).read_bytes()
-    if "sha256:" + hashlib.sha256(index_bytes).hexdigest() != selection["publication"]["sha256"]:
-        raise ValueError("Profile publication control differs from selected digest")
-    snapshot = publication.parse_index(index_bytes)
-    evidence = CaptureEvidence(output_dir, "fec-financial-profiles")
+    evidence = CaptureEvidence(output_dir, FAMILY)
     try:
-        # The selection names where this machine read its inputs; the published copy keeps their digests (ss-81bv).
-        evidence.retain_bytes(json_bytes(without_local_paths(selection)), stage="profile-selection")
-        evidence.retain_bytes(index_bytes, stage="profile-parent-publication")
-        table = output_dir / OUTPUT
-        summary = build_profiles(selection, snapshot, table)
-        evidence.retain_bytes(json_bytes(summary), stage="profile-population-reconciliation")
+        read_snapshot = inherit_read_index(evidence, read_index)
+        live = (read_snapshot or {"families": {}})["families"].get(FAMILY)
+        published = read_index.parent.parent / live["prefix"] / OUTPUT if read_index and live else None
+        table = profiles_table(evidence, captures, output_dir, published=published, accept_shrink=accept_shrink)
         artifact = build_generation(
             output_dir / "generation",
-            family="fec-financial-profiles",
+            family=FAMILY,
             files=(table,),
             expected_keys=(OUTPUT,),
             schemas={TABLE: described_schema(SCHEMA)},
             inputs=evidence.inputs(),
-            read_snapshot=snapshot,
-            parents={PARENT: publication.table_pin(snapshot, PARENT)},
+            read_snapshot=read_snapshot,
             owned_output_root=output_dir,
         )
     except BaseException as error:
@@ -133,18 +153,22 @@ def main(argv=None):
                            help="Even election cycle, repeatable: a closed cycle's files still change after it ends")
     capturing.add_argument("--output-dir", type=Path, required=True)
     capturing.add_argument("--captures-out", type=Path, required=True, help="Where to write the capture record")
-    capturing.add_argument("--publish-evidence", action="store_true",
-                           help="Also send the sealed evidence to R2 (a hosted runner, whose raw archive is scratch)")
-    building = commands.add_parser("build", help="Build profiles from a selection over the published summaries")
-    building.add_argument("--selection", type=Path, required=True)
+    building = commands.add_parser("build", help="Build profiles from one cycle's captured pair")
+    building.add_argument("--captures", type=Path, required=True, help="A capture record `acquire` wrote")
+    building.add_argument("--cycle", type=int, required=True, help="The cycle whose two captures to build from")
     building.add_argument("--output-dir", type=Path, required=True)
+    building.add_argument("--read-index", type=Path, help=READ_INDEX_HELP)
+    building.add_argument("--accept-shrink", action="append", default=[], choices=sorted(MEASURES),
+                          help="Publish this CSV although it lost more than MAX_ROW_LOSS of its published rows, "
+                               "once its bytes are reviewed; repeatable")
     args = parser.parse_args(argv)
     if args.command == "acquire":
-        record = acquire(args.cycles, args.output_dir, publish=args.publish_evidence)
+        record = acquire(args.cycles, args.output_dir)
         args.captures_out.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
         print(json.dumps(record))
         return
-    artifact, evidence = build(json.loads(args.selection.read_text()), args.output_dir)
+    captures = [item for item in json.loads(args.captures.read_text())["captures"] if item["cycle"] == args.cycle]
+    artifact, evidence = build(captures, args.output_dir, read_index=args.read_index, accept_shrink=args.accept_shrink)
     print(
         json.dumps(
             {

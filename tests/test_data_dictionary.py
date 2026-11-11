@@ -876,10 +876,19 @@ def test_retained_court_legacy_declarations_preserve_native_and_refuse_drift(mon
     from pathlib import Path
     from spicy_regs.sources import publication
 
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
     fixture = json.loads((Path(__file__).parent / "fixtures" /
                           "court_selected_legacy_dictionary.json").read_text())
     index = fixture["index"]
-    live = {table: [tuple(field) for field in fields] for table, fields in fixture["schemas"].items()}
+    every = {table: [tuple(field) for field in fields] for table, fields in fixture["schemas"].items()}
+    # A table whose receipts are retired (ss-vse3) publishes none, so a generation without them is its current
+    # format, held to its installed schema: the citation tables' legacy shapes are no longer a selectable format.
+    retired = set(every) & retired_receipt_datasets()
+    assert retired == {"court_citations", "court_citation_map", "court_parentheticals"}
+    selected = dd.selected_dictionary_definitions(index, every, dd.DEFAULT_DESCRIPTIONS)[1]
+    assert {table: selected[table] for table in retired} == {table: dd.expected_schemas()[table] for table in retired}
+    live = {table: fields for table, fields in every.items() if table not in retired}
     native = {table: dd.expected_schemas()[table] for table in live}
     monkeypatch.setattr(publication, "load_index", lambda _: index)
     monkeypatch.setattr(dd, "published_row_counts", lambda *_, **_kwargs: {})
@@ -891,11 +900,11 @@ def test_retained_court_legacy_declarations_preserve_native_and_refuse_drift(mon
     assert {table: selected[table] for table in live} == live
     assert all("raw_source_record" not in dict(fields) for fields in live.values())
 
-    live["court_citation_map"].append(("unexpected_publisher_field", "VARCHAR"))
+    live["court_opinion_clusters"].append(("unexpected_publisher_field", "VARCHAR"))
     assert args.func(args) == 1
     assert "unexpected_publisher_field" in capsys.readouterr().err
-    live["court_citation_map"].pop()
-    live["court_citation_map"][0] = ("citing_opinion_id", "BIGINT")
+    live["court_opinion_clusters"].pop()
+    live["court_opinion_clusters"][0] = ("cluster_id", "BIGINT")
     assert args.func(args) == 1
     assert "in-code type VARCHAR but live parquet BIGINT" in capsys.readouterr().err
 

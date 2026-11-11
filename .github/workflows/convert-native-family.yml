@@ -6,7 +6,7 @@ on:
         description: 'One complete retained family; its owner coordinates reader checks and publication'
         required: true
         type: choice
-        options: [dockets, documents, court-opinions, roll-call-votes, member-vote-terms, bill-family, bill-subjects,
+        options: [dockets, documents, roll-call-votes, member-vote-terms, bill-family, bill-subjects,
                   docket-attributes, document-attributes, comment-attributes, court-opinion-clusters]
       expected_entry_sha256:
         description: 'sha256: digest of the complete prior family entry (canonical sorted JSON, compact separators)'

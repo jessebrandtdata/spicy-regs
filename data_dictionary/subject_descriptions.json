@@ -542,7 +542,9 @@
     "columns": {
       "citing_opinion_id": "CourtListener opinion ID of the opinion that cites. Joins court_opinions.opinion_id.",
       "cited_opinion_id": "CourtListener opinion ID of the opinion cited. Joins court_opinions.opinion_id.",
-      "depth": "Number of times the citing opinion cites the cited one, as text."
+      "depth": "Number of times the citing opinion cites the cited one.",
+      "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
+      "source_sha256": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
     }
   },
   "court_citations": {
@@ -552,7 +554,11 @@
       "volume": "Reporter volume as the publisher records it (a string; some volumes are years).",
       "reporter": "Reporter abbreviation, such as `U.S.`, `F.3d` or `WL`, as the publisher records it.",
       "page": "Starting page or equivalent locator in the reporter, as text.",
-      "citation_type": "Publisher citation type code: 1 federal reporter, 2 state, 3 state regional, 4 specialty, 5 early U.S. Supreme Court, 6 Lexis, 7 WestLaw, 8 vendor-neutral, 9 law journal."
+      "citation_type": "Publisher citation type code: 1 federal reporter, 2 state, 3 state regional, 4 specialty, 5 early U.S. Supreme Court, 6 Lexis, 7 WestLaw, 8 vendor-neutral, 9 law journal.",
+      "date_created": "Timestamp the publisher created the citation record.",
+      "date_modified": "Timestamp the publisher last modified the citation record.",
+      "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
+      "source_sha256": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
     }
   },
   "court_docket_groups": {
@@ -659,9 +665,15 @@
       "author_str": "Author as the publisher's source text names them; not resolved to a person.",
       "per_curiam": "Publisher per-curiam flag (`t` or `f`).",
       "joined_by_str": "Judges joining the opinion, as the publisher's source text names them.",
-      "page_count": "Page count of the original document when known, as text.",
+      "page_count": "Page count of the original document when known.",
       "sha1": "Publisher's SHA-1 of the original document; not a SpicyRegs capture digest.",
-      "download_url": "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number."
+      "download_url": "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number.",
+      "local_path": "Path of the original document in CourtListener's storage, not a SpicyRegs file.",
+      "extracted_by_ocr": "Publisher flag: true when the opinion's text was extracted by OCR (the export spells it `t` or `f`).",
+      "date_created": "Timestamp the publisher created the opinion record.",
+      "date_modified": "Timestamp the publisher last modified the opinion record.",
+      "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
+      "source_sha256": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
     }
   },
   "court_parentheticals": {
@@ -670,8 +682,10 @@
       "described_opinion_id": "CourtListener opinion ID of the opinion the parenthetical summarizes. Joins court_opinions.opinion_id.",
       "describing_opinion_id": "CourtListener opinion ID of the opinion that wrote the parenthetical. Joins court_opinions.opinion_id.",
       "text": "The parenthetical as the describing opinion wrote it.",
-      "score": "Publisher's 0-to-1 estimate of how descriptive the text is, as text.",
-      "group_id": "Publisher's group of parentheticals making the same point; NULL when ungrouped."
+      "score": "Publisher's 0-to-1 estimate of how descriptive the text is.",
+      "group_id": "Publisher's group of parentheticals making the same point; NULL when ungrouped.",
+      "dump_date": "The CourtListener bulk export the row was copied from (ISO date).",
+      "source_sha256": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
     }
   },
   "crs_reports": {

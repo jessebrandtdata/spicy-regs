@@ -19245,7 +19245,7 @@
     "label": "Source-reported financial summary observations",
     "category": "query_data",
     "summary": "One source entity/period/summary-layout/version observation. Keeps monetary measures in a typed list with native names, raw spelling, status and unit. Reported totals are separate from itemized observations; overlapping cycle, year-to-date, quarterly and semiannual measures are not automatically additive. Resolve collection_id and source_record_id against fec_source_records in the captured source generation, using source_locator_json and source_sha256 to distinguish repeated witnesses. Stored or release-matched derived evidence routes preserve the same exact source coordinates.",
-    "coverage": "Sampled. Supported observations from retained candidate, committee, presidential and bundling summary layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration does not establish complete FEC history or current publication.",
+    "coverage": "Sampled. Supported observations from retained candidate, committee, presidential and bundling summary layouts. The retained selection is explicit in fec_collections and its source-generation evidence; this declaration does not establish complete FEC history or current publication. Its 2026 candidate and committee summary CSVs are the 2026-09-12 captures; fec_financial_profiles is refreshed separately from the publisher's current files, so the two can disagree for one entity.",
     "kind": "sampled",
     "measured_on": "2026-10-01",
     "data_quality": "Two layouts repeat one figure. candidate-web-summary/1 holds a candidate's row from FEC's weball file and, for a current House or Senate campaign, an identical row from webl, a subset of weball; committee-summary-csv/1 repeats a committee's row once per linked candidate. Keep one row per layout, entity, cycle and period before summing (cycle 2026, measured 2026-10-03, with 2,949 identical candidate pairs and 70 committees repeated, every repeat identical).",
@@ -20765,12 +20765,38 @@
         "column_name": "citation_type",
         "column_type": "VARCHAR",
         "description": "Publisher citation type code: 1 federal reporter, 2 state, 3 state regional, 4 specialty, 5 early U.S. Supreme Court, 6 Lexis, 7 WestLaw, 8 vendor-neutral, 9 law journal."
+      },
+      {
+        "column_name": "date_created",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher created the citation record."
+      },
+      {
+        "column_name": "date_modified",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher last modified the citation record."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
     "grain": "One reporter citation of one CourtListener decision (cluster); a decision can have several.",
     "identity_columns": [
       "citation_id"
+    ],
+    "later_policy_columns": [
+      "date_created",
+      "date_modified",
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_citation_map": {
@@ -20795,7 +20821,17 @@
       {
         "column_name": "depth",
         "column_type": "BIGINT",
-        "description": "Number of times the citing opinion cites the cited one, as text."
+        "description": "Number of times the citing opinion cites the cited one."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
@@ -20803,6 +20839,10 @@
     "identity_columns": [
       "citing_opinion_id",
       "cited_opinion_id"
+    ],
+    "later_policy_columns": [
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_parentheticals": {
@@ -20837,18 +20877,32 @@
       {
         "column_name": "score",
         "column_type": "DOUBLE",
-        "description": "Publisher's 0-to-1 estimate of how descriptive the text is, as text."
+        "description": "Publisher's 0-to-1 estimate of how descriptive the text is."
       },
       {
         "column_name": "group_id",
         "column_type": "VARCHAR",
         "description": "Publisher's group of parentheticals making the same point; NULL when ungrouped."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
     "grain": "One parenthetical summary one opinion wrote about another.",
     "identity_columns": [
       "parenthetical_id"
+    ],
+    "later_policy_columns": [
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_opinions": {
@@ -20898,7 +20952,7 @@
       {
         "column_name": "page_count",
         "column_type": "BIGINT",
-        "description": "Page count of the original document when known, as text."
+        "description": "Page count of the original document when known."
       },
       {
         "column_name": "sha1",
@@ -20909,6 +20963,36 @@
         "column_name": "download_url",
         "column_type": "VARCHAR",
         "description": "Where the publisher obtained the original document, when recorded; no current accessibility claim. For court-website opinions the file name usually carries the lead docket number (a consolidated case lists two), the fallback key to court_dockets.docket_number."
+      },
+      {
+        "column_name": "local_path",
+        "column_type": "VARCHAR",
+        "description": "Path of the original document in CourtListener's storage, not a SpicyRegs file."
+      },
+      {
+        "column_name": "extracted_by_ocr",
+        "column_type": "BOOLEAN",
+        "description": "Publisher flag: true when the opinion's text was extracted by OCR (the export spells it `t` or `f`)."
+      },
+      {
+        "column_name": "date_created",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher created the opinion record."
+      },
+      {
+        "column_name": "date_modified",
+        "column_type": "VARCHAR",
+        "description": "Timestamp the publisher last modified the opinion record."
+      },
+      {
+        "column_name": "dump_date",
+        "column_type": "VARCHAR",
+        "description": "The CourtListener bulk export the row was copied from (ISO date)."
+      },
+      {
+        "column_name": "source_sha256",
+        "column_type": "VARCHAR",
+        "description": "SHA-256 of the CourtListener export file the row was read from (`sha256:` and 64 hex digits): the original, kept in the raw archive and the run's source evidence."
       }
     ],
     "subject": "courts",
@@ -20918,7 +21002,13 @@
     ],
     "later_policy_columns": [
       "sha1",
-      "download_url"
+      "download_url",
+      "local_path",
+      "extracted_by_ocr",
+      "date_created",
+      "date_modified",
+      "dump_date",
+      "source_sha256"
     ]
   },
   "court_opinion_pdf_extractions": {
@@ -26353,20 +26443,20 @@
     "label": "Reported candidate and committee financial profiles",
     "category": "query_data",
     "summary": "Exact source-reported money for an explicitly selected candidate and committee CSV snapshot, with visible missing dates and unresolved conflicts.",
-    "coverage": "Not a range. Designed for complete explicitly selected candidate and committee summary CSV populations in one election cycle. Actual population and publication are established by the selected generation and its retained source evidence. The date records this design statement, not a source measurement.",
+    "coverage": "Not a range. Every row of one captured pair of the FEC's 2026 candidate and committee summary CSVs, which FEC rewrites daily; captured_at and period_end say how current each profile is. Each refresh replaces the published pair; earlier pairs are in earlier generations and source evidence, not in this table. The fec-query tables keep their own, older captures. The date records this design statement, not a source measurement.",
     "kind": "not_a_range",
-    "measured_on": "2026-10-20",
+    "measured_on": "2026-11-10",
     "data_quality": null,
     "columns": [
       {
         "column_name": "profile_id",
         "column_type": "VARCHAR",
-        "description": "Stable profile identity from selection policy, explicit scope, entity kind, native entity ID and election cycle."
+        "description": "Profile identity from selection policy, entity kind, native entity ID and election cycle; the same entity keeps it across refreshes. Generations published before 2026-11 also hashed scope_id, so theirs changed with each capture."
       },
       {
         "column_name": "scope_id",
         "column_type": "VARCHAR",
-        "description": "Explicit retained snapshot selection identity. This is not an automatically refreshed latest record."
+        "description": "Names the cycle and capture day of the published CSV pair; it changes with each refresh, profile_id does not."
       },
       {
         "column_name": "entity_kind",
@@ -26441,12 +26531,12 @@
       {
         "column_name": "source_sha256",
         "column_type": "VARCHAR",
-        "description": "SHA-256 of the original retained CSV capture, distinct from the derived parent table."
+        "description": "SHA-256 of the original retained CSV capture the profile was mapped from."
       },
       {
         "column_name": "source_table_generation",
         "column_type": "VARCHAR",
-        "description": "Exact managed fec-query generation containing the input summary table; recorded as a generation parent."
+        "description": "Null since profiles are mapped from the captured CSV itself (source_sha256). Generations published before 2026-11 named the fec-query generation they were selected from."
       },
       {
         "column_name": "witnesses_json",
@@ -39672,37 +39762,6 @@
         ]
       },
       {
-        "dataset": "court_citation_map",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citing_opinion_id",
-          "cited_opinion_id"
-        ],
-        "processing_fields": [
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_citations",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citation_id"
-        ],
-        "processing_fields": [
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
         "dataset": "court_docket_groups",
         "receipt_only": false,
         "policy_version": "courts/1",
@@ -39778,38 +39837,6 @@
         "processing_fields": [
           "source_column",
           "source_sha256",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_opinions",
-        "receipt_only": false,
-        "policy_version": "courts/2",
-        "identity_columns": [
-          "opinion_id"
-        ],
-        "processing_fields": [
-          "local_path",
-          "extracted_by_ocr",
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_parentheticals",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "parenthetical_id"
-        ],
-        "processing_fields": [
           "dump_date",
           "conversion_inputs",
           "raw_source_record",

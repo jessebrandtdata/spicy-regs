@@ -7,6 +7,28 @@ Entries link to the pull request that introduced the change.
 
 ## [Unreleased]
 
+### Changed
+
+- **Court opinions and the three citation tables publish without per-row
+  receipts** (ss-vse3). `court_opinions`, `court_citations`,
+  `court_citation_map` and `court_parentheticals` are rebuilt whole from one
+  CourtListener export each, and their receipts (4.2 GB and 12.0 GB, every one
+  `accepted`) held only the publisher's record fields, now columns at the end:
+  `date_created`, `date_modified`, `local_path`, `extracted_by_ocr`,
+  `dump_date`, and `source_sha256`, the export file each row was read from. A
+  download goes once into the raw archive with its capture receipt and is kept
+  as source evidence; a row the mapping refuses or that the publisher spelled
+  other than canonically is recorded in the table's exceptions file with its
+  source row; more than 1,000 such rows, or an identity held twice, stop the
+  build. A held export (`COURTLISTENER_BULK_DIR`) is retained as the run's
+  original too, so every pointer names a file the evidence holds; court-opinions
+  publishes by hand (`publish-local-generation`), the citations through their
+  workflow. The last generations with receipts are pinned
+  (`docs/pins/receipt-archive.json`); the switch, its equality proof and the
+  procedure for the court opinions refresh are in
+  `docs/court-receipt-archive.md`. Policies `courts/2` (citations family) and
+  `courts/3` (`court_opinions`): the new columns.
+
 ### Fixed
 
 - **A table that kept its rows and columns is not refused for halving in size**
@@ -148,13 +170,30 @@ Entries link to the pull request that introduced the change.
   whatever it merged (1 row or 60,028), about 33 to 38 of them on receipts:
   selecting and validating the prior's, merging, admitting and uploading the
   4.2 GiB member. Its receipts held only each row's contract-shape copy, which
-  the published row implies (checked on 271,550 sampled receipts), so no column
+  the published row implies (every one of the 26.5 million checked), so no column
   is added. A batch now converts its rows with the same writer and upserts them
   over the published table (`native_merge.upsert_subjects`); the refresh's
   `run-rollup-comment-attributes` publishes nothing. The last generation with
   receipts is pinned at merge (`scripts/pin_receipt_archive.py`); the window and
   checks are in `docs/comment-attributes-receipt-archive.md`.
 
+- **`fec_financial_profiles` is built from a captured pair of FEC summary CSVs,
+  not from fec-query** (ss-coca). `build --captures` maps the candidate and
+  committee CSVs from the raw archive with the fec-query summary mapper, and the
+  dispatch-only `rollup-fec-financial-profiles.yml` does the same with the day's
+  download; the family is also published by hand (`publish-local-generation`).
+  A generation records no parent, `source_table_generation` is null, and the
+  explorer lists no input table. Rebuilt from the 2026-09-12 pair, all 18,521
+  published rows match but for those two lineage fields. The fec-query tables
+  keep their September captures, so a fresh profile can show newer totals than
+  the same committee's summary or itemized rows there.
+  **`profile_id` now survives a refresh.** It hashes the selection rule, entity
+  kind, FEC identifier and cycle, no longer `scope_id` (the capture day), so a
+  link to a profile keeps working; the first refresh changes every id once.
+  A file with more than 10% fewer rows than the live table records refuses
+  (`--accept-shrink` accepts a reviewed loss by hand), and the hosted run sends
+  the day's two originals to R2 evidence before it parses them, which replaces
+  the never-run `capture-fec-summaries.yml`.
 - **`comments` and `comments_index` publish without ETL receipts** (ss-juz8,
   part of ss-vse3). The comments family's generation has no `etl_receipts.parquet`
   and its index entry no `etlReceipts`; the generation's two tables keep their
@@ -185,9 +224,11 @@ Entries link to the pull request that introduced the change.
   `receipts_retired`; `docs/pins/receipt-archive.json` keeps the last receipts
   generation of each, published 2026-11-10. The journal gains
   `federal-register-pages` (each page's SHA-256 and record count) and
-  `federal-register-merge` (prior, read, new and total rows). A prior without
-  a column that left receipts is refused; a prior of another width is mapped
-  again. A document the mapping refuses now fails the night instead of being
+  `federal-register-merge` (prior, read, new and total rows, whether the prior
+  was mapped again, and the columns that added, dropped or retyped). A prior
+  without a column that left receipts is refused; a prior of another width is
+  mapped again, and its rows are counted as published, before the re-map. A
+  document the mapping refuses now fails the night instead of being
   refused into a receipt. The Register's receipt restore path is deleted.
   Both jobs time out at 30 minutes (a re-read keeps 240).
 

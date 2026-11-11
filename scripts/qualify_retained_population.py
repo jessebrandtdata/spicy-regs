@@ -32,8 +32,10 @@ from spicy_regs.sources import publication
 from spicy_regs.transforms import regulations_receipts as regulations
 
 
-DATASETS = {'court_opinions': 'court-opinions', 'federal_register': 'federal-register',
-            'dockets': 'dockets', 'documents': 'documents'}
+#: The tables whose receipt conversion this replays. A table whose receipts are retired
+#: (``subject_catalog.RECEIPTS_RETIRED``) has no conversion left to qualify, and admission refuses
+#: receipts for it, so it leaves this map: federal_register did with ss-vse3 step 3.
+DATASETS = {'court_opinions': 'court-opinions', 'dockets': 'dockets', 'documents': 'documents'}
 BASE_DATASETS = frozenset({'dockets', 'documents'})
 
 
@@ -231,7 +233,6 @@ def populations(dataset, source, subject, receipt):
 def complete_sample(dataset, source, destination, *, bound=2000):
     """Scan all source shapes; retain first eight per shape plus periodic rows."""
     fields = {'court_opinions': ('per_curiam', 'page_count', 'author_str'),
-              'federal_register': ('document_type', 'agencies_json', 'title'),
               'dockets': ('docket_type', 'rin', 'title'),
               'documents': ('document_type', 'attachment_records_json', 'title')}[dataset]
     selected, seen = [], {}

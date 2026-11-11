@@ -352,10 +352,9 @@ def _query(item, base, profile, iterator):
     return records(), outcome
 
 
-def _original(item, base, profile):
-    """Iterate one complete retained original, refusing an ordinal that skips or repeats."""
+def _original(item, store, profile):
+    """Iterate one complete retained original read from ``store``, refusing an ordinal that skips or repeats."""
     from spicy_docs.sources.fec.delimited import held_original
-    from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
     module = importlib.import_module("spicy_docs.sources.fec." + _PROFILES[item["profile"]][0])
     iterator = getattr(module, _ORIGINAL_ITERATORS[item["profile"]])
@@ -368,7 +367,6 @@ def _original(item, base, profile):
     }
 
     def records():
-        store = LocalSourceNativeBlobStore(_path(item["blob_root"], base))
         (page,) = iterator(scope, blob_source=store)
         count = 0
         traversal = profile.traversal_check()
@@ -555,6 +553,21 @@ def _named_fields(item, wrapped, row, locator, headers, dictionary=None):
     return mapped
 
 
+def header_mapped_records(item, store):
+    """Yield ``(row, named fields)`` for each record of one positional collection with its own header, from ``store``.
+
+    The rows are the ``fec_source_records`` rows this build would publish for ``item`` (a manifest collection in
+    ``scope`` mode, header at ordinal 0), so a reader of one original outside a manifest keeps the same locators.
+    Named fields are ``None`` for the header and blank rows. A verified archive session must be open.
+    """
+    profile, _ = _profile(item["profile"])
+    records, outcome = _original(item, store, profile)
+    headers = {}
+    for wrapped in records:
+        row, locator = _shape(item, wrapped, outcome)
+        yield row, _named_fields(item, wrapped, row, locator, headers)
+
+
 def _relationships(item, wrapped, row, locator, version, mapped):
     """Yield every relationship this record's profile and field mapping authorize."""
     evidence = {
@@ -586,6 +599,7 @@ def build_fec_observations(manifest: Path, output_dir: Path, *, batch_size: int 
     merge, source mutation, or publication occurs. Replays use a new destination.
     """
     from spicy_docs.sources.fec.delimited import verified_archive_session
+    from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
     if type(batch_size) is not int or batch_size < 1:
         raise ValueError("batch_size must be a positive integer")
@@ -654,7 +668,8 @@ def build_fec_observations(manifest: Path, output_dir: Path, *, batch_size: int 
                     else (None, None)
                 )
                 if "scope" in item:
-                    records, outcome = _original(item, manifest.parent, profile)
+                    store = LocalSourceNativeBlobStore(_path(item["blob_root"], manifest.parent))
+                    records, outcome = _original(item, store, profile)
                 elif "captures" in item:
                     records, outcome = _query(item, manifest.parent, profile, iterator)
                 else:

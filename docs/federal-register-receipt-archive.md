@@ -131,7 +131,7 @@ FROM read_parquet(getvariable('register'));
 -- (the window starts 120 days before the PRIOR table's newest date) and never earlier than it by more than that
 
 -- 7. Nothing older than the window changed: the 38 prior columns, both ways.
-SET VARIABLE window_start = (SELECT CAST(CAST(max(publication_date) AS DATE) - INTERVAL 120 DAY AS VARCHAR)
+SET VARIABLE window_start = (SELECT CAST(CAST(CAST(max(publication_date) AS DATE) - INTERVAL 120 DAY AS DATE) AS VARCHAR)
                              FROM read_parquet(getvariable('old_register')));
 SELECT (SELECT count(*) FROM (
           SELECT * EXCLUDE (html_url, pdf_url, body_html_url, source_sha256, regulations_dot_gov_info_json)
@@ -182,6 +182,84 @@ Then, outside DuckDB:
 A comparison of two generations must leave `source_sha256` out, as check 7
 does: it changes on every row in the window each night whether or not the
 record changed.
+
+## After the first night without receipts: checks from the public files
+
+The first scheduled night after step 3 merged publishes both tables without
+receipts. `old_*` is now the archive-pinned generation of each family
+(`docs/pins/receipt-archive.json`). Checks 3 to 6 above apply unchanged: 43
+and 17 columns, every row filled, URLs on the document's page, page pointers
+inside the window. Rows read on the earlier night that have since left the
+window keep that night's pointer, so expect a few more pointed rows and pages
+than the night's own. Then:
+
+```sql
+-- 1'. Neither family states receipts; both prefixes are new. The index is read as text: a family without
+-- etlReceipts has no such key, which read_json's inferred struct would refuse.
+SELECT json_extract_string(content, '$.families."federal-register".prefix')       AS register_prefix,
+       json_extract(content, '$.families."federal-register".etlReceipts')         AS register_receipts,
+       json_extract_string(content, '$.families."fr-docket-links".prefix')        AS links_prefix,
+       json_extract(content, '$.families."fr-docket-links".etlReceipts')          AS links_receipts
+FROM read_text(getvariable('base') || '/publication.v2.json');
+-- expect both receipts NULL
+
+-- 2'. The links' root states no receipts and pins the new Register generation as its parent.
+SELECT json_extract(content, '$.spec.etlReceipts') IS NULL                                AS no_receipts,
+       json_extract_string(content, '$.spec.parents."federal_register.parquet".artifactDigest') AS parent
+FROM read_text(getvariable('base') || '/<links_prefix>/artifact.json');
+-- expect true, and parent = sha256:<the register prefix's 64 hex>; the Register's root: no_receipts true
+
+-- 7'. Every row older than the window is carried exactly, every column, its page pointer included. The window
+-- starts at the old table's newest date less 120 days, the night's first re-read day, spelled as a date: as a
+-- timestamp ('2026-07-13 00:00:00') it would sort after '2026-07-13' and count that re-read day as older.
+SET VARIABLE window_start = (SELECT CAST(CAST(CAST(max(publication_date) AS DATE) - INTERVAL 120 DAY AS DATE) AS VARCHAR)
+                             FROM read_parquet(getvariable('old_register')));
+SELECT (SELECT count(*) FROM (
+          SELECT * FROM read_parquet(getvariable('register')) WHERE publication_date < getvariable('window_start')
+          EXCEPT ALL
+          SELECT * FROM read_parquet(getvariable('old_register')) WHERE publication_date < getvariable('window_start')))
+                                                                                    AS new_not_in_old,
+       (SELECT count(*) FROM (
+          SELECT * FROM read_parquet(getvariable('old_register')) WHERE publication_date < getvariable('window_start')
+          EXCEPT ALL
+          SELECT * FROM read_parquet(getvariable('register')) WHERE publication_date < getvariable('window_start')))
+                                                                                    AS old_not_in_new;
+-- expect 0 and 0
+
+-- 8'. The same for the links, all 17 columns (inside a tie on docket and date the order may differ; this
+-- comparison does not depend on order).
+SELECT (SELECT count(*) FROM (
+          SELECT * FROM read_parquet(getvariable('links')) WHERE publication_date < getvariable('window_start')
+          EXCEPT ALL
+          SELECT * FROM read_parquet(getvariable('old_links')) WHERE publication_date < getvariable('window_start')))
+                                                                                    AS new_not_in_old,
+       (SELECT count(*) FROM (
+          SELECT * FROM read_parquet(getvariable('old_links')) WHERE publication_date < getvariable('window_start')
+          EXCEPT ALL
+          SELECT * FROM read_parquet(getvariable('links')) WHERE publication_date < getvariable('window_start')))
+                                                                                    AS old_not_in_new;
+-- expect 0 and 0
+
+-- 9'. No prior record was lost, and the table grew by the night's new documents only.
+SELECT (SELECT count(*) FROM read_parquet(getvariable('register')))
+         - (SELECT count(*) FROM read_parquet(getvariable('old_register')))                    AS added_rows,
+       (SELECT count(*) FROM (SELECT document_number, publication_date FROM read_parquet(getvariable('old_register'))
+                              EXCEPT
+                              SELECT document_number, publication_date FROM read_parquet(getvariable('register'))))
+                                                                                                AS old_keys_lost;
+-- expect added_rows the night's new documents (tens to a few hundred), old_keys_lost 0
+```
+
+Then, outside DuckDB:
+
+- Job 1's log has no `regulatory restore` line and ends with
+  `Federal Register: <rows> rows (<read> read, <new> new)`, where `<rows>` is
+  the old row count plus `<new>`, and `<new>` is check 9's `added_rows`. Both
+  jobs finish well inside their 30 minutes.
+- The pinned generations' receipt files are still stored:
+  `curl -sSI <base>/<receipts key of each pin>` answers 200.
+- `spicy-regs-dict check --source r2` passes with no notice for either table,
+  and `policy_migrations --base-url` names neither family.
 
 ## Archive pins
 

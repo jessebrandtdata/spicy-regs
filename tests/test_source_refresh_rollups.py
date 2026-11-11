@@ -33,9 +33,10 @@ ROLLUPS = {
     "ofac_sanctions_app": rollups.OfacSanctionsRollup,
     "grants_opportunities_app": rollups.GrantsOpportunitiesRollup,
     "house_disbursements_app": rollups.HouseDisbursementsRollup,
+    "fec_financial_profiles_app": rollups.FecFinancialProfilesRollup,
 }
 #: The refreshes whose hosted build path has passed a rehearsal, and the schedule each has run on since.
-SCHEDULED = {"treasury-fiscal": "43 22 * * *"}
+SCHEDULED = {"treasury-fiscal": "43 22 * * *", "fec-financial-profiles": "51 11 * * *"}
 
 
 @pytest.mark.parametrize("app, rollup", ROLLUPS.items(), ids=lambda value: getattr(value, "name", value))
@@ -111,6 +112,74 @@ def test_ofac_keeps_its_exports_in_evidence_and_skips_published_ones(tmp_path, m
     assert generations(tmp_path / "unchanged") == []
     (outcome,) = (tmp_path / "unchanged").glob("source-evidence/*/run-outcome.json")
     assert json.loads(outcome.read_bytes())["outcome"] == "complete"
+
+
+def test_fec_profiles_build_from_the_days_summaries_and_skip_published_ones(tmp_path, monkeypatch):
+    import pyarrow as pa
+
+    from tests.test_fec_financial_profiles import candidate, committee, csv_bytes
+
+    bodies = {"candidate": csv_bytes("candidate", [candidate()]), "committee": csv_bytes("committee", [committee()])}
+    digests = {kind: "sha256:" + hashlib.sha256(body).hexdigest() for kind, body in bodies.items()}
+    serve = httpx.MockTransport(lambda request: httpx.Response(
+        200, content=bodies[request.url.path.rsplit("/", 1)[-1].split("_")[0]], headers={"content-type": "text/csv"}))
+    monkeypatch.setattr(rollups.FecFinancialProfilesRollup, "transport", serve)
+    live_rows = {"candidate": 1, "committee": 1}
+
+    def live(self, directory):
+        directory.mkdir()
+        pq.write_table(pa.table({"entity_kind": list(live_rows), "witness_count": list(live_rows.values())}),
+                       directory / "fec_financial_profiles.parquet")
+        return [directory / "fec_financial_profiles.parquet"]
+
+    monkeypatch.setattr(rollups.FecFinancialProfilesRollup, "published_tables", live)
+    rollups.FecFinancialProfilesRollup(output_dir=tmp_path / "first").run()
+    generation, events = published(tmp_path / "first")
+    rows = pq.read_table(generation / "fec_financial_profiles.parquet").to_pylist()
+    assert sorted((row["entity_kind"], row["entity_id"]) for row in rows) == [
+        ("candidate", "H6CA04230"), ("committee", "C00880898")]
+    assert {row["source_sha256"] for row in rows} == set(digests.values()) == {
+        event["sha256"] for event in events if event.get("stage") == "fec-summary-capture"
+        and event.get("blob_store") == "central-raw"}
+    assert not json.loads((generation / "artifact.json").read_text())["spec"].get("parents")
+
+    # Nothing new only when both files are published bytes: either file alone changing rebuilds.
+    for held in (("candidate", "committee"), ("candidate",), ("committee",)):
+        published_digests = {digests[kind] for kind in held}
+        publish_as_prior(monkeypatch, lambda event, fields, published_digests=published_digests: (
+            fields.get("stage") == "fec-summary-capture" and fields.get("sha256") in published_digests))
+        rollups.FecFinancialProfilesRollup(output_dir=tmp_path / "-".join(held)).run()
+        assert len(generations(tmp_path / "-".join(held))) == (0 if len(held) == 2 else 1), held
+
+
+def test_fec_profiles_keep_the_days_files_in_r2_evidence_when_the_build_refuses(tmp_path, monkeypatch):
+    """FEC overwrites both files daily, so a refused build must still leave that day's bytes in R2 evidence."""
+    import pyarrow as pa
+
+    from spicy_regs.sources import r2
+    from tests.test_fec_financial_profiles import committee, csv_bytes
+
+    bodies = {"candidate": csv_bytes("candidate", []), "committee": csv_bytes("committee", [committee()])}
+    serve = httpx.MockTransport(lambda request: httpx.Response(
+        200, content=bodies[request.url.path.rsplit("/", 1)[-1].split("_")[0]], headers={"content-type": "text/csv"}))
+    monkeypatch.setattr(rollups.FecFinancialProfilesRollup, "transport", serve)
+
+    def live(self, directory):
+        directory.mkdir()
+        pq.write_table(pa.table({"entity_kind": ["candidate", "committee"], "witness_count": [4540, 1]}),
+                       directory / "fec_financial_profiles.parquet")
+        return [directory / "fec_financial_profiles.parquet"]
+
+    monkeypatch.setattr(rollups.FecFinancialProfilesRollup, "published_tables", live)
+    store = Store()
+    monkeypatch.setattr(r2, "verified_target_client", lambda: (store, "fixture"))
+    monkeypatch.setattr(r2, "require_credentials", lambda _: None)
+    with pytest.raises(ValueError, match="candidate summary CSV holds 0 rows"):
+        rollups.FecFinancialProfilesRollup(output_dir=tmp_path / "refused", skip_upload=False).run()
+    for body in bodies.values():
+        assert store.objects["source-evidence/blobs/sha256/" + hashlib.sha256(body).hexdigest()] == body
+    assert any(key.startswith("source-evidence/indexes/fec-summaries/") for key in store.objects)
+    assert generations(tmp_path / "refused") == []
 
 
 def test_grants_takes_the_newest_export_and_skips_a_published_date(tmp_path, monkeypatch):

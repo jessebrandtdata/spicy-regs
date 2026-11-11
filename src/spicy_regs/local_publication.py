@@ -24,9 +24,13 @@ from spicy_regs.sources import publication, r2
 from spicy_regs.sources.publication import PublicationError
 
 #: Families refreshed by hand. A family with a hosted workflow is published by that workflow, never from here.
+#: court-opinions has none: its 51.5 GiB export takes longer to download than a hosted job may run
+#: (docs/court-receipt-archive.md).
 LOCAL_FAMILIES = frozenset({
     "administration-policy",
+    "court-opinions",
     "executive-orders",
+    "fec-financial-profiles",
     "grants-opportunities",
     "house-disbursements",
     "ofac-sanctions",

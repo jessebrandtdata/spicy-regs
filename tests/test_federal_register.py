@@ -244,9 +244,14 @@ def test_rin_is_derived_for_every_row_whatever_the_prior_held(tmp_path, without)
 
     prior = _prior(tmp_path, without=without)
     fresh = [dict(_RAW_DOC, document_number="F-one", publication_date="2024-03-01")]
+    journal = _Journal()
     out = merge_federal_register(tmp_path, since=date(2024, 3, 1), documents=lambda start: iter(fresh),
-                                 download_prior=lambda k, p: False)
+                                 download_prior=lambda k, p: False, evidence=journal)
     assert pq.read_schema(out).equals(subject_schema("federal_register"), check_metadata=False)
+    # The journal says whether the prior was mapped again and which columns that added: a rename leaves a trace.
+    [merge] = journal.events["federal-register-merge"]
+    assert merge == {"prior_rows": 3, "read_rows": 1, "new_rows": 1, "rows": 4, "remapped": bool(without)} | (
+        {"columns_added": ["topics", "rin"], "columns_dropped": [], "columns_retyped": []} if without else {})
     held = {row["document_number"]: row for row in pq.read_table(out).to_pylist()}
     assert held["F-one"]["rin"] == "2060-AV12"
     assert held["P-two"]["rin"] == "1111-AA11", "the first of several; the array keeps the rest"
@@ -255,6 +260,39 @@ def test_rin_is_derived_for_every_row_whatever_the_prior_held(tmp_path, without)
         assert {name: value for name, value in held[number].items() if name not in ("rin", *without)} == {
             name: value for name, value in row.items() if name not in ("rin", *without)}
         assert all(held[number][name] is None for name in without if name != "rin")
+
+
+def test_a_re_map_that_loses_a_row_fails_the_merge(tmp_path, monkeypatch):
+    """The count is the prior's as published, so a re-map that drops a row cannot pass as a smaller prior."""
+    import pyarrow.parquet as pq
+
+    from spicy_regs.transforms import build_federal_register as builder
+
+    mapped = builder._mapped
+
+    def losing(text, destination, schema):
+        mapped(text, destination, schema)
+        if destination.name == "_fr_prior.parquet":
+            table = pq.read_table(destination)
+            pq.write_table(table.slice(1), destination)
+        return destination
+
+    monkeypatch.setattr(builder, "_mapped", losing)
+    _prior(tmp_path, without=("topics",))
+    with pytest.raises(ValueError, match="lost or repeated a record.*'prior_rows': 3.*'rows': 2"):
+        merge_federal_register(tmp_path, since=date(2024, 3, 1), documents=lambda start: iter(()),
+                               download_prior=lambda k, p: False)
+    assert not (tmp_path / "federal_register.parquet").exists()
+
+
+class _Journal:
+    """The run's journal as the merge uses it: named events with their fields."""
+
+    def __init__(self):
+        self.events = {}
+
+    def event(self, name, **fields):
+        self.events.setdefault(name, []).append(fields)
 
 
 def test_a_prior_without_a_column_that_left_receipts_is_refused_before_anything_is_read(tmp_path):

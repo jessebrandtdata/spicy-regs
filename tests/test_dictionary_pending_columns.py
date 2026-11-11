@@ -92,3 +92,47 @@ def test_only_a_declared_earlier_policy_of_a_family_with_receipts_is_recognised(
     live["federal_register"] = live["federal_register"][:-1]
     before, after, notices = errors(index, live, load_root)
     assert after == before and len(before) == 2 and notices == []
+
+
+#: The court tables whose fields left their receipts (ss-vse3), with the live generations' own roots (committed for
+#: the archive pins): the columns stay pending until each family publishes without receipts.
+COURT_ROOTS = {"court-citations": "7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d",
+               "court-opinions": "85589a33b63f22bfac522e5f2c41210eb69437b763b81380562eda1fd33ef298"}
+COURT_PROMOTED = {"court_citations": ["date_created", "date_modified", "dump_date", "source_sha256"],
+                  "court_citation_map": ["dump_date", "source_sha256"],
+                  "court_parentheticals": ["dump_date", "source_sha256"],
+                  "court_opinions": ["date_created", "date_modified", "dump_date", "extracted_by_ocr", "local_path",
+                                     "source_sha256"]}
+
+
+def test_the_court_promotions_are_notices_against_the_live_generations_own_roots():
+    import gzip
+    import json
+    from pathlib import Path
+
+    roots = {family: json.loads(gzip.decompress((Path(__file__).parent / "fixtures/receipt_archive" /
+                                                 f"{digest}.json.gz").read_bytes()))
+             for family, digest in COURT_ROOTS.items()}
+    index = {"families": {family: {"prefix": f"generations/{family}/{COURT_ROOTS[family]}",
+                                   "tables": root["spec"]["tables"], "etlReceipts": {"datasets": [
+                                       policy["dataset"] for policy in root["spec"]["etlReceipts"]["policies"]]}}
+                          for family, root in roots.items()}}
+    # Each live table holds exactly the columns its root's policy declared.
+    live = {}
+    for root in roots.values():
+        for policy in root["spec"]["etlReceipts"]["policies"]:
+            from spicy_regs.etl_receipts import DatasetPolicy
+            from spicy_regs.native_types import described_schema
+            declared = DatasetPolicy.from_descriptor(policy)
+            live[declared.dataset] = described_schema(declared.subject_schema)
+    assert set(live) == set(COURT_PROMOTED)
+
+    def load_root(base_url, read):
+        return b"", roots[read["prefix"].split("/")[1]]
+
+    _, after, notices = errors(index, live, load_root)
+    assert after == []
+    assert sorted(notices) == sorted(
+        f"[{table}] declared, not yet published: {', '.join(columns)} (the selected generation states "
+        f"{'courts/2' if table == 'court_opinions' else 'courts/1'}; installed is "
+        f"{installed_policies()[table].policy_version})" for table, columns in COURT_PROMOTED.items())
