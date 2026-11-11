@@ -72,8 +72,9 @@ checkout that does not change between them: a changed `*.py` file makes the
 audit refuse the build. The 119-138 addition on 2026-11-11 measured, peak RSS
 under the watchdog: acquire 17 s and 0.6 GiB; build 91 s and 0.5 GiB; audit
 127 s and 2.4 GiB; preparation 21 s and 5.7 GiB (it verifies the whole live
-prior, receipts included); about 1.1 GB of scratch. A publish uploads about
-0.98 GB: the three rewritten tables and the zip.
+prior, receipts included); about 0.7 GB of scratch. A publish uploads about
+0.5 GB: the three rewritten tables (zstd: sections 368 MB, 0.74 of the prior's
+bytes, above the 0.5 shrink floor) and the zip.
 
 ```sh
 # 1. Capture the corpus zip into the shared raw archive (one request, ~110 MB).
