@@ -36,7 +36,7 @@ ROLLUPS = {
     "fec_financial_profiles_app": rollups.FecFinancialProfilesRollup,
 }
 #: The refreshes whose hosted build path has passed a rehearsal, and the schedule each has run on since.
-SCHEDULED = {"treasury-fiscal": "43 22 * * *"}
+SCHEDULED = {"treasury-fiscal": "43 22 * * *", "fec-financial-profiles": "51 11 * * *"}
 
 
 @pytest.mark.parametrize("app, rollup", ROLLUPS.items(), ids=lambda value: getattr(value, "name", value))
