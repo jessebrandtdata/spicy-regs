@@ -68,10 +68,10 @@ def retired(table: str) -> str | None:
 
     if table not in retired_receipt_datasets():
         return None
-    return (f"{table} no longer publishes per-row ETL receipts: the source fields they held are the table's own "
-            f"columns, which query_sql reads. A row the mapping refused, or whose original spelling the typed value "
-            f"does not reproduce, is recorded only in its run's evidence and in the retained original. Its last "
-            f"generation with receipts is kept as an archive (docs/pins/receipt-archive.json).")
+    return (f"{table} no longer publishes per-row ETL receipts. Its mapped values are the table's own columns, which "
+            f"query_sql reads. What only the receipts held, such as the record as received and source fields the "
+            f"mapping leaves out, is not in the table: the last generation with receipts keeps it for the rows it "
+            f"held, as an archive (docs/pins/receipt-archive.json); for a later read only the retained source has it.")
 
 
 def carried_fields(table: str) -> dict[str, str | None] | None:

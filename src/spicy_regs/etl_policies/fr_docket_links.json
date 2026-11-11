@@ -19,5 +19,6 @@
   "receipt_only": false,
   "nullable_identity_fields": [
     "docket_source_ordinal"
-  ]
+  ],
+  "receipts_retired": true
 }
