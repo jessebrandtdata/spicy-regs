@@ -15,31 +15,76 @@ tickets, not here.
 
 ## Where the plan is
 
-- **Tickets** in the umbrella checkout, `../.tickets` (`tk` CLI). Start from the epics: `ss-vse3`
-  (retire per-row ETL receipts), `ss-i1dy` (delete what is kept for the sake of it), `ss-coca`
-  (table freshness).
-- **Decided 2026-11-10.** Per-row ETL receipts are retired on every table, family by family; a
-  layer-1 table is a cleaned, normalized 1:1 copy of the publisher's record. `docs/pins/receipt-archive.json`
-  names the last receipts generation of each switched table. The 2026-10-03 design that moved
-  provenance into a shared `etl_receipts` table, which this file used to open with, is superseded.
+- **Tickets** in the umbrella checkout, `../.tickets` (`tk` CLI). Start from `ss-vse3` (replace
+  per-row ETL receipts), `ss-i1dy` (delete what is kept for the sake of it) and `ss-coca` (table
+  freshness).
+- **Decided 2026-11-10** (recorded in `ss-vse3`). Per-row ETL receipts are replaced on every table by
+  evidence kept once per download plus a pointer on the row (`source_sha256`); a layer-1 table is a
+  cleaned, normalized 1:1 copy of the publisher's record. **Existing receipt files are frozen as an
+  archive and never deleted**; `docs/pins/receipt-archive.json` names the last receipts generation of
+  each switched table. The 2026-10-03 design that moved provenance into a shared `etl_receipts`
+  table, which this file used to open with, is superseded.
 - **Target layout.** The proposed data map (four layers: original, source, linked, answers) is
-  `datamap/README.md` on the umbrella repository's branch `codex/greenfield-ddk-datamap-20261108`.
-  Nothing is built to it yet.
-- **History.** `docs/disposition.md` holds the July–August program. The September–October session
-  log this file carried (1,800 lines) is in git: `git show 000770ea:PLAN.md`.
+  `datamap/README.md` on branch `codex/greenfield-ddk-datamap-20261108` of the umbrella repository,
+  which exists only in the local umbrella checkout. Nothing is built to it yet.
+- **History.** `docs/disposition.md` holds the July–August program and its open questions for
+  Mike. This file's earlier 1,806 lines, most of them a September session log, are in git:
+  `git show 000770ea:PLAN.md`.
 
-## Open items carried from the old plan
+## Next actionable work
 
-Listed under "Next actionable work" before the rewrite. Their state was not re-checked on
-2026-11-11; file a ticket before working one.
+Carried from the earlier file and checked against the code and the live index on 2026-11-11.
 
-- Name both Congresses on the cron across a Congress boundary (chosen: derived in `congress_scope`).
-- Host the document-to-RIN links as their own table.
-- Bound the per-request retry class on every Congress.gov consumer.
-- Add `full_text_xml_url` to the Federal Register ingest: fetch it, do not derive it from
-  `body_html_url`. Whoever builds full-text search first takes the pointer we publish.
-- Agency scrapers: consume what spicy-docs provides.
-- Make regulatory publication scale with change.
+Still open:
+
+- **Host the document-to-RIN links as their own table.** `federal_register.rin` is the first RIN
+  only; 1,499 documents carried two or more when measured, so a communication whose RIN is not the
+  first never joins. An `fr_document_rins` rollup in the shape of `fr_docket_links` closes it. No
+  such table exists in the code.
+- **Add `full_text_xml_url` to the Federal Register ingest.** Fetch it, do not derive it from
+  `body_html_url`. The published table carries `html_url`, `pdf_url` and `body_html_url` only.
+  Whoever builds full-text search first takes the pointer we publish.
+
+Recorded as open in September and not re-checked:
+
+- **Make regulatory publication scale with change.** `dockets` and `documents` publish as managed
+  families. What remained: store table members once (admission re-downloaded every member and
+  copied unchanged members into each new prefix, O(family bytes) per publication), then the comments
+  family, then qualifying browser queries against the monolith order.
+
+Built since, so no longer open: both Congresses are named across a Congress boundary
+(`transforms/congress_scope.py`, `CONGRESS_BOUNDARY_OVERLAP_DAYS`); the per-request retry bound on
+Congress.gov consumers is 5 (`sources/congress_bills.py`, `transforms/build_amendments.py`); the
+agency readers from spicy-docs are consumed (`sources/retained_native_collections.py`).
+
+Rules those items left behind that the code does not state:
+
+- A workflow that sets `BILL_FAMILY_CONGRESSES` explicitly must name both Congresses for the 45 days
+  after a Congress convenes; the derivation only fills the unset default. Next boundary: 2027-01-03.
+- Adopt the agency sources (SEC, FERC, CFTC, USITC EDIS) only through their capture-level APIs.
+  Scheduling, watermarks and recovery stay here. Do not build a second persistence layer for them.
+- EDIS bulk ZIPs need a signed-in Login.gov session, not the token. Scrub its session values per
+  component before any receipt.
+- Re-measure the FCC proceedings walk before changing `MAX_RESULT_WINDOW` or how
+  `build_fcc_proceedings` materializes it.
+
+## Items other repositories link to
+
+spicy-docs' `docs/simplification-todo.md` links to these by anchor. The state shown is what this
+file recorded in September, not a fresh check; the full text is in `git show 000770ea:PLAN.md`.
+
+<a id="sr01"></a>
+- **SR01, select SpicyRegs capabilities to reuse and local duplication to remove.** Closed 2026-09-19.
+
+<a id="sr02"></a>
+- **SR02, provide supported retained public-comment/table input facts** (for DocSpec D52). Open.
+
+<a id="sr03"></a>
+- **SR03, implement selected local source improvements and consumer handoffs.** Open; follows SR01
+  and SR02.
+
+<a id="sr04"></a>
+- **SR04, adopt the faithful CourtListener bulk reader.** Done; the duplicate reader was removed.
 
 ## Downstream consumers
 
@@ -48,8 +93,10 @@ digest sits beside it in `catalog.json.sha256`; read the file rather than quotin
 
 ## How to run anything
 
-Everything goes through the project's `uv`, never a binary from `PATH`: an older `uv`, `ruff`, `ty`
-or `pytest` on `PATH` gives advice that the pinned versions reject.
+Run every tool through `uv run`, never a bare `ruff`, `ty` or `pytest` from `PATH`: an older one
+gives advice the pinned version rejects. Check `uv` itself the same way. On the maintainer's Mac the
+`uv` first on `PATH` is an old pyenv shim and the current one is `/opt/homebrew/bin/uv`; use the
+current one wherever the lines below say `uv`.
 
 ```bash
 uv run --frozen --extra comments-reader ruff check .
