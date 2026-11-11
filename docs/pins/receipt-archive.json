@@ -5,9 +5,9 @@
  "archives": {
   "comment_attributes": {
    "family": "comment-attributes",
-   "artifactDigest": "sha256:e5528b66dbe6082e1dff8592ba215018f4ce76cb522934573aac0b2eb04705e1",
-   "publishedAt": "2026-11-10T20:34:09Z",
-   "receipts": "generations/comment-attributes/e5528b66dbe6082e1dff8592ba215018f4ce76cb522934573aac0b2eb04705e1/etl_receipts.parquet"
+   "artifactDigest": "sha256:252751c8589ce4c4bbff6fa5d35099db86b95df2d2debf1071d47ef739cf02a6",
+   "publishedAt": "2026-11-11T01:56:31Z",
+   "receipts": "generations/comment-attributes/252751c8589ce4c4bbff6fa5d35099db86b95df2d2debf1071d47ef739cf02a6/etl_receipts.parquet"
   },
   "comments": {
    "family": "comments",
