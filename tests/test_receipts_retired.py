@@ -88,20 +88,6 @@ def test_the_generator_keeps_the_marker_its_installed_file_carries(retire):
     assert subject_catalog.descriptor_of(declared["federal_register"]) == subject_catalog.descriptors()["federal_register"]
 
 
-def test_no_receipt_field_declaration_for_a_retired_table(retire):
-    from spicy_regs import receipt_field_declarations
-
-    tables = receipt_field_declarations.record()["tables"]
-    marked = {marker.table for marker in receipt_field_declarations.read_markers()}
-    plain = next(name for name in sorted(tables) if name not in marked)
-    retire(plain)
-    assert plain not in receipt_field_declarations.record()["tables"]
-    # A builder's read marker on a retired table governs nothing: the switch removes it with the receipts.
-    retire(sorted(marked)[0])
-    with pytest.raises(ValueError, match="Read markers name tables with no receipts to read"):
-        receipt_field_declarations.record()
-
-
 def test_the_dictionary_lists_no_receipts_for_a_retired_table_and_checks_it_as_native(retire):
     from spicy_regs import data_dictionary
 

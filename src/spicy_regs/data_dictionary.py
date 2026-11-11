@@ -15,9 +15,8 @@ The data dictionary has two layers:
 ``spicy-regs-dict check`` reconciles the two so they can't silently drift, and
 ``spicy-regs-dict generate`` renders one Markdown page per table for the MkDocs
 site under ``docs/tables/``. ``generate`` also bundles the output ledger's
-per-table audits (``output_ledger``), the declared cross-table joins
-(``table_joins``) and what each table's receipts carry (``receipt_field_declarations``)
-for the MCP server, and ``check`` refuses a stale copy of any.
+per-table audits (``output_ledger``) and the declared cross-table joins
+(``table_joins``) for the MCP server, and ``check`` refuses a stale copy of either.
 
 Usage::
 
@@ -1656,9 +1655,7 @@ def cmd_check(args: argparse.Namespace) -> int:
                 print(f"! Could not read the published row counts: {exc}", file=sys.stderr)
                 unreadable = True
 
-    from spicy_regs import receipt_field_declarations
-
-    stale = qualification_errors() + joins_errors() + receipt_field_declarations.record_errors()
+    stale = qualification_errors() + joins_errors()
     if errors or stale:
         print(f"✗ Data dictionary check failed ({len(errors) + len(stale)} issue(s)):", file=sys.stderr)
         for err in errors + stale:
@@ -1976,8 +1973,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
     """Render the table pages, refusing (exit 1) when descriptions are out of sync with the schema.
 
     Writing the default docs dir also refreshes catalog.json (+ .sha256), table_metadata.json,
-    table_qualification.json (from the output ledger), table_joins.json (from table_joins) and
-    receipt_fields.json (from receipt_field_declarations).
+    table_qualification.json (from the output ledger) and table_joins.json (from table_joins).
     """
     descriptions = load_descriptions(Path(args.descriptions))
     schemas = _schemas_for_source(args.source, args.base)
@@ -2024,10 +2020,6 @@ def cmd_generate(args: argparse.Namespace) -> int:
         print(f"  - {output_ledger.RECORD.relative_to(REPO_ROOT)}")
         table_joins.RECORD.write_bytes(joins_bytes())
         print(f"  - {table_joins.RECORD.relative_to(REPO_ROOT)}")
-        from spicy_regs import receipt_field_declarations
-
-        receipt_field_declarations.RECORD.write_bytes(receipt_field_declarations.record_bytes())
-        print(f"  - {receipt_field_declarations.RECORD.relative_to(REPO_ROOT)}")
     return 0
 
 
