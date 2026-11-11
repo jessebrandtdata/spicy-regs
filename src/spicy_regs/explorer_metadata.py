@@ -276,10 +276,7 @@ def build_bundle(index: dict, *, descriptions: dict | None = None, registry: dic
             qualified = attached_directions(index, spec, 0, proof, extra_tables) if proof else None
             if qualified:
                 join["directions"] = qualified
-    receipt_fields = read_json("receipt_fields.json").get("tables", {})
     for name, table in tables.items():
-        table["receiptIdentity"] = table.get("identity_columns", [])
-        table["receiptContainers"] = receipt_fields.get(name, {}).get("containers", {})
         available = sum(join["child"] == name or join["parent"] == name for join in joins)
         available += sum(spec["source"] == name and any(t["available"] and t["sourceAvailable"] for t in spec["targets"])
                          or any(t["table"] == name and t["available"] and t["sourceAvailable"] for t in spec["targets"])

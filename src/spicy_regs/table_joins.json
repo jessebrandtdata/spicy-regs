@@ -10906,11 +10906,7 @@
       "mode": "row",
       "candidates": false,
       "meaning": "The exact Congressional Record package that supplied this communication.",
-      "receiptFields": [
-        "record_package_id",
-        "record_granule_id",
-        "record_entry_text"
-      ],
+      "receiptFields": [],
       "elementPath": [],
       "ruleVersion": "source-navigation/1"
     },
@@ -12107,9 +12103,7 @@
       "mode": "array",
       "candidates": true,
       "meaning": "Recorded candidate identities, including ambiguous matches. Links check the currently selected target table; recorded resolution and pins do not prove a current match. Missing, unsupported and unchecked outcomes remain visible.",
-      "receiptFields": [
-        "target_candidates_json"
-      ],
+      "receiptFields": [],
       "elementPath": [],
       "ruleVersion": "source-navigation/1"
     },
