@@ -814,15 +814,33 @@ def test_live_selected_legacy_check_accepts_declared_shape_but_refuses_real_drif
     assert "[bill_subjects.subjects_json] in-code type VARCHAR but live parquet BIGINT" in capsys.readouterr().err
 
 
-def test_live_dictionary_changed_selection_is_incomplete(monkeypatch, capsys):
+def test_live_dictionary_selection_that_keeps_changing_is_incomplete(monkeypatch, capsys):
+    from itertools import count
+
     from spicy_regs.sources import publication
 
-    indexes = iter([{"families": {}}, {"families": {"changed": {"tables": {}}}}])
-    monkeypatch.setattr(publication, "load_index", lambda _: next(indexes))
+    loads = count()
+    monkeypatch.setattr(publication, "load_index", lambda _: {"families": {}, "seen": next(loads)})
     monkeypatch.setattr(dd, "discover_schemas", lambda *_, **_kwargs: {"dockets": dd.expected_schemas()["dockets"]})
     args = dd.build_parser().parse_args(["check", "--source", "r2"])
     assert args.func(args) == dd.EXIT_SOURCE_UNREACHABLE
-    assert "Publication selection changed" in capsys.readouterr().err
+    assert next(loads) == 2 * dd.SELECTION_ATTEMPTS, "each attempt captures and re-reads the selection"
+    assert f"changed during each of {dd.SELECTION_ATTEMPTS}" in capsys.readouterr().err
+
+
+def test_live_dictionary_rechecks_a_selection_that_moved_once(monkeypatch, capsys):
+    """A rollup publishing mid-check moved the selection on deploy-docs runs 42936659702, 42937011897, 43021165558."""
+    from spicy_regs.sources import publication
+
+    index = {"families": {"bill-subjects": {"tables": {"bill_subjects.parquet": {}}}}}
+    indexes = iter([{"families": {}}, index, index, index])
+    monkeypatch.setattr(publication, "load_index", lambda _: next(indexes))
+    monkeypatch.setattr(dd, "published_row_counts", lambda *_, **_kwargs: {})
+    declared = dd.expected_schemas(native=False)["bill_subjects"]
+    monkeypatch.setattr(dd, "discover_schemas", lambda *_, **_kwargs: {"bill_subjects": declared})
+    args = dd.build_parser().parse_args(["check", "--source", "r2"])
+    assert args.func(args) == 0
+    assert "checking the new one" in capsys.readouterr().err
 
 
 

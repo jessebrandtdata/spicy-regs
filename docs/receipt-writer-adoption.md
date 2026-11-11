@@ -27,8 +27,7 @@ earlier witnesses or processing values. `write_dataset(prior_receipts=...)`
 exposes it to explicit callers. Following the owner's 2026-10-17 bulk receipt
 writer decision, carry is active in these maintained paths:
 
-- Government output migration (`transforms/government_receipts.migrate_outputs`),
-  including lobbying's native prior merge.
+- Government output migration (`transforms/government_receipts.migrate_outputs`).
 - Court row and batch writers (`court_receipts`).
 - The Congress row writer (`congress_receipts.write_congress_dataset`), batch
   writer (`votes_batch_receipts`) and `legislative_receipts.write_legislative_outputs`.

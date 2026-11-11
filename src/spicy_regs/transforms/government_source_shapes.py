@@ -28,11 +28,11 @@ RECEIPT_FIELDS = {
     # How a letter value and a product-page value were read (rule, bytes, spans, each blank's reason) is processing:
     # the values are the subject columns, and the readings stay with the row's receipt.
     "gao_reports": ("major_rule_letter_json", "product_page_json"),
-    "lobbying_filings": ("url",),
-    "lobbying_registrants": ("url",),
-    "lobbying_clients": ("url",),
     "usaspending_recipients": ("observed_at", "source_capture_sha256"),
 }
+#: Fields only a receipt held until the family's receipts were retired (ss-vse3), now columns after every other:
+#: the lobbying family's ``url`` (the filing's ``filing_document_url``, the registrant's and client's API ``url``).
+PROMOTED_LAST = {"lobbying_filings": ("url",), "lobbying_registrants": ("url",), "lobbying_clients": ("url",)}
 
 INTEGER_FIELDS = {
     "crs_reports": ("version",),
@@ -460,7 +460,8 @@ def _list_type(fields: tuple[str, ...]) -> pa.DataType:
 def subject_schema(dataset: str) -> pa.Schema:
     """The family-owned main fields, including selected FCC result observations."""
     fields = []
-    for name in LEGACY_COLUMNS[dataset]:
+    promoted = PROMOTED_LAST.get(dataset, ())
+    for name in (*(name for name in LEGACY_COLUMNS[dataset] if name not in promoted), *promoted):
         if dataset == "gao_decisions" and name == "decision_date":
             continue
         if name in RECEIPT_FIELDS.get(dataset, ()) or name == "native_fields_json":

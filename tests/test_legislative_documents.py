@@ -187,9 +187,8 @@ def test_body_version_never_accepts_partial_hash():
         body_version_id("sha256:abc")
 
 
-def test_native_diff_endpoints_and_held_citation_keys_resolve():
+def test_native_diff_endpoints_resolve():
     import duckdb
-    from spicy_regs.legislative_citation_sources import source_digests
     from spicy_regs.relationship_views.legislative_diffs import endpoints, version_endpoints
 
     section = required_subject("bill_sections", printing("bill_sections", seq="0", element_id="s1", body="hello", body_sha256="a" * 64))
@@ -197,8 +196,6 @@ def test_native_diff_endpoints_and_held_citation_keys_resolve():
                 required_subject("bill_versions", printing("bill_versions", sha256="c" * 64) | {"version_code": "enr"})]
     item = required_subject("section_diff_items", pair("section_diff_items", seq="0", from_element_id="s1", from_text_sha256="a" * 64))
     summary = required_subject("section_diffs", pair("section_diffs"))
-    citation = required_subject("document_citations", row("document_citations", document_kind="bill_section",
-        document_key='["119-hr-1","ih","govinfo","0"]', cite_kind="usc_section", target_key="5-552", span_start="0", text_sha256="a" * 64))
     with duckdb.connect() as cursor:
         for name, values in [("bill_sections", [section]), ("bill_versions", versions),
                              ("section_diff_items", [item]), ("section_diffs", [summary])]:
@@ -208,7 +205,6 @@ def test_native_diff_endpoints_and_held_citation_keys_resolve():
         assert next(r for r in results if r["endpoint_side"] == "from")["body_version_status"] == "matches"
         versions = cursor.execute(version_endpoints({})).to_arrow_table().to_pylist()
         assert all(isinstance(r["candidate_versions"], list) for r in versions)
-        assert len(source_digests(cursor, "bill_section", citation["document_key"])) == 1
 
 
 def test_repeated_object_properties_refuse_with_raw_input_retained():

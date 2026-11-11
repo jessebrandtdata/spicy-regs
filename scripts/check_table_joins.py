@@ -55,7 +55,7 @@ def previous_record(commit: str) -> dict:
 def changed_joins(joins: Iterable[table_joins.Join], previous: dict) -> tuple[list[table_joins.Join], list[str]]:
     """Select every new or changed declaration, including baseline and evidence changes.
 
-    This bounds PR reads without changing the scheduled full-registry check.
+    This bounds PR reads; a run without it checks the whole registry.
     Removed declarations are reported separately rather than treated as checks.
     """
     if (previous.get("format") != table_joins.RECORD_FORMAT or previous.get("version") != 1

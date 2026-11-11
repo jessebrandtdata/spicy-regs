@@ -35,8 +35,7 @@ from .uscode import USCODE_VIEWS
 
 RELATIONSHIP_VIEWS = (*CONGRESS_RELATIONSHIPS, *REGULATORY_RELATIONSHIPS, *ARTIFACT_TOPIC_RELATIONSHIPS)
 FEC_QUERY_VIEWS = tuple(
-    replace(spec, role="child_query", category="source_evidence" if spec.name == "fec_api_responses" else "query_data")
-    for spec in FEC_NATIVE_DOCUMENT_QUERY_VIEWS
+    replace(spec, role="child_query", category="query_data") for spec in FEC_NATIVE_DOCUMENT_QUERY_VIEWS
 )
 SQL_RELATIONSHIP_VIEWS = (
     *BILL_PUBLICATION_VIEWS,

@@ -111,7 +111,8 @@ jobs:
 
   changed-joins:
     # New/changed declarations get full public key-column reads immediately.
-    # Unchanged joins remain covered by the daily complete-registry check.
+    # Nothing scheduled checks unchanged joins: run scripts/check_table_joins.py
+    # by hand for the whole registry (ss-i1dy).
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:

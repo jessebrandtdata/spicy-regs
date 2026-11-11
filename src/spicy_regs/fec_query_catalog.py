@@ -106,37 +106,17 @@ def child_column_descriptions(spec, described, descriptions):
     for table in spec.required:
         for name, meaning in descriptions.get(table, {}).get("columns", {}).items():
             inherited.setdefault(name, meaning)
-    if spec.name.startswith(("fec_candidate_", "fec_committee_")):
-        status = (
-            "reported for a supported nonempty source element, json_null for a literal null, "
-            "or unsupported_value for an element that fails the declared type or identifier spelling."
-        )
-    elif spec.name == "fec_api_responses":
-        status = (
-            "parsed when required controls agree and parse; conflicting_fields for repeated differing controls; "
-            "invalid_control for refused values; missing_fields when a required control is absent. "
-            "The first applicable state in that order of failure takes precedence."
-        )
-    elif spec.name == "fec_meeting_dates":
-        status = "parsed for a valid four-digit-year calendar date; unsupported_date otherwise."
-    elif spec.name == "fec_meeting_links":
-        status = (
-            "parsed for an object with a string URL; unsupported_link otherwise. Parsing does not verify the target."
-        )
-    else:
-        status = (
-            "reported for a supported element shape; json_null for a literal null; unsupported_shape for "
-            "another element shape; collection_unavailable when the parent collection is null or unsupported. "
-            "Empty arrays emit no child rows."
-        )
+    status = (
+        "reported for a supported element shape; json_null for a literal null; unsupported_shape for "
+        "another element shape; collection_unavailable when the parent collection is null or unsupported. "
+        "Empty arrays emit no child rows."
+    )
     overrides = {"parsing_status": status}
     if spec.name in {"fec_filing_report_measures", "fec_filing_text"}:
         overrides["source_pointer"] = (
             "Path in the parent row to this array element, including the source_field "
             "column name. For an unavailable collection it points to the collection itself."
         )
-    if spec.name == "fec_candidate_election_districts":
-        overrides["district"] = "Literal election-district array element; positions are not paired with election years."
     declared = {**inherited, **CHILD_COLUMN_DESCRIPTIONS, **overrides, **spec.column_descriptions}
     missing = [row[0] for row in described if row[0] not in declared]
     if missing:

@@ -342,7 +342,8 @@ shape change will not arrive nightly until the bulk receipt writer lands. Audit 
 spicy-regs and each sibling repository's `main`. The first native publication
 removes `url`, `lobbying_activities_json` and `government_entities_json` from
 `lobbying_filings` and `government_entities_json` from `lobbying_activities`
-(`url` moves to the receipt; the JSON arrays become `lobbying_activities` and
+(`url` moved to the receipt, and came back as the table's last column when the family's receipts were
+retired on 2026-11-11, `docs/lobbying-receipt-archive.md`; the JSON arrays become `lobbying_activities` and
 `government_entities`). It retypes `filing_year`, `activity_index` and
 `lobbyist_index` to BIGINT, `dt_posted` to TIMESTAMP WITH TIME ZONE, `income` and
 `expenses` to DECIMAL(38,6), and `new` to BOOLEAN. The native filings table is

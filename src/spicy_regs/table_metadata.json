@@ -2468,7 +2468,7 @@
       {
         "column_name": "filing_document_content_type",
         "column_type": "VARCHAR",
-        "description": "Media type of the filing document at `url`, as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none."
+        "description": "Media type of the filing document (`url`), as LDA states it (e.g. `text/html`, `application/pdf`); null on the few filings that state none."
       },
       {
         "column_name": "expenses_method",
@@ -2529,6 +2529,11 @@
         "column_name": "registrant_different_address",
         "column_type": "BOOLEAN",
         "description": "The filing's flag for whether the registrant's principal place of business differs from the address filed: true, false, or null when the filing does not carry it (registrations among others)."
+      },
+      {
+        "column_name": "url",
+        "column_type": "VARCHAR",
+        "description": "The filing's `filing_document_url` as LDA served it: its printable document page (`https://lda.gov/filings/public/filing/<filing_uuid>/print/`; lda.senate.gov redirects there). Ten filings of 2006-2007 hold an API page address instead, as captured (measured 2026-11-11). Before 2026-11-11 this value was held only in the row's ETL receipt."
       }
     ],
     "subject": "lobbying",
@@ -2536,11 +2541,6 @@
     "identity_columns": [
       "filing_uuid"
     ],
-    "legacy_column_descriptions": {
-      "lobbying_activities_json": "JSON array of lobbying activities, each `{general_issue_code, general_issue_code_display, description}` — the issue areas lobbied and their free-text descriptions.",
-      "government_entities_json": "JSON array of the distinct government entities lobbied (`{id, name}`) — the agencies and chambers (e.g. `HOUSE OF REPRESENTATIVES`, `SENATE`) named across the filing's activities.",
-      "url": "URL of the filing's printable document page on lda.gov (`filing_document_url`; lda.senate.gov redirects there)."
-    },
     "later_policy_columns": [
       "filing_type_display",
       "filing_period_display",
@@ -2556,7 +2556,8 @@
       "registrant_zip",
       "registrant_country",
       "registrant_ppb_country",
-      "registrant_different_address"
+      "registrant_different_address",
+      "url"
     ],
     "documented_values": {
       "filing_type": {
@@ -3620,12 +3621,20 @@
         "column_name": "captured_filing_uuid",
         "column_type": "VARCHAR",
         "description": "The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`."
+      },
+      {
+        "column_name": "url",
+        "column_type": "VARCHAR",
+        "description": "LDA's API address of this registrant record (`registrant.url`, `https://lda.gov/api/v1/registrants/<registrant_id>/`), as served."
       }
     ],
     "subject": "lobbying",
     "grain": null,
     "identity_columns": [
       "registrant_id"
+    ],
+    "later_policy_columns": [
+      "url"
     ]
   },
   "lobbying_clients": {
@@ -3726,12 +3735,20 @@
         "column_name": "captured_filing_uuid",
         "column_type": "VARCHAR",
         "description": "The filing whose captured page supplied this row; joins to `lobbying_filings.filing_uuid`."
+      },
+      {
+        "column_name": "url",
+        "column_type": "VARCHAR",
+        "description": "LDA's API address of this client record (`client.url`, `https://lda.gov/api/v1/clients/<client_id>/`), as served."
       }
     ],
     "subject": "lobbying",
     "grain": null,
     "identity_columns": [
       "client_id"
+    ],
+    "later_policy_columns": [
+      "url"
     ]
   },
   "fec_committees": {
@@ -41195,100 +41212,6 @@
           "raw_conversion_inputs",
           "input_metadata",
           "raw_source_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_activities",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "activity_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_activity_lobbyists",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "activity_index",
-          "lobbyist_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_affiliated_organizations",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "affiliated_organization_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_clients",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "client_id"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_conviction_disclosures",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "conviction_disclosure_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_filings",
-        "receipt_only": false,
-        "policy_version": "government-sources/2",
-        "identity_columns": [
-          "filing_uuid"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_foreign_entities",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "filing_uuid",
-          "foreign_entity_index"
-        ],
-        "processing_fields": [
-          "raw_record"
-        ]
-      },
-      {
-        "dataset": "lobbying_registrants",
-        "receipt_only": false,
-        "policy_version": "government-sources/1",
-        "identity_columns": [
-          "registrant_id"
-        ],
-        "processing_fields": [
-          "raw_record"
         ]
       },
       {

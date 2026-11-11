@@ -143,15 +143,13 @@ navigation, alongside `omittedJoins` for currently unavailable scalar routes.
 
 ## Refresh and deployment
 
-The `Publish explorer metadata` workflow runs after dictionary changes on
-`main`, after CI or the explicitly listed data workflows finish successfully, on
-manual dispatch, and at minutes 7, 22, 37 and 52 each hour. The scheduled check
-also catches workstation publications and new data workflows. GitHub may delay
-scheduled runs. Every trigger first requires successful push CI for the exact
-current `main` revision and checks out that verified revision. Pending or failed
-CI leaves existing metadata in place; successful CI completion retries publication.
-A newly added workflow can be listed for an immediate refresh;
-it does not require a website change. Metadata failures do not fail a data
+The `Publish explorer metadata` workflow runs at minute 7 of each hour and on
+manual dispatch. The hourly run catches hosted and workstation publications and
+new `main` revisions alike, so a new data workflow needs no listing and no
+website change; GitHub may delay scheduled runs. Every run first requires
+successful push CI for the exact current `main` revision and checks out that
+verified revision. Pending or failed CI leaves existing metadata in place until
+a later run finds it passed. Metadata failures do not fail a data
 publication or replace the previous valid metadata object.
 
 The workflow uses the existing `R2_*` secrets and the existing public URL/domain

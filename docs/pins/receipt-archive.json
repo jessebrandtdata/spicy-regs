@@ -57,6 +57,54 @@
    "publishedAt": "2026-11-10T22:06:19Z",
    "receipts": "generations/fr-docket-links/a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773/etl_receipts.parquet"
   },
+  "lobbying_activities": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_activity_lobbyists": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_affiliated_organizations": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_clients": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_conviction_disclosures": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_filings": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_foreign_entities": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
+  "lobbying_registrants": {
+   "family": "lobbying-filings",
+   "artifactDigest": "sha256:233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf",
+   "publishedAt": "2026-11-10T19:36:38Z",
+   "receipts": "generations/lobbying-filings/233aef1f22cc036a22760e43fe48488ac32db9628dbe89e51d36db7f913cbfaf/etl_receipts.parquet"
+  },
   "member_party_affiliations": {
    "family": "members",
    "artifactDigest": "sha256:26d652e10178f3b079c0af1c3ca50dbce318868541c8b3e28af6a40e4223e780",
