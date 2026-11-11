@@ -78,7 +78,7 @@ def test_cfr_declaration_uses_public_owner_without_changing_local_rebuild_policy
 
     public = policy("cfr_sections").descriptor()
     retained = POLICIES["cfr_sections"].descriptor()
-    assert declarations(frozenset({"cfr_sections"})) == {"cfr_sections": public}
+    assert declarations(frozenset({"cfr_sections"})) == {"cfr_sections": {**public, "receipts_retired": True}}
     assert "cfr_sections" not in PUBLIC_POLICIES
     assert retained["policy_version"] == "retained-annual-cfr-v1"
     assert retained != public

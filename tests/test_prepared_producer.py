@@ -11,11 +11,13 @@ from spicy_regs import generations
 from spicy_regs import native_conversion as conversion
 from tests.test_native_conversion import (
     BUCKET, CFR, MAIN, STATE, WHEEL,
-    bucket as _bucket,
+    bucket as _bucket, cfr_on_its_receipt_route as _cfr_on_its_receipt_route,
     PREPARED, convert, prepared_digest, publish_old, stored,
 )
 
 bucket = _bucket
+#: cfr-sections on its former receipt route, this file's example family (autouse; tests/test_native_conversion.py).
+cfr_on_its_receipt_route = _cfr_on_its_receipt_route
 PUBLISHER = "be" * 20
 
 
