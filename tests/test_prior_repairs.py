@@ -4,8 +4,6 @@ import hashlib
 import json
 from pathlib import Path
 
-import duckdb
-import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
@@ -14,9 +12,6 @@ from spicy_docs.schemas import TABLE_CONTRACTS
 from spicy_docs.schemas.tables import json_column
 
 from spicy_regs.pipelines import prior_repairs as repairs
-from spicy_regs.schemas import COMMENT
-from spicy_regs.sources import iceberg
-from spicy_regs.sources.regulatory_catalog import processing_table
 
 
 HEX = hashlib.sha256(b"bytes").hexdigest()
@@ -371,66 +366,6 @@ def test_restore_pins_the_saved_generation_and_refuses_a_split_table():
     assert rollup.publication_family == "bill-family" and rollup.outputs == ("cbo_cost_estimates.parquet",)
     with pytest.raises(ValueError, match="split"):
         repairs.restore_rollup(index, "bill-family", ["bill_sections"])
-
-
-def _catalog(path: Path, rows: list[dict]):
-    """A file-backed stand-in for the attached comments catalog, under the connector's alias."""
-
-    def connect(_record_type):
-        con = duckdb.connect()
-        con.execute(f"ATTACH '{path}' AS {iceberg._CATALOG_ALIAS};")
-        return con
-
-    con = connect(COMMENT)
-    iceberg._ensure_table(con, COMMENT)
-    frame = pl.DataFrame([{**{c: None for c in COMMENT.schema}, **r} for r in rows], schema=COMMENT.schema)
-    con.register("_seed", frame.to_arrow())
-    iceberg.replace_rows(con, COMMENT, "_seed")
-    con.close()
-    return connect
-
-
-def _comments(connect) -> dict[str, tuple]:
-    con = connect(COMMENT)
-    try:
-        return {
-            row[0]: row[1:]
-            for row in con.execute(
-                f"SELECT comment_id, pdf_extraction_results_json, text_content FROM {processing_table(con, COMMENT)}"
-            ).fetchall()
-        }
-    finally:
-        con.close()
-
-
-def test_comment_digests_respell_in_the_catalog_keep_the_text_and_restore(tmp_path, monkeypatch):
-    derived = json.dumps({"tool": "pypdf", "attachments": [{"attachment": 1, "sha256": HEX}]})
-    spelled = json.dumps({"tool": "pypdf", "attachments": [{"attachment": 1, "sha256": f"sha256:{HEX}"}]})
-    connect = _catalog(
-        tmp_path / "catalog.duckdb",
-        [
-            {
-                "comment_id": "ACF-1",
-                "agency_code": "ACF",
-                "docket_id": "ACF-D",
-                "text_content": "kept",
-                "pdf_extraction_results_json": derived,
-            },
-            {"comment_id": "ACF-2", "agency_code": "ACF", "docket_id": "ACF-D", "pdf_extraction_results_json": spelled},
-            {"comment_id": "EPA-1", "agency_code": "EPA", "docket_id": "EPA-D", "pdf_extraction_results_json": None},
-        ],
-    )
-    monkeypatch.setattr(iceberg, "_connect_for_table", connect)
-    assert repairs.respell_comment_digests() == {"agencies": 2, "comments_respelled": 1}
-    assert _comments(connect)["ACF-1"] == (derived, "kept"), "counting writes nothing"
-    with pytest.raises(ValueError, match="receipt-dir"):
-        repairs.respell_comment_digests(apply=True)
-    receipts = tmp_path / "receipts"
-    assert repairs.respell_comment_digests(apply=True, receipt_dir=receipts)["comments_respelled"] == 1
-    assert _comments(connect) == {"ACF-1": (spelled, "kept"), "ACF-2": (spelled, None), "EPA-1": (None, None)}
-    assert repairs.respell_comment_digests()["comments_respelled"] == 0, "a second pass finds nothing"
-    assert repairs.restore_comment_digests(receipts) == {"comments_restored": 1, "comments_since_rewritten": 0}
-    assert _comments(connect)["ACF-1"] == (derived, "kept")
 
 
 def _native_record_issue_selection(root):

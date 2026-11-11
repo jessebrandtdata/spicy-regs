@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 import yaml
 
-from spicy_regs import cli, generate_analytics, mcp_server
+from spicy_regs import cli, mcp_server
 from spicy_regs.public_url import DEFAULT_R2_BASE_URL, resolve_r2_base_url
 
 
@@ -57,19 +57,6 @@ def test_cli_reads_url_after_loading_dotenv(tmp_path, monkeypatch):
     cli.main()
     assert bases == ["https://fork.example"]
     assert captured == [("dockets", "https://fork.example")]
-
-
-def test_analytics_remote_queries_use_selected_host(tmp_path, monkeypatch):
-    monkeypatch.setenv("R2_PUBLIC_URL", "https://fork.example/")
-    connection = MagicMock()
-    connection.execute.return_value.fetchall.return_value = []
-    monkeypatch.setattr(generate_analytics.duckdb, "connect", lambda: connection)
-    outputs = generate_analytics.generate_analytics(output_dir=tmp_path)
-    queries = "\n".join(call.args[0] for call in connection.execute.call_args_list)
-    for name in ("comments", "documents", "dockets"):
-        assert f"https://fork.example/{name}.parquet" in queries
-    assert DEFAULT_R2_BASE_URL not in queries
-    assert outputs and all(path.is_file() for path in outputs.values())
 
 
 def test_freshness_uses_publisher_url_and_explicit_argument(tmp_path, monkeypatch):

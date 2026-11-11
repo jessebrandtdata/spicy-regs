@@ -15,11 +15,12 @@ Source-evidence blobs are content-addressed and stored once for all artifacts.
 
 A version-2 family entry may also state ``publishedAt``: the UTC instant its
 publisher moved the pointer to that generation, never when the data was read.
-:func:`publish_generation` stamps it at the pointer write, and
-:func:`backfill_published_at` fills it in for entries written before. Neither
-may write to a live bucket until every reader admits the key: a
-``parse_index`` that predates it requires the exact family key set and
-refuses the whole index. The server image that admits it deploys first.
+:func:`publish_generation` stamps it at the pointer write. Entries written
+before that were stamped once by a backfill on 2026-10-03
+(:data:`PUBLISHED_AT_BACKFILLED_THROUGH`), so every entry carries it. A new
+optional key may not reach a live bucket until every reader admits it: a
+``parse_index`` that predates it requires the exact family key set and refuses
+the whole index. The server image that admits it deploys first.
 """
 
 from __future__ import annotations
@@ -2108,11 +2109,11 @@ def _merge_family(index: dict, family: str, entry: dict) -> tuple[dict, bytes]:
     return updated, raw
 
 
-#: When :func:`backfill_published_at` was applied to the live index (2026-10-03, round 5, its only run). Every
-#: ``publishedAt`` at or before it was written by that backfill: the last object write under the generation's
-#: prefix, with the pointer moved at or after it. Every later one was stamped at the pointer write. A writer-stamped
-#: value at or before this instant would be the move itself, which "at or after" still describes. Another
-#: backfill moves this instant.
+#: When the one-time ``publishedAt`` backfill was applied to the live index (2026-10-03, round 5, its only run; the
+#: command was removed once every entry carried the key). Every ``publishedAt`` at or before it was written by that
+#: backfill: the last object write under the generation's prefix, with the pointer moved at or after it. Every later
+#: one was stamped at the pointer write. A writer-stamped value at or before this instant would be the move itself,
+#: which "at or after" still describes.
 PUBLISHED_AT_BACKFILLED_THROUGH = "2026-10-03T16:13:56Z"
 
 
@@ -2122,41 +2123,6 @@ def published_at_basis(instant: str | None) -> str | None:
         return None
     moved = datetime.fromisoformat(instant) > datetime.fromisoformat(PUBLISHED_AT_BACKFILLED_THROUGH)
     return "pointer_move" if moved else "last_object_write"
-
-
-def backfill_published_at(client, bucket: str, *, apply: bool = False) -> dict:
-    """Plan, or with ``apply`` write, ``publishedAt`` for each version-2 family entry that lacks it.
-
-    The instant is the latest write under the generation's prefix. That prefix is create-only, and the pointer
-    moves only after every member is uploaded and read back, so the instant is a lower bound on the move, short by
-    the read-back. The root alone is a looser one: it is uploaded first, up to 915 s before the last member on
-    2026-10-03. The write is conditional on the version-2 ETag read here, so a pointer that moved meanwhile refuses
-    with nothing written, and a rerun plans only what is still missing.
-    """
-    from rulespec_artifacts import ROOT_OBJECT_KEY, canonical_json_bytes
-
-    index, etag = _stored_index(client, bucket)
-    if etag is None:
-        raise PublicationError(f"{INDEX_V2_KEY} is absent, so there is no entry to stamp")
-    stamps = {}
-    for family, entry in sorted(index["families"].items()):
-        if "publishedAt" in entry:
-            continue
-        pages = client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=entry["prefix"] + "/")
-        written = {item["Key"]: item["LastModified"] for page in pages for item in page.get("Contents", ())}
-        if f"{entry['prefix']}/{ROOT_OBJECT_KEY}" not in written:
-            raise PublicationError(f"{family}'s current generation has no root under {entry['prefix']}")
-        stamps[family] = _instant(max(written.values()).timestamp())
-    if not (stamps and apply):
-        return {"index": INDEX_V2_KEY, "etag": etag, "stamps": stamps, "applied": False}
-    updated = deepcopy(index)
-    for family, instant in stamps.items():
-        updated["families"][family]["publishedAt"] = instant
-    raw = canonical_json_bytes(updated)
-    parse_index(raw)
-    if not _put_pointer(client, bucket, INDEX_V2_KEY, raw, etag):
-        raise PublicationError(f"{INDEX_V2_KEY} moved since the backfill read it; nothing was written, run it again")
-    return {"index": INDEX_V2_KEY, "etag": etag, "stamps": stamps, "applied": True}
 
 
 def receipt_members(index: Mapping, *, dataset: str | None = None) -> tuple[Member, ...]:
