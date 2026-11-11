@@ -156,15 +156,6 @@ class ReadMarker:
     empty_unread: bool = False
 
 
-#: The Federal Register columns first requested on 2026-10-03, which a row not read since holds as NULL together.
-#: No builder states the pair in code: the dictionary's federal_register data_quality note does ("NULL in all nine
-#: of those columns, which means not read: test regulations_dot_gov_info_json, which a row read since holds as
-#: '{}' at least"), and spicy-docs' shaper writes the marker as '{}' where the Register states nothing.
-FEDERAL_REGISTER_READ = ("regulations_dot_gov_info_json", "regulations_dot_gov_docket_id",
-                         "regulations_dot_gov_document_id", "regulations_dot_gov_comments_count",
-                         "regulations_dot_gov_checked_at", "action", "correction_of", "corrections_json", "significant")
-
-
 def read_markers() -> tuple[ReadMarker, ...]:
     """Every read marker a builder or view already acts on, from its own definition.
 
@@ -196,10 +187,6 @@ def read_markers() -> tuple[ReadMarker, ...]:
                    basis=f"{DETAIL_READ} is 'true' on a row whose Congress.gov detail record was read.")
         for table, fields in detail.items()
     ]
-    markers.append(ReadMarker(
-        "federal_register", FEDERAL_REGISTER_READ[:1], FEDERAL_REGISTER_READ,
-        basis="regulations_dot_gov_info_json is NULL on a row not read since these columns were first requested "
-              "(2026-10-03), and '{}' at least on a row read since."))
     markers.extend(
         ReadMarker("roll_call_votes", columns, columns, where=(("chamber", chamber),),
                    basis=f"Every captured {chamber} vote file states these columns ('' at least), so a NULL in "

@@ -2623,87 +2623,6 @@
     "source_record_json": "Complete provider source-record serialization, preserving identity, native metadata, assets, bodies and evidence."
    }
   },
-  "federal_register": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "document_number",
-     "title",
-     "abstract",
-     "document_type",
-     "publication_date",
-     "effective_on",
-     "comments_close_on",
-     "signing_date",
-     "agencies_json",
-     "agency_slugs",
-     "docket_ids_json",
-     "regulation_id_numbers_json",
-     "cfr_references_json",
-     "topics_json",
-     "html_url",
-     "pdf_url",
-     "body_html_url",
-     "volume",
-     "start_page",
-     "end_page",
-     "subtype",
-     "executive_order_number",
-     "modify_date",
-     "rin",
-     "regulations_dot_gov_info_json",
-     "regulations_dot_gov_docket_id",
-     "regulations_dot_gov_document_id",
-     "regulations_dot_gov_comments_count",
-     "regulations_dot_gov_checked_at",
-     "action",
-     "correction_of",
-     "corrections_json",
-     "significant",
-     "president_json",
-     "disposition_notes",
-     "executive_order_notes",
-     "source_sha256"
-    ]
-   },
-   "renamed": {
-    "agencies_json": "agencies",
-    "cfr_references_json": "cfr_references",
-    "corrections_json": "corrections",
-    "docket_ids_json": "docket_ids",
-    "regulation_id_numbers_json": "regulation_id_numbers",
-    "topics_json": "topics"
-   },
-   "meanings": {
-    "agencies_json": "The issuing agencies as the Register's agency objects, a JSON array.",
-    "cfr_references_json": "The CFR citations the document affects, a JSON array of `{title, part, chapter, citation_url}`.",
-    "corrections_json": "The API addresses of the corrections the Register links to this document (its own editorial corrections), a JSON array; `[]` where it links none. NULL on a row not read since the field was first requested (2026-10-03).",
-    "docket_ids_json": "The docket labels the document states, a JSON array, as printed (many are agency numbers).",
-    "regulation_id_numbers_json": "The Regulation Identifier Numbers the API lists, a JSON array. `[]` on a large share of Rule documents every year, an API limit: some of those state a RIN in the printed text, and some print it inside docket_ids_json.",
-    "topics_json": "The Register's CFR index terms for the document (`topics`), a JSON array; `[]` when it lists none."
-   },
-   "read_markers": [
-    {
-     "columns": [
-      "regulations_dot_gov_info_json"
-     ],
-     "read_value": null,
-     "fields": [
-      "regulations_dot_gov_info_json",
-      "regulations_dot_gov_docket_id",
-      "regulations_dot_gov_document_id",
-      "regulations_dot_gov_comments_count",
-      "regulations_dot_gov_checked_at",
-      "action",
-      "correction_of",
-      "corrections_json",
-      "significant"
-     ],
-     "where": {},
-     "empty_unread": false,
-     "basis": "regulations_dot_gov_info_json is NULL on a row not read since these columns were first requested (2026-10-03), and '{}' at least on a row read since."
-    }
-   ]
-  },
   "federal_register_issues": {},
   "ferc_accession_files": {},
   "ferc_original_files": {},
@@ -2728,45 +2647,6 @@
    "meanings": {
     "from_source": "Which acquisition path supplied the earlier printing.",
     "to_source": "Which acquisition path supplied the later printing."
-   }
-  },
-  "fr_docket_links": {
-   "containers": {
-    "raw_conversion_inputs": [
-     "docket_id",
-     "docket_source_ordinal",
-     "normalized_docket_candidates_json",
-     "docket_normalization_rule",
-     "document_number",
-     "title",
-     "abstract",
-     "document_type",
-     "subtype",
-     "publication_date",
-     "effective_on",
-     "comments_close_on",
-     "signing_date",
-     "agency_slugs",
-     "docket_ids_json",
-     "regulation_id_numbers_json",
-     "html_url",
-     "pdf_url",
-     "executive_order_number",
-     "link_source"
-    ]
-   },
-   "renamed": {
-    "docket_ids_json": "docket_ids",
-    "normalized_docket_candidates_json": "normalized_docket_candidates",
-    "regulation_id_numbers_json": "regulation_id_numbers"
-   },
-   "meanings": {
-    "docket_ids_json": "The full original docket-ID array, retained so consumers can see the other IDs this FR document links to.",
-    "docket_normalization_rule": "Digest-pinned owner identifier-normalization rule used to produce candidates.",
-    "html_url": "federalregister.gov HTML permalink.",
-    "normalized_docket_candidates_json": "Owner-normalizer candidate interpretations of the docket value; an empty array means no supported interpretation, not absence of a docket.",
-    "pdf_url": "Federal Register PDF URL.",
-    "regulation_id_numbers_json": "RINs (JSON array) claimed by the FR document — the RIN-side join key for a rulemaking."
    }
   },
   "gao_decisions": {

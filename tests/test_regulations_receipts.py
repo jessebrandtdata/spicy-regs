@@ -626,39 +626,6 @@ def test_unified_agenda_related_rins_refuse_an_unknown_member():
     assert shape_record("unified_agenda", row)["related_rins"] == [{"rin": "1000-AA01", "rin_relation": "Related to"}]
 
 
-def test_native_source_ingest_uses_qualified_fr_prior_and_preserves_dated_records(tmp_path):
-    from spicy_regs.transforms.regulations_ingest import federal_register_generation
-
-    prior = write(
-        tmp_path,
-        "federal_register",
-        [
-            {
-                "document_number": "1",
-                "publication_date": "2026-01-01",
-                "title": "old",
-                "regulation_id_numbers_json": "[]",
-                "docket_ids_json": "[]",
-                "agencies_json": "[]",
-            }
-        ],
-    )
-    target = tmp_path / "fr-new"
-    federal_register_generation(
-        [{"document_number": "1", "publication_date": "2026-02-01", "title": "new"}],
-        target,
-        generation_id="fr2",
-        witnesses=context().witnesses,
-        prior=prior,
-    )
-    assert pq.read_table(target / "federal_register.parquet")["publication_date"].to_pylist() == [
-        "2026-02-01",
-        "2026-01-01",
-    ]
-    assert pq.read_schema(target / "federal_register.parquet").names[-5:] == [
-        "html_url", "pdf_url", "body_html_url", "source_sha256", "regulations_dot_gov_info_json"]
-
-
 def test_native_unified_agenda_source_ingest_keeps_partial_dates_and_prior_editions(tmp_path):
     from spicy_regs.transforms.regulations_ingest import unified_agenda_generation
 

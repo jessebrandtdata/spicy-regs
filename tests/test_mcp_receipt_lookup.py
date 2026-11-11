@@ -666,28 +666,6 @@ def _register(number: str, **raw) -> dict:
     return {**shape_record("federal_register", row), "input_metadata": {}}
 
 
-def test_the_federal_register_marker_tells_unread_from_read_and_not_stated(tmp_path, monkeypatch):
-    one_family(tmp_path, monkeypatch, {"federal_register": [
-        _register("2026-00001"),
-        _register("2026-00002", regulations_dot_gov_info_json="{}"),
-        _register("2026-00003", regulations_dot_gov_info_json='{"docket_id":"EPA-HQ-OAR-2021-0317"}',
-                  regulations_dot_gov_docket_id="EPA-HQ-OAR-2021-0317", action="Final rule.", corrections_json="[]"),
-    ]})
-    fields = ["regulations_dot_gov_info_json", "regulations_dot_gov_docket_id", "action", "corrections_json",
-              "significant", "subtype"]
-    reply = call("federal_register", [{"document_number": f"2026-0000{n}", "publication_date": "2026-06-25"}
-                                      for n in (1, 2, 3)], fields)
-    assert states(reply, 0) == {**dict.fromkeys(fields[:5], "unread"), "subtype": "null_unmarked"}
-    assert states(reply, 1) == {"regulations_dot_gov_info_json": "stated_empty", **dict.fromkeys(fields[1:5], "not_stated"),
-                                "subtype": "null_unmarked"}
-    assert states(reply, 2) == {"regulations_dot_gov_info_json": "stated", "regulations_dot_gov_docket_id": "stated",
-                                "action": "stated", "corrections_json": "stated_empty", "significant": "not_stated",
-                                "subtype": "null_unmarked"}
-    assert set(reply["state_meaning"]) == {"stated", "stated_empty", "unread", "not_stated", "null_unmarked"}
-    assert "regulations_dot_gov_info_json is NULL on a row not read" in reply["fields"]["action"]["read_marker"]
-    assert "read_marker" not in reply["fields"]["subtype"]
-
-
 def _vote(vote_id: str, chamber: str, **raw) -> dict:
     return congress("roll_call_votes", vote_id=vote_id, chamber=chamber, **raw)
 
@@ -803,13 +781,19 @@ def test_a_mixed_case_docket_id_is_matched_exactly_and_never_folded(tmp_path, mo
 
 
 def test_a_numeric_looking_identifier_stays_text_and_a_number_given_for_it_is_refused(tmp_path, monkeypatch):
-    one_family(tmp_path, monkeypatch, {"federal_register": [_register("2026-12696", html_url="https://fr.test/a"),
-                                                            _register("12696", html_url="https://fr.test/b")]})
-    reply = call("federal_register", [{"document_number": "2026-12696", "publication_date": "2026-06-25"},
-                                      {"document_number": "12696", "publication_date": "2026-06-25"}], ["html_url"])
-    assert [entry["fields"]["html_url"]["value"] for entry in reply["keys"]] == ["https://fr.test/a", "https://fr.test/b"]
-    message = refused("federal_register", [{"document_number": 12696, "publication_date": "2026-06-25"}], ["html_url"])
-    assert "gives document_number as int; it is text, so quote it" in message
+    from spicy_regs.schemas.regulations_subjects import SOURCE_COLUMNS
+    from spicy_regs.transforms.regulations_shape import shape_record
+
+    def docket(docket_id, title):
+        raw = {**dict.fromkeys(name for name, _ in SOURCE_COLUMNS["dockets"]), "docket_id": docket_id, "title": title}
+        return {**shape_record("dockets", raw), "input_metadata": {}}
+
+    # A text key that reads as a number (the Register's document numbers were the example until its receipts retired).
+    one_family(tmp_path, monkeypatch, {"dockets": [docket("2026-12696", "a"), docket("12696", "b")]})
+    reply = call("dockets", [{"docket_id": "2026-12696"}, {"docket_id": "12696"}], ["title"])
+    assert [entry["fields"]["title"]["value"] for entry in reply["keys"]] == ["a", "b"]
+    message = refused("dockets", [{"docket_id": 12696}], ["title"])
+    assert "gives docket_id as int; it is text, so quote it" in message
 
 
 def test_a_composite_key_takes_every_identity_field_with_its_integer_as_a_number_or_plain_digits(tmp_path, monkeypatch):
@@ -983,15 +967,13 @@ def test_detail_read_governs_the_lists_the_views_and_the_index_builder_already_t
         assert {column for column in columns if f"{column} = '[]'" in stale} <= set(marker.fields)
 
 
-def test_the_federal_register_marker_names_the_nine_columns_its_dictionary_note_does():
+def test_the_federal_register_read_rule_is_a_public_column_its_dictionary_note_names():
+    """Its receipts are retired (ss-vse3), so no read marker governs them: a reader tests the column itself."""
     from spicy_regs.data_dictionary import load_descriptions
-    from spicy_regs.schemas.regulations_subjects import SOURCE_COLUMNS
     from spicy_regs.transforms.regulations_shape import subject_schema
 
-    governed = declarations.FEDERAL_REGISTER_READ
-    assert len(governed) == 9 and set(governed) <= {name for name, _ in SOURCE_COLUMNS["federal_register"]}
-    # The marker is a public column since regulations-native-v3 (ss-vse3), so a reader can test it in the table.
-    assert governed[0] in subject_schema("federal_register").names
+    assert "federal_register" not in {marker.table for marker in declarations.read_markers()}
+    assert "regulations_dot_gov_info_json" in subject_schema("federal_register").names
     note = " ".join(load_descriptions()["federal_register"]["data_quality"].split())
     assert "is NULL in all nine of those columns, which means not read: test `regulations_dot_gov_info_json`" in note
 

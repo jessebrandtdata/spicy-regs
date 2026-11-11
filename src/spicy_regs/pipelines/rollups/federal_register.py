@@ -1,9 +1,14 @@
 """Rollup pipeline: federal_register.parquet (federalregister.gov REST ingest).
 
 Unlike the derived rollups, this one *ingests* an external source rather than
-reading base tables from R2, so ``inputs`` is empty — the fetch + incremental
-merge with the prior published table happens inside ``build_federal_register``.
-The base class still handles the shrink-guarded R2 upload of the single output.
+reading base tables from R2, so ``inputs`` is empty: the fetch and the merge
+into the pinned published table happen in ``merge_federal_register``. The base
+class still handles the shrink-guarded upload of the single output.
+
+It publishes no per-row receipts (ss-vse3; its installed policy is marked
+``receipts_retired``). A row's evidence is the run's journal and the retained
+API page its ``source_sha256`` names; the receipts of the generations before the
+switch stay where they are (``docs/pins/receipt-archive.json``).
 
 ``FR_SINCE`` (YYYY-MM-DD) replaces the resume point for a re-read: at the
 1994 epoch it refetches every document, so a column added to the projection
@@ -14,9 +19,8 @@ from pathlib import Path
 from typing import ClassVar
 
 from spicy_regs.env_values import date_env
-from spicy_regs.pipelines.rollups.base import make_rollup_app
-from spicy_regs.pipelines.rollups.subject_receipts import SubjectReceiptRollup as RollupPipeline
-from spicy_regs.transforms.build_federal_register import build_federal_register
+from spicy_regs.pipelines.rollups.base import RollupPipeline, make_rollup_app
+from spicy_regs.transforms.build_federal_register import merge_federal_register
 
 
 class FederalRegisterRollup(RollupPipeline):
@@ -28,8 +32,7 @@ class FederalRegisterRollup(RollupPipeline):
     output: ClassVar[str] = "federal_register.parquet"
 
     def build(self, output_dir: Path) -> Path:
-        return self.build_receipts(output_dir, build_federal_register, since=date_env("FR_SINCE"),
-                                   evidence=self.source_evidence)
+        return merge_federal_register(output_dir, since=date_env("FR_SINCE"), evidence=self.source_evidence)
 
 
 app = make_rollup_app(FederalRegisterRollup)

@@ -20,6 +20,18 @@
    "artifactDigest": "sha256:08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1",
    "publishedAt": "2026-10-10T15:45:23Z",
    "receipts": "generations/comments/08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1/etl_receipts.parquet"
+  },
+  "federal_register": {
+   "family": "federal-register",
+   "artifactDigest": "sha256:3290df5438fa356c072430de6549f52ab4fc1c7526c90691179b458fec0b3c08",
+   "publishedAt": "2026-11-10T21:55:16Z",
+   "receipts": "generations/federal-register/3290df5438fa356c072430de6549f52ab4fc1c7526c90691179b458fec0b3c08/etl_receipts.parquet"
+  },
+  "fr_docket_links": {
+   "family": "fr-docket-links",
+   "artifactDigest": "sha256:a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773",
+   "publishedAt": "2026-11-10T22:06:19Z",
+   "receipts": "generations/fr-docket-links/a498d34f3628b8fd840ed97c3e4192da724c00d3a59ea7b4d920b3b3810d3773/etl_receipts.parquet"
   }
  }
 }

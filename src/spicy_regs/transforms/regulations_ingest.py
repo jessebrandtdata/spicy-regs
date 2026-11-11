@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
-from datetime import date
 from hashlib import file_digest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -44,31 +43,6 @@ def _build(dataset, destination, *, generation_id, witnesses, prior, prior_filen
             witnesses=pins,
             include_source_witness=False,
         )
-
-
-def federal_register_generation(
-    records: Iterable[dict],
-    destination: Path,
-    *,
-    generation_id: str,
-    witnesses: Sequence[Mapping],
-    prior: ReceiptInput | None = None,
-    since: date | None = None,
-):
-    """Use dated-record conflict/overlap rules with a qualified native prior."""
-    from spicy_regs.transforms.build_federal_register import build_federal_register
-
-    return _build(
-        "federal_register",
-        destination,
-        generation_id=generation_id,
-        witnesses=witnesses,
-        prior=prior,
-        prior_filename="_fr_prior.parquet",
-        build=lambda work: build_federal_register(
-            work, since=since, documents=lambda _: records, download_prior=lambda *_: False
-        ),
-    )
 
 
 def unified_agenda_generation(

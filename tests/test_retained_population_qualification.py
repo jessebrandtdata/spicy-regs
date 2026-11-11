@@ -44,7 +44,13 @@ def selected_plan(tmp_path, dataset, *, refused=False):
     return path, plan, source
 
 
-@pytest.mark.parametrize('dataset', runner.DATASETS)
+def _receipt_datasets():
+    from spicy_regs.subject_catalog import retired_receipt_datasets
+
+    return [dataset for dataset in runner.DATASETS if dataset not in retired_receipt_datasets()]
+
+
+@pytest.mark.parametrize('dataset', _receipt_datasets())
 def test_actual_complete_fixture_pipeline(tmp_path, dataset, installed_httpfs):
     path, _, source = selected_plan(tmp_path, dataset)
     output = tmp_path / 'workflow'
