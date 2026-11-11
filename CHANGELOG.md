@@ -172,9 +172,11 @@ Entries link to the pull request that introduced the change.
   `receipts_retired`; `docs/pins/receipt-archive.json` keeps the last receipts
   generation of each, published 2026-11-10. The journal gains
   `federal-register-pages` (each page's SHA-256 and record count) and
-  `federal-register-merge` (prior, read, new and total rows). A prior without
-  a column that left receipts is refused; a prior of another width is mapped
-  again. A document the mapping refuses now fails the night instead of being
+  `federal-register-merge` (prior, read, new and total rows, whether the prior
+  was mapped again, and the columns that added, dropped or retyped). A prior
+  without a column that left receipts is refused; a prior of another width is
+  mapped again, and its rows are counted as published, before the re-map. A
+  document the mapping refuses now fails the night instead of being
   refused into a receipt. The Register's receipt restore path is deleted.
   Both jobs time out at 30 minutes (a re-read keeps 240).
 

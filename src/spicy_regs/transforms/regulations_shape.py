@@ -492,6 +492,13 @@ def published_as_source(dataset: str, published, destination: Path) -> Path:
     spelling: an agency entry keeps ``id``, ``name``, ``raw_name``, ``parent_id`` and ``slug``, and a CFR part reads as
     text whether the Register wrote ``60`` or ``"60"``, which the regulations parsers take alike. ``published`` is one
     file or a table's members.
+
+    ``agency_slugs`` reads back as SpicyDocs' projection spells it, the slugs joined by commas, which is how the
+    builders' text shape has always carried it and how the mapper reads it (``split(",")``); JSON here would be a
+    second spelling of one column. The round trip is exact only for a list of slugs without a comma and with no NULL
+    element: an empty list would read back as ``[""]``, a slug holding a comma would split, a NULL element would be
+    dropped. The projection joins only the non-empty slugs it is given, so none arises: the 2026-11-10 Register table
+    (1,012,441 rows) read back and mapped again exactly (ss-vse3 step 3's full-size check).
     """
     import duckdb
     import pyarrow.parquet as pq
