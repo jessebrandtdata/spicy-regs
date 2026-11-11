@@ -13,7 +13,8 @@ import pytest
 # Capture native DuckDB before the connection fixture patches its shared module.
 import spicy_regs.native_types  # noqa: F401
 from spicy_regs import data_dictionary as dd
-from spicy_regs import mcp_server
+from spicy_regs import mcp_server, subject_catalog
+from spicy_regs.parquet_rows import write_rows
 from spicy_regs.pipelines.rulemaking_dataset import RulemakingDatasetPipeline
 from spicy_regs.relationship_views.reference import REFERENCE_TABLES, reference_paths
 from spicy_regs.sources import publication as pub
@@ -36,6 +37,8 @@ MANAGED_ONLY_RELEASE_TABLES = (
     "ecfr_snapshot_sections", "ecfr_snapshots", "federal_register_issues",
     "table3_historical_records", "uscode_edition_structure", "uscode_editions", "uscode_edition_sections",
 )
+#: A table whose receipts are retired publishes none, so its release has no receipt member to lose.
+RETIRED = subject_catalog.retired_receipt_datasets()
 
 
 def managed_release_fixture(tmp_path, table):
@@ -50,15 +53,21 @@ def managed_release_fixture(tmp_path, table):
     context = ReceiptContext("test-generation", "test-attempt", "test-processor", [{
         "source_id": "test-source", "sha256": "sha256:" + "a" * 64,
     }])
-    subject, receipts = write_dataset([(row, context)], tmp_path / "source", policy)
-    assert subject is not None
     directory = tmp_path / "managed"
-    build_generation(directory, family="managed-release", files=[subject], expected_keys=[subject.name],
-                     receipt_path=receipts, receipt_policies=[policy], receipt_generation_id=context.generation_id)
+    if table in RETIRED:
+        (tmp_path / "source").mkdir()
+        subject = write_rows([row], tmp_path / "source" / (table + ".parquet"), policy.subject_schema)
+        build_generation(directory, family="managed-release", files=[subject], expected_keys=[subject.name])
+    else:
+        subject, receipts = write_dataset([(row, context)], tmp_path / "source", policy)
+        assert subject is not None
+        build_generation(directory, family="managed-release", files=[subject], expected_keys=[subject.name],
+                         receipt_path=receipts, receipt_policies=[policy], receipt_generation_id=context.generation_id)
     index = publish(Store(), directory)
     entry = index["families"]["managed-release"]
-    locations = {pub.single_member(index, subject.name).path: directory / subject.name,
-                 f"{entry['prefix']}/etl_receipts.parquet": directory / "etl_receipts.parquet"}
+    locations = {pub.single_member(index, subject.name).path: directory / subject.name}
+    if table not in RETIRED:
+        locations[f"{entry['prefix']}/etl_receipts.parquet"] = directory / "etl_receipts.parquet"
     return directory, index, locations
 
 
@@ -77,8 +86,9 @@ def test_managed_only_name_cannot_serve_successful_bare_bytes(tmp_path, monkeypa
         con.close()
 
 
-@pytest.mark.parametrize("table", MANAGED_ONLY_RELEASE_TABLES)
-@pytest.mark.parametrize("bad", [None, "missing", "schema", "receipts", "503"])
+@pytest.mark.parametrize(("table", "bad"), [
+    (table, bad) for table in MANAGED_ONLY_RELEASE_TABLES for bad in (None, "missing", "schema", "receipts", "503")
+    if not (bad == "receipts" and table in RETIRED)])
 def test_managed_only_publication_preserves_selected_schema_and_receipts(tmp_path, monkeypatch, table, bad):
     monkeypatch.setattr(mcp_server, "DATA_DIR", None)
     directory, index, locations = managed_release_fixture(tmp_path, table)
@@ -103,7 +113,8 @@ def test_managed_only_publication_preserves_selected_schema_and_receipts(tmp_pat
         try:
             assert table in mcp_server._available_tables(con.cursor())
             assert con.inner.execute(f'SELECT count(*) FROM "{table}"').fetchone() == (1,)
-            assert con.inner.execute("SELECT count(*) FROM etl_receipts WHERE dataset = ?", [table]).fetchone() == (1,)
+            if table not in RETIRED:
+                assert con.inner.execute("SELECT count(*) FROM etl_receipts WHERE dataset = ?", [table]).fetchone() == (1,)
             assert f"{mcp_server.R2_BASE_URL}/{table}.parquet" not in con.seen
         finally:
             con.close()
