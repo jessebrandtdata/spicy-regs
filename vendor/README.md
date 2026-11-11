@@ -1,5 +1,11 @@
 # Source reader wheels
 
+Only the wheels `pyproject.toml` pins are kept here. A superseded wheel is deleted when its
+successor is adopted (as `0.67.0` and `0.67.1` were at `0.68.0`); its receipt stays, recording the
+SHA-256 and the SpicyDocs commit it was built from, and `git log --diff-filter=D -- vendor/<wheel>`
+finds the commit that last held the bytes. `uv sync --frozen` holds the pinned wheel to the hash in
+`uv.lock`; `tests/test_reader_wheel.py` holds its receipt to the wheel.
+
 - **Selected provider** `spicy_docs-0.85.0` (ss-mbia, ss-i1gm, ss-348x). `members` appends
   `name_middle`, `name_suffix` and `name_official_full`, the legislators crosswalk's own name parts;
   `congress_subjects.INPUT_COLUMNS` classifies them and `members` moves to `congress-subjects/2`, whose
@@ -97,13 +103,10 @@ Base CLI and MCP installs do not require them.
   [build receipt](spicy_docs-0.67.0+centralraw.02cc4431e606-py3-none-any.json)
   pins both changed modules and wheel SHA-256
   `e3eecedfe268c630de671bb5eaff6ce0898e74172dcd6bcbf5ff81252e4702f3`.
-  `python scripts/package_central_raw_reader.py --check` reproduces the wheel,
-  receipt and dependency pins from retained wheels without writing or downloading.
-  `--base` selects another retained release wheel, `--provider` a reviewed source
-  checkout for the archive module; `--write` explicitly updates the overlay after
-  review. Keep both retained provider wheels. Tests verify unchanged reader
-  modules, streaming captures, exact-byte reuse of raw and gzip storage, and
-  interrupted-write cleanup.
+  The script that built and checked these overlays, `scripts/package_central_raw_reader.py`,
+  was deleted with the superseded wheels: no overlay has been needed since `0.68.0` ships
+  the archive module natively. `tests/test_reader_wheel.py` still covers streaming captures,
+  exact-byte reuse of raw and gzip storage, and interrupted-write cleanup.
 
 - `spicy_docs-0.67.0`: built from SpicyDocs fork main `3e68ec10`; SHA-256
   `b4d147cf3ae2860509f0bda1cfba168e007cfe4f86798858983bdc5426c95545`; two builds
