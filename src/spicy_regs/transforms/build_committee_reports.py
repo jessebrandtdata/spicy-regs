@@ -747,10 +747,19 @@ def build_committee_reports(
         annotate("warning", "Committee reports: hearing details awaited",
                  f"{len(waiting)} hearing(s) not yet on Congress.gov, asked again until {DETAIL_GRACE_DAYS} days "
                  f"after GovInfo issued them: {', '.join(waiting[:20])}{' ...' if len(waiting) > 20 else ''}")
+    # Pending work is retried by the next run without anyone acting, so it warns rather than fails the run:
+    # every spicy-docs release re-reads all CRPT checkpoints (``code=`` in RULE_VERSIONS), more than one
+    # night's cap, and one Congress.gov 500 left the run red for nights it had published (runs 42558022791,
+    # 42751350570, 42954778184). A package that never reads stays named here and in acquisition-coverage.
+    pending = sorted(key for key, row in reads.items()
+                     if not _settled(row, key.split("-", 1)[0]) and not awaited(row, key.split("-", 1)[0]))
+    if pending:
+        annotate("warning", "Committee reports: acquisition pending",
+                 f"{len(pending)} package(s) unread ({deferred} deferred by the {max_packages}-package cap, "
+                 f"{refused} refused), retried next run: {', '.join(pending[:20])}{' ...' if len(pending) > 20 else ''}")
     status = {"discovery": "not_requested" if reread else "complete", "since": None if reread else since,
               "until": until, "listed": listed_count, "unchanged": unchanged, "refused": refused, "deferred": deferred,
-              "pending": sum(not _settled(row, key.split("-", 1)[0]) and not awaited(row, key.split("-", 1)[0])
-                             for key, row in reads.items()),
+              "pending": len(pending),
               "awaiting_detail": len(waiting),
               "table_generation": "prepared", "atomic_snapshot": False, "whole_history_complete": False}
     if coverage is not None:

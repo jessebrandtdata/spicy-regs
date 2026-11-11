@@ -37,12 +37,9 @@ class CommitteeReportsRollup(LegislativeReceiptRollup):
     def build(self, output_dir: Path) -> tuple[Path, ...]:
         # Comma-separated package ids to re-read alone; unset is the normal discovery run.
         reread = [key.strip() for key in os.environ.get("COMMITTEE_REPORTS_REREAD", "").split(",") if key.strip()]
-        self.acquisition_status = {}
-        result = self.build_receipts(output_dir, build_committee_reports, evidence=self.source_evidence,
-                                     reread=reread, coverage=self.acquisition_status)
-        if self.acquisition_status.get("pending"):
-            self.deferred_failure = RuntimeError("Committee tables generated with pending acquisition; see acquisition-coverage")
-        return result
+        # Work left pending (cap-deferred, or refused and retried next run) is a warning, not a failed run:
+        # the build names it and journals acquisition-coverage.
+        return self.build_receipts(output_dir, build_committee_reports, evidence=self.source_evidence, reread=reread)
 
 
 app = make_rollup_app(CommitteeReportsRollup)

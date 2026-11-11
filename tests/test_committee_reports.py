@@ -609,8 +609,13 @@ def test_an_unavailable_hearing_detail_is_awaited_for_90_days_then_settled(
     assert not reads[JACKET_64431]["rule_version"].count("refused-under"), "a transient refusal keeps the plain rule"
     assert coverage["pending"] == 1, "only the transient refusal is pending"
     assert coverage["awaiting_detail"] == (0 if settles else 1)
-    warning = [line for line in capsys.readouterr().out.splitlines() if line.startswith("::warning")]
-    assert bool(warning) is not settles and all(CHRG_ID in line for line in warning)
+    warnings = [line for line in capsys.readouterr().out.splitlines() if line.startswith("::warning")]
+    awaited = [line for line in warnings if "hearing details awaited" in line]
+    assert bool(awaited) is not settles and all(CHRG_ID in line for line in awaited)
+    # The transient refusal warns and is retried; the run does not fail on it.
+    assert [line for line in warnings if "acquisition pending" in line] == [
+        "::warning title=Committee reports: acquisition pending::1 package(s) unread (0 deferred by the "
+        f"200-package cap, 0 refused), retried next run: {JACKET_64431}"]
 
     def from_first(remote_key: str, local_path: Path) -> bool:
         source = first / remote_key
