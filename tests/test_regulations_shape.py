@@ -258,3 +258,24 @@ def test_the_installed_extracts_attachment_id_lands_in_the_comments_attachments_
     stored = pa.Table.from_pylist([shaped], schema=subject_schema("comments")).to_pylist()[0]["attachments"]
     assert [entry["attachment_id"] for entry in stored] == ["09000064b8f4997d", None]
     assert [entry["restrict_reason_type"] for entry in stored] == [None, "Copyrighted"]
+
+
+def test_agency_slugs_read_back_as_the_projection_spells_them(tmp_path):
+    """``published_as_source`` joins the slugs with commas, as SpicyDocs' projection does, and the mapper splits them.
+
+    Exact for what the projection writes (non-empty slugs, no comma, or no slug at all); the documented limit is held
+    here so a change to it is deliberate: an empty list, which the projection never writes, comes back as ``[""]``.
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from spicy_regs.transforms.regulations_shape import published_as_source, shape_records
+
+    schema = subject_schema("federal_register")
+    slugs = [["environmental-protection-agency", "air-and-radiation-office"], ["treasury-department"], None, []]
+    rows = [dict.fromkeys(schema.names) | {"document_number": f"2026-{i}", "publication_date": "2026-01-01",
+                                           "agency_slugs": value} for i, value in enumerate(slugs)]
+    pq.write_table(pa.Table.from_pylist(rows, schema=schema), tmp_path / "published.parquet")
+    text = published_as_source("federal_register", tmp_path / "published.parquet", tmp_path / "text.parquet")
+    back = [row["agency_slugs"] for row in shape_records("federal_register", pq.read_table(text).to_pylist())]
+    assert back == [*slugs[:3], [""]]

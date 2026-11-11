@@ -1,4 +1,4 @@
-"""Real tiny workflow checks and refusal controls for retained Court/FR replay."""
+"""Real tiny workflow checks and refusal controls for retained Court and base-table replay."""
 import hashlib
 import json
 from pathlib import Path
@@ -19,11 +19,6 @@ def selected_plan(tmp_path, dataset, *, refused=False):
         rows = [{'opinion_id': None if refused else '1', 'cluster_id': '2', 'author_str': 'café\x00\n',
                  'page_count': '0002', 'per_curiam': 't'},
                 {'opinion_id': '3', 'cluster_id': None, 'author_str': '', 'page_count': None, 'per_curiam': None}]
-    elif dataset == 'federal_register':
-        # Original order has rin last; the actual processor emits canonical order.
-        rows = [{'document_number': '2026-00001', 'publication_date': '2026-01-01', 'title': 'café\x1b\n',
-                 'agencies_json': '[]', 'regulations_dot_gov_comments_count': '0007', 'rin': '007'},
-                {'document_number': '2026-00002', 'publication_date': '2026-01-02', 'title': '', 'rin': None}]
     elif dataset == 'dockets':
         rows = [{'docket_id': 'FAA-2026-0001', 'title': 'café\x00\n', 'rin': '007'},
                 {'docket_id': 'FAA-2026-0002', 'title': '', 'rin': None}]

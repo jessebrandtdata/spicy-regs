@@ -330,8 +330,9 @@ def merge_federal_register(
     A prior without one of the columns that left receipts (``PROMOTED_LAST``) is refused: carried, its rows would
     publish NULL for values only its receipts held. A prior that differs otherwise (a column the contract added or
     dropped since, a type it changed) is read back to the text shape and mapped as the night's rows are, so a column
-    it lacks reads NULL until a re-read fills it. The merge is checked by count, one row per key and every prior key
-    kept, and the counts go to the run's journal beside the pages it read.
+    it lacks reads NULL until a re-read fills it. The merge is checked by count against the prior as published, before
+    any re-map: one row per key and every prior key kept. The counts, and whether a re-map ran and which columns it
+    added, dropped or retyped, go to the run's journal beside the pages it read.
     """
     import duckdb
 
@@ -347,6 +348,9 @@ def merge_federal_register(
         # A local run beside the table it last built: that table is its prior.
         out_file.replace(prior)
         have_prior = True
+    # Counted as published, before any re-map, so a re-map that loses or repeats a row fails the check below.
+    prior_rows = pq.ParquetFile(prior).metadata.num_rows if have_prior else 0
+    remap: dict[str, list[str]] = {}
     if have_prior and not (held := pq.read_schema(prior)).equals(schema, check_metadata=False):
         if missing := [name for name in PROMOTED_LAST["federal_register"] if name not in held.names]:
             raise ValueError(
@@ -354,8 +358,13 @@ def merge_federal_register(
                 "its receipts: carried, its rows would publish NULL for them. Point the family back at a generation "
                 "that has them (publication.restore_family; every one since 2026-11-10 does) before merging at the "
                 "public table")
-        logger.info("FR: the prior differs from the published columns; mapping its {:,} rows again",
-                    pq.ParquetFile(prior).metadata.num_rows)
+        # Journaled, so a column the contract renames leaves a trace: one added, one dropped.
+        remap = {"columns_added": [name for name in schema.names if name not in held.names],
+                 "columns_dropped": [name for name in held.names if name not in schema.names],
+                 "columns_retyped": [field.name for field in schema if field.name in held.names
+                                     and not held.field(field.name).type.equals(field.type)]}
+        logger.info("FR: the prior differs from the published columns ({}); mapping its {:,} rows again", remap,
+                    prior_rows)
         prior = _mapped(published_as_source("federal_register", prior, scratch[1]), scratch[2], schema)
     if since is None:
         prior_max = _prior_max_publication_date(prior) if have_prior else None
@@ -383,7 +392,6 @@ def merge_federal_register(
                 writer.write_table(pa.Table.from_batches([batch]).cast(schema), row_group_size=ROW_GROUP_ROWS)
         [(total, keys)] = con.execute(f"SELECT count(*), count(DISTINCT ({key})) FROM read_parquet('{merged}')"
                                       ).fetchall()
-        prior_rows = pq.ParquetFile(prior).metadata.num_rows if have_prior else 0
         [(added,)] = (con.execute(f"SELECT count(*) FROM fresh ANTI JOIN read_parquet('{prior}') USING ({key})")
                       .fetchall() if have_prior else [(read_rows,)])
     counts = {"prior_rows": prior_rows, "read_rows": read_rows, "new_rows": added, "rows": total}
@@ -393,7 +401,7 @@ def merge_federal_register(
     for path in scratch:
         path.unlink(missing_ok=True)
     if evidence is not None:
-        evidence.event("federal-register-merge", **counts)
+        evidence.event("federal-register-merge", **counts, remapped=bool(remap), **remap)
     logger.info("Federal Register: {:,} rows ({:,} read, {:,} new)", total, read_rows, added)
     return out_file
 
