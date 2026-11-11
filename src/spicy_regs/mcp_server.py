@@ -52,7 +52,6 @@ from pydantic import Field, ValidationError
 from starlette.requests import Request
 from starlette.responses import Response
 
-from spicy_regs import receipt_lookup
 from spicy_regs.runtime_bounds import RequestBound, bounded_connection, checkpoint, current_bound
 from spicy_regs._icon import ICON_DATA_URI
 from spicy_regs.citation_resolution import SOURCE_TABLES
@@ -751,7 +750,7 @@ def _immutable_metadata_inputs(index, rulemaking, allowed_paths, archive=None) -
     """
     from spicy_regs.sources.publication import (
         PublicationError, SNAPSHOT_POINTER, load_rulemaking_snapshot, parse_index,
-        receipt_members, rulemaking_receipt, table_members,
+        receipt_members, table_members,
     )
 
     base = R2_BASE_URL.rstrip("/")
@@ -779,9 +778,6 @@ def _immutable_metadata_inputs(index, rulemaking, allowed_paths, archive=None) -
                 return None
             owned.update({f"{base}/{record['remote_key']}": "rulemaking_snapshot"
                           for record in validated["tables"].values()})
-            # The build admits the snapshot's declared receipt member too; it sits under the same snapshot prefix.
-            if (receipt := rulemaking_receipt(validated)) is not None:
-                owned[f"{base}/{receipt['remote_key']}"] = "rulemaking_snapshot"
         if archive is not None and urlsplit(archive.origin).scheme == "https":
             owned.update({archive.url(stem): "archive_release" for stem in archive.files})
         if any(path not in owned for path in allowed_paths):
@@ -852,7 +848,6 @@ def _comments_exports(comments: dict, served: list[str]) -> dict[str, dict]:
 
 
 _discovery_only = ContextVar("spicy_schema_discovery", default=False)
-_physical_receipt_lookup = ContextVar("spicy_physical_receipt_lookup", default=False)
 _requested_relations: ContextVar[set[str] | None] = ContextVar("spicy_requested_relations", default=None)
 _DISCOVERY_CATALOG = "_spicy_discovery_catalog"
 
@@ -962,7 +957,7 @@ def _build_connection_inputs(con, publication):
         publication_index, rulemaking = local.publication, None
     else:
         publication_index, rulemaking, comments = publication or _read_publication()
-    catalog_only = DATA_DIR is None and _discovery_only.get() and not _physical_receipt_lookup.get()
+    catalog_only = DATA_DIR is None and _discovery_only.get()
     checkpoint()
     con.execute("SET allow_persistent_secrets=false")
     con.execute(f"SET home_directory='{HOME_DIRECTORY.replace(chr(39), chr(39) * 2)}'")
@@ -1180,14 +1175,6 @@ def _build_connection_inputs(con, publication):
         except (duckdb.Error, RuntimeError) as exc:
             con.close()
             raise RuntimeError("Published ETL receipt member unavailable") from exc
-    if local is None and rulemaking is not None and not catalog_only:
-        from spicy_regs.sources.publication import rulemaking_receipt
-
-        snapshot_receipt = rulemaking_receipt(rulemaking)
-        if snapshot_receipt is not None:
-            # The lookup reads this internal member directly. Admit only the receipt paired with
-            # the connection's captured subjects before external access is locked.
-            allowed_paths.append(f"{R2_BASE_URL.rstrip('/')}/{snapshot_receipt['remote_key']}")
     try:
         immutable_inputs = _enable_immutable_metadata_cache(con, publication_index, rulemaking, allowed_paths, archive)
         _install_relationship_views(con)
@@ -1759,9 +1746,6 @@ _refreshing = False
 _discovery_lock = threading.Lock()
 _cached_discovery_connection = None
 _cached_discovery_at = 0.0
-_receipt_lookup_lock = threading.Lock()
-_cached_receipt_connection = None
-_cached_receipt_at = 0.0
 # Explicit discovery and missing declared tables may check before the normal
 # TTL. Both caches share one refresh owner and cooldown, including failures.
 _EARLY_REFRESH_COOLDOWN_SECONDS = 5.0
@@ -1798,16 +1782,11 @@ def _refresh_discovery(current, at):
 
 
 def _get_discovery_connection():
-    """Keep catalog metadata separate from receipt lookups that can read subject rows."""
-    global _cached_discovery_connection, _cached_discovery_at, _cached_receipt_connection, _cached_receipt_at
-    if _physical_receipt_lookup.get():
-        with _bounded_lock(_receipt_lookup_lock):
-            current, _cached_receipt_at, timeout = _refresh_discovery(_cached_receipt_connection, _cached_receipt_at)
-            _cached_receipt_connection = current
-    else:
-        with _bounded_lock(_discovery_lock):
-            current, _cached_discovery_at, timeout = _refresh_discovery(_cached_discovery_connection, _cached_discovery_at)
-            _cached_discovery_connection = current
+    """The catalog-metadata connection, cached apart from the query connection."""
+    global _cached_discovery_connection, _cached_discovery_at
+    with _bounded_lock(_discovery_lock):
+        current, _cached_discovery_at, timeout = _refresh_discovery(_cached_discovery_connection, _cached_discovery_at)
+        _cached_discovery_connection = current
     if timeout is not None:
         raise timeout
     return current
@@ -1956,14 +1935,11 @@ def _refreshed(current: duckdb.DuckDBPyConnection) -> duckdb.DuckDBPyConnection:
 def _reset_connection_cache() -> None:
     """Forget the cached connection so the next call rebuilds. For tests."""
     global _cached_connection, _cached_connection_at, _refreshing, _cached_discovery_connection, _cached_discovery_at
-    global _cached_receipt_connection, _cached_receipt_at
     global _last_pointer_refresh_at
     with _connection_lock:
         _cached_connection, _cached_connection_at, _refreshing = None, 0.0, False
     with _discovery_lock:
         _cached_discovery_connection, _cached_discovery_at = None, 0.0
-    with _receipt_lookup_lock:
-        _cached_receipt_connection, _cached_receipt_at = None, 0.0
     _last_pointer_refresh_at = None
 
 
@@ -2097,11 +2073,8 @@ def _legacy_column_meanings(cursor: duckdb.DuckDBPyConnection, table: str, entry
 #: made bill_versions' reply 24,600 bytes, repeated for every table of a ledger family (round 3, S3).
 #: A qualified FEC view also leaves out its release record's inventories (``RELEASE_INVENTORIES``): its
 #: dependency's whole storage descriptor and the acceptance receipts were 13,146 of 21,054 characters
-#: in fec_receipts_net_receipts_decision's reply (round 4, S4). A table with receipts also leaves out its receipt
-#: fields' meanings (:data:`RECEIPT_FIELD_MEANINGS`): names are enough to ask ``read_receipt_fields``, which states
-#: the meaning of each field it returns.
+#: in fec_receipts_net_receipts_decision's reply (round 4, S4).
 DESCRIBE_DETAIL = ("joins[].measurement", "qualification.ledger_statements")
-RECEIPT_FIELD_MEANINGS = "receipt_field_meanings"
 #: A table's publisher-documented column values and labels (generated from ``source_domains``), also detail-only:
 #: lobbying_activities' 79 issue labels and fec_committee_history's 95 party labels would crowd the compact reply.
 DOCUMENTED_VALUES = "documented_values"
@@ -2687,11 +2660,7 @@ def _tools() -> list[Tool]:
                 label = f"{timeout:g}s"
             bound = RequestBound(timeout, f"Request exceeded the {label} timeout, including input admission")
             def run():
-                # Receipt lookups admit their selected index themselves. Keep local
-                # native row validation, without restoring unrelated remote views.
-                remote_lookup = name == "read_receipt_fields" and DATA_DIR is None
-                lookup_token = _physical_receipt_lookup.set(remote_lookup)
-                token = _discovery_only.set(name in ("list_sources", "describe_table") or remote_lookup)
+                token = _discovery_only.set(name in ("list_sources", "describe_table"))
                 requested_token = None
                 try:
                     with bound.scope():
@@ -2710,7 +2679,6 @@ def _tools() -> list[Tool]:
                     if requested_token is not None:
                         _requested_relations.reset(requested_token)
                     _discovery_only.reset(token)
-                    _physical_receipt_lookup.reset(lookup_token)
             try:
                 with anyio.fail_after(timeout):
                     result = await anyio.to_thread.run_sync(run, limiter=limiter, abandon_on_cancel=True)
@@ -2920,8 +2888,7 @@ def _tools() -> list[Tool]:
         incoming_parent_columns gives its complete key, otherwise parent_columns
         appears per entry. Missing reason means empty; floor_pct, no measured
         floor; expected_cardinality, unspecified; measured_via, measure the child.
-        detail=false: omissions in detail.omitted; receipt_fields names
-        read_receipt_fields inputs.
+        detail=false: omissions in detail.omitted.
         FEC release_compatibility is in publication (relationship if unavailable).
         detail=false retains pins, reasons, generations and receipt count.
         pending_receipt_rows means row admission/output binding is deferred;
@@ -2997,13 +2964,6 @@ def _tools() -> list[Tool]:
             if table in status["publication"] else {"status": "unavailable"}
         )
         omitted = [] if detail else list(DESCRIBE_DETAIL)
-        # What read_receipt_fields takes for this table, so a reader need not provoke a refusal to learn it. The
-        # names are the same value in both replies; the meanings are a key only the detailed one carries.
-        local = _connection_local_selection(cursor) if DATA_DIR is not None else None
-        receipts = receipt_lookup.describe(table, entry, available=receipt_lookup.selected_member(
-            _connection_index(cursor), local, R2_BASE_URL, table, _connection_rulemaking(cursor)) is not None)
-        if receipts is not None and not detail:
-            omitted.append(RECEIPT_FIELD_MEANINGS)
         if not detail:
             omitted.extend(f"metadata.{key}" for key in DESCRIBE_METADATA_DETAIL if key in entry)
         # Full release evidence sits once: in publication for an available view, else in relationship.
@@ -3021,8 +2981,6 @@ def _tools() -> list[Tool]:
             "publication": publication,
             "qualification": scope if qualified is None else {**scope, **qualified[table]},
             "joins": _table_joins(table, measurements=detail),
-            **({"receipt_fields": receipts[0]} if receipts is not None else {}),
-            **({RECEIPT_FIELD_MEANINGS: receipts[1]} if receipts is not None and detail else {}),
             "metadata": {key: [item["dataset"] for item in value] if table == "etl_receipts" and key == "datasets" else value
                          for key, value in entry.items()
                          if key not in {"table", "columns", "column_descriptions", "column_lineage",
@@ -3255,52 +3213,6 @@ def _tools() -> list[Tool]:
         _refuse_oversized_page(reply, page, result["occurrences"], offset)
         return reply
 
-    @tool
-    def read_receipt_fields(
-        table: str,
-        # The maximum is a schema hint, as max_occurrences' is: a longer list is refused in the tool's own words.
-        keys: Annotated[list[dict[str, Any]],
-                        Field(min_length=1, json_schema_extra={"maxItems": receipt_lookup.MAX_KEYS})],
-        fields: Annotated[list[str], Field(min_length=1)],
-    ) -> dict[str, Any]:
-        """Read fields a table keeps in its ETL receipts, for up to 100 rows by key.
-
-        Use this instead of query_sql for a value a table's notes say is kept
-        in the receipt. describe_table's receipt_fields gives a table's
-        identity fields and the fields its receipts carry, which differ by
-        table. Each key is an object giving every identity field its exact
-        value: text is case-sensitive and stays quoted even when it looks
-        numeric; a whole-number field takes a number or its plain digits as
-        text; a UTC timestamp field takes ISO text with an offset. An unknown table or field, a
-        key that does not fit the identity and more than 100 keys are refused,
-        saying what is valid. A table whose receipts are retired is refused too:
-        its values are its own columns, for query_sql. Values come back decoded. keys answers in request
-        order; receipt is found, ambiguous (several accepted receipts, none
-        chosen), receipt_missing (the table holds the key, no receipt does) or
-        not_in_table. Each field of a found receipt has a state: stated,
-        stated_empty, or for a field with no value unread or not_stated where
-        the table declares a read marker for it, else null_unmarked (nothing
-        says whether it was read). receipt_meaning and state_meaning define the
-        words a reply uses; fields gives each field's meaning. receipts names
-        the family or snapshot, receipt member, generation and policy version read. A lookup reads the
-        admitted receipt key index when the selected publication supplies one.
-        Without an index it reads the record id of every receipt of the table,
-        so a table with more than 2,000,000 receipts is refused. Missing keys
-        still require a bounded subject-table search. A reply past the reply limit is refused
-        with how many keys fit.
-        """
-        cursor = _get_connection().cursor()
-        with _statement_timeout(cursor):
-            reply = receipt_lookup.read_fields(
-                cursor, table=table, keys=keys, fields=fields, index=_connection_index(cursor),
-                local=_connection_local_selection(cursor) if DATA_DIR is not None else None, base_url=R2_BASE_URL,
-                entry=_table_metadata().get(table, {}), plain=_jsonify,
-                snapshot=_connection_rulemaking(cursor),
-            )
-        reply = {**_source_details(cursor), **reply}
-        receipt_lookup.refuse_oversized(reply, REPLY_CHARS, lambda value: len(_reply_text(value)[1]))
-        return reply
-
     async def connection_status() -> CallToolResult:
         """Read bounded active/recent phase timings without opening a connection or using a tool slot.
 
@@ -3315,7 +3227,7 @@ def _tools() -> list[Tool]:
 
 
 def build_server() -> MCPServer:
-    """Build the MCP server with discovery, read-only queries, citation and receipt lookup; stdio, or HTTP via build_app."""
+    """Build the MCP server with discovery, read-only queries and citation lookup; stdio, or HTTP via build_app."""
     return MCPServer("spicy-regs", instructions=INSTRUCTIONS, icons=ICONS, tools=_tools())
 
 

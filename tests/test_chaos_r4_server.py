@@ -44,22 +44,12 @@ def test_every_registered_description_fits_the_client_cap_without_indentation():
     tools = asyncio.run(server.build_server().list_tools())
     # Named, so a tool that failed to register cannot pass by not being measured.
     assert [tool.name for tool in tools] == ["lookup_agency", "list_sources", "describe_table", "query_sql",
-                                             "resolve_document_citations", "read_receipt_fields", "connection_status"]
+                                             "resolve_document_citations", "connection_status"]
     for tool in tools:
         description = tool.description or ""
         sent = len(description) + len(json.dumps(tool.input_schema, separators=(",", ":")))
         assert sent <= CLIENT_BUDGET - HEADROOM, (tool.name, len(description), sent)
         assert not any(line[:1].isspace() for line in description.splitlines()), tool.name
-
-
-def test_read_receipt_fields_says_when_to_use_it_instead_of_query_sql_and_declares_its_three_arguments():
-    [tool] = [t for t in asyncio.run(server.build_server().list_tools()) if t.name == "read_receipt_fields"]
-    assert ("Use this instead of query_sql for a value a table's notes say is kept in the receipt."
-            in " ".join((tool.description or "").split()))
-    schema = tool.input_schema
-    assert schema["required"] == ["table", "keys", "fields"] and schema["additionalProperties"] is False
-    assert schema["properties"]["keys"]["maxItems"] == 100 and schema["properties"]["keys"]["minItems"] == 1
-    assert schema["properties"]["fields"] == {"items": {"type": "string"}, "minItems": 1, "type": "array"}
 
 
 def test_registered_descriptions_are_the_cleaned_docstrings():

@@ -69,9 +69,8 @@ deletes, so the subtraction is not trusted.
 schema declarations and carry `"receipts_retired": true`
 (`subject_catalog.RECEIPTS_RETIRED`), the one owner of retirement (ss-ag1j).
 Admission and every publishing path then accept a generation of the two
-tables without receipts and refuse receipts for them; the dictionary, the MCP
-server's `describe_table` and `read_receipt_fields` read the marked tables as
-current, not legacy. The mirror asks the same rule before any catalog read,
+tables without receipts and refuse receipts for them; the dictionary and the
+MCP server's `describe_table` read the marked tables as current, not legacy. The mirror asks the same rule before any catalog read,
 so a family marked in part refuses in seconds: `The installed comments
 policies still require ETL receipts`.
 

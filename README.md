@@ -357,14 +357,12 @@ converts, and `check` holds it.
 ## Use it from an AI assistant
 
 The read-only MCP server provides `list_sources(subject=None)`, `describe_table(table)`,
-`query_sql(sql)`, `resolve_document_citations(...)`,
-`read_receipt_fields(table, keys, fields)` and
+`query_sql(sql)`, `resolve_document_citations(...)` and
 `lookup_agency(namespace, identifier, on_date=None)`.
 
-`read_receipt_fields` returns values a table keeps in its ETL receipts rather
-than in its columns (a filing's source link, a value as the publisher wrote
-it), for up to 100 rows by their identity. `describe_table` lists each table's
-identity fields and the receipt fields it carries, which differ by table.
+A source field a reader wants is a column of its table; the per-row receipt
+lookup is retired (2026-11-10), and each family moves its receipt-only fields
+into columns when it stops writing receipts.
 
 `lookup_agency` uses the pinned reviewed RefSpec mapping. Its exact namespaces
 are `regulations.gov:agency` (for example, `OPM`) and

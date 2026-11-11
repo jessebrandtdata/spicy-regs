@@ -25,7 +25,6 @@ from spicy_regs.duckdb_settings import ExportResources
 from spicy_regs.scorecards.etl import SOURCE_NAMES
 from spicy_regs.scorecards.inputs import stage_member
 from spicy_regs.sources import publication
-from spicy_regs import receipt_lookup
 from spicy_regs.mcp_server import _jsonify
 
 
@@ -209,8 +208,7 @@ ORDER BY c.scorecard_id"""
                     raise ValueError("Native attributed samples do not cover accepted scorecards with ratings")
                 return calls
             await call("query_sql", {"sql": ATTRIBUTION, "max_rows": 500}, "attributed_ratings")
-            # An exact-key sample checks native values and source fields using
-            # the serving layer's maintained receipt lookup, including read states.
+            # An exact-key sample checks the hosted native values.
             table = "scorecard_member_ratings"
             keys = ("scorecard_id", "metric_id", "publisher_member_key")
             sample = local_rows(connection,
@@ -221,23 +219,6 @@ ORDER BY c.scorecard_id"""
                 where = " AND ".join(name + "='" + value.replace("'", "''") + "'" for name, value in key.items())
                 await call("query_sql", {"sql": "SELECT * FROM " + table + " WHERE " + where, "max_rows": 2},
                            "rating_native_values")
-                native_columns = {name for name, _ in family["tables"][table + ".parquet"]["columns"]}
-                fields = [field for field in ("source_url", "source_path", "capture_id") if field not in native_columns]
-                # Current native rows hold their source fields directly; the
-                # receipt still checks the original numeric lexeme/read state.
-                if not fields:
-                    fields = ["value_number"]
-                index = {"families": {"scorecards": family}}
-                local = {"selected_tables": [table], "receipt_members": {
-                    family["prefix"] + "/" + family["etlReceipts"]["key"]:
-                        str(args.output / "members/etl_receipts.parquet")}}
-                expected = receipt_lookup.read_fields(
-                    connection, table=table, keys=[key], fields=fields, index=index, local=local,
-                    base_url=args.public_url, entry=described, plain=_jsonify)
-                actual = await call("read_receipt_fields", {"table": table, "keys": [key], "fields": fields},
-                                    "rating_source_fields")
-                if any(actual.get(name) != expected[name] for name in ("table", "identity_fields", "receipts", "keys")):
-                    raise ValueError("Hosted rating source fields or read states differ from the pinned public member")
             receipt_description = await call("describe_table", {"table": "etl_receipts"}, "describe_receipts")
             if not receipt_description.get("available"):
                 raise ValueError("Hosted shared ETL receipt table is unavailable")

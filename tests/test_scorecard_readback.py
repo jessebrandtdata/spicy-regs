@@ -350,7 +350,7 @@ def test_public_readback_compares_carried_origin_distribution_to_exact_candidate
 
 
 @pytest.mark.parametrize("mode,corruption,discovery", [
-    ("full", fault, "counts") for fault in (None, "origin", "count", "missing-pin", "stale-pin", "field-state", "native-value")
+    ("full", fault, "counts") for fault in (None, "origin", "count", "missing-pin", "stale-pin", "native-value")
 ] + [("source-adoption", fault, "counts") for fault in (None, "native-value", "missing-scope", "stale-pin", "native-scorecard", "no-ratings", "no-source-columns")]
   + [(mode, None, shape) for mode in ("full", "source-adoption") for shape in ("names", "entries", "flat")])
 def test_hosted_readback_counts_all_source_origins_and_binds_family_among_other_pins(tmp_path, monkeypatch, mode, corruption, discovery):
@@ -408,7 +408,6 @@ def test_hosted_readback_counts_all_source_origins_and_binds_family_among_other_
 
         async def call_tool(self, tool, arguments):
             if mode == "source-adoption":
-                assert tool != "read_receipt_fields"
                 assert arguments.get("table") != "etl_receipts"
                 assert "FROM etl_receipts" not in arguments.get("sql", "")
             if tool == "list_sources" and "subject" in arguments:
@@ -437,19 +436,6 @@ def test_hosted_readback_counts_all_source_origins_and_binds_family_among_other_
                             for name, kind in family["tables"]["scorecard_member_ratings.parquet"]["columns"]
                         ],
                     )
-            elif tool == "read_receipt_fields":
-                from spicy_regs import receipt_lookup
-                from spicy_regs.mcp_server import _jsonify
-                local = {"selected_tables": ["scorecard_member_ratings"], "receipt_members": {
-                    family["prefix"] + "/" + family["etlReceipts"]["key"]:
-                        str(args.output / "members/etl_receipts.parquet")}}
-                body = receipt_lookup.read_fields(server, index={"families": {"scorecards": family}},
-                    local=local, base_url=args.public_url,
-                    entry={"columns": [dict(column_name=name, column_type=kind)
-                           for name, kind in family["tables"]["scorecard_member_ratings.parquet"]["columns"]]},
-                    plain=_jsonify, **arguments)
-                if corruption == "field-state":
-                    body["keys"][0]["fields"][arguments["fields"][0]]["state"] = "unread"
             else:
                 cursor = server.execute(arguments["sql"])
                 columns = [column[0] for column in cursor.description]
@@ -493,7 +479,7 @@ def test_hosted_readback_counts_all_source_origins_and_binds_family_among_other_
     monkeypatch.setattr(readback, "ClientSession", Session)
     try:
         if corruption and corruption not in {"no-ratings", "no-source-columns"}:
-            with pytest.raises(ValueError, match="selected scorecards family|outcomes differ|source fields or read states|Hosted rows differ|every accepted scorecard|different source generation"):
+            with pytest.raises(ValueError, match="selected scorecards family|outcomes differ|Hosted rows differ|every accepted scorecard|different source generation"):
                 asyncio.run(readback.hosted(args, connection, family))
         else:
             calls = asyncio.run(readback.hosted(args, connection, family))

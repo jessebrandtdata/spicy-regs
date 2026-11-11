@@ -72,15 +72,15 @@ def test_complete_managed_subject_receipt_index_and_snapshot_paths_enable_both_c
     assert con.statements == ["SET enable_http_metadata_cache=true", "SET GLOBAL parquet_metadata_cache=true"]
 
 
-def test_the_snapshot_receipt_the_build_admits_is_owned_with_its_snapshot():
-    """The live snapshot declares a receipt; before it was owned, every remote connection ran without the cache."""
+def test_a_snapshot_that_declares_a_receipt_keeps_the_cache_without_admitting_it():
+    """The live snapshot declares a receipt member. Only the retired receipt lookup read it, so a connection admits
+    the snapshot's tables alone and still runs with the cache."""
     value, rulemaking = index(), snapshot(receipt=True)
-    assert rulemaking is not None and (declared := pub.rulemaking_receipt(rulemaking)) is not None
+    assert rulemaking is not None and pub.rulemaking_receipt(rulemaking) is not None
     tables = server.R2_BASE_URL + "/" + rulemaking["tables"]["snapshot_table.parquet"]["remote_key"]
-    receipt = server.R2_BASE_URL + "/" + declared["remote_key"]
     con = Settings()
-    result = server._enable_immutable_metadata_cache(con, value, rulemaking, [*paths(value), tables, receipt])
-    assert result is not None and result[receipt] == "rulemaking_snapshot"
+    result = server._enable_immutable_metadata_cache(con, value, rulemaking, [*paths(value), tables])
+    assert result is not None and result[tables] == "rulemaking_snapshot"
     assert con.statements == ["SET enable_http_metadata_cache=true", "SET GLOBAL parquet_metadata_cache=true"]
 
 

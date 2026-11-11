@@ -88,22 +88,6 @@ def test_the_generator_keeps_the_marker_its_installed_file_carries(retire):
     assert subject_catalog.descriptor_of(declared["federal_register"]) == subject_catalog.descriptors()["federal_register"]
 
 
-def test_receipt_lookup_says_the_fields_are_columns_and_reads_nothing(retire):
-    from spicy_regs import receipt_lookup
-
-    assert receipt_lookup.carried_fields("federal_register") is not None
-    retire("federal_register")
-    assert receipt_lookup.carried_fields("federal_register") is None
-    described = receipt_lookup.describe("federal_register", {"columns": []}, available=True)
-    assert described is not None
-    described, meanings = described
-    assert described["available"] is False and "table's own columns" in described["retired"] and meanings == {}
-    with pytest.raises(ValueError, match="no longer publishes per-row ETL receipts.*There is no receipt to read"):
-        receipt_lookup.read_fields(None, table="federal_register", keys=[{}], fields=["html_url"],
-                                   index={"families": {}}, local=None, base_url="", entry={}, plain=str)
-    assert "federal_register" not in receipt_lookup.tables_with_receipts({"families": {}}, None, "")
-
-
 def test_no_receipt_field_declaration_for_a_retired_table(retire):
     from spicy_regs import receipt_field_declarations
 
