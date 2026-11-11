@@ -814,6 +814,43 @@ def test_a_collection_that_reads_nothing_it_attempted_is_named_while_the_other_r
     assert coverage["nothing_read"] == [broken] and coverage["refused"] == 1
 
 
+class _RefusingReports(StubBodyAcquirer):
+    def acquire_parts(self, package_id: str, *, max_bytes=None, prefer=()):
+        raise ValueError("stub: reader regression")
+
+
+def test_only_final_refusals_do_not_count_as_reading_nothing(tmp_path, monkeypatch):
+    """A night whose only attempt is refused for good (a size or parts bound) is settled; no one can act on it."""
+    from spicy_regs.transforms import build_committee_reports as module
+
+    monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
+    monkeypatch.setattr(module, "_refusal_is_final", lambda error: True)
+    coverage: dict = {}
+    tables = _tables(build_committee_reports(tmp_path, reader=CrptOnlyDiscovery(), acquirer=_RefusingReports(),
+                                             hearings=StubHearings(), download_prior=_no_prior, coverage=coverage))
+    assert [row["outcome"] for row in tables["committee_report_reads"]] == ["refused_final"]
+    assert coverage["nothing_read"] == []
+
+
+def test_a_prior_complete_checkpoint_does_not_hide_a_read_that_failed_tonight(tmp_path, monkeypatch):
+    """The prior row survives the checkpoint merge (tonight's row states no stamp), but tonight read nothing."""
+    import pyarrow as pa
+
+    from spicy_regs.transforms.committee_report_reads import READ_COLUMNS, READS_TABLE
+    from spicy_regs.transforms.table_merge import prior_scratch_path
+
+    monkeypatch.delenv("COMMITTEE_REPORTS_SINCE", raising=False)
+    prior = {"package_id": CRPT_ID, "last_modified": "2026-09-18T12:00:00Z", "outcome": "complete",
+             "rule_version": "an-earlier-rule", "observed_at": "2026-11-01T03:00:00Z"}
+    pq.write_table(pa.Table.from_pylist([prior], schema=pa.schema([(c, pa.string()) for c in READ_COLUMNS])),
+                   prior_scratch_path(tmp_path, READS_TABLE))
+    coverage: dict = {}
+    tables = _tables(build_committee_reports(tmp_path, reader=CrptOnlyDiscovery(), acquirer=_RefusingReports(),
+                                             hearings=StubHearings(), download_prior=_no_prior, coverage=coverage))
+    assert [row["outcome"] for row in tables[READS_TABLE]] == ["complete"], "the merge keeps the prior row"
+    assert coverage["nothing_read"] == ["CRPT"]
+
+
 @pytest.mark.parametrize(("nothing_read", "fails"), [([], False), (["CRPT"], True)])
 def test_the_rollup_fails_after_publishing_only_when_a_collection_read_nothing(tmp_path, monkeypatch,
                                                                                nothing_read, fails):
