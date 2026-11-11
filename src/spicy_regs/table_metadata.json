@@ -922,7 +922,7 @@
       }
     ],
     "subject": "rulemaking",
-    "grain": "One row per document–docket pair a dated Federal Register record states. Native receipt identity uses document_number, publication_date, literal docket_id and docket_source_ordinal: printed-array positions keep repeated labels distinct; the ordinal is NULL for a regulations.gov-only link, whose docket_id distinguishes the relationship. link_source is not part of the identity.",
+    "grain": "One row per document–docket pair a dated Federal Register record states. Its row identity is document_number, publication_date, literal docket_id and docket_source_ordinal: printed-array positions keep repeated labels distinct; the ordinal is NULL for a regulations.gov-only link, whose docket_id distinguishes the relationship. link_source is not part of the identity.",
     "identity_columns": [
       "document_number",
       "publication_date",
@@ -40830,20 +40830,6 @@
         ]
       },
       {
-        "dataset": "federal_register",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v3",
-        "identity_columns": [
-          "document_number",
-          "publication_date"
-        ],
-        "processing_fields": [
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
-        ]
-      },
-      {
         "dataset": "federal_register_issues",
         "receipt_only": false,
         "policy_version": "historical-regulations-public-v2",
@@ -40896,25 +40882,6 @@
         ],
         "processing_fields": [
           "raw_source_row"
-        ]
-      },
-      {
-        "dataset": "fr_docket_links",
-        "receipt_only": false,
-        "policy_version": "regulations-native-v2",
-        "identity_columns": [
-          "document_number",
-          "publication_date",
-          "docket_source_ordinal",
-          "docket_id"
-        ],
-        "processing_fields": [
-          "docket_normalization_rule",
-          "html_url",
-          "pdf_url",
-          "raw_conversion_inputs",
-          "input_metadata",
-          "raw_source_record"
         ]
       },
       {

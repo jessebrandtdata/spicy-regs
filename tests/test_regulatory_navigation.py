@@ -25,20 +25,23 @@ def test_lifecycle_uses_dated_by_not_stage_source():
 
 
 def test_docket_builder_preserves_raw_references_and_ordinal(tmp_path):
-    fields=['document_number','title','abstract','document_type','subtype','publication_date','effective_on',
-            'comments_close_on','signing_date','agency_slugs','docket_ids_json','regulation_id_numbers_json',
-            'html_url','pdf_url','executive_order_number']
-    row=dict.fromkeys(fields)
-    row.update(document_number='2026-17334',publication_date='2026-08-25',
-               docket_ids_json=json.dumps(['Docket ID OPM-2025-0001','File No. SR-Amex-2003-102',
-                                          'Docket ID OPM-2025-0001']))
-    pq.write_table(pa.Table.from_pylist([row],schema=pa.schema([(f,pa.string()) for f in fields])),
-                   tmp_path/'federal_register.parquet')
+    """Each printed label is its own row, verbatim at its position, even a label the document prints twice.
+
+    Built from the Register table as published (``regulations_shape``), the links' only input. The normalizer's
+    rule identity left the rows with the receipts (ss-vse3); a generation's root names the spicy-docs version that
+    applied it (``spec.packages``).
+    """
+    from spicy_regs.transforms.regulations_shape import subject_schema
+
+    schema=subject_schema('federal_register')
+    labels=['Docket ID OPM-2025-0001','File No. SR-Amex-2003-102','Docket ID OPM-2025-0001']
+    row=dict.fromkeys(schema.names)|{'document_number':'2026-17334','publication_date':'2026-08-25','docket_ids':labels}
+    pq.write_table(pa.Table.from_pylist([row],schema=schema),tmp_path/'federal_register.parquet')
     rows=pq.read_table(build_fr_docket_links(tmp_path)).to_pylist()
-    assert len(rows)==3
-    assert sorted(r['docket_source_ordinal'] for r in rows)==[0,1,2]
-    assert next(json.loads(r['normalized_docket_candidates_json']) for r in rows if r['docket_source_ordinal']==1)==[]
-    assert all(r['docket_normalization_rule'].startswith('spicy_docs.normalize_docket_references@sha256:') for r in rows)
+    assert sorted((r['docket_source_ordinal'],r['docket_id']) for r in rows)==list(enumerate(labels))
+    assert {r['docket_source_ordinal']:r['normalized_docket_candidates'] for r in rows}=={
+        0:['OPM-2025-0001'],1:[],2:['OPM-2025-0001']}
+    assert {r['link_source'] for r in rows}=={'printed'}
 
 
 def test_retained_fr_candidates_and_document_number_collision():

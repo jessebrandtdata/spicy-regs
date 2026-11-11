@@ -13,10 +13,33 @@ files, and where the last generations published with receipts are pinned.
 | --- | --- | --- |
 | 1. Promote the fields the receipts held | merged | Receipt route. `federal_register` gains `html_url`, `pdf_url`, `body_html_url`, `source_sha256`, `regulations_dot_gov_info_json` as its last columns; `fr_docket_links` gains `normalized_docket_candidates`. |
 | 2. Readers use the published tables | merged | The links job and the rulemaking materializer read the pinned `federal_register` table, not its receipts. Receipts are still written. |
-| Retirement rule | merged, inert | A table's installed policy marked `"receipts_retired": true` stops needing receipts and may never state them again, on every path that builds or publishes (ss-ag1j); nothing is marked yet. |
-| 3. Merge at the public table, no receipts | not merged | Waits for one clean night of steps 1 and 2 and for the pins below. |
+| Retirement rule | merged | A table's installed policy marked `"receipts_retired": true` stops needing receipts and may never state them again, on every path that builds or publishes (ss-ag1j); `comments` and `comments_index` were the first marked (ss-juz8). |
+| 3. Merge at the public table, no receipts | merged | Both rollups are plain: the Register merges the night's mapped documents into the pinned public table, the links rebuild from it, neither publishes receipts, both policies are marked `receipts_retired`, the jobs time out at 30 minutes. It followed one clean night of steps 1 and 2 (2026-11-10, run 42902380757: the eight checks below as expected), whose generations, the last with receipts, are pinned below. |
 
-## The first night
+## After step 3: what the merge does not do
+
+- **A carried row keeps the mapping of the night that last read it.** The
+  receipt route mapped every row again each night; the merge maps only the
+  night's documents and carries every other row as published. `rin` is the one
+  derived column it recomputes on every row. Any other mapping change, in
+  `regulations_shape` or in SpicyDocs' projection, reaches rows older than the
+  120-day window only through a full re-read: run the Register workflow with
+  `since` 1994-01-01 (`FR_SINCE=1994-01-01`), which keeps 240 minutes. A column
+  the contract adds reads NULL on carried rows until then; a prior without one
+  of the columns that left receipts is refused.
+- **A document the mapping refuses fails the night.** The receipt route
+  refused such a row into its receipt and published the rest; the merge has no
+  receipt to refuse it into, so the job stops with the mapper's message,
+  publishes nothing, and the prior generation stays live until the mapping is
+  fixed.
+- **Recovery is forward only.** Once a generation without receipts is live, a
+  revert of step 3 cannot run: the receipt route selects its prior by the
+  generation stating receipts for the table and refuses when none does
+  (`selected native input requires one ETL receipt generation`). A fault in
+  the merge route is fixed in the merge route. The pinned generation stays
+  stored, so its receipts stay readable.
+
+## The first night of steps 1 and 2
 
 - **Job 1 (`federal_register`) takes about 55 to 80 minutes, once.** The prior
   was published under `regulations-native-v2` and the code is `-v3`, so the
@@ -171,12 +194,16 @@ entry per table, in the same change that marks the table's receipts retired.
 or retention's docs scan cannot find one. Existing receipt files are never
 deleted by this change; the pin is what keeps retention from removing them.
 
-To fill, on the last night before step 3 merges: read
+Step 3 pins the generations of 2026-11-10 (run 42902380757), the last
+published with receipts; a night run before it merged would have moved both
+pins to that night's. A pin is filled from the public index: read
 `families."federal-register"` and `families."fr-docket-links"` from
 `publication.v2.json` (query 1 above, with `artifactDigest` and `publishedAt`
 in place of `prefix`), confirm each still lists `etlReceipts`, and write each
 table's entry: `family`, `artifactDigest` (`sha256:` and the 64 hex digits),
 `publishedAt`, and `receipts`, the key
-`generations/<family>/<64 hex>/etl_receipts.parquet`. Do not write any other
-generation's digest under `docs/`: every digest cited there is kept
-indefinitely.
+`generations/<family>/<64 hex>/etl_receipts.parquet`. Commit each pinned
+generation's `artifact.json`, gzipped, as
+`tests/fixtures/receipt_archive/<64 hex>.json.gz`: the pin test recomputes its
+digest and reads its receipt policies. Do not write any other generation's
+digest under `docs/`: every digest cited there is kept indefinitely.

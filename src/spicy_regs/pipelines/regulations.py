@@ -16,12 +16,13 @@ the wiring.
 """
 
 import json
+from collections.abc import Sequence
 from contextlib import ExitStack
 from os import getenv
 from pathlib import Path
 from shutil import rmtree
 from time import monotonic
-from typing import Annotated, ClassVar
+from typing import Annotated, ClassVar, cast
 
 from cyclopts import App, Parameter
 from dotenv import load_dotenv
@@ -89,6 +90,8 @@ class SweepState:
             raw = r2.get_r2_client().get_object(Bucket=getenv("R2_BUCKET_NAME", "spicy-regs"), Key=SWEEP_STATE_KEY)
             held = json.loads(raw["Body"].read())
             next_batch, starts = held["next"], held["starts"]
+            if not all(type(value) is int for value in (next_batch, starts)):  # not 3.0, "3" or true
+                raise ValueError(f"names batch {next_batch!r} with {starts!r} starts; both must be integers")
             if held["batch_count"] != self.batch_count or not 0 <= next_batch < self.batch_count or starts < 0:
                 raise ValueError(f"names batch {next_batch} of {held['batch_count']}, not of {self.batch_count}")
         except Exception as error:
@@ -165,6 +168,8 @@ class RegulationsPipeline(Pipeline):
         self.allow_unbounded_originals = allow_unbounded_originals
         self.verbose = verbose
         self._sweep_agencies: list[str] | None = None
+        #: A sweep's unread comment keys per agency, kept from its first pass's scan for the comment batches.
+        self._held_comment_keys: dict[str, Sequence[str]] | None = None
         self._pending_text: PendingCommentText | None = None
         self._text_pool: DerivedTextPool | None = None
         self._staging_dir: Path | None = None
@@ -244,11 +249,13 @@ class RegulationsPipeline(Pipeline):
         comment batches, which take about 74 minutes even with 10 new keys (run
         42769233858), so a sweep reached two or three of the 15 and on 2026-11-10
         twelve batches' documents still ended on 10-03. The pass lists every agency's
-        whole prefix (42 minutes for all 15 batches on 2026-10-03, run 37147050861)
-        and each comment batch lists its agencies again, so a sweep of k batches
-        makes 1 + k/15 full listings; handing the pass's comment keys to the batches
-        would save the second. With ``only_comments`` the first pass is skipped;
-        with ``skip_comments`` it is the whole sweep.
+        whole prefix once (42 minutes for all 15 batches on 2026-10-03, run
+        37147050861), and the same scan keeps each agency's unread comment keys: a
+        comment batch reads those instead of listing its agencies again. A comment
+        written after the pass waits for the next sweep; it is not in the manifest,
+        so it is not lost. An agency the pass did not list (it failed) is listed by
+        its batch. With ``only_comments`` the first pass is skipped; with
+        ``skip_comments`` it is the whole sweep.
 
         A failure stops the sweep: continuing with uncommitted in-memory keys could
         retire a failed batch when a later batch publishes its manifest. A fresh
@@ -316,6 +323,7 @@ class RegulationsPipeline(Pipeline):
             first_failure: Exception | None = None
             if first:
                 self.batch_number = None
+                self._held_comment_keys = {} if comments else None
                 logger.info("ETL sweep: dockets and documents of all {} agencies", len(self._sweep_agencies))
                 recorded = manifest.recorded
                 try:
@@ -357,6 +365,7 @@ class RegulationsPipeline(Pipeline):
         finally:
             self.batch_number = None
             self._sweep_agencies = None
+            self._held_comment_keys = None
 
     def _run(self, manifest: Manifest, record_types: list[RecordType]) -> None:
         state_dir = self.output_dir or (Path.cwd() / "output")
@@ -403,23 +412,58 @@ class RegulationsPipeline(Pipeline):
         unresolved = UnresolvedKeys(self.output_dir or Path.cwd() / "output", index=self._publication_index)
         self._unresolved = unresolved
         source_types = {rt.name: source_record_type(rt) for rt in record_types}
+        held = self._held_comment_keys
+        # A sweep's first pass lists comments in the same one scan per agency, and keeps them for its batches.
+        comment_type = source_record_type(RECORD_TYPES["comments"])
+        holding = held is not None and "comments" not in source_types
         originals = self._originals()
+        # The keep loop below only reads cached key lists: its readers share one resource instead of one each.
+        shared: list = []
+
+        def resource():
+            return shared[0] if shared else originals.resource(mirrulations.s3_resource())
+
         read = mirrulations.reader_factory(
-            list(source_types.values()),
+            [*source_types.values(), *([comment_type] if holding else [])],
             processed_keys=manifest,
             unresolved_keys=unresolved.for_reader,
             since_year=self.since_year,
             verbose=self.verbose,
-            resource_factory=lambda: originals.resource(mirrulations.s3_resource()),
+            resource_factory=resource,
         )
+
+        def reader(agency: str, rt: RecordType):
+            keys = held.pop(agency, None) if held is not None and rt.name == "comments" else None
+            if keys is None:
+                return read(agency, source_types[rt.name])
+            # The keys the first pass listed, built as reader_factory builds a reader (_ingest_comments_chunked too).
+            return mirrulations.MirrulationsReader(
+                originals.resource(mirrulations.s3_resource()), mirrulations.BUCKET, mirrulations.PREFIX, agency,
+                source_types[rt.name], processed_keys=manifest, since_year=self.since_year, verbose=self.verbose,
+                key_lister=lambda: keys, unresolved_keys=unresolved.for_reader(agency, source_types[rt.name]),
+            )
+
         result = stage_agencies(
             agencies,
             record_types,
             staging_dir,
-            lambda agency, rt: read(agency, source_types[rt.name]),
+            reader,
             transform_for=self._transform_for,
             max_workers=self.max_workers,
         )
+        if holding:
+            assert held is not None
+            # Every agency was listed by its readers above, so each answer comes from the scan's cache: the cached
+            # list itself, which no reader mutates (each copies its keys), so it is kept without a copy.
+            shared.append(originals.resource(mirrulations.s3_resource()))
+            for agency in agencies:
+                lister = read(agency, comment_type).key_lister
+                if lister is None:
+                    raise RuntimeError("reader_factory built a reader without its scan's key lister")
+                keys = lister()
+                held[agency] = cast(Sequence[str], keys) if isinstance(keys, Sequence) else list(keys)
+            logger.info("Kept {:,} unread comment keys of {} agencies for the comment batches",
+                        sum(len(keys) for keys in held.values()), len(held))
         # Before any merge or manifest can use or retire what was read.
         originals.commit(result.consumed_keys)
         logger.info("ETL source staging completed in {:.1f}s", monotonic() - started)

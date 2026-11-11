@@ -19,7 +19,8 @@ from spicy_regs.ontology import federal_register
 from spicy_regs.ontology.federal_register import FederalRegisterIndex, linked_docket_ids
 from spicy_regs.pipelines import rulemaking_dataset
 from spicy_regs.transforms.build_comment_periods import build_comment_periods
-from spicy_regs.transforms.build_federal_register import build_federal_register
+from spicy_regs.pipelines.rulemaking_dataset import stage_text
+from spicy_regs.transforms.build_federal_register import merge_federal_register
 from spicy_regs.transforms.build_fr_docket_links import build_fr_docket_links
 from spicy_regs.transforms.build_proceedings import build_proceedings
 from spicy_regs.transforms.build_regulatory_agenda import build_regulatory_agenda
@@ -53,8 +54,9 @@ def _inputs(root):
             "comments_close_on": "2000-02-01",
         },
     ]
-    build_federal_register(root, documents=lambda start: iter(records), download_prior=lambda key, path: False)
+    merge_federal_register(root, documents=lambda start: iter(records), download_prior=lambda key, path: False)
     build_fr_docket_links(root)
+    stage_text("federal_register", root / "federal_register.parquet")  # as the materializer reads it
     _write(
         root,
         "dockets",
@@ -370,8 +372,9 @@ def _labelled_inputs(root):
             "regulation_id_numbers": [],
         },
     ]
-    build_federal_register(root, documents=lambda start: iter(records), download_prior=lambda key, path: False)
+    merge_federal_register(root, documents=lambda start: iter(records), download_prior=lambda key, path: False)
     build_fr_docket_links(root)
+    stage_text("federal_register", root / "federal_register.parquet")  # as the materializer reads it
     _write(
         root,
         "dockets",
@@ -528,8 +531,9 @@ def _listed_inputs(root):
             "comments_close_on": "2023-10-10",
         },
     ]
-    build_federal_register(root, documents=lambda start: iter(records), download_prior=lambda key, path: False)
+    merge_federal_register(root, documents=lambda start: iter(records), download_prior=lambda key, path: False)
     build_fr_docket_links(root)
+    stage_text("federal_register", root / "federal_register.parquet")  # as the materializer reads it
     _write(
         root,
         "dockets",
@@ -602,8 +606,9 @@ def test_a_list_merging_a_multi_docket_proceeding_keeps_the_outranking_id(tmp_pa
             "regulation_id_numbers": ["2060-AP84"],
         },
     ]
-    build_federal_register(tmp_path, documents=lambda start: iter(records), download_prior=lambda key, path: False)
+    merge_federal_register(tmp_path, documents=lambda start: iter(records), download_prior=lambda key, path: False)
     build_fr_docket_links(tmp_path)
+    stage_text("federal_register", tmp_path / "federal_register.parquet")  # as the materializer reads it
     _write(
         tmp_path,
         "dockets",
@@ -652,6 +657,20 @@ def test_a_list_merging_a_multi_docket_proceeding_keeps_the_outranking_id(tmp_pa
 EPA_NOTICE = ["EPA-R05-OAR-2016-0135", "EPA-R05-OAR-2016-0269", "EPA-R05-OAR-2016-0372", "EPA-R05-OAR-2016-0396"]
 
 
+def _links_from_published(root):
+    """Rebuild the links as the plain route does: from the Register's published columns, not the stages' text."""
+    import pyarrow as pa
+
+    from spicy_regs.transforms.regulations_shape import shape_records, subject_schema
+
+    published = root / "published"
+    published.mkdir(exist_ok=True)
+    rows = pq.read_table(root / "federal_register.parquet").to_pylist()
+    pq.write_table(pa.Table.from_pylist(shape_records("federal_register", rows), schema=subject_schema("federal_register")),
+                   published / "federal_register.parquet")
+    shutil.copyfile(build_fr_docket_links(published), root / "fr_docket_links.parquet")
+
+
 def _with_records(root, records, dockets):
     """Add real FR records (and the dockets they name) to the listed inputs, and rebuild the links."""
     fr = pq.read_table(root / "federal_register.parquet").to_pylist()
@@ -659,7 +678,7 @@ def _with_records(root, records, dockets):
         {**dict.fromkeys(fr[0]), "regulation_id_numbers_json": "[]", "cfr_references_json": "[]", **r} for r in records
     ]
     _write(root, "federal_register", tuple(fr[0]), fr)
-    build_fr_docket_links(root)
+    _links_from_published(root)
     held = pq.read_table(root / "dockets.parquet").to_pylist()
     held += [{**dict.fromkeys(held[0]), "docket_id": docket, "docket_type": "Rulemaking"} for docket in dockets]
     _write(root, "dockets", tuple(held[0]), held)
