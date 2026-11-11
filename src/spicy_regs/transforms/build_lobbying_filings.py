@@ -565,7 +565,8 @@ def _deduplicated(output_dir: Path, fresh: dict[str, Path], *, memory_limit: str
 def _public(text: Path, destination: Path, dataset: str) -> Path:
     """``text``'s rows mapped to the public columns (``map_subject``), a batch at a time; a refused row fails the run.
 
-    Python per row, over the window only (thousands a night, about 1.2M for the largest filing year).
+    Python per row, over the window only: thousands of rows a night, about 0.9M for the largest filing year
+    (2025's 108,999 filings at the archive's 1.85 activities and 5.2 lobbyists a filing).
     """
     schema = SUBJECT_SCHEMAS[dataset]
     with pq.ParquetWriter(destination, schema, compression="zstd") as writer:
@@ -687,8 +688,10 @@ def build_lobbying_filings(
     session = SelectedInputs(output_dir, unique_build_directory(output_dir))
     filings = session.select("lobbying_filings")
     prior_file = filings.subjects[0] if filings is not None else None
-    logger.info("LDA: merging against prior table {}", prior_file) if prior_file else logger.info(
-        "LDA: no prior table found — full backfill")
+    if prior_file:
+        logger.info("LDA: merging against prior table {}", prior_file)
+    else:
+        logger.info("LDA: no prior table found — full backfill")
 
     # 2. Decide the fetch window start. A filing year is read whole: the
     # posted-date watermark would narrow a history year to its last days.
@@ -696,7 +699,7 @@ def build_lobbying_filings(
         prior_max = _prior_max_dt_posted(prior_file) if prior_file else None
         since = (prior_max - timedelta(days=OVERLAP_DAYS)) if prior_max else None
     # A stale watermark must not create an ever-growing request that repeatedly
-    # hits the 30-minute CI timeout. Walk toward today in bounded windows; the
+    # hits the CI time limit. Walk toward today in bounded windows; the
     # overlap makes each successive merge resilient to late/amended filings.
     until = _bounded_until(since, until)
     logger.info("LDA: fetching filings posted {} through {}", since or "the beginning", until or "today")
@@ -724,7 +727,7 @@ def build_lobbying_filings(
         fresh = _write_fresh(_iter_filings(reader, url, max_records=max_records, max_passes=max_passes), output_dir)
 
     # 4. Dedup the fetched rows, map them and upsert them over each prior table. Only the window is deduplicated and
-    # mapped; a prior is read once by the narrow-key upsert. A filing year's window is about 1.2M child rows; hosted
+    # mapped; a prior is read once by the narrow-key upsert. A filing year's window is about 0.9M rows; hosted
     # runners have 16 GB, so leave room for Python and the OS and let DuckDB spill the rest.
     outputs = _upserted(output_dir, _deduplicated(output_dir, fresh, memory_limit="12GB"), session, evidence)
     shutil.rmtree(session.directory)  # the selected priors' copies; the outputs replace them
