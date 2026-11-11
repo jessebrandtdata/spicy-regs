@@ -36,7 +36,7 @@ column by column (2026-11-11, all rows):
 for `lobbying_filings`, `/2` for the other two; `policy_migrations.json` reads
 the earlier ones). It is promoted as received rather than rebuilt: a
 registrant's and a client's `url` follow their id on every row, but a filing's
-does not. 1,990,727 filings point at
+does not: 1,990,727 filings point at their own
 `https://lda.gov/filings/public/filing/<filing_uuid>/print/`, and ten filings of
 2006-2007 hold an API page address instead (two pairs of them share one).
 
@@ -73,7 +73,46 @@ lists the family's receipts (`GovernmentTableRollup`,
 
 ## Equality with the receipt route
 
-EQUALITY
+Both routes ran on the same frozen inputs (2026-11-11, workstation, nothing
+fetched but the window): generation `233aef1f` as the prior, and one real
+nightly window read from lda.gov once and frozen (916 filings posted
+2026-11-02 to 2026-11-10; 816 of them already held, 100 new). The receipt route is
+main at `000770ea`, the new one this change:
+
+| Table | Rows after the night | Every existing column, both ways (EXCEPT ALL) | Row order | `url` against the receipt route's receipts |
+| --- | ---: | --- | --- | --- |
+| `lobbying_filings` | 1,990,837 | 0 and 0 | identical | equal on every row, none NULL |
+| `lobbying_activities` | 3,676,643 | 0 and 0 | identical | – |
+| `lobbying_activity_lobbyists` | 10,423,866 | 0 and 0 | identical | – |
+| `lobbying_foreign_entities` | 16,188 | 0 and 0 | identical | – |
+| `lobbying_affiliated_organizations` | 30,082 | 0 and 0 | identical | – |
+| `lobbying_conviction_disclosures` | 1,606 | 0 and 0 | identical | – |
+| `lobbying_registrants` | 14,924 | 0 and 0 | identical | equal on every row, none NULL |
+| `lobbying_clients` | 130,096 | 0 and 0 | identical | equal on every row, none NULL |
+
+Column names, order and types are equal; `url` is the only addition, last.
+The `url` comparison reads the receipt route's own new receipts (its
+`raw_record`, decoded in DuckDB), so the carried rows' values come through a
+different reader from the one that filled them. The builders took 453.8 s
+(receipt route, 7.0 GiB peak) and 207.4 s (new route, first night, 5.2 GiB
+peak, of which about 154 s fill `url`); the comparison 326 s at 3.7 GiB.
+
+The second night's path ran next: an index listing no receipts and the new
+route's first-night tables as the prior, the same window again. It read no
+receipt (the run had none to fetch and would have failed asking), filled
+nothing, built in 69.1 s at a 1.57 GiB peak, and all eight tables equal the
+first night's on every column, `url` included: 0 and 0 both ways, same order.
+
+On GitHub's runner the first night, rehearsed with upload skipped
+(run 43037935543, 2026-11-11 14:23Z, keyed), built in 7.5 minutes: 23 s
+reading 858 filings, 5.3 minutes filling `url` from the receipts (2.94 GB
+downloaded and read), the upserts in seconds, and the generation admitted in
+5.4 s (428.7 s with receipts on 2026-11-10). `tests/test_lobbying_receipt_switch.py`
+holds both nights on real rows cut from these inputs.
+
+What these checks cannot see: Parquet layout (row groups, encodings), a
+night with a repeated or reordered page (the frozen window was read once),
+and text spelling, which the receipts held and the tables never did.
 
 ## Pin and first night
 
@@ -93,8 +132,10 @@ After the first night (the 19:00Z run):
 - The log has `['url'] filled from the last receipts` once for each of those
   three tables; the next night has none, and its run downloads no
   `etl_receipts.parquet`.
-- The run finishes well inside its 45 minutes (about 5 to 9 measured below).
+- The run finishes well inside its 45 minutes: the rehearsal above built in
+  7.5, and from the second night the 5.3 minutes of filling are gone.
 - The pinned generation's `etl_receipts.parquet` still answers a HEAD.
 
-Once those hold, delete the one-night fill: `build_lobbying_filings._with_promoted`
-and its test. The pin stays.
+Once those hold, cut `build_lobbying_filings._with_promoted` down to its
+refusal (a prior without `url` is refused) and drop the first-night test. The
+pin stays.
