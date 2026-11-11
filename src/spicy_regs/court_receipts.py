@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 from collections.abc import Iterable, Mapping, Sequence
-from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -17,7 +16,7 @@ import pyarrow.parquet as pq
 from spicy_regs import court_bulk, etl_bulk
 from spicy_regs.receipt_history import RefusalIdentity, carry_receipt_history
 from spicy_regs.court_subjects import (
-    IDENTITIES, RECEIPT_FIELDS, SUBJECT_SCHEMAS, normalize_court_row, opinion_body_id,
+    IDENTITIES, POLICY_VERSIONS, RECEIPT_FIELDS, REFUSED, SUBJECT_SCHEMAS, normalize_court_row, opinion_body_id,
 )
 from spicy_regs.etl_receipts import (
     DatasetPolicy, RECEIPT_SCHEMA, open_receipt_writer, ReceiptContext, combine_receipts, failure_receipt,
@@ -25,7 +24,7 @@ from spicy_regs.etl_receipts import (
 )
 
 POLICIES = {
-    name: DatasetPolicy(name, schema, IDENTITIES[name], RECEIPT_FIELDS[name], policy_version='courts/2' if name in {'court_opinions', 'court_opinion_pdf_extractions'} else 'courts/1')
+    name: DatasetPolicy(name, schema, IDENTITIES[name], RECEIPT_FIELDS[name], policy_version=POLICY_VERSIONS[name])
     for name, schema in SUBJECT_SCHEMAS.items()
 }
 
@@ -69,11 +68,8 @@ def _refusal(policy, context, error, raw):
     return failure_receipt(policy, failed, outcome='refused', raw_fields={'raw_source_record': dict(raw)})
 
 
-_REFUSED = (ValueError, TypeError, KeyError, pa.ArrowException)
-
-
 def _mapped(dataset: str, raw: Mapping) -> dict:
-    """The mapped row; a refused one raises ``_REFUSED``."""
+    """The mapped row; a refused one raises ``REFUSED``."""
     mapped = normalize_court_row(dataset, raw)
     reason = _pdf_failure(mapped) if dataset == 'court_opinion_pdf_extractions' else None
     if reason:
@@ -148,7 +144,7 @@ def write_court_rows(
                             # Validate before inheriting evidence or replacing a subject.
                             mapped = _mapped(dataset, raw)
                             split_record(policy, mapped, context)
-                        except _REFUSED as error:
+                        except REFUSED as error:
                             failures.append(_refusal(policy, context, error, raw))
                             if len(failures) >= 2000:
                                 writer.write_table(pa.Table.from_pylist(failures, schema=RECEIPT_SCHEMA))
@@ -218,7 +214,7 @@ def _write_bulk_pair(dataset, source, subject, receipt, *, generation_id, witnes
                                  [dict(w) for w in witnesses], diagnostics or {})
         try:
             return split_record(policy, _mapped(dataset, raw), context)
-        except _REFUSED as error:
+        except REFUSED as error:
             return None, _refusal(policy, context, error, raw)
 
     return court_bulk.write_bundle(dataset, source, subject, receipt, policy=policy,
@@ -227,64 +223,6 @@ def _write_bulk_pair(dataset, source, subject, receipt, *, generation_id, witnes
         receipt_writer=receipt_writer, subject_writer=subject_writer, segments=segments,
         last_receipts=() if refused_receipts is None else (
             row for row in parquet_rows(refused_receipts) if _check_refused(row, dataset, generation_id)))
-
-
-@contextmanager
-def court_bulk_family(output_dir: Path, datasets: Sequence[str], *, generation_id: str):
-    """Build fresh whole-family outputs privately, with one receipt member and no prior-history carry.
-
-    The yielded writer returns final private paths. They exist only after every table and the receipt footer
-    finish, and remain unselected until ordinary generation admission. Retained sources must live outside this
-    temporary bundle. Standalone builders keep their own selected subject/receipt pairs.
-    """
-    from rulespec_artifacts import publish_directory_no_replace
-
-    datasets = tuple(datasets)
-    if not datasets or len(set(datasets)) != len(datasets) or not set(datasets) <= court_bulk.DATASETS:
-        raise ValueError('Court bulk family requires distinct mapped datasets')
-    bundle = output_dir / '.court-etl' / uuid4().hex
-    bundle.parent.mkdir(parents=True, exist_ok=True)
-    current, current_witnesses = datasets[0], ()
-    completed = False
-    try:
-        with TemporaryDirectory(prefix='.court-family-', dir=bundle.parent) as temporary:
-            stage = Path(temporary) / 'bundle'
-            stage.mkdir()
-            receipt = stage / 'etl_receipts.parquet'
-            written = []
-            with etl_bulk.new_receipt_writer(receipt) as writer:
-                def write(dataset, source, *, witnesses):
-                    nonlocal current, current_witnesses
-                    current = dataset
-                    current_witnesses = witnesses
-                    if len(written) >= len(datasets) or dataset != datasets[len(written)]:
-                        raise ValueError('Court bulk family tables differ from the declared order')
-                    try:
-                        _write_bulk_pair(dataset, source, stage / (dataset + '.parquet'), receipt,
-                                         generation_id=generation_id, witnesses=witnesses, receipt_writer=writer)
-                    except Exception as error:
-                        try:
-                            record_source_failure(dataset, output_dir, witnesses=witnesses, error=error)
-                        except Exception as receipt_error:
-                            error.add_note(f'Failed to retain source failure receipt: {receipt_error}')
-                        raise
-                    written.append(dataset)
-                    return bundle / (dataset + '.parquet')
-
-                yield write
-                if tuple(written) != datasets:
-                    raise ValueError('Court bulk family is incomplete')
-                completed = True
-            (stage / 'court-family.json').write_text(json.dumps({
-                'generation_id': generation_id, 'datasets': datasets}) + '\n')
-            publish_directory_no_replace(stage, bundle)
-    except Exception as error:
-        if completed:
-            try:
-                record_source_failure(current, output_dir, witnesses=current_witnesses, error=error)
-            except Exception as receipt_error:
-                error.add_note(f'Failed to retain source failure receipt: {receipt_error}')
-        raise
 
 
 def _pdf_refusal_identity(raw: Mapping) -> dict | None:

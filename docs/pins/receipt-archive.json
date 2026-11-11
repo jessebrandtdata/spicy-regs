@@ -15,6 +15,30 @@
    "publishedAt": "2026-10-10T15:45:23Z",
    "receipts": "generations/comments/08e42cccdb0a57ff5e9fb7c0e0a825ff578c2e349e308289acaab86f766266a1/etl_receipts.parquet"
   },
+  "court_citation_map": {
+   "family": "court-citations",
+   "artifactDigest": "sha256:7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d",
+   "publishedAt": "2026-10-20T00:50:52Z",
+   "receipts": "generations/court-citations/7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d/etl_receipts.parquet"
+  },
+  "court_citations": {
+   "family": "court-citations",
+   "artifactDigest": "sha256:7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d",
+   "publishedAt": "2026-10-20T00:50:52Z",
+   "receipts": "generations/court-citations/7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d/etl_receipts.parquet"
+  },
+  "court_opinions": {
+   "family": "court-opinions",
+   "artifactDigest": "sha256:85589a33b63f22bfac522e5f2c41210eb69437b763b81380562eda1fd33ef298",
+   "publishedAt": "2026-10-07T06:44:36Z",
+   "receipts": "generations/court-opinions/85589a33b63f22bfac522e5f2c41210eb69437b763b81380562eda1fd33ef298/etl_receipts.parquet"
+  },
+  "court_parentheticals": {
+   "family": "court-citations",
+   "artifactDigest": "sha256:7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d",
+   "publishedAt": "2026-10-20T00:50:52Z",
+   "receipts": "generations/court-citations/7c2fc74c1b8096801f0f779baceb77e538e34047f234afbd9e56aa6515261d9d/etl_receipts.parquet"
+  },
   "federal_register": {
    "family": "federal-register",
    "artifactDigest": "sha256:3290df5438fa356c072430de6549f52ab4fc1c7526c90691179b458fec0b3c08",

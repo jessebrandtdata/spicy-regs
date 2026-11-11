@@ -11,20 +11,26 @@ publisher's score: a declared column passed through; ``-?[0-9]+`` read as an int
 value, a missing identity, or text whose encoding SQL spells differently from Python goes to the row function
 (``attempt``), which is ``normalize_court_row`` itself and decides it, refusals included. Which datasets and
 source schemas qualify is :func:`eligible`; the rest stay on the row writer.
+
+:func:`write_table` applies the same rules with no receipts, for the tables whose receipts are retired (ss-vse3):
+the publisher's record fields are columns, and only a refused or respelled row is recorded, in an exceptions file.
 """
 
 from __future__ import annotations
 
 import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from contextlib import ExitStack
 from pathlib import Path
 
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from spicy_regs import etl_bulk
-from spicy_regs.court_subjects import IDENTITIES, LEGACY_COLUMNS, RECEIPT_FIELDS, SUBJECT_SCHEMAS
+from spicy_regs.court_subjects import IDENTITIES, LEGACY_COLUMNS, RECEIPT_FIELDS, REFUSED, SUBJECT_SCHEMAS
 from spicy_regs.etl_receipts import WITNESS_TYPE, DatasetPolicy, ReceiptContext, exact_json, refuse_local_witnesses
+from spicy_regs.runtime_bounds import checkpoint
 
 #: Tables whose mapping is only the rules above (the others convert lists, derive identities or read JSON).
 DATASETS = frozenset({
@@ -113,6 +119,155 @@ def _processing_sql(dataset: str, schema: pa.Schema, originals: list[tuple[str, 
     items["conversion_inputs"] = "'[\"dict\",[' || concat_ws(',', " + ", ".join(item for _, item in sorted(originals)) + ") || ']]'" if originals else "'[\"dict\",[]]'"
     return "'[\"dict\",[' || " + " || ',' || ".join(
         f"'[\"{name}\",' || {value} || ']'" for name, value in sorted(items.items())) + " || ']]'"
+
+
+#: One row per source row the published table does not hold as the publisher spelled it (ss-vse3): ``refused`` (the
+#: row function refused it; it is left out) or ``respelled`` (written, but a converted value's publisher text is not
+#: the canonical spelling of the typed value). ``source_record`` is the staged source row as JSON text.
+EXCEPTION_SCHEMA = pa.schema([
+    ("dataset", pa.string()), ("ordinal", pa.int64()), ("outcome", pa.string()), ("reason", pa.string()),
+    ("source_record", pa.string()),
+])
+
+
+#: Exception rows one table may record before its build stops. Every live receipt of the 2026 exports held the
+#: canonical spelling (all 10.8M opinions and 85M map and parenthetical rows read on review), so more than this means
+#: the export's spelling changed wholesale: refuse rather than send every row through Python, and review it.
+MAX_EXCEPTIONS = 1000
+
+
+def _canonical_sql(column: str, dtype: pa.DataType) -> str | None:
+    """Whether a source text is the one spelling of its typed value that the published table implies.
+
+    PostgreSQL's CSV export, the publisher's, writes ``t``/``f``, decimal integers without leading zeros and the
+    shortest round-trip double without a trailing ``.0``; those spellings are recoverable from the typed column,
+    so only another spelling needs a record of its own.
+    """
+    if pa.types.is_boolean(dtype):
+        return f"{column} IN ('t', 'f')"
+    if pa.types.is_integer(dtype):
+        return f"regexp_full_match({column}, '0|-?[1-9][0-9]*')"
+    if pa.types.is_floating(dtype):
+        return f"{column} = regexp_replace(CAST(TRY_CAST({column} AS DOUBLE) AS VARCHAR), '\\.0$', '')"
+    return None
+
+
+def _canonical_text(value) -> str:
+    """The canonical spelling :func:`_canonical_sql` accepts, for a typed value the row function returned."""
+    if isinstance(value, bool):
+        return "t" if value else "f"
+    if isinstance(value, float):
+        return repr(value).removesuffix(".0")
+    return str(value)
+
+
+def write_table(dataset: str, source: Path, path: Path, *, constants: Mapping[str, str], exceptions: Path,
+                attempt: Callable[[Mapping], dict]) -> tuple[int, int]:
+    """Write ``dataset``'s published table from a staged source with no receipts; return (rows, exception records).
+
+    The mapping is the receipt route's (:func:`_subject_sql`): the rows SQL decides are typed there, and a row it
+    flags goes to ``attempt`` (``court_subjects.normalize_court_row``), which may refuse it. ``constants`` are columns
+    every row carries (``source_sha256``: the export file the rows came from). Rows keep the source's order, in
+    row groups of the receipt route's batch. Every refused or respelled row is written to ``exceptions``
+    (:data:`EXCEPTION_SCHEMA`), which exists only when it holds a row; more than :data:`MAX_EXCEPTIONS` stop the build
+    before their batch reaches Python. The written table must hold each identity once (the receipt route's admission
+    refused a repeat), or the build stops; the caller keeps the previous table.
+    """
+    subject = SUBJECT_SCHEMAS[dataset]
+    batch_rows = _BATCH.get(dataset, _DEFAULT_BATCH)
+    written = recorded = 0
+    with pq.ParquetFile(source) as parquet:
+        stamped = pa.schema([*parquet.schema_arrow, *((name, pa.string()) for name in constants)])
+        if not eligible(dataset, stamped) or set(constants) - set(subject.names):
+            raise etl_bulk.NotBulkEligible(f"{dataset}: the source schema has columns the court writer does not map")
+        columns, flags, _ = _subject_sql(dataset, stamped)
+        checks = [(_q(field.name), _canonical_sql(_q(field.name), field.type))
+                  for field in subject if field.name in stamped.names]
+        respelled = " OR ".join(f"({column} IS NOT NULL AND NOT coalesce({check}, false))"
+                                for column, check in checks if check) or "false"
+        # Ordered by the batch's own row numbers: the published order is the source's.
+        query = (f"SELECT {', '.join(columns)}, ({' OR '.join(flags)}) AS _bad, ({respelled}) AS _respelled "
+                 f"FROM {etl_bulk.SOURCE_BATCH} ORDER BY _o")
+        exception_rows: list[dict] = []
+        with ExitStack() as stack:
+            con, _ = stack.enter_context(etl_bulk.bulk_connection(path.parent))
+            writer = stack.enter_context(pq.ParquetWriter(path, subject, compression="zstd"))
+            failures: pq.ParquetWriter | None = None
+
+            def flush() -> None:
+                nonlocal failures, recorded
+                if exception_rows:
+                    if failures is None:
+                        failures = stack.enter_context(pq.ParquetWriter(exceptions, EXCEPTION_SCHEMA))
+                    failures.write_table(pa.Table.from_pylist(exception_rows, schema=EXCEPTION_SCHEMA))
+                    recorded += len(exception_rows)
+                    exception_rows.clear()
+
+            ordinal = 0
+            for batch in parquet.iter_batches(batch_size=batch_rows):
+                checkpoint()
+                table = pa.Table.from_batches([batch])
+                for name, value in constants.items():
+                    table = table.append_column(name, pa.array([value] * table.num_rows, pa.string()))
+                numbered = table.append_column("_o", pa.array(range(table.num_rows), pa.int64()))
+                con.register(etl_bulk.SOURCE_BATCH, numbered)
+                try:
+                    result = con.execute(query).to_arrow_table()
+                finally:
+                    con.unregister(etl_bulk.SOURCE_BATCH)
+                if result.num_rows != table.num_rows:
+                    raise RuntimeError(f"{dataset}: the court writer read {result.num_rows} of {table.num_rows} rows")
+                bad = result["_bad"]
+                decided: dict[int, dict | None] = {}
+                # Only flagged rows are visited in Python (none in the 2026 exports); the rest stay in Arrow.
+                flagged = pc.call_function("or", [bad, result["_respelled"]])
+                routed = pc.call_function("indices_nonzero", [flagged]).to_pylist()
+                if recorded + len(exception_rows) + len(routed) > MAX_EXCEPTIONS:
+                    raise RuntimeError(f"{dataset}: more than {MAX_EXCEPTIONS:,} rows the mapping refuses or the "
+                                       "publisher spelled other than canonically; review the export before building it")
+                for index in routed:
+                    flag = bad[index].as_py()
+                    raw = table.slice(index, 1).to_pylist()[0]
+                    record = {"dataset": dataset, "ordinal": ordinal + index,
+                              "source_record": json.dumps(raw, ensure_ascii=False, sort_keys=True)}
+                    if not flag:
+                        exception_rows.append({**record, "outcome": "respelled",
+                                               "reason": "a converted value is not spelled canonically"})
+                        continue
+                    try:
+                        mapped = attempt(raw)
+                    except REFUSED as error:
+                        decided[index] = None
+                        exception_rows.append({**record, "outcome": "refused",
+                                               "reason": f"{type(error).__name__}: {error}"})
+                        continue
+                    decided[index] = {name: mapped[name] for name in subject.names}
+                    originals = mapped.get("conversion_inputs") or {}
+                    if any(isinstance(text, str) and text != _canonical_text(mapped[name])
+                           for name, text in originals.items() if mapped.get(name) is not None
+                           and not isinstance(mapped[name], list)):
+                        exception_rows.append({**record, "outcome": "respelled",
+                                               "reason": "a converted value is not spelled canonically"})
+                proven = pc.call_function("invert", [bad])
+                kept = result.filter(proven).select(subject.names).cast(subject)
+                if decided:
+                    kept = etl_bulk.with_insertions(kept, proven.to_pylist(), decided)
+                if kept.num_rows:
+                    writer.write_table(kept)
+                written += kept.num_rows
+                ordinal += table.num_rows
+                flush()
+            if ordinal != parquet.metadata.num_rows:
+                raise RuntimeError(f"{dataset}: the court writer read {ordinal:,} of {parquet.metadata.num_rows:,} rows")
+            writer.close()
+            keys = ", ".join(_q(name) for name in IDENTITIES[dataset])
+            repeated = con.execute(
+                f"SELECT {keys}, count(*) FROM read_parquet({etl_bulk._literal(str(path))}) GROUP BY ALL "
+                f"HAVING count(*) > 1 ORDER BY ALL LIMIT 5").fetchall()
+            if repeated:
+                raise ValueError(f"{dataset}: the export repeats an identity ({', '.join(IDENTITIES[dataset])}), "
+                                 f"for example {repeated}")
+    return written, recorded
 
 
 def write_bundle(

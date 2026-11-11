@@ -308,10 +308,49 @@
   "installed": "sha256:ec6af49c7bed9a9392045a605b2b0e15740216b45d1eff5b7665db98c1a9f0ab"
  },
  "court_citation_map": {
-  "installed": "sha256:dfca49a74acc9b74578b59792ceb76536ec041397903687835c01bcb5e8714ae"
+  "earlier": [
+   {
+    "dataset": "court_citation_map",
+    "identity_fields": [
+     "citing_opinion_id",
+     "cited_opinion_id"
+    ],
+    "nullable_identity_fields": [],
+    "policy_version": "courts/1",
+    "receipt_fields": [
+     "dump_date",
+     "conversion_inputs",
+     "raw_source_record",
+     "source_observation"
+    ],
+    "receipt_only": false,
+    "subject_schema": "//////AAAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAMAAACIAAAAQAAAAAQAAACU////AAABAhAAAAAgAAAABAAAAAAAAAAFAAAAZGVwdGgAAAAIAAwACAAHAAgAAAAAAAABQAAAAMz///8AAAEFEAAAACQAAAAEAAAAAAAAABAAAABjaXRlZF9vcGluaW9uX2lkAAAAALz///8QABQACAAGAAcADAAAABAAEAAAAAAAAQUQAAAAKAAAAAQAAAAAAAAAEQAAAGNpdGluZ19vcGluaW9uX2lkAAAABAAEAAQAAAA="
+   }
+  ],
+  "installed": "sha256:882dc9850cd1122d3eb4df80c461b81ad1ed0aa32ab9d6f09b7b62ebbca15edf"
  },
  "court_citations": {
-  "installed": "sha256:5c090c94ca89441bb94bafd4eb4205f6b85cde4878f5893cc6dcbe822b5b0135"
+  "earlier": [
+   {
+    "dataset": "court_citations",
+    "identity_fields": [
+     "citation_id"
+    ],
+    "nullable_identity_fields": [],
+    "policy_version": "courts/1",
+    "receipt_fields": [
+     "date_created",
+     "date_modified",
+     "dump_date",
+     "conversion_inputs",
+     "raw_source_record",
+     "source_observation"
+    ],
+    "receipt_only": false,
+    "subject_schema": "/////2ABAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAYAAAAAAQAAwAAAAJQAAABkAAAAOAAAAAQAAAAo////AAABBRAAAAAgAAAABAAAAAAAAAANAAAAY2l0YXRpb25fdHlwZQAAABz///9Y////AAABBRAAAAAYAAAABAAAAAAAAAAEAAAAcGFnZQAAAABE////gP///wAAAQUQAAAAHAAAAAQAAAAAAAAACAAAAHJlcG9ydGVyAAAAAHD///+s////AAABBRAAAAAYAAAABAAAAAAAAAAGAAAAdm9sdW1lAACY////1P///wAAAQUQAAAAHAAAAAQAAAAAAAAACgAAAGNsdXN0ZXJfaWQAAMT///8QABQACAAGAAcADAAAABAAEAAAAAAAAQUQAAAAIAAAAAQAAAAAAAAACwAAAGNpdGF0aW9uX2lkAAQABAAEAAAA"
+   }
+  ],
+  "installed": "sha256:70911186eafccb8fdc967243da3add36079b3e001dcdf6822da8384af2bd7582"
  },
  "court_docket_groups": {
   "installed": "sha256:e66cd3388f5e8c30e8e085e798c16cdb19a5ecccca3167c348968e120a5bc5c4"
@@ -379,12 +418,50 @@
     ],
     "receipt_only": false,
     "subject_schema": "/////+ABAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAgAAAB8AQAAPAEAAAgBAADYAAAAqAAAAHgAAABEAAAABAAAALT+//8AAAECEAAAACQAAAAEAAAAAAAAAAoAAABwYWdlX2NvdW50AAAIAAwACAAHAAgAAAAAAAABQAAAAPD+//8AAAEFEAAAACAAAAAEAAAAAAAAAA0AAABqb2luZWRfYnlfc3RyAAAA5P7//yD///8AAAEGEAAAABwAAAAEAAAAAAAAAAoAAABwZXJfY3VyaWFtAAAQ////TP///wAAAQUQAAAAHAAAAAQAAAAAAAAACgAAAGF1dGhvcl9zdHIAADz///94////AAABBRAAAAAcAAAABAAAAAAAAAAJAAAAYXV0aG9yX2lkAAAAaP///6T///8AAAEFEAAAACAAAAAEAAAAAAAAAAwAAABvcGluaW9uX3R5cGUAAAAAmP///9T///8AAAEFEAAAABwAAAAEAAAAAAAAAAoAAABjbHVzdGVyX2lkAADE////EAAUAAgABgAHAAwAAAAQABAAAAAAAAEFEAAAACAAAAAEAAAAAAAAAAoAAABvcGluaW9uX2lkAAAEAAQABAAAAAAAAAA="
+   },
+   {
+    "dataset": "court_opinions",
+    "identity_fields": [
+     "opinion_id"
+    ],
+    "nullable_identity_fields": [],
+    "policy_version": "courts/2",
+    "receipt_fields": [
+     "local_path",
+     "extracted_by_ocr",
+     "date_created",
+     "date_modified",
+     "dump_date",
+     "conversion_inputs",
+     "raw_source_record",
+     "source_observation"
+    ],
+    "receipt_only": false,
+    "subject_schema": "/////0ACAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAoAAADcAQAAnAEAAGgBAAA4AQAACAEAANgAAACkAAAAZAAAADgAAAAEAAAAXP7//wAAAQUQAAAAIAAAAAQAAAAAAAAADAAAAGRvd25sb2FkX3VybAAAAABQ/v//jP7//wAAAQUQAAAAGAAAAAQAAAAAAAAABAAAAHNoYTEAAAAAeP7//7T+//8AAAECEAAAACQAAAAEAAAAAAAAAAoAAABwYWdlX2NvdW50AAAIAAwACAAHAAgAAAAAAAABQAAAAPD+//8AAAEFEAAAACAAAAAEAAAAAAAAAA0AAABqb2luZWRfYnlfc3RyAAAA5P7//yD///8AAAEGEAAAABwAAAAEAAAAAAAAAAoAAABwZXJfY3VyaWFtAAAQ////TP///wAAAQUQAAAAHAAAAAQAAAAAAAAACgAAAGF1dGhvcl9zdHIAADz///94////AAABBRAAAAAcAAAABAAAAAAAAAAJAAAAYXV0aG9yX2lkAAAAaP///6T///8AAAEFEAAAACAAAAAEAAAAAAAAAAwAAABvcGluaW9uX3R5cGUAAAAAmP///9T///8AAAEFEAAAABwAAAAEAAAAAAAAAAoAAABjbHVzdGVyX2lkAADE////EAAUAAgABgAHAAwAAAAQABAAAAAAAAEFEAAAACAAAAAEAAAAAAAAAAoAAABvcGluaW9uX2lkAAAEAAQABAAAAAAAAAA="
    }
   ],
-  "installed": "sha256:2fbdfd205936d2d44e0ea8850d3f660d5d59dba0fee6bf6c827ca10724eee3ac"
+  "installed": "sha256:b5967469ec17653de1c45592d594ea6d2f53fc4ab4b5776277e77f63f6689ece"
  },
  "court_parentheticals": {
-  "installed": "sha256:3213e32c8a8f2bfb60f2679aa50295d4c518996a2df6ee6d2101c677f949bf16"
+  "earlier": [
+   {
+    "dataset": "court_parentheticals",
+    "identity_fields": [
+     "parenthetical_id"
+    ],
+    "nullable_identity_fields": [],
+    "policy_version": "courts/1",
+    "receipt_fields": [
+     "dump_date",
+     "conversion_inputs",
+     "raw_source_record",
+     "source_observation"
+    ],
+    "receipt_only": false,
+    "subject_schema": "/////4gBAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAYAAAAcAQAA0AAAAJQAAABoAAAANAAAAAQAAAAM////AAABBRAAAAAcAAAABAAAAAAAAAAIAAAAZ3JvdXBfaWQAAAAA9P7//zj///8AAAEDEAAAABwAAAAEAAAAAAAAAAUAAABzY29yZQAGAAgABgAGAAAAAAACAGj///8AAAEFEAAAABgAAAAEAAAAAAAAAAQAAAB0ZXh0AAAAAEz///+Q////AAABBRAAAAAoAAAABAAAAAAAAAAVAAAAZGVzY3JpYmluZ19vcGluaW9uX2lkAAAAhP///8j///8AAAEFEAAAACgAAAAEAAAAAAAAABQAAABkZXNjcmliZWRfb3Bpbmlvbl9pZAAAAAC8////EAAUAAgABgAHAAwAAAAQABAAAAAAAAEFEAAAACgAAAAEAAAAAAAAABAAAABwYXJlbnRoZXRpY2FsX2lkAAAAAAQABAAEAAAAAAAAAA=="
+   }
+  ],
+  "installed": "sha256:d3e7b425d09e2dd0e85ac7740922717c39d546b2317a2865599fac16d506ff28"
  },
  "crs_report_files": {
   "installed": "sha256:1f05444aaf39f2f53dee41ad38d6d0380ded5bfa23b63958f8da213555861ff9"

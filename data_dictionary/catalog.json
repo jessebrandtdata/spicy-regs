@@ -950,37 +950,6 @@
         ]
       },
       {
-        "dataset": "court_citation_map",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citing_opinion_id",
-          "cited_opinion_id"
-        ],
-        "processing_fields": [
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_citations",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "citation_id"
-        ],
-        "processing_fields": [
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
         "dataset": "court_docket_groups",
         "receipt_only": false,
         "policy_version": "courts/1",
@@ -1056,38 +1025,6 @@
         "processing_fields": [
           "source_column",
           "source_sha256",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_opinions",
-        "receipt_only": false,
-        "policy_version": "courts/2",
-        "identity_columns": [
-          "opinion_id"
-        ],
-        "processing_fields": [
-          "local_path",
-          "extracted_by_ocr",
-          "date_created",
-          "date_modified",
-          "dump_date",
-          "conversion_inputs",
-          "raw_source_record",
-          "source_observation"
-        ]
-      },
-      {
-        "dataset": "court_parentheticals",
-        "receipt_only": false,
-        "policy_version": "courts/1",
-        "identity_columns": [
-          "parenthetical_id"
-        ],
-        "processing_fields": [
           "dump_date",
           "conversion_inputs",
           "raw_source_record",
@@ -7263,7 +7200,11 @@
         "volume",
         "reporter",
         "page",
-        "citation_type"
+        "citation_type",
+        "date_created",
+        "date_modified",
+        "dump_date",
+        "source_sha256"
       ]
     },
     {
@@ -7277,7 +7218,9 @@
       "columns": [
         "citing_opinion_id",
         "cited_opinion_id",
-        "depth"
+        "depth",
+        "dump_date",
+        "source_sha256"
       ]
     },
     {
@@ -7294,7 +7237,9 @@
         "describing_opinion_id",
         "text",
         "score",
-        "group_id"
+        "group_id",
+        "dump_date",
+        "source_sha256"
       ]
     },
     {
@@ -7315,7 +7260,13 @@
         "joined_by_str",
         "page_count",
         "sha1",
-        "download_url"
+        "download_url",
+        "local_path",
+        "extracted_by_ocr",
+        "date_created",
+        "date_modified",
+        "dump_date",
+        "source_sha256"
       ]
     },
     {
