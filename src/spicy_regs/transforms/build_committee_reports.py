@@ -349,6 +349,14 @@ def _settled(row: dict, collection: str, modified: str | None = None) -> bool:
     return settled(row, collection, modified, bounds=REFUSAL_BOUNDS, max_body_bytes=BODY_BUDGET.max_body_bytes)
 
 
+def _read_this_run(row: dict, collection: str) -> bool:
+    """A package this run read: complete, or a hearing whose body read and whose Congress.gov detail is
+    awaited or unavailable (a 404 under its refusal rule), as opposed to refused transiently."""
+    return row.get("outcome") == "complete" or (
+        row.get("outcome") == DETAIL_REFUSED and row.get("rule_version") in
+        (refusal_rule(collection, DETAIL_AWAITED), refusal_rule(collection, DETAIL_UNAVAILABLE)))
+
+
 def _section_input(derived: BodyText) -> str | tuple[PageResult, ...]:
     """What ``parse_agency_blocks`` reads: the pages, where the rendition states them, so a section cites its pages.
 
@@ -593,6 +601,7 @@ def build_committee_reports(
     mentions: Counter[str] = Counter()
     meetings: Counter[str] = Counter()
     refused = unchanged = linked = deferred = listed_count = 0
+    attempted: dict[str, list[str]] = {}
 
     for collection in ("CRPT", "CHRG"):
         if reread:
@@ -625,7 +634,8 @@ def build_committee_reports(
                                  "outcome": "pending", "rule_version": RULE_VERSIONS[collection],
                                  "observed_at": observed_at}
         logger.info("{}: {} pending; {} deferred by package cap", collection, len(pending), max(0, len(pending) - max_packages))
-        for package_id in list(pending)[:max_packages]:
+        attempted[collection] = list(pending)[:max_packages]
+        for package_id in attempted[collection]:
             state = reads[package_id]
             try:
                 bodies = _read_bodies(acquirer, package_id, collection, evidence)
@@ -691,6 +701,16 @@ def build_committee_reports(
             if evidence:
                 evidence.event("package-outcome", **state)
 
+    # The one state that fails the run (through the rollup's deferred failure, after publishing): a collection
+    # that attempted packages this run and read none of them, the signature of a reader or source refusing
+    # everything. Decided from this run's rows, before any prior checkpoint is merged back in. A final refusal
+    # (size or parts bound) is left out: it is settled and needs no one; a transient detail refusal, which a
+    # later run may clear, is not a read.
+    nothing_read = []
+    for collection, keys in attempted.items():
+        considered = [reads[key] for key in keys if reads[key]["outcome"] != REFUSED_FINAL]
+        if considered and not any(_read_this_run(row, collection) for row in considered):
+            nothing_read.append(collection)
     completed_hearings = {key for key, _modified in evaluated_hearings}
     if unfinished := sorted(key for key in reread if key not in completed_hearings or reads[key]["outcome"] != "complete"):
         # A refused named read would publish a checkpoint every later run
@@ -747,10 +767,28 @@ def build_committee_reports(
         annotate("warning", "Committee reports: hearing details awaited",
                  f"{len(waiting)} hearing(s) not yet on Congress.gov, asked again until {DETAIL_GRACE_DAYS} days "
                  f"after GovInfo issued them: {', '.join(waiting[:20])}{' ...' if len(waiting) > 20 else ''}")
+    # Pending work is retried by the next run without anyone acting, so it warns rather than fails the run:
+    # every spicy-docs release re-reads all CRPT checkpoints (``code=`` in RULE_VERSIONS), more than one
+    # night's cap, and one Congress.gov 500 left the run red for nights it had published (runs 42558022791,
+    # 42751350570, 42954778184). A package that never reads stays named here and in acquisition-coverage.
+    pending = [key for key, row in reads.items()
+               if not _settled(row, key.split("-", 1)[0]) and not awaited(row, key.split("-", 1)[0])]
+    retrying = sorted(key for key in pending if reads[key]["outcome"] != "pending")
+    waiting_cap = sorted(key for key in pending if reads[key]["outcome"] == "pending")
+    if pending:
+        named = set([*retrying, *waiting_cap][:20])
+
+        def ids(keys: list[str]) -> str:
+            shown = [key for key in keys if key in named]
+            return (", ".join(shown) + (" ..." if len(shown) < len(keys) else "")) if shown else (
+                "ids not listed" if keys else "none")
+
+        annotate("warning", "Committee reports: acquisition pending",
+                 f"{len(pending)} package(s) pending, retried next run: {len(retrying)} refused ({ids(retrying)}), "
+                 f"{len(waiting_cap)} deferred by the {max_packages}-package cap ({ids(waiting_cap)})")
     status = {"discovery": "not_requested" if reread else "complete", "since": None if reread else since,
               "until": until, "listed": listed_count, "unchanged": unchanged, "refused": refused, "deferred": deferred,
-              "pending": sum(not _settled(row, key.split("-", 1)[0]) and not awaited(row, key.split("-", 1)[0])
-                             for key, row in reads.items()),
+              "pending": len(pending), "nothing_read": nothing_read,
               "awaiting_detail": len(waiting),
               "table_generation": "prepared", "atomic_snapshot": False, "whole_history_complete": False}
     if coverage is not None:

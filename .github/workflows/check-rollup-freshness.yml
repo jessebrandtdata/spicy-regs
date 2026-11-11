@@ -26,9 +26,14 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # The join check reads column pages of the large court tables through a
-    # throttled public endpoint, with retry backoff.
-    timeout-minutes: 45
+    # The checks read the index, family roots and row counts: about five minutes.
+    # The full declared-join check left this job (ss-i1dy): each of its 152 joins
+    # re-reads both tables in full through the throttled public endpoint, so 19
+    # of 27 runs (10-07..11-10) hit the 45-minute cap, one unpublished table
+    # aborts every join, and the six nights it finished (10-09..10-23) were red
+    # on 21 joins never baselined. PR CI still checks changed declarations
+    # (ci.yml); run scripts/check_table_joins.py by hand for the whole registry.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -67,21 +72,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
         run: uv run --frozen python scripts/check_purge_credential.py --base-url "$R2_PUBLIC_URL"
-
-      # A new orphan or a narrowed parent is its own fault, independent of a
-      # stale table. The check reads the publisher the output ledger names.
-      - name: Check declared cross-table joins
-        if: always()
-        run: uv run --frozen python scripts/check_table_joins.py --receipt scheduled-join-check-results.json
-
-      - name: Retain complete join-check results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: complete-join-measurements
-          path: scheduled-join-check-results.json
-          if-no-files-found: warn
-          retention-days: 14
 
       # A source a build refused while publishing the rest of its family (Table
       # III inside laws) has no age budget to breach: Table III lags months by

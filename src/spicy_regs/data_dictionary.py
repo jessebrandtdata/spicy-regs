@@ -1586,11 +1586,30 @@ def _schemas_for_source(source: str, base: str | None) -> dict[str, list[tuple[s
 EXIT_SOURCE_UNREACHABLE = 3
 
 
+#: Live checks against a selection that moved mid-check before giving up. A rollup publishing during the
+#: two-minute check moved it on 3 of 25 deploy-docs runs (11-09..11-11), each red with nothing wrong.
+SELECTION_ATTEMPTS = 3
+
+
 def cmd_check(args: argparse.Namespace) -> int:
     """Reconcile descriptions against the chosen schema source and report drift.
 
-    Exit 1 on drift; a live source that cannot be read exits EXIT_SOURCE_UNREACHABLE (3), not 1.
+    Exit 1 on drift; a live source that cannot be read exits EXIT_SOURCE_UNREACHABLE (3), not 1. A publication
+    selection that moves during a live check is checked again from the start, up to :data:`SELECTION_ATTEMPTS`.
     """
+    for _ in range(SELECTION_ATTEMPTS):
+        result = _check_once(args)
+        if result is not None:
+            return result
+        print("  Publication selection changed during live schema verification; checking the new one.", file=sys.stderr)
+    print(f"! Publication selection changed during each of {SELECTION_ATTEMPTS} live schema verifications.",
+          file=sys.stderr)
+    print("Live schema verification is incomplete; this is not a pass.", file=sys.stderr)
+    return EXIT_SOURCE_UNREACHABLE
+
+
+def _check_once(args: argparse.Namespace) -> int | None:
+    """One :func:`cmd_check` pass; ``None`` when the live selection moved, so nothing it read can be reported."""
     import httpx
 
     descriptions = load_descriptions(Path(args.descriptions))
@@ -1648,7 +1667,7 @@ def cmd_check(args: argparse.Namespace) -> int:
                 if index is None:
                     raise PublicationError("No captured publication selection for live schema verification")
                 if load_index(base_url) != index:
-                    raise PublicationError("Publication selection changed during live schema verification")
+                    return None
                 rows = published_row_counts(base_url, index)
                 errors += kind_index_errors(descriptions, rows)
                 errors += receipt_index_errors(descriptions, rows, published_receipt_datasets(index))
