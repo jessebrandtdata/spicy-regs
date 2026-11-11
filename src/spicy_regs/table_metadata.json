@@ -38639,9 +38639,9 @@
     "table": "uscode_edition_sections",
     "label": "Retained U.S. Code section content",
     "summary": "One section, range, stub or other content observation within a selected edition member. Native identifiers, source context and readable text preserve the retained source meaning.",
-    "coverage": "Sampled. Selected retained annual XHTML and release-point XML members; complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.",
+    "coverage": "Sampled. The selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138); complete body qualification is recorded separately for each accepted edition. These observations do not establish normalized legal status or replace enacted-law tables.",
     "kind": "sampled",
-    "measured_on": "2026-10-12",
+    "measured_on": "2026-11-11",
     "data_quality": null,
     "columns": [
       {
@@ -38695,9 +38695,9 @@
     "table": "uscode_edition_structure",
     "label": "Retained U.S. Code structural observations",
     "summary": "One native structural occurrence linked to its edition member. Source positions, labels, status and native context remain distinct from section text.",
-    "coverage": "Sampled. Native structural observations in selected annual XHTML and release-point USLM members. Section-body coverage requires separate content qualification.",
+    "coverage": "Sampled. Native structural observations in the selected editions' members (the 2000 annual XHTML archive; release points 119-102 and 119-138). Section-body coverage requires separate content qualification.",
     "kind": "sampled",
-    "measured_on": "2026-10-10",
+    "measured_on": "2026-11-11",
     "data_quality": null,
     "columns": [
       {
@@ -38751,9 +38751,9 @@
     "table": "uscode_editions",
     "label": "Retained U.S. Code edition members",
     "summary": "One native annual or release-point archive member observed in its edition. Requested year, native publication year, carried-forward state and appendices remain separate.",
-    "coverage": "Sampled. Selected retained original archive members only; edition membership and source structure do not establish complete section-body qualification.",
+    "coverage": "Sampled. Every member of the selected editions only, each added by explicit decision -- the 2000 annual XHTML archive and the complete release-point XML corpora at 119-102 and 119-138 (current through Public Law 119-138); other years and release points are not held. Edition membership and source structure do not establish complete section-body qualification.",
     "kind": "sampled",
-    "measured_on": "2026-10-10",
+    "measured_on": "2026-11-11",
     "data_quality": null,
     "columns": [
       {
@@ -41898,33 +41898,6 @@
         "processing_fields": [
           "raw_record"
         ]
-      },
-      {
-        "dataset": "uscode_edition_sections",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "observation_id"
-        ],
-        "processing_fields": []
-      },
-      {
-        "dataset": "uscode_edition_structure",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "observation_id"
-        ],
-        "processing_fields": []
-      },
-      {
-        "dataset": "uscode_editions",
-        "receipt_only": false,
-        "policy_version": "uscode-editions-public-v2",
-        "identity_columns": [
-          "edition_id"
-        ],
-        "processing_fields": []
       }
     ],
     "guide": "A receipt is the paperwork behind one row. Each time our pipeline turns a\npublisher's record (an FCC filing, a GAO decision, one rating on a scorecard)\ninto a row of a table, it writes one receipt to go with it: what it read, which\nversion of our code read it, how that went, and anything it kept that did not\nbecome a column. The table holds what you query. The receipt holds how the row\ngot there. (\"ETL\" in the name is that pipeline: extract, transform, load.)\n\nReceipts are useful for three things:\n\n- **Finding something that is no longer a column.** A table in the newer layout\n  keeps the columns people query. A few things people do sometimes want, such\n  as the link to a filing's page on the publisher's site, are kept in the\n  receipt instead. Where that is so, the table's own notes say it in one\n  sentence.\n- **Checking where a row came from.** A receipt names what was read to make\n  the row.\n- **Seeing what did not become a row.** When a pipeline records a record it\n  could not convert, it does so as a receipt with no row.\n\nNot every table has receipts yet. Tables are moving to the newer layout one\ngroup at a time, and a table has receipts only after it has been published that\nway. `describe_table('etl_receipts')` lists, under `publication`, each group\nthat has them and the tables in it (`datasets`). A table that is not named\nthere has no receipts: everything it holds is in the table itself. (The other\n`datasets` list in that reply, under `metadata`, names every table that is set\nup to have receipts, whether or not it has published any.)\n\nThe word has two other uses in this dictionary, and neither is this table.\n`fec_receipts` and other campaign-finance wording mean money a committee\nreceived. A note that cites a \"receipt\" followed by a folder name points at the\nmaintainers' own evidence files, which are not public.\n\n## The quick way: ask for a value by the row's key\n\nThe `read_receipt_fields` tool reads values out of receipts for you. Give it\nthe table, the keys of the rows you mean and the fields you want. For the link\nto the CRS report `R48641` at a particular source update date:\n\n```json\n{\"table\": \"crs_reports\", \"keys\": [{\"report_id\": \"R48641\", \"update_date\": \"2026-07-17T22:38:55+00:00\"}], \"fields\": [\"url\"]}\n```\n\n`describe_table('crs_reports')` lists, under `receipt_fields`, the table's key\ncolumns with their types and the fields its receipts hold. A key gives every\nkey column its exact value, so a table with two key columns names both:\n`{\"committee_id\": \"C00097238\", \"cycle\": 2012}`. Each row answers `found` or\nsays why not, and each field says whether the receipt states a value.\n\nThe tool reads up to 100 rows in a call. It does not work on a table with more\nthan 2,000,000 receipts, and says so when asked. For such a table, to join\nreceipts to a query's rows, or to read a receipt that belongs to no row, use\nthe queries below.\n\n## How to find the receipt for a row\n\nWithout the tool this takes a query. In a table that has receipts, every row\nhas exactly one receipt whose `outcome` is `accepted`. You find it by the\ntable's name and the row's key.\n\n1. Ask for the table's key columns. `describe_table('crs_reports')` lists them\n   as `identity_columns`; for `crs_reports` those are `report_id` and `update_date`.\n2. Write the row's key the way a receipt stores it in `identity_json`: each key\n   column as a name and a value, in the order `identity_columns` gives.\n3. Select the receipt with that table name and that key.\n\nFor the CRS report `R48641` updated at `2026-07-17T22:38:55+00:00`:\n\n```sql\nSELECT *\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nA table with two key columns names both. `fec_committee_history` is keyed by\n`committee_id` and `cycle`, and its key for committee `C00097238` in 2012 is:\n\n```text\n[\"list\",[[\"list\",[[\"str\",\"committee_id\"],[\"str\",\"C00097238\"]]],[\"list\",[[\"str\",\"cycle\"],[\"int\",2012]]]]]\n```\n\nText is written `[\"str\",\"…\"]`, a whole number `[\"int\",2012]` with no quotes\naround the number, and a key column that is empty for the row `[\"null\",null]`.\nA timestamp is written `[\"datetime\",\"2026-07-17T22:38:55+00:00\"]`.\nSpelling and capital letters must match the table's value exactly.\n\nTo fetch the receipts of several rows, join on the same expression and build\nthe key from the table's own column:\n\n```sql\nSELECT t.report_id, t.update_date, t.title, r.witnesses\nFROM crs_reports t\nJOIN etl_receipts r\n  ON r.dataset = 'crs_reports'\n AND r.outcome = 'accepted'\n AND r.identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"' || t.report_id\n     || '\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"'\n     || replace(strftime(t.update_date AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%M:%S.%f')\n                || '+00:00', '.000000+', '+') || '\"]]]]]'\nWHERE t.report_id IN ('R48641', 'IN12713')\n```\n\nThree things to know before relying on this:\n\n- The query reads through all of that table's receipts, so it is slower on the\n  largest tables.\n- A shorter form you may see, `contains(identity_json, '\"R48641\"')`, works for\n  a table with one key column. Do not use it on a table with several key\n  columns: matching one part of the key returns other rows' receipts.\n- A key value that contains a double quote or a backslash is stored with a\n  backslash in front of each, so the plain joining of text above will not match\n  it.\n\n## How to read a value out of a receipt\n\nThe three columns ending in `_json` hold text in a form of JSON where every\nvalue is written as a pair: its type, then the value. The text `R48641` is\nstored as `[\"str\",\"R48641\"]`, the number 5 as `[\"int\",5]`, a missing value as\n`[\"null\",null]`, a record as `[\"dict\",[[name, pair], …]]` and a list as\n`[\"list\",[pair, …]]`. This keeps the number 5 apart from the text \"5\", and a\nmissing value apart from an empty text. The cost is that the usual JSON\nfunctions cannot fetch a field by its name, so today the working way to read\none is a text pattern:\n\n```sql\nSELECT regexp_extract(processing_json, '\\[\"url\",\\[\"str\",\"([^\"]*)\"', 1) AS url\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nPut the field's name where `url` is. The pattern has limits:\n\n- It reads text values only. For a field that is absent, missing or not text it\n  returns an empty text, not NULL.\n- It returns the first field of that name anywhere in the receipt.\n- It stops at the first double quote, so a value that contains one (a title, or\n  a list kept as text) comes back cut short. For such a value use the longer\n  form, which reads it whole:\n\n```sql\nSELECT ('\"' || regexp_extract(processing_json, '\\[\"title\",\\[\"str\",\"((?:[^\"\\\\]|\\\\.)*)\"', 1) || '\"')::JSON ->> '$' AS title\nFROM etl_receipts\nWHERE dataset = 'crs_reports'\n  AND outcome = 'accepted'\n  AND identity_json = '[\"list\",[[\"list\",[[\"str\",\"report_id\"],[\"str\",\"R48641\"]]],[\"list\",[[\"str\",\"update_date\"],[\"datetime\",\"2026-07-17T22:38:55+00:00\"]]]]]'\n```\n\nTo see which fields a table's receipts hold, look at one:\n`SELECT processing_json FROM etl_receipts WHERE dataset = 'crs_reports' AND outcome = 'accepted' LIMIT 1`.\n\n## What a receipt contains\n\nOne row per receipt. The first columns say which row the receipt belongs to;\nthe rest say what was read and what happened. On the server, `etl_receipts` is\none table holding the receipts of every table that has them. In the published\nfiles, each group of tables has its own `etl_receipts.parquet` beside its\ntables, and the publication index names it.\n\nEach column is described under `columns` in this reply.\n\n## What a receipt does not tell you\n\n- **Whether the publisher's record is right, current or approved.** `outcome`\n  describes our processing only. `accepted` means the pipeline turned the record\n  into a row; it says nothing about what an agency decided. Where a publisher\n  states a status of its own, that is a column of the table.\n- **What the row said before.** The server holds one build of each table, the\n  one published now, with that build's receipts. A receipt for a row carried\n  over from an earlier build notes the earlier receipts in `diagnostic_json`;\n  the earlier builds themselves cannot be queried here. Tables that retain source\n  revisions, such as `crs_reports`, expose those revisions as separate rows in the\n  current build.\n- **Where to open the publisher's page.** `witnesses` names what the pipeline\n  read, and that is not always a page you can visit. For some tables it is one\n  of the pipeline's own working files, named by a path on the machine that ran\n  the build. A link to the publisher, where we hold one, is a column of the\n  table or a field in `processing_json`.\n- **That nothing was missed.** A table whose receipts are all `accepted` shows\n  that no failure was recorded, not that every record the publisher holds was\n  read. What a table covers is stated in its own coverage note.\n- **Anything about a table that has no receipts yet.** That table has not moved\n  to the newer layout. Nothing is missing from it."

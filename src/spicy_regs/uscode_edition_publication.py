@@ -1,10 +1,14 @@
 """Prepare one additive U.S. Code generation from held, accepted native outputs.
 
-Original subjects and receipts stay unchanged. New union files are written once
-and adopted by the maintained generation builder. This command never publishes
-or reads original archives; publication must still use the captured exact prior.
-Row batches do not impose a byte bound; the caller must supervise RSS, output
-and elapsed time for the selected inputs.
+The prior's rows and the accepted candidate's rows are unioned unchanged, in order,
+into files the maintained generation builder adopts. The tables publish no per-row
+receipts (``receipts_retired``): a prior's receipt member stays in that generation,
+which docs/pins/receipt-archive.json keeps. The candidate's selected originals are
+retained once into the generation's source evidence and the shared raw archive,
+under their publisher URL. This command never publishes; publication must still
+use the captured exact prior (``publish-local-generation --expect-prior``). Row
+batches do not impose a byte bound; the caller must supervise RSS, output and
+elapsed time for the selected inputs.
 """
 
 from __future__ import annotations
@@ -20,13 +24,11 @@ import pyarrow.parquet as pq
 from rulespec_artifacts import ArtifactInput, ArtifactPin
 
 from spicy_regs import generations
-from spicy_regs.etl_receipts import RECEIPT_SCHEMA, validate_receipt_bundle
 from spicy_regs.native_types import described_schema
 from spicy_regs.source_evidence import CaptureEvidence, PRIOR_ROLE
 from spicy_regs.sources import publication
-from spicy_regs.sources.uscode_editions import POLICIES
+from spicy_regs.sources.uscode_editions import CAPTURE_STAGE, FAMILY, POLICIES
 
-FAMILY = "uscode-editions"
 BATCH_ROWS = 64
 METADATA_LIMIT = 8 * 1024**2
 ROW_GROUP_ROWS = 8192
@@ -118,6 +120,20 @@ def _check_ordered_union(paths, target, schema):
         raise ValueError("Union omitted or added input occurrences")
 
 
+def _publisher_url(source: dict) -> str:
+    """Where OLRC serves one selected original; the journal is published, so it names this, never a local path."""
+    from spicy_docs.sources.uscode import (
+        ReleasePoint, TitleSelection, annual_archive_locator, corpus_xml_locator, title_xml_locator,
+    )
+
+    if source["kind"] == "annual":
+        return annual_archive_locator(source["year"])
+    point = ReleasePoint.from_label(source["release_point"])
+    if source["kind"] == "release-point-corpus":
+        return corpus_xml_locator(point)
+    return title_xml_locator(TitleSelection(point, source["title"]))
+
+
 def prepare_addition(
     *, prior_directory: Path, candidate_directory: Path, audit_pin: dict,
     read_snapshot: dict, expected_prior: str, output: Path,
@@ -125,9 +141,10 @@ def prepare_addition(
     """Append one accepted selected edition to the complete captured native family.
 
     ``audit_pin`` is the coordinator's exact path/bytes/sha256 for the accepted
-    independent audit. Its evidence map must bind the build metadata, selection,
-    all candidate subject files and combined receipts. Failed working files stay
-    readable; an existing output is never replaced.
+    independent audit. Its ``evidence_sha256`` map must bind the build metadata,
+    selection and all candidate subject files. The prior may still carry the
+    receipts of the generations before retirement; they are not read or carried.
+    Failed working files stay readable; an existing output is never replaced.
     """
     prior_directory, candidate_directory, output = map(Path, (prior_directory, candidate_directory, output))
     if output.exists() or any(output.resolve().is_relative_to(p.resolve()) for p in (prior_directory, candidate_directory)):
@@ -139,7 +156,7 @@ def prepare_addition(
     if prior is None or prior["artifactDigest"] != expected_prior:
         raise ValueError("Selected U.S. Code prior differs")
     keys = {name + ".parquet" for name in POLICIES}
-    if set(prior["tables"]) != keys or set(prior.get("etlReceipts", {}).get("datasets", [])) != set(POLICIES):
+    if set(prior["tables"]) != keys or set(prior.get("etlReceipts", {}).get("datasets", POLICIES)) != set(POLICIES):
         raise ValueError("Selected U.S. Code family membership differs")
     old = generations.verify_generation(prior_directory, expected_pin=ArtifactPin(prior["logicalId"], expected_prior))
     if old.root["spec"]["family"] != FAMILY or old.root["spec"]["publicationStatus"] != "complete-family":
@@ -147,9 +164,6 @@ def prepare_addition(
     for key, descriptor in old.root["spec"]["tables"].items():
         if descriptor != {k: v for k, v in prior["tables"][key].items() if k not in {"sha256", "byteSize"}}:
             raise ValueError("Selected prior schema or population differs")
-    receipt_spec = old.root["spec"]["etlReceipts"]
-    if any(receipt_spec[k] != prior["etlReceipts"][k] for k in ("columns", "rows", "generationId")):
-        raise ValueError("Selected prior receipt declaration differs")
     audit = _json(Path(audit_pin["path"]), audit_pin["sha256"], audit_pin["bytes"])
     if audit.get("verdict") != "APPROVE" or not str(audit.get("status", "")).startswith("verified-complete-selected-"):
         raise ValueError("Candidate requires accepted complete independent audit")
@@ -177,15 +191,12 @@ def prepare_addition(
                 raise ValueError("Candidate subject is not bound by accepted audit")
             if "byteSize" in expected and before[2] != expected["byteSize"]:
                 raise ValueError("Selected subject size differs")
+            if not pq.read_schema(member).equals(POLICIES[name].subject_schema):
+                raise ValueError(f"Held schema differs from its policy: {name}")
             pins[member] = before
-    receipts = (prior_directory / "etl_receipts.parquet", candidate_directory / "etl_receipts.parquet")
-    for member, expected in zip(receipts, (prior["etlReceipts"]["sha256"], evidence_pins[str(receipts[1])])):
-        before = _stat(member)
-        if _digest(member) != expected or _stat(member) != before:
-            raise ValueError("Held receipts differ from selected or accepted pin")
-        pins[member] = before
-    validate_receipt_bundle({n: [p[1]] for n, p in held.items()}, [receipts[1]], list(POLICIES.values()),
-                            generation_id=build["generation"], bulk=False)
+    originals = build["inputs"]
+    if [source["sha256"] for source in originals] != [source["sha256"] for source in selection["sources"]]:
+        raise ValueError("Candidate build read other originals than its selection")
     output.mkdir(parents=True)
     materialized = output / "union"
     materialized.mkdir()
@@ -195,27 +206,28 @@ def prepare_addition(
             target = materialized / (name + ".parquet")
             _union(held[name], policy.subject_schema, target, identities=identities, dataset=name)
             _check_ordered_union(held[name], target, policy.subject_schema)
-    receipt = materialized / "etl_receipts.parquet"
-    _union(receipts, RECEIPT_SCHEMA, receipt)
-    _check_ordered_union(receipts, receipt, RECEIPT_SCHEMA)
     source_evidence = CaptureEvidence(output, FAMILY)
     source_evidence.read_snapshot = read_snapshot
     source_evidence.prior_input = ArtifactInput(PRIOR_ROLE, prior["logicalId"], expected_prior)
+    # The accepted originals, once each: the retained bytes must be the ones the build and the audit read.
+    for source in originals:
+        retained = source_evidence.retain_file(Path(source["path"]), stage=CAPTURE_STAGE, raw_source=True,
+                                               original_location=_publisher_url(source))
+        if retained["sha256"] != source["sha256"]:
+            raise ValueError("Retained original differs from the accepted selection")
     source_evidence.event("held-native-addition", prior_generation=prior, prior_inputs=old.root["inputs"],
                           accepted_generation=build["generation"],
                           audit={k: audit_pin[k] for k in ("bytes", "sha256")},
                           selection_sha256=audit["selection_sha256"],
                           sources=[{k: v for k, v in source.items() if k != "path"} for source in selection["sources"]],
-                          source_reads=0, new_capture_claim=False,
-                          evidence_status="Held selected outputs; inherited source gaps remain unchanged.")
+                          source_reads=len(originals), new_capture_claim=False,
+                          evidence_status="Prior rows held unchanged; the addition's originals retained above.")
     files = [materialized / (name + ".parquet") for name in POLICIES]
-    adopted = {p.name: (p.stat().st_dev, p.stat().st_ino) for p in [*files, receipt]}
+    adopted = {p.name: (p.stat().st_dev, p.stat().st_ino) for p in files}
     artifact = generations.build_generation(
         output / "generation", family=FAMILY, files=files, expected_keys=sorted(keys),
         schemas={name: described_schema(policy.subject_schema) for name, policy in POLICIES.items()},
-        read_snapshot=read_snapshot, inputs=source_evidence.inputs(),
-        receipt_path=receipt, receipt_policies=list(POLICIES.values()), receipt_generation_id=build["generation"],
-        owned_output_root=output, adopt_owned_receipt=True,
+        read_snapshot=read_snapshot, inputs=source_evidence.inputs(), owned_output_root=output,
     )
     for path, before in pins.items():
         if _stat(path) != before:
@@ -228,7 +240,8 @@ def prepare_addition(
     result = {"status": "prepared-additive-uscode-generation", "generation": str(output / "generation"),
               "artifactDigest": artifact.pin.artifact_digest, "capturedPrior": expected_prior,
               "acceptedAddition": build["generation"], "evidence": str(source_evidence.artifact_dir),
-              "orderedPopulationEquality": True, "payloadCopies": 0, "sourceReads": 0, "published": False}
+              "orderedPopulationEquality": True, "payloadCopies": 0, "sourceReads": len(originals),
+              "published": False}
     (output / "prepared.json").write_text(json.dumps(result, indent=2) + "\n")
     return result
 
