@@ -451,7 +451,7 @@ degraded. Routing this path through spicy-docs's default extractor instead of
 needs it for the unrelated attachment path above.
 
 CourtListener listing, pins and raw rows use the shared provider directly. Run
-`uv run pytest tests/test_courtlistener_bulk.py tests/test_courtlistener_shared.py tests/test_court_scope.py tests/test_cluster_court_scope_backfill.py`
+`uv run pytest tests/test_courtlistener_bulk.py tests/test_courtlistener_shared.py tests/test_court_scope.py`
 for this receiving change. Before replacing the provider wheel, also run the
 BILLSTATUS, Unified Agenda and PDF reader tests (`test_bill_subjects.py`,
 `test_unified_agenda*.py`, `test_pdf_text*.py`).
