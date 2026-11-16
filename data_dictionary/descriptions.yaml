@@ -2492,6 +2492,9 @@ tables:
     coverage: >-
       Sampled. GovInfo BILLSTATUS from the 108th Congress onward, with explicitly
       selected Congress.gov summary lists for bills in the 82nd–107th Congresses.
+      For the current Congress and the two before it, GovInfo BILLSUM also fills
+      the summaries BILLSTATUS has not caught up with
+      (`source_schema_version` = BILLSUM).
     measured_on: "2026-09-28"
     summary: >-
       One row per retained CRS summary revision, keyed by bill, summary version,
@@ -2501,8 +2504,11 @@ tables:
       preserves the native item clock; legacy `last_summary_update_date` dates
       the summary itself. `source_schema_version` qualifies those meanings.
       For `congress-api-v3`, `update_date` is the child response's own updateDate.
-      Read its page digest, capture time and row index from the receipt.
-      See docs/bill-summary-clocks.md for the schema-qualified query and replay limits.
+      Read its page digest, capture time and row index from the receipt. A
+      BILLSUM row's `update_date` is a day with no time and its
+      `last_summary_update_date` is NULL.
+      See docs/bill-summary-clocks.md for the schema-qualified query, the BILLSUM
+      rows and replay limits.
     columns_from: spicy_docs
 
   bill_versions:

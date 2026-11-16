@@ -20,16 +20,16 @@ REGISTRY = Path(__file__).with_name("config") / "registry.v1.json"
 _DATE = r"\d{4}-\d{2}-\d{2}"
 _PACKAGE = re.compile(
     r"(?<![A-Za-z0-9])(?=(?:GAOREPORTS-[A-Za-z0-9]|[A-Z]+-\d))"
-    r"(?P<id>(?P<kind>BILLSTATUS|BILLS|CHRG|CRPT|CPRT|PLAW|CDOC|TDOC|CREC|FR|CFR|GAOREPORTS)"
+    r"(?P<id>(?P<kind>BILLSTATUS|BILLSUM|BILLS|CHRG|CRPT|CPRT|PLAW|CDOC|TDOC|CREC|FR|CFR|GAOREPORTS)"
     r"-[A-Za-z0-9][A-Za-z0-9_.-]*)", re.I,
 )
 _PACKAGE_FAMILIES = {
-    "BILLSTATUS": "bill-family", "BILLS": "bill-family", "CHRG": "committee-reports",
+    "BILLSTATUS": "bill-family", "BILLSUM": "bill-family", "BILLS": "bill-family", "CHRG": "committee-reports",
     "CRPT": "committee-reports", "CPRT": "print-citations", "PLAW": "laws", "CDOC": "committee-reports",
     "TDOC": "treaties", "CREC": "record-issues", "FR": "federal-register", "CFR": "cfr-sections",
     "GAOREPORTS": "gao-reports",
 }
-_CONGRESS_KINDS = {"BILLSTATUS", "BILLS", "CHRG", "CRPT", "CPRT", "PLAW", "CDOC", "TDOC"}
+_CONGRESS_KINDS = {"BILLSTATUS", "BILLSUM", "BILLS", "CHRG", "CRPT", "CPRT", "PLAW", "CDOC", "TDOC"}
 _NAMED_PERIODS = {"congress", "meeting-date", "document-date", "schedule-week"}
 
 # These are explicit acquisition-directory identities, not fuzzy title matching.

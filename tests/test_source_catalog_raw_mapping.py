@@ -22,6 +22,13 @@ def test_native_congress_and_registry_family():
     assert result["acquired_at"] is None
 
 
+def test_a_billsum_zip_is_the_bill_familys_with_its_native_congress():
+    result = SourceMapper().map_source(source("https://www.govinfo.gov/bulkdata/BILLSUM/118/hr/BILLSUM-118-hr.zip"))
+    assert result["dataset_id"] == "family:bill-family"
+    assert result["native_id"] == "BILLSUM-118-hr"
+    assert [(row["kind"], row["label"]) for row in result["periods"]] == [("congress", "118")]
+
+
 def test_cfr_requested_edition_is_not_native_body_edition():
     result = SourceMapper().map_source(source("https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/xml/CFR-2025-title1-vol1.xml"))
     assert result["dataset_id"] == "family:cfr-sections"

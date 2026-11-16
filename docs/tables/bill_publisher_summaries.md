@@ -4,9 +4,9 @@
 
 **CRS bill summaries (publisher)**
 
-One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. `update_date` preserves the native item clock; legacy `last_summary_update_date` dates the summary itself. `source_schema_version` qualifies those meanings. For `congress-api-v3`, `update_date` is the child response's own updateDate. Read its page digest, capture time and row index from the receipt. See docs/bill-summary-clocks.md for the schema-qualified query and replay limits.
+One row per retained CRS summary revision, keyed by bill, summary version, action date and publisher update date. Later update dates preserve earlier rows; repeated copies of the same dated revision merge into one row. `summary_html` is kept exactly as the publisher escaped it. `update_date` preserves the native item clock; legacy `last_summary_update_date` dates the summary itself. `source_schema_version` qualifies those meanings. For `congress-api-v3`, `update_date` is the child response's own updateDate. Read its page digest, capture time and row index from the receipt. A BILLSUM row's `update_date` is a day with no time and its `last_summary_update_date` is NULL. See docs/bill-summary-clocks.md for the schema-qualified query, the BILLSUM rows and replay limits.
 
-**Coverage.** Sampled. GovInfo BILLSTATUS from the 108th Congress onward, with explicitly selected Congress.gov summary lists for bills in the 82nd–107th Congresses. *(measured 2026-09-28)*
+**Coverage.** Sampled. GovInfo BILLSTATUS from the 108th Congress onward, with explicitly selected Congress.gov summary lists for bills in the 82nd–107th Congresses. For the current Congress and the two before it, GovInfo BILLSUM also fills the summaries BILLSTATUS has not caught up with (`source_schema_version` = BILLSUM). *(measured 2026-09-28)*
 
 - **Parquet file:** `bill_publisher_summaries.parquet`
 - **MCP `query_sql` support:** Configured; requires an available artifact.
